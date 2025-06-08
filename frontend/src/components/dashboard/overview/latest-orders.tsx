@@ -1,3 +1,5 @@
+'use client';
+
 import * as React from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -59,7 +61,14 @@ export function LatestOrders({ orders = [], sx }: LatestOrdersProps): React.JSX.
                   <TableCell>{order.customer.name}</TableCell>
                   <TableCell>{dayjs(order.createdAt).format('MMM D, YYYY')}</TableCell>
                   <TableCell>
-                    <Chip color={color} label={label} size="small" />
+                    <Chip 
+                      color={color}
+                      label={label}
+                      size="small" 
+                      onClick={() => {
+                        /* Funcion vacia por ahora para evitar issue*/
+                      }}
+                      />
                   </TableCell>
                 </TableRow>
               );

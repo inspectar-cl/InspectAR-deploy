@@ -77,22 +77,9 @@ const columns: GridColDef[] = [
       />
     ),
   },
+  { field: 'fecha', headerName: 'Fecha de alerta', flex: 1, minWidth: 140 },
   { field: 'id', headerName: 'ID', flex: 0.5, minWidth: 50 },
   { field: 'tipoActivo', headerName: 'Tipo de activo', flex: 1.5, minWidth: 120 },
-  { field: 'ubicacion', headerName: 'Ubicación', flex: 1.5, minWidth: 160 },
-  {
-    field: 'descripcion',
-    headerName: 'Tipo de falla',
-    flex: 2,
-    minWidth: 220,
-    renderCell: (params: GridRenderCellParams) => (
-      <Tooltip title={params.value}>
-        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {params.value}
-        </span>
-      </Tooltip>
-    ),
-  },
   {
     field: 'estado',
     headerName: 'Estado',
@@ -108,7 +95,20 @@ const columns: GridColDef[] = [
       return <Chip label={params.value} color={color} size="small" />
     },
   },
-  { field: 'fecha', headerName: 'Fecha de alerta', flex: 1, minWidth: 140 },
+  {
+    field: 'descripcion',
+    headerName: 'Descripción',
+    flex: 2,
+    minWidth: 220,
+    renderCell: (params: GridRenderCellParams) => (
+      <Tooltip title={params.value}>
+        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {params.value}
+        </span>
+      </Tooltip>
+    ),
+  },
+  { field: 'ubicacion', headerName: 'Ubicación', flex: 1.5, minWidth: 160 },
 ]
 
 export default function AlertasTable() {

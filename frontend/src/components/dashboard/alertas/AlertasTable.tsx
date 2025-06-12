@@ -61,56 +61,6 @@ const generarFechaProxima = (): string => {
   return hoy.toLocaleDateString('es-CL')
 }
 
-const columns: GridColDef[] = [
-  {
-    field: 'atendida',
-    headerName: 'Atendida',
-    sortable: false,
-    flex: 0.5,
-    minWidth: 80,
-    renderCell: (params: GridRenderCellParams) => (
-      <Checkbox
-        checked={params.value}
-        disabled={params.value}
-        onChange={() => handleAtender(params.row.id)}
-        color="primary"
-      />
-    ),
-  },
-  { field: 'fecha', headerName: 'Fecha de alerta', flex: 1, minWidth: 140 },
-  { field: 'id', headerName: 'ID', flex: 0.5, minWidth: 50 },
-  { field: 'tipoActivo', headerName: 'Tipo de activo', flex: 1.5, minWidth: 120 },
-  {
-    field: 'estado',
-    headerName: 'Estado',
-    flex: 1,
-    minWidth: 100,
-    renderCell: (params) => {
-      const color =
-        params.value === 'Crítico'
-          ? 'error'
-          : params.value === 'Medio'
-            ? 'warning'
-            : 'success'
-      return <Chip label={params.value} color={color} size="small" />
-    },
-  },
-  {
-    field: 'descripcion',
-    headerName: 'Descripción',
-    flex: 2,
-    minWidth: 220,
-    renderCell: (params: GridRenderCellParams) => (
-      <Tooltip title={params.value}>
-        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {params.value}
-        </span>
-      </Tooltip>
-    ),
-  },
-  { field: 'ubicacion', headerName: 'Ubicación', flex: 1.5, minWidth: 160 },
-]
-
 export default function AlertasTable() {
   const [alertas, setAlertas] = React.useState<Alerta[]>(generarAlertas(activos))
   const [filtroTipo, setFiltroTipo] = React.useState('')
@@ -137,6 +87,55 @@ export default function AlertasTable() {
     return tipoOK && ubicacionOK && estadoOK && atencionOK
   })
 
+  const columns: GridColDef[] = [
+    {
+      field: 'atendida',
+      headerName: 'Atendida',
+      sortable: false,
+      flex: 0.5,
+      minWidth: 80,
+      renderCell: (params: GridRenderCellParams) => (
+        <Checkbox
+          checked={params.value}
+          disabled={params.value}
+          onChange={() => handleAtender(params.row.id)}
+          color="primary"
+        />
+      ),
+    },
+    { field: 'fecha', headerName: 'Fecha de alerta', flex: 1, minWidth: 140 },
+    { field: 'id', headerName: 'ID', flex: 0.5, minWidth: 50 },
+    { field: 'tipoActivo', headerName: 'Tipo de activo', flex: 1.5, minWidth: 120 },
+    {
+      field: 'estado',
+      headerName: 'Nivel de riesgo',
+      flex: 1,
+      minWidth: 100,
+      renderCell: (params) => {
+        const color =
+          params.value === 'Crítico'
+            ? 'error'
+            : params.value === 'Medio'
+              ? 'warning'
+              : 'success'
+        return <Chip label={params.value} color={color} size="small" />
+      },
+    },
+    {
+      field: 'descripcion',
+      headerName: 'Descripción',
+      flex: 2,
+      minWidth: 220,
+      renderCell: (params: GridRenderCellParams) => (
+        <Tooltip title={params.value}>
+          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {params.value}
+          </span>
+        </Tooltip>
+      ),
+    },
+    { field: 'ubicacion', headerName: 'Ubicación', flex: 1.5, minWidth: 160 },
+  ]
 
   const estados = ['Medio', 'Crítico']
   const paginas = 8

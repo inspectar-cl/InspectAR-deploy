@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 import { Paper, Box, Chip, TextField, MenuItem, Stack} from '@mui/material'
+import { esES } from '@mui/x-data-grid/locales'
 
 type Activo = {
   id: string
@@ -60,19 +61,20 @@ export default function ActivosTable() {
   const activosFiltrados = activos.filter((a) => {
     const estadoOK = !filtroEstado || a.estado === filtroEstado
     const tipoOK = !filtroTipo || a.tipoActivo.toLowerCase().includes(filtroTipo.toLowerCase())
-    const ubicacionOK = !filtroUbicacion || a.ubicacion === filtroUbicacion
+    const ubicacionOK = !filtroUbicacion || a.ubicacion.toLowerCase().includes(filtroUbicacion.toLowerCase())
     return estadoOK && tipoOK && ubicacionOK
   })
 
-  const ubicaciones = Array.from(new Set(activos.map((a) => a.ubicacion)))
+  const tiposActivos = Array.from(new Set(activos.map((a) => a.tipoActivo)))
   const estados = ['OK', 'Medio', 'Crítico']
+  const paginas = 10
 
   return (
     <Box sx={{ height: '100%', width: '100%' }}>
       <Paper elevation={3} sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           <TextField
-            label="Buscar componente"
+            label="Tipo de activo"
             value={filtroTipo}
             onChange={(e) => setFiltroTipo(e.target.value)}
             size="small"
@@ -94,20 +96,12 @@ export default function ActivosTable() {
             ))}
           </TextField>
           <TextField
-            label="Ubicación"
-            select
+            label="Buscar ubicación"
             value={filtroUbicacion}
             onChange={(e) => setFiltroUbicacion(e.target.value)}
             size="small"
             fullWidth
-          >
-            <MenuItem value="">Todas</MenuItem>
-            {ubicaciones.map((u) => (
-              <MenuItem key={u} value={u}>
-                {u}
-              </MenuItem>
-            ))}
-          </TextField>
+          />
         </Stack>
       </Paper>
 
@@ -118,10 +112,30 @@ export default function ActivosTable() {
           getRowId={(row) => row.id}
           initialState={{
             pagination: {
-              paginationModel: { pageSize: 5, page: 0 },
+              paginationModel: { pageSize: paginas, page: 0 },
             },
           }}
-          pageSizeOptions={[5, 10, 20]}
+          pageSizeOptions={Array.from({ length: Math.ceil(activosFiltrados.length / paginas) }, (_, i) => (i + 1) * paginas)}
+          disableRowSelectionOnClick
+          localeText={{
+            ...esES.components.MuiDataGrid.defaultProps.localeText,
+            paginationRowsPerPage: 'Activos por página',
+            noRowsLabel: 'No hay activos disponibles',
+            footerTotalRows: 'Total de activos:',
+            footerTotalVisibleRows: (visibleCount, totalCount) =>
+              `${visibleCount.toLocaleString()} de ${totalCount.toLocaleString()}`,
+            footerRowSelected: (count) =>
+              count > 1
+                ? `${count.toLocaleString()} activos seleccionados`
+                : `${count.toLocaleString()} activo seleccionado`,
+            paginationDisplayedRows: ({ from, to, count, estimated }) => {
+              if (!estimated) {
+                return `${from}–${to} de ${count !== -1 ? count : `más de ${to}`}`;
+              }
+              const estimatedLabel = estimated && estimated > to ? `alrededor de ${estimated}` : `más de ${to}`;
+              return `${from}–${to} de ${count !== -1 ? count : estimatedLabel}`;
+            },
+          }}
         />
       </Paper>
     </Box>

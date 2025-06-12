@@ -1,8 +1,8 @@
 'use client'
 
 import * as React from 'react'
-import { DataGrid, GridColDef } from '@mui/x-data-grid'
-import { Paper, Box, Chip, TextField, MenuItem, Stack,} from '@mui/material'
+import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
+import { Paper, Box, Chip, TextField, MenuItem, Stack} from '@mui/material'
 
 type Activo = {
   id: string
@@ -68,7 +68,7 @@ export default function ActivosTable() {
   const estados = ['OK', 'Medio', 'Crítico']
 
   return (
-    <Box sx={{ height: 700, width: '100%' }}>
+    <Box sx={{ height: '100%', width: '100%' }}>
       <Paper elevation={3} sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           <TextField

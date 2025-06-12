@@ -32,7 +32,7 @@ const activos: Activo[] = [
 ]
 
 const columns: GridColDef[] = [
-  { field: 'id', headerName: 'ID', flex: 1, minWidth: 90 },
+  { field: 'id', headerName: 'ID', flex: 1, minWidth: 70 },
   { field: 'tipoActivo', headerName: 'Tipo de activo', flex: 1, minWidth: 160 },
   {
     field: 'estado',
@@ -67,7 +67,7 @@ export default function ActivosTable() {
 
   const tiposActivos = Array.from(new Set(activos.map((a) => a.tipoActivo)))
   const estados = ['OK', 'Medio', 'Crítico']
-  const paginas = 10
+  const paginas = 8
 
   return (
     <Box sx={{ height: '100%', width: '100%' }}>
@@ -117,6 +117,7 @@ export default function ActivosTable() {
           }}
           pageSizeOptions={Array.from({ length: Math.ceil(activosFiltrados.length / paginas) }, (_, i) => (i + 1) * paginas)}
           disableRowSelectionOnClick
+          disableColumnFilter 
           localeText={{
             ...esES.components.MuiDataGrid.defaultProps.localeText,
             paginationRowsPerPage: 'Activos por página',

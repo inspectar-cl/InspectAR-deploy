@@ -152,7 +152,7 @@ export default function AlertasTable() {
             size="small"
             fullWidth
           >
-            <MenuItem value="todas">Todas</MenuItem>
+            <MenuItem value="">Todas</MenuItem>
             <MenuItem value="pendientes">Pendientes</MenuItem>
             <MenuItem value="atendidas">Atendidas</MenuItem>
           </TextField>

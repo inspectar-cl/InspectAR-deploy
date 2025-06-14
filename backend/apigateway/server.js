@@ -8,6 +8,9 @@ const bodyParser = require("body-parser");
 const app = express();
 app.use(morgan("dev"));
 app.use(express.json());
+app.use(cors({
+  // origin: process.env.FRONT_URL // en caso que queramos aceptar solo peticiones desde la ip del front. -Vixo 14/06
+}));
 
 const proxyRoutes = require('./routes/proxyRoutes')
 app.use('/api', proxyRoutes)

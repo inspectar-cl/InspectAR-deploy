@@ -26,7 +26,7 @@ def simular_sensor():
         except Exception as e:
             print(f"Error de conexión: {e}")
 
-        time.sleep(5)  # Espera 5 segundos antes de enviar el siguiente valor
+        time.sleep(1)  # Espera 5 segundos antes de enviar el siguiente valor
 
 if __name__ == "__main__":
     simular_sensor()

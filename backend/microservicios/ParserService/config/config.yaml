@@ -1,0 +1,16 @@
+mongo:
+  uri: "mongodb://mongo:27017"
+  database: "iot_db"
+
+influxdb:
+  url: "http://influxdb:8086"
+  token: "your-token"
+  org: "your-org"
+  bucket: "your-bucket"
+
+server:
+  port: "8090"
+
+# consul:
+#   address: "consul:8500"
+#   service_name: "iot-service"

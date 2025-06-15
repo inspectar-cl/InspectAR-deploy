@@ -4,65 +4,14 @@ import * as React from 'react'
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 import { Paper, Box, Chip, TextField, MenuItem, Stack, Checkbox, Tooltip   } from '@mui/material'
 import { esES } from '@mui/x-data-grid/locales'
+import { Alerta } from '@/types/'
+import { activosMock, alertasMock } from '@/mocks/'
 
-type Activo = {
-  id: string
-  tipoActivo: string
-  estado: 'OK' | 'Medio' | 'Crítico'
-  descripcion: string
-  ubicacion: string
-}
 
-type Alerta = {
-  id: string
-  tipoActivo: string
-  descripcion: string
-  estado: 'Medio' | 'Crítico'
-  ubicacion: string
-  fecha: string
-  atendida: boolean
-}
+const activos = activosMock
 
-const activos: Activo[] = [
-  { id: 'A1', tipoActivo: 'Ascensor #1', estado: 'OK', descripcion: 'Funciona correctamente', ubicacion: 'Edificio A, Santiago' },
-  { id: 'A2', tipoActivo: 'Ascensor #2', estado: 'OK', descripcion: 'Funciona correctamente', ubicacion: 'Edificio A, Santiago' },
-  { id: 'A3', tipoActivo: 'Ascensor #3', estado: 'Medio', descripcion: 'Mantenimiento programado no realizado', ubicacion: 'Edificio A, Santiago' },
-  { id: 'A4', tipoActivo: 'Ascensor #4', estado: 'Medio', descripcion: 'Puerta atascada, requiere revisión', ubicacion: 'Edificio B, Santiago' },
-  { id: 'C1', tipoActivo: 'Caldera #1', estado: 'Crítico', descripcion: 'Temperatura fuera de rango, riesgo de daño', ubicacion: 'Edificio A, Santiago' },
-  { id: 'C2', tipoActivo: 'Caldera #2', estado: 'Crítico', descripcion: 'Anomalía detectada – revisar urgentemente', ubicacion: 'Edificio B, Santiago' },
-  { id: 'C3', tipoActivo: 'Caldera #3', estado: 'Crítico', descripcion: 'Fuga de gas detectada', ubicacion: 'Edificio C, Santiago' },
-  { id: 'C4', tipoActivo: 'Caldera #4', estado: 'Crítico', descripcion: 'Presión excesiva, riesgo de explosión', ubicacion: 'Edificio C, Santiago' },
-  { id: 'B1', tipoActivo: 'Bomba de Agua #1', estado: 'Crítico', descripcion: 'Motor sobrecalentado, riesgo de falla', ubicacion: 'Edificio A, Santiago' },
-  { id: 'B2', tipoActivo: 'Bomba de Agua #2', estado: 'Crítico', descripcion: 'Fuga de presión, riesgo de parada', ubicacion: 'Edificio A, Santiago' },
-  { id: 'B3', tipoActivo: 'Bomba de Agua #3', estado: 'Crítico', descripcion: 'Riesgo crítico de falla en 7 días', ubicacion: 'Edificio B, Santiago' },
-  { id: 'B4', tipoActivo: 'Bomba de Agua #4', estado: 'Crítico', descripcion: 'Nivel de agua crítico', ubicacion: 'Edificio B, Santiago' },
-  { id: 'E1', tipoActivo: 'Sistema Eléctrico #1', estado: 'Medio', descripcion: 'Sobrecarga detectada, monitorear consumo', ubicacion: 'Edificio A, Santiago' },
-  { id: 'E2', tipoActivo: 'Sistema Eléctrico #2', estado: 'Medio', descripcion: 'Pico de voltaje registrado', ubicacion: 'Edificio B, Santiago' },
-  { id: 'E3', tipoActivo: 'Sistema Eléctrico #3', estado: 'Medio', descripcion: 'Variación de frecuencia, revisar panel', ubicacion: 'Edificio C, Santiago' },
-]
-
-const generarAlertas = (activos: Activo[]): Alerta[] =>
-  activos
-    .filter((a) => a.estado !== 'OK')
-    .map((a) => ({
-      id: a.id,
-      tipoActivo: a.tipoActivo,
-      descripcion: a.descripcion,
-      estado: a.estado,
-      ubicacion: a.ubicacion,
-      fecha: generarFechaProxima(),
-      atendida: false,
-    }))
-
-// Fecha estimada de ocurrencia: aleatoria entre 1 y 10 días desde hoy
-const generarFechaProxima = (): string => {
-  const hoy = new Date()
-  hoy.setDate(hoy.getDate() + Math.floor(Math.random() * 10) + 1)
-  return hoy.toLocaleDateString('es-CL')
-}
-
-export function AlertasTable(): React.JSX.Element {
-  const [alertas, setAlertas] = React.useState<Alerta[]>(generarAlertas(activos))
+export default function AlertasTable() {
+  const [alertas, setAlertas] = React.useState<Alerta[]>(alertasMock)
   const [filtroTipo, setFiltroTipo] = React.useState('')
   const [filtroUbicacion, setFiltroUbicacion] = React.useState('')
   const [filtroEstado, setFiltroEstado] = React.useState('')

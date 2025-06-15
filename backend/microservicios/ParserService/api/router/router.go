@@ -1,11 +1,7 @@
 package router
 
 import (
-	"backend/microservicios/ParserService/internal/handler"
-	"backend/microservicios/ParserService/internal/repository"
-	"forms/api/middleware"
-	"forms/internal/handler"
-	"forms/internal/repository"
+	handlers "ParserService/internal/handler"
 
 	"time"
 
@@ -13,11 +9,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(dataHandler *handler.DataHandler) *gin.Engine {
+func SetupRouter(dataHandler *handlers.DataHandler) *gin.Engine {
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5050"},
+		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -26,9 +22,10 @@ func SetupRouter(dataHandler *handler.DataHandler) *gin.Engine {
 	}))
 
 	r.POST("/activo", dataHandler.CreateActivo)
+	r.GET("/activo", dataHandler.GetAllActivos)
 	r.POST("/lectura", dataHandler.CreateLectura)
 	r.GET("/activo/:activo_id", dataHandler.GetActivo)
-	r.GET("/activo/:activo_id/datos", dataHandler.GetSensorByActivo)
+	r.GET("/lectura/:activo_id/datos", dataHandler.GetSensorByActivo)
 
 	return r
 }

@@ -5,8 +5,8 @@ import (
 	"context"
 	"time"
 
-	"forms/internal/models"
-	"forms/internal/repository"
+	"ParserService/internal/models"
+	"ParserService/internal/repository"
 )
 
 type SensorService struct {
@@ -18,5 +18,9 @@ func NewSensorService(influxRepo *repository.InfluxRepository) *SensorService {
 }
 
 func (s *SensorService) GetDatosSensor(ctx context.Context, sensorID string, since time.Duration) ([]models.SensorData, error) {
-	return s.influxRepo.GetSensorData(ctx, sensorID, since)
+	return s.influxRepo.GetSensorData(ctx, sensorID)
+}
+
+func (s *SensorService) InsertarLectura(ctx context.Context, sensorID string, valor float64, timestamp time.Time) error {
+	return s.influxRepo.InsertSensorData(ctx, sensorID, valor, timestamp)
 }

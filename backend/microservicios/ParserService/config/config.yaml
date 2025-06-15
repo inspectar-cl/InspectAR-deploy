@@ -1,12 +1,12 @@
-mongo:
-  uri: "mongodb://mongo:27017"
+mongu:
+  uri: "mongodb://mongu:27017"
   database: "iot_db"
 
 influxdb:
   url: "http://influxdb:8086"
-  token: "your-token"
-  org: "your-org"
-  bucket: "your-bucket"
+  token: "my-super-token"
+  org: "my-org"
+  bucket: "sensores"
 
 server:
   port: "8090"

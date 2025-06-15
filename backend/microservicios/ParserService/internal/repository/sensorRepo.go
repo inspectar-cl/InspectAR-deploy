@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"forms/internal/models"
+	"ParserService/internal/models"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	influxdb2api "github.com/influxdata/influxdb-client-go/v2/api"
@@ -39,17 +39,46 @@ func (r *InfluxRepository) InsertSensorData(ctx context.Context, sensorID string
 		timestamp,
 	)
 
+	fmt.Printf("Insertando en InfluxDB: sensor_id=%s, valor=%f, timestamp=%s\n", sensorID, valor, timestamp.Format(time.RFC3339))
+
 	return r.writeAPI.WritePoint(ctx, point)
 }
 
 // Obtiene todos los datos históricos de un sensor
-func (r *InfluxRepository) GetSensorData(ctx context.Context, sensorID string, since time.Duration) ([]models.SensorData, error) {
+// func (r *InfluxRepository) GetSensorData(ctx context.Context, sensorID string, since time.Duration) ([]models.SensorData, error) {
+// 	query := fmt.Sprintf(`
+// from(bucket: "%s")
+//   |> range(start: -%dm)
+//   |> filter(fn: (r) => r._measurement == "mediciones" and r.sensor_id == "%s")
+//   |> keep(columns: ["_time", "_value"])
+// `, r.bucket, int(since.Minutes()), sensorID)
+
+// 	result, err := r.queryAPI.Query(ctx, query)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	var datos []models.SensorData
+// 	for result.Next() {
+// 		datos = append(datos, models.SensorData{
+// 			Tiempo: result.Record().Time().Format(time.RFC3339),
+// 			Valor:  result.Record().Value().(float64),
+// 		})
+// 	}
+// 	if result.Err() != nil {
+// 		return nil, result.Err()
+// 	}
+// 	return datos, nil
+// }
+
+// Obtiene todos los datos históricos de un sensor sin filtro de tiempo
+func (r *InfluxRepository) GetSensorData(ctx context.Context, sensorID string) ([]models.SensorData, error) {
 	query := fmt.Sprintf(`
 from(bucket: "%s")
-  |> range(start: -%dm)
+  |> range(start: 0)
   |> filter(fn: (r) => r._measurement == "mediciones" and r.sensor_id == "%s")
   |> keep(columns: ["_time", "_value"])
-`, r.bucket, int(since.Minutes()), sensorID)
+`, r.bucket, sensorID)
 
 	result, err := r.queryAPI.Query(ctx, query)
 	if err != nil {

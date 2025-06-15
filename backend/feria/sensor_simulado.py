@@ -3,13 +3,13 @@ import random
 import time
 from datetime import datetime
 
-API_URL = "http://localhost:8000/lectura/"
+API_URL = "http://localhost:8080/lectura/"
 SENSOR_ID = "temp1"  # Este sensor debe estar registrado en el activo previamente
 
 def simular_sensor():
     while True:
         valor = round(random.uniform(60.0, 80.0), 2)  # temperatura simulada
-        timestamp = datetime.utcnow().isoformat()
+        timestamp = datetime.utcnow().isoformat() + "Z"
 
         data = {
             "sensor_id": SENSOR_ID,

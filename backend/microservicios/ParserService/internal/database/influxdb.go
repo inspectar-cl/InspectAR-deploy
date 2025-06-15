@@ -5,13 +5,13 @@ import (
 	"log"
 	"time"
 
-	"github.com/influxdata/influxdb-client-go/v2"
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/spf13/viper"
 )
 
 func ConnectInflux() influxdb2.Client {
-	uri := viper.GetString("influxdb_uri")
-	token := viper.GetString("influxdb_token")
+	uri := viper.GetString("influxdb.url")
+	token := viper.GetString("influxdb.token")
 	if uri == "" {
 		uri = "http://localhost:8086" // valor por defecto
 	}

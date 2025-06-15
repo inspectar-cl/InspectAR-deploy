@@ -14,6 +14,9 @@ COPY . .
 # Compilar la aplicación
 RUN go build -o /app/main ./cmd/main.go
 
+# Mostrar el contenido de /app para depuración
+RUN ls -l /app
+
 # Etapa final para una imagen más liviana
 FROM golang:1.23 AS final
 

@@ -1,17 +1,15 @@
 package main
 
 import (
-	"crypto/tls"
-	"forms/internal/database"
-	"forms/internal/handler"
-	"forms/internal/repository"
-	"forms/internal/services"
+	"ParserService/api/router"
+	"ParserService/internal/database"
+	handlers "ParserService/internal/handler"
+	"ParserService/internal/repository"
+	"ParserService/internal/services"
 	"log"
+	"time"
 
-	"github.com/go-micro/plugins/v4/registry/consul"
-	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/spf13/viper"
-	"go-micro.dev/v4/registry"
 	"go-micro.dev/v4/web"
 )
 
@@ -26,23 +24,17 @@ func initConfig() {
 }
 
 func main() {
+	time.Sleep(5 * time.Second) // Simulación de espera para asegurar que la configuración se cargue correctamente
 	// Cargar configuración
 	initConfig()
 
 	// Conexión a MongoDB
 	mongoDB := database.ConnectMongo()
 
-	// Conexión a InfluxDB
-	influxURL := viper.GetString("influx.url")
-	influxToken := viper.GetString("influx.token")
-	influxOrg := viper.GetString("influx.org")
-	influxBucket := viper.GetString("influx.bucket")
-
-	influxClient := influxdb2.NewClientWithOptions(
-		influxURL,
-		influxToken,
-		influxdb2.DefaultOptions().SetTLSConfig(&tls.Config{InsecureSkipVerify: true}),
-	)
+	// Conexión a InfluxDB usando el helper
+	influxClient := database.ConnectInflux()
+	influxOrg := viper.GetString("influxdb.org")
+	influxBucket := viper.GetString("influxdb.bucket")
 
 	// Repositorios
 	activoRepo := repository.NewActivoRepository(mongoDB)
@@ -53,10 +45,7 @@ func main() {
 	sensorService := services.NewSensorService(influxRepo)
 
 	// Handler de datos
-	dataHandler := handler.NewDataHandler(activoService, sensorService)
-
-	// Registro en Consul
-	reg := consul.NewRegistry(registry.Addrs("consul:8500"))
+	dataHandler := handlers.NewDataHandler(activoService, sensorService)
 
 	// Ruteo con Gin
 	r := router.SetupRouter(dataHandler)
@@ -64,7 +53,6 @@ func main() {
 	// Servicio web
 	service := web.NewService(
 		web.Name("iot-service"),
-		web.Registry(reg),
 		web.Address(":8090"),
 		web.Handler(r),
 	)

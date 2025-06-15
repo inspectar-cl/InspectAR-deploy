@@ -9,10 +9,8 @@ services:
     ports:
       - "8090:8090"
     depends_on:
-      - mongudb
+      - mongu
       - influxdb
-    volumes:
-      - .:/app
   emqx:
     image: emqx/emqx:latest
     container_name: emqx
@@ -38,9 +36,9 @@ services:
       - RABBITMQ_DEFAULT_USER=admin
       - RABBITMQ_DEFAULT_PASS=admin
     
-  mongudb:
+  mongu:
     image: mongo:latest
-    container_name: mongudb
+    container_name: mongu
     ports:
       - "27017:27017"
     volumes:

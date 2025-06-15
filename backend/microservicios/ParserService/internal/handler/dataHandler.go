@@ -4,9 +4,10 @@ import (
 	"net/http"
 	"time"
 
+	"ParserService/internal/models"
+	"ParserService/internal/services"
+
 	"github.com/gin-gonic/gin"
-	"forms/internal/models"
-	"forms/internal/services"
 )
 
 type DataHandler struct {
@@ -31,6 +32,10 @@ func (h *DataHandler) CreateActivo(c *gin.Context) {
 
 	id, err := h.activoService.CrearActivo(c.Request.Context(), &activo)
 	if err != nil {
+		if err.Error() == "el activo ya existe" {
+			c.JSON(http.StatusConflict, gin.H{"error": "El activo ya existe"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo crear el activo"})
 		return
 	}
@@ -40,25 +45,25 @@ func (h *DataHandler) CreateActivo(c *gin.Context) {
 
 // POST /lectura
 func (h *DataHandler) CreateLectura(c *gin.Context) {
-	var lectura models.LecturaRequest
-	if err := c.ShouldBindJSON(&lectura); err != nil {
+	var data models.LecturaSensorRequest
+	if err := c.ShouldBindJSON(&data); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Formato de lectura inválido"})
 		return
 	}
 
-	sensor := models.Sensor{
-		SensorID: lectura.SensorID,
-		Tipo:     lectura.Tipo,
-		Unidad:   lectura.Unidad,
-	}
-
-	err := h.activoService.AgregarSensor(c.Request.Context(), lectura.ActivoID, sensor)
+	timestamp, err := time.Parse(time.RFC3339, data.Timestamp)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo agregar el sensor al activo"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Timestamp inválido"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"mensaje": "Sensor agregado al activo"})
+	err = h.sensorService.InsertarLectura(c.Request.Context(), data.SensorID, data.Valor, timestamp)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo registrar la lectura en InfluxDB"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"mensaje": "Lectura registrada en InfluxDB"})
 }
 
 // GET /activo/:activo_id
@@ -98,4 +103,14 @@ func (h *DataHandler) GetSensorByActivo(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, allLecturas)
+}
+
+// GET /activo
+func (h *DataHandler) GetAllActivos(c *gin.Context) {
+	activos, err := h.activoService.GetAllActivos(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudieron obtener los activos"})
+		return
+	}
+	c.JSON(http.StatusOK, activos)
 }

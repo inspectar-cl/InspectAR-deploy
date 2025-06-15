@@ -1,12 +1,21 @@
-import React from 'react';
+import * as React from 'react';
+import type { Metadata } from 'next';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 
-import AlertasTable from '@/components/dashboard/alertas/AlertasTable';
+import { config } from '@/config';
 
-export default function ActivosPage() {
+import { AlertasTable } from '@/components/dashboard/alertas/AlertasTable';
+
+export const metadata = { title: `Alertas | Dashboard | ${config.site.name}` } satisfies Metadata;
+
+export default function Page(): React.JSX.Element {
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Alertas</h1>
+    <Stack spacing={3}>
+      <div>
+        <Typography variant="h4">Alertas</Typography>
+      </div>
       <AlertasTable />
-    </div>
+    </Stack>
   )
 }

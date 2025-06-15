@@ -61,7 +61,7 @@ const generarFechaProxima = (): string => {
   return hoy.toLocaleDateString('es-CL')
 }
 
-export default function AlertasTable() {
+export function AlertasTable(): React.JSX.Element {
   const [alertas, setAlertas] = React.useState<Alerta[]>(generarAlertas(activos))
   const [filtroTipo, setFiltroTipo] = React.useState('')
   const [filtroUbicacion, setFiltroUbicacion] = React.useState('')

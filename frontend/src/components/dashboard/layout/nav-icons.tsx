@@ -5,12 +5,22 @@ import { PlugsConnected as PlugsConnectedIcon } from '@phosphor-icons/react/dist
 import { User as UserIcon } from '@phosphor-icons/react/dist/ssr/User';
 import { Users as UsersIcon } from '@phosphor-icons/react/dist/ssr/Users';
 import { XSquare } from '@phosphor-icons/react/dist/ssr/XSquare';
+import { WarningCircleIcon } from '@phosphor-icons/react/dist/ssr/WarningCircle';
+import { BuildingApartmentIcon } from '@phosphor-icons/react/dist/ssr/BuildingApartment';
+import { ChartLineIcon } from '@phosphor-icons/react/dist/ssr/ChartLine';
+import { FileTextIcon } from '@phosphor-icons/react/dist/ssr/FileText';
+import { BlueprintIcon } from '@phosphor-icons/react/dist/ssr/Blueprint';
 
 export const navIcons = {
   'chart-pie': ChartPieIcon,
   'gear-six': GearSixIcon,
   'plugs-connected': PlugsConnectedIcon,
   'x-square': XSquare,
+  'warning-circle': WarningCircleIcon,
+  'building-apartment': BuildingApartmentIcon,
+  'chart-line': ChartLineIcon,
+  'file-text': FileTextIcon,
+  'blueprint': BlueprintIcon,
   user: UserIcon,
   users: UsersIcon,
 } as Record<string, Icon>;

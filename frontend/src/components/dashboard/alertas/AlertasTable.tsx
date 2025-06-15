@@ -10,7 +10,7 @@ import { activosMock, alertasMock } from '@/mocks/'
 
 const activos = activosMock
 
-export default function AlertasTable() {
+export function AlertasTable(): React.JSX.Element {
   const [alertas, setAlertas] = React.useState<Alerta[]>(alertasMock)
   const [filtroTipo, setFiltroTipo] = React.useState('')
   const [filtroUbicacion, setFiltroUbicacion] = React.useState('')

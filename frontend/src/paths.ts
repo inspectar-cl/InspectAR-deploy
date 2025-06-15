@@ -10,7 +10,6 @@ export const paths = {
     planos: '/errors/not-found',
     graficos: '/errors/not-found',
     settings: '/dashboard/settings',
-    alertas: '/dashboard/alertas',
   },
   errors: { notFound: '/errors/not-found' },
 } as const;

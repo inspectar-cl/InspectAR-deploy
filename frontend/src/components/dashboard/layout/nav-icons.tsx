@@ -1,10 +1,10 @@
 import type { Icon } from '@phosphor-icons/react/dist/lib/types';
-import { ChartPie as ChartPieIcon } from '@phosphor-icons/react/dist/ssr/ChartPie';
-import { GearSix as GearSixIcon } from '@phosphor-icons/react/dist/ssr/GearSix';
-import { PlugsConnected as PlugsConnectedIcon } from '@phosphor-icons/react/dist/ssr/PlugsConnected';
-import { User as UserIcon } from '@phosphor-icons/react/dist/ssr/User';
-import { Users as UsersIcon } from '@phosphor-icons/react/dist/ssr/Users';
-import { XSquare } from '@phosphor-icons/react/dist/ssr/XSquare';
+import { ChartPieIcon } from '@phosphor-icons/react/dist/ssr/ChartPie';
+import { GearSixIcon } from '@phosphor-icons/react/dist/ssr/GearSix';
+import { PlugsConnectedIcon } from '@phosphor-icons/react/dist/ssr/PlugsConnected';
+import { UserIcon } from '@phosphor-icons/react/dist/ssr/User';
+import { UsersIcon } from '@phosphor-icons/react/dist/ssr/Users';
+import { XSquareIcon as XSquare } from '@phosphor-icons/react/dist/ssr/XSquare';
 import { WarningCircleIcon } from '@phosphor-icons/react/dist/ssr/WarningCircle';
 import { BuildingApartmentIcon } from '@phosphor-icons/react/dist/ssr/BuildingApartment';
 import { ChartLineIcon } from '@phosphor-icons/react/dist/ssr/ChartLine';

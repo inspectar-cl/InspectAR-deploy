@@ -22,8 +22,8 @@ import Grid from '@mui/material/Grid';
 
 export const metadata = { title: `Activos | Dashboard | ${config.site.name}` } satisfies Metadata;
 
-export default async function ActivoDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default async function ActivoDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
   const activo = activosMock.find((a) => a.id === id);
 

@@ -3,7 +3,7 @@ import random
 import time
 from datetime import datetime
 
-API_URL = "http://localhost:8080/lectura/"
+API_URL = "http://localhost:8090/lectura/"
 SENSOR_ID = "temp1"  # Este sensor debe estar registrado en el activo previamente
 
 def simular_sensor():

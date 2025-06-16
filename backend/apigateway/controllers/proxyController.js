@@ -15,19 +15,21 @@ const proxy = {
     }
   }),
 
-
-  // If you need to add an onError handler, define it as a function property like this:
-  // onError: function(err, req, res) {
-  //   res.status(500).json({ error: 'Proxy error', details: err.message });
-  // },
-
-
-
-//   productService: createProxyMiddleware({
-//     target: services.productService,
-//     changeOrigin: true,
-//     pathRewrite: { '^/api/products': '' }
-//   })
+  activo: createProxyMiddleware({
+    target: services.activo,
+    changeOrigin: true,
+    pathRewrite: (path, req) => {
+      console.log('Path original:', path);
+      return '/activo';
+    },
+    onError(err, req, res) {
+      console.error('[ERROR] No se pudo conectar al servicio de activo:', err.message);
+      res.status(520).json({
+        error: true,
+        message: 'Servicio de activo no disponible.'
+      })
+    }
+  }),
 };
 
 module.exports = proxy;

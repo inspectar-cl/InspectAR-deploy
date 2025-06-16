@@ -5,11 +5,12 @@ import { Box, Grid, Paper, Typography } from '@mui/material';
 // import AppTheme from '../shared-theme/AppTheme';
 import styles from './estado-de-activo.module.css';
 import Services from '@/modules/Services'
+import { useSearchParams } from "next/navigation";
 
 const gs = new Services()
 
 const uris = {
-  GET: `/sensores/temperatura`
+  GET: `/activo`
 }
 
 // console.log('API Gateway:', process.env.NEXT_PUBLIC_API_GATEWAY_URL)
@@ -32,6 +33,10 @@ export default function EstadoContent() {
       getItems()
     }
   }, [])
+
+  const searchParams = useSearchParams();
+  const activoId = searchParams.get("id"); // ID desde la url tipo ?id=1111
+  console.log("activoId", activoId)
   return (
     <div style={{ display: 'flex' }}>
       <main style={{ flexGrow: 1, padding: '2rem' }}>

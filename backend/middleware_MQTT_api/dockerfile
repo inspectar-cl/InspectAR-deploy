@@ -2,17 +2,10 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Copia los archivos del microservicio
-COPY ../.. /app
-COPY backend/middleware_MQTT_api/requirements.txt .
-
-# Instala las dependencias
-RUN pip install --upgrade pip \
-    && pip install -r requirements.txt
-
+# Copia solo los archivos de la app
 COPY . .
 
-# Variable de entorno para credenciales de Google Cloud (ajusta la ruta si es necesario)
-ENV GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
+RUN pip install --upgrade pip \
+    && pip install -r requirements.txt
 
 CMD ["python", "main.py"]

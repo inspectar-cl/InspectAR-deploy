@@ -11,6 +11,7 @@ services:
     volumes:
       - ./apigateway:/usr/src/app
       - /usr/src/app/node_modules
+  # Microservicio
   iot-service:
     build:
       context: ./microservicios/ParserService
@@ -21,6 +22,20 @@ services:
     depends_on:
       - mongu
       - influxdb
+  # middleware MQTT
+  middleware_mqtt:
+    build:
+      context: ./middleware_MQTT_api
+      dockerfile: Dockerfile
+    container_name: middleware_mqtt
+    depends_on:
+      - emqx
+      - iot-service
+    environment:
+      - GCP_PROJECT_ID=${GCP_PROJECT_ID}
+      - MQTT_BROKER=emqx
+      - MQTT_PORT=1883
+      - MQTT_TOPIC=sensor/datos
   emqx:
     image: emqx/emqx:latest
     container_name: emqx

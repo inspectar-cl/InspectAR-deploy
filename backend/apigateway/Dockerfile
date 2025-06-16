@@ -14,7 +14,7 @@ RUN npm install
 COPY . .
 
 # Expone el puerto de tu API Gateway (ajústalo si es diferente)
-EXPOSE 3000
+EXPOSE 3500
 
 # Comando para arrancar tu API Gateway
 CMD ["node", "server.js"]

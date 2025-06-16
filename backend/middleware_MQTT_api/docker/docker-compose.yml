@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  emqx:
+    image: emqx/emqx:latest
+    container_name: emqx
+    ports:
+      - "1883:1883"
+      - "8083:8083"
+      - "18083:18083"
+    environment:
+      - EMQX_ALLOW_ANONYMOUS=true
+
+  microservicio:
+    build:
+      context: ../..
+      dockerfile: docker/dockerfile
+    container_name: middleware_mqtt_api
+    depends_on:
+      - emqx
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/credenciales.json
+      - GCP_PROJECT_ID=${GCP_PROJECT_ID}
+      - MQTT_BROKER=emqx
+      - MQTT_PORT=1883
+      - MQTT_TOPIC=sensor/datos
+      - BQ_DATASET=${BQ_DATASET}
+      - BQ_TABLE=${BQ_TABLE}
+    volumes:
+      - ../..:/app
+      # Monta el archivo de credenciales de Google Cloud si es necesario:
+      # - /ruta/local/credenciales.json:/app/credenciales.json

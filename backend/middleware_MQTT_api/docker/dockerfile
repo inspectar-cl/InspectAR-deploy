@@ -1,0 +1,15 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Copia los archivos del microservicio
+COPY ../.. /app
+
+# Instala las dependencias
+RUN pip install --upgrade pip \
+    && pip install -r requirements.txt
+
+# Variable de entorno para credenciales de Google Cloud (ajusta la ruta si es necesario)
+ENV GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
+
+CMD ["python", "main.py"]

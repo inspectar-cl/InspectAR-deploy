@@ -5,29 +5,29 @@ const proxy = {
   sensores: createProxyMiddleware({
     target: services.sensores,
     changeOrigin: true,
-    pathRewrite: { '^/api/sensores': '' },
-    onError(err, req, res) {
-      console.error('[ERROR] No se pudo conectar al servicio de sensores:', err.message);
-      res.status(520).json({
-        error: true,
-        message: 'Servicio de sensores no disponible.'
-      })
-    }
+    pathRewrite: { '^/api/sensores': '' }
   }),
 
   activo: createProxyMiddleware({
     target: services.activo,
     changeOrigin: true,
     pathRewrite: (path, req) => {
-      console.log('Path original:', path);
-      return '/activo';
-    },
-    onError(err, req, res) {
-      console.error('[ERROR] No se pudo conectar al servicio de activo:', err.message);
-      res.status(520).json({
-        error: true,
-        message: 'Servicio de activo no disponible.'
-      })
+      if (req.originalUrl.startsWith('/api/activo')) {
+        return '/activo' + req.originalUrl.slice('/api/activo'.length);
+      }
+      return path;
+    }
+  }),
+
+  lectura: createProxyMiddleware({
+    target: services.lectura,
+    changeOrigin: true,
+    pathRewrite: (path, req) => {
+      // Quita solo el prefijo /api
+      if (req.originalUrl.startsWith('/api/lectura')) {
+        return req.originalUrl.replace(/^\/api/, '');
+      }
+      return path;
     }
   }),
 };

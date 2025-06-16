@@ -14,6 +14,22 @@ app.use(cors({
 
 const proxyRoutes = require('./routes/proxyRoutes')
 app.use('/api', proxyRoutes)
+app.use((err, req, res, next) => {
+  console.error('[ERROR]', err.message);
+  if (!res.headersSent) {
+    res.status(520).json({
+      error: true,
+      message: 'Servicio no disponible.'
+    });
+  }
+});
+
+app.use((req, res, next) => {
+  res.status(404).json({
+    error: true,
+    message: 'Ruta no encontrada.'
+  });
+});
 
 // Start server
 const port = process.env.PORT; // || 3000;

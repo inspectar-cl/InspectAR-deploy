@@ -5,7 +5,7 @@ services:
     build: ./apigateway
     container_name: apigateway
     ports:
-      - "3000:3000"
+      - "3500:3500"
     environment:
       - NODE_ENV=development
     volumes:

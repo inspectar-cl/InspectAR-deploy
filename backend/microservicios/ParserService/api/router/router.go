@@ -26,6 +26,7 @@ func SetupRouter(dataHandler *handlers.DataHandler) *gin.Engine {
 	r.POST("/lectura", dataHandler.CreateLectura)
 	r.GET("/activo/:activo_id", dataHandler.GetActivo)
 	r.GET("/lectura/:activo_id/datos", dataHandler.GetSensorByActivo)
+	r.GET("/lectura/:activo_id/datos/ultimo", dataHandler.GetSensorLastData)
 
 	return r
 }

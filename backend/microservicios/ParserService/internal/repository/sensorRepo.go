@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"ParserService/internal/models"
@@ -96,4 +97,32 @@ from(bucket: "%s")
 		return nil, result.Err()
 	}
 	return datos, nil
+}
+
+func (r *InfluxRepository) GetSensorLastData(ctx context.Context, sensorID string) (*models.SensorData, error) {
+	log.Printf("Obteniendo último dato de sensor %s", sensorID)
+	query := fmt.Sprintf(`
+from(bucket: "%s")
+  |> range(start: 0)
+  |> filter(fn: (r) => r._measurement == "mediciones" and r.sensor_id == "%s")
+  |> keep(columns: ["_time", "_value"])
+  |> sort(columns: ["_time"], desc: true)
+  |> limit(n: 1)
+`, r.bucket, sensorID)
+
+	result, err := r.queryAPI.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	if result.Next() {
+		return &models.SensorData{
+			Tiempo: result.Record().Time().Format(time.RFC3339),
+			Valor:  result.Record().Value().(float64),
+		}, nil
+	}
+	if result.Err() != nil {
+		return nil, result.Err()
+	}
+	return nil, nil // No hay datos
 }

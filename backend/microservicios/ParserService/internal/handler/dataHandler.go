@@ -114,3 +114,25 @@ func (h *DataHandler) GetAllActivos(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, activos)
 }
+
+// GET /sensor/:sensor_id/last
+func (h *DataHandler) GetSensorLastData(c *gin.Context) {
+	activoID := c.Param("activo_id")
+	activo, err := h.activoService.ObtenerActivo(c.Request.Context(), activoID)
+	if err != nil || activo == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Activo no encontrado"})
+		return
+	}
+
+	result := make(map[string]interface{})
+	for _, sensor := range activo.Sensores {
+		dato, err := h.sensorService.GetSensorLastData(c.Request.Context(), sensor.SensorID)
+		if err != nil || dato == nil {
+			result[sensor.SensorID] = nil
+		} else {
+			result[sensor.SensorID] = dato
+		}
+	}
+
+	c.JSON(http.StatusOK, result)
+}

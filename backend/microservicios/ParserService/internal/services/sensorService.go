@@ -24,3 +24,7 @@ func (s *SensorService) GetDatosSensor(ctx context.Context, sensorID string, sin
 func (s *SensorService) InsertarLectura(ctx context.Context, sensorID string, valor float64, timestamp time.Time) error {
 	return s.influxRepo.InsertSensorData(ctx, sensorID, valor, timestamp)
 }
+
+func (s *SensorService) GetSensorLastData(ctx context.Context, sensorID string) (*models.SensorData, error) {
+	return s.influxRepo.GetSensorLastData(ctx, sensorID)
+}

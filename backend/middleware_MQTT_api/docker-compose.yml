@@ -14,7 +14,7 @@ services:
   microservicio:
     build:
       context: ../..
-      dockerfile: docker/dockerfile
+      dockerfile: backend/middleware_MQTT_api/Dockerfile
     container_name: middleware_mqtt_api
     depends_on:
       - emqx

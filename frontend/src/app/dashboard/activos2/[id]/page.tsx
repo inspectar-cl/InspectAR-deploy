@@ -8,6 +8,8 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box'
 import dayjs from 'dayjs';
+import type { Metadata } from 'next';
+import { config } from '@/config';
 
 import ScoreChart from '@/components/dashboard/overview/score-chart';
 import { Scatter } from '@/components/dashboard/overview/scatter';
@@ -17,6 +19,8 @@ import { TemperatureProgress } from '@/components/dashboard/overview/temperature
 import { LatestProducts } from '@/components/dashboard/overview/latest-products';
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr/Warning';
 import Grid from '@mui/material/Grid';
+
+export const metadata = { title: `Activos | Dashboard | ${config.site.name}` } satisfies Metadata;
 
 export default async function ActivoDetailPage({ params }: { params: { id: string } }) {
   const { id } = params;

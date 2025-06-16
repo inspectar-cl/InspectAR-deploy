@@ -1,10 +1,13 @@
 import React from 'react';
 import type { Metadata } from 'next';
+import { config } from '@/config';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
 
 import DataGridDemo from '@/components/dashboard/alertas/alert-grid';
+
+export const metadata = { title: `Activos | Dashboard | ${config.site.name}` } satisfies Metadata;
 
 export default function ActivosPage(): React.JSX.Element {
   return (

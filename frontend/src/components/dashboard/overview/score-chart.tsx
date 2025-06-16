@@ -17,9 +17,9 @@ export default function ScoreChart({ sx }: { sx?: any }) {
     <Card sx={sx}>
       <CardHeader title="Puntaje de Anomalias" />
       <CardContent>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={{ xs: 1, md: 3 }} sx={{ alignItems: 'center', justifyContent: 'center' }}>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={{ xs: 3, md: 10 }} sx={{ alignItems: 'center', justifyContent: 'center' }}>
           <Gauge
-            width={300}
+            width={250}
             height={300}
             value={75}
             startAngle={0}

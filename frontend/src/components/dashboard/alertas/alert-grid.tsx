@@ -1,6 +1,8 @@
 'use client';
 
 import * as React from 'react';
+import RouterLink from 'next/link';
+import { paths } from '@/paths';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -83,19 +85,20 @@ export default function DataGridDemo({ sx }: { sx?: any }) {
     <Card sx={sx}>
       <CardHeader title="Estado de Activos" />
         <CardContent>
-            <Box sx={{ height: 400, width: '100%' }}>
-                <DataGrid
+            <Box sx={{ height: 600, width: '100%' }}>
+                <DataGrid 
+                    onRowClick={(params) => {window.location.href = paths.dashboard.activoDetail(params.row.id);}}
                     showToolbar
                     rows={activos}
                     columns={columns}
                     initialState={{
                       pagination: {
                           paginationModel: {
-                          pageSize: 5,
+                          pageSize: 9,
                           },
                       },
                     }}
-                    pageSizeOptions={[5]}
+                    pageSizeOptions={[9]}
                     disableRowSelectionOnClick
                     localeText={{
                       ...esES.components.MuiDataGrid.defaultProps.localeText,

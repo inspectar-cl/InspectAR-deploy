@@ -4,4 +4,5 @@ export type Activo = {
   estado: 'OK' | 'Medio' | 'Crítico'
   descripcion: string
   ubicacion: string
+  img: string
 }

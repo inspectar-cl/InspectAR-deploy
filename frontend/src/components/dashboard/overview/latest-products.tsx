@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -13,11 +13,12 @@ import ListItemText from '@mui/material/ListItemText';
 import type { SxProps } from '@mui/material/styles';
 import { ArrowRight as ArrowRightIcon } from '@phosphor-icons/react/dist/ssr/ArrowRight';
 import { DotsThreeVertical as DotsThreeVerticalIcon } from '@phosphor-icons/react/dist/ssr/DotsThreeVertical';
+import Avatar from '@mui/material/Avatar';
 import dayjs from 'dayjs';
 
 export interface Product {
   id: string;
-  image: string;
+  icon?: React.ReactElement;
   name: string;
   updatedAt: Date;
 }
@@ -30,29 +31,27 @@ export interface LatestProductsProps {
 export function LatestProducts({ products = [], sx }: LatestProductsProps): React.JSX.Element {
   return (
     <Card sx={sx}>
-      <CardHeader title="Latest products" />
+      <CardHeader title="Últimas Alertas" />
       <Divider />
       <List>
         {products.map((product, index) => (
           <ListItem divider={index < products.length - 1} key={product.id}>
-            <ListItemAvatar>
-              {product.image ? (
-                <Box component="img" src={product.image} sx={{ borderRadius: 1, height: '48px', width: '48px' }} />
-              ) : (
-                <Box
-                  sx={{
-                    borderRadius: 1,
-                    backgroundColor: 'var(--mui-palette-neutral-200)',
-                    height: '48px',
-                    width: '48px',
-                  }}
-                />
-              )}
+            <ListItemAvatar sx={{ mr: 2 }}>
+              <Avatar
+                sx={{
+                  backgroundColor: 'var(--mui-palette-neutral-100)',
+                  color: 'var(--mui-palette-primary-main)',
+                  height: 48,
+                  width: 48,
+                }}
+              >
+                {product.icon}
+              </Avatar>
             </ListItemAvatar>
             <ListItemText
               primary={product.name}
               primaryTypographyProps={{ variant: 'subtitle1' }}
-              secondary={`Updated ${dayjs(product.updatedAt).format('MMM D, YYYY')}`}
+              secondary={`Actualizado ${dayjs(product.updatedAt).format('MMM D, YYYY')}`}
               secondaryTypographyProps={{ variant: 'body2' }}
             />
             <IconButton edge="end">
@@ -69,7 +68,7 @@ export function LatestProducts({ products = [], sx }: LatestProductsProps): Reac
           size="small"
           variant="text"
         >
-          View all
+          Ver todo
         </Button>
       </CardActions>
     </Card>

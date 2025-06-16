@@ -1,0 +1,5 @@
+.styleBox {
+  border: 1px solid lightgray !important;
+  border-radius: 6px;
+  padding: 16px;
+}

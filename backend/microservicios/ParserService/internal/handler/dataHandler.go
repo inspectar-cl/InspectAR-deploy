@@ -1,0 +1,116 @@
+package handlers
+
+import (
+	"net/http"
+	"time"
+
+	"ParserService/internal/models"
+	"ParserService/internal/services"
+
+	"github.com/gin-gonic/gin"
+)
+
+type DataHandler struct {
+	activoService *services.ActivoService
+	sensorService *services.SensorService
+}
+
+func NewDataHandler(activoSvc *services.ActivoService, sensorSvc *services.SensorService) *DataHandler {
+	return &DataHandler{
+		activoService: activoSvc,
+		sensorService: sensorSvc,
+	}
+}
+
+// POST /activo
+func (h *DataHandler) CreateActivo(c *gin.Context) {
+	var activo models.Activo
+	if err := c.ShouldBindJSON(&activo); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
+		return
+	}
+
+	id, err := h.activoService.CrearActivo(c.Request.Context(), &activo)
+	if err != nil {
+		if err.Error() == "el activo ya existe" {
+			c.JSON(http.StatusConflict, gin.H{"error": "El activo ya existe"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo crear el activo"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"activo_id": id})
+}
+
+// POST /lectura
+func (h *DataHandler) CreateLectura(c *gin.Context) {
+	var data models.LecturaSensorRequest
+	if err := c.ShouldBindJSON(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Formato de lectura inválido"})
+		return
+	}
+
+	timestamp, err := time.Parse(time.RFC3339, data.Timestamp)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Timestamp inválido"})
+		return
+	}
+
+	err = h.sensorService.InsertarLectura(c.Request.Context(), data.SensorID, data.Valor, timestamp)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo registrar la lectura en InfluxDB"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"mensaje": "Lectura registrada en InfluxDB"})
+}
+
+// GET /activo/:activo_id
+func (h *DataHandler) GetActivo(c *gin.Context) {
+	activoID := c.Param("activo_id")
+
+	activo, err := h.activoService.ObtenerActivo(c.Request.Context(), activoID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Activo no encontrado"})
+		return
+	}
+
+	c.JSON(http.StatusOK, activo)
+}
+
+// GET /activo/:activo_id/datos
+func (h *DataHandler) GetSensorByActivo(c *gin.Context) {
+	activoID := c.Param("activo_id")
+
+	activo, err := h.activoService.ObtenerActivo(c.Request.Context(), activoID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Activo no encontrado"})
+		return
+	}
+
+	var allLecturas []models.SensorDataset
+
+	for _, sensor := range activo.Sensores {
+		datos, err := h.sensorService.GetDatosSensor(c.Request.Context(), sensor.SensorID, 30*time.Minute)
+		if err != nil {
+			continue
+		}
+		allLecturas = append(allLecturas, models.SensorDataset{
+			SensorID: sensor.SensorID,
+			Datos:    datos,
+		})
+	}
+
+	c.JSON(http.StatusOK, allLecturas)
+}
+
+// GET /activo
+func (h *DataHandler) GetAllActivos(c *gin.Context) {
+	activos, err := h.activoService.GetAllActivos(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudieron obtener los activos"})
+		return
+	}
+	c.JSON(http.StatusOK, activos)
+}

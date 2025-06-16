@@ -1,6 +1,16 @@
 version: '3.8'
 
 services:
+  iot-service:
+    build:
+      context: ./microservicios/ParserService
+      dockerfile: Dockerfile
+    container_name: iot-service
+    ports:
+      - "8090:8090"
+    depends_on:
+      - mongu
+      - influxdb
   emqx:
     image: emqx/emqx:latest
     container_name: emqx
@@ -25,3 +35,35 @@ services:
     environment:
       - RABBITMQ_DEFAULT_USER=admin
       - RABBITMQ_DEFAULT_PASS=admin
+    
+  mongu:
+    image: mongo:latest
+    container_name: mongu
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  influxdb:
+    image: influxdb:2.7
+    container_name: influxdb
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    environment:
+      - INFLUXDB_ADMIN_USER=admin
+      - INFLUXDB_ADMIN_PASSWORD=admin123
+      - INFLUXDB_BUCKET=sensores
+      - INFLUXDB_ORG=my-org
+      - INFLUXDB_TOKEN=my-super-token
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=admin123
+      - DOCKER_INFLUXDB_INIT_ORG=my-org
+      - DOCKER_INFLUXDB_INIT_BUCKET=sensores
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-token
+
+volumes:
+  mongo_data:
+  influxdb_data:

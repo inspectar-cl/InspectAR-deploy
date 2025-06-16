@@ -1,3 +1,4 @@
+import time
 import paho.mqtt.client as mqtt
 from database.inserter import insert_row_to_bigquery 
 
@@ -22,6 +23,7 @@ def on_message(client, userdata, msg):
     except Exception as e:
         print(f"Error procesando el mensaje: {e}")
 
+time.sleep(5)  # Espera 5 segundos antes de iniciar el cliente
 
 client = mqtt.Client()
 client.on_connect = on_connect

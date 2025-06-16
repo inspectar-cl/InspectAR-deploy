@@ -13,20 +13,15 @@ services:
 
   microservicio:
     build:
-      context: ../..
-      dockerfile: backend/middleware_MQTT_api/Dockerfile
+      context: .
+      dockerfile: dockerfile
     container_name: middleware_mqtt_api
     depends_on:
       - emqx
     environment:
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/credenciales.json
       - GCP_PROJECT_ID=${GCP_PROJECT_ID}
       - MQTT_BROKER=emqx
       - MQTT_PORT=1883
       - MQTT_TOPIC=sensor/datos
-      - BQ_DATASET=${BQ_DATASET}
-      - BQ_TABLE=${BQ_TABLE}
-    volumes:
-      - ../..:/app
-      # Monta el archivo de credenciales de Google Cloud si es necesario:
-      # - /ruta/local/credenciales.json:/app/credenciales.json
+      - TARGET_MICROSERVICE_URL=http://nombre_del_microservicio:puerto/endpoint
+

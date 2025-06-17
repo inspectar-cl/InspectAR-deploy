@@ -15,3 +15,4 @@ Para levantar los servicios con Docker, ejecuta:
 
 ```bash
 docker compose up --build
+```

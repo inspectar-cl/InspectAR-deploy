@@ -6,12 +6,11 @@ export const paths = {
     account: '/dashboard/account',
     alertas: '/dashboard/alertas',
     activos: '/dashboard/activos',
-    activos2: '/dashboard/activos2',
     informe: '/errors/not-found',
     planos: '/errors/not-found',
     graficos: '/errors/not-found',
     settings: '/dashboard/settings',
-    activoDetail: (id: string) => `/dashboard/activos2/${id}`,
+    activoDetail: (id: string) => `/dashboard/activos/${id}`,
   },
   errors: { notFound: '/errors/not-found' },
 } as const;

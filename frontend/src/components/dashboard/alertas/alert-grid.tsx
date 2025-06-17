@@ -1,14 +1,15 @@
 'use client';
 
 import * as React from 'react';
-import RouterLink from 'next/link';
 import { paths } from '@/paths';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardHeader from '@mui/material/CardHeader';
-import { DataGrid, GridColDef, QuickFilter} from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridFilterModel, GridColumnVisibilityModel} from '@mui/x-data-grid';
 import { esES } from '@mui/x-data-grid/locales';
+
+import { activosMock, alertasMock} from '@/mocks/'
 
 //Import de estatus personalizado
 import {
@@ -16,48 +17,24 @@ import {
   STATUS_OPTIONS,
 } from './status';
 
-type Activo = {
-  id: string
-  tipoActivo: string
-  estado: 'OK' | 'Medio' | 'Crítico'
-  descripcion: string
-  ubicacion: string
-}
-
-type Alerta = {
-  id: string
-  tipoActivo: string
-  descripcion: string
-  estado: 'Medio' | 'Crítico'
-  ubicacion: string
-  fecha: string
-  atendida: boolean
-}
-
-const activos: Activo[] = [
-  { id: 'A1', tipoActivo: 'Ascensor #1', estado: 'OK', descripcion: 'Funciona correctamente', ubicacion: 'Edificio A, Santiago'},
-  { id: 'A2', tipoActivo: 'Ascensor #2', estado: 'OK', descripcion: 'Funciona correctamente', ubicacion: 'Edificio A, Santiago' },
-  { id: 'A3', tipoActivo: 'Ascensor #3', estado: 'Medio', descripcion: 'Mantenimiento programado no realizado', ubicacion: 'Edificio A, Santiago' },
-  { id: 'A4', tipoActivo: 'Ascensor #4', estado: 'Medio', descripcion: 'Puerta atascada, requiere revisión', ubicacion: 'Edificio B, Santiago' },
-  { id: 'C1', tipoActivo: 'Caldera #1', estado: 'Crítico', descripcion: 'Temperatura fuera de rango, riesgo de daño', ubicacion: 'Edificio A, Santiago' },
-  { id: 'C2', tipoActivo: 'Caldera #2', estado: 'Crítico', descripcion: 'Anomalía detectada – revisar urgentemente', ubicacion: 'Edificio B, Santiago' },
-  { id: 'C3', tipoActivo: 'Caldera #3', estado: 'Crítico', descripcion: 'Fuga de gas detectada', ubicacion: 'Edificio C, Santiago' },
-  { id: 'C4', tipoActivo: 'Caldera #4', estado: 'Crítico', descripcion: 'Presión excesiva, riesgo de explosión', ubicacion: 'Edificio C, Santiago' },
-  { id: 'B1', tipoActivo: 'Bomba de Agua #1', estado: 'Crítico', descripcion: 'Motor sobrecalentado, riesgo de falla', ubicacion: 'Edificio A, Santiago' },
-  { id: 'B2', tipoActivo: 'Bomba de Agua #2', estado: 'Crítico', descripcion: 'Fuga de presión, riesgo de parada', ubicacion: 'Edificio A, Santiago' },
-  { id: 'B3', tipoActivo: 'Bomba de Agua #3', estado: 'Crítico', descripcion: 'Riesgo crítico de falla en 7 días', ubicacion: 'Edificio B, Santiago' },
-  { id: 'B4', tipoActivo: 'Bomba de Agua #4', estado: 'Crítico', descripcion: 'Nivel de agua crítico', ubicacion: 'Edificio B, Santiago' },
-  { id: 'E1', tipoActivo: 'Sistema Eléctrico #1', estado: 'Medio', descripcion: 'Sobrecarga detectada, monitorear consumo', ubicacion: 'Edificio A, Santiago' },
-  { id: 'E2', tipoActivo: 'Sistema Eléctrico #2', estado: 'Medio', descripcion: 'Pico de voltaje registrado', ubicacion: 'Edificio B, Santiago' },
-  { id: 'E3', tipoActivo: 'Sistema Eléctrico #3', estado: 'Medio', descripcion: 'Variación de frecuencia, revisar panel', ubicacion: 'Edificio C, Santiago' },
-]
+const activos = activosMock;
 
 const columns: GridColDef<(typeof activos)[number]>[] = [
   { field: 'id', headerName: 'ID', width: 90 },
   {
+    field: 'id_edificio',
+    headerName: 'ID edificio',
+    width: 90,
+  },
+  {
     field: 'tipoActivo',
     headerName: 'Tipo de Activo',
     width: 150,
+  },
+  {
+    field: 'ubicacion',
+    headerName: 'Ubicación',
+    width: 160,
   },
   {
     field: 'estado',
@@ -71,47 +48,77 @@ const columns: GridColDef<(typeof activos)[number]>[] = [
     field: 'descripcion',
     headerName: 'Descripción',
     description: 'Descripcion de estado del activo',
-    width: 160,
-  },
-  {
-    field: 'ubicacion',
-    headerName: 'Ubicación',
-    width: 160,
+    width: 320,
   },
 ];
 
-export default function DataGridDemo({ sx }: { sx?: any }) {
+export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: any; edificioSeleccionado?: string | null;}) {
+  const [filterModel, setFilterModel] = React.useState<GridFilterModel>({
+    items: [],
+  });
+
+  React.useEffect(() => {
+    if (edificioSeleccionado) {
+      setFilterModel({
+        items: [
+          {
+            field: 'id_edificio',
+            operator: 'equals',
+            value: edificioSeleccionado,
+          },
+        ],
+      });
+    } else {
+      setFilterModel({ items: [] }); // Quitar filtro
+    }
+  }, [edificioSeleccionado]);
+
+  //Modelo de columnas invisibles al inicio
+  const [columnVisibilityModel, setColumnVisibilityModel] =
+    React.useState<GridColumnVisibilityModel>({
+      id: false,
+      id_edificio: false,
+    });
+
   return (
     <Card sx={sx}>
       <CardHeader title="Estado de Activos" />
-        <CardContent>
-            <Box sx={{ height: 600, width: '100%' }}>
-                <DataGrid 
-                    onRowClick={(params) => {window.location.href = paths.dashboard.activoDetail(params.row.id);}}
-                    showToolbar
-                    rows={activos}
-                    columns={columns}
-                    initialState={{
-                      pagination: {
-                          paginationModel: {
-                          pageSize: 9,
-                          },
-                      },
-                    }}
-                    pageSizeOptions={[9]}
-                    disableRowSelectionOnClick
-                    localeText={{
-                      ...esES.components.MuiDataGrid.defaultProps.localeText,
-                      filterPanelInputLabel: 'Valor a filtrar',
-                      filterPanelOperator: 'Operador',
-                      filterPanelColumns: 'Filtrar por columna',
-                      toolbarColumns: 'Columnas visibles',
-                      toolbarFilters: 'Filtros',
-                      toolbarExport: 'Exportar',
-                    }}
-                />
-            </Box>
-        </CardContent>
+      <CardContent>
+        <Box sx={{ height: 600, width: '100%' }}>
+          <DataGrid
+            columnVisibilityModel={columnVisibilityModel}
+            onColumnVisibilityModelChange={(newModel) =>
+              setColumnVisibilityModel(newModel)
+            }
+            onRowClick={(params) => {
+              window.location.href = paths.dashboard.activoDetail(params.row.id);
+            }}
+            showToolbar
+            rows={activos}
+            columns={columns}
+            initialState={{
+              pagination: {
+                paginationModel: {
+                  pageSize: 9,
+                },
+              },
+            }}
+            pageSizeOptions={[9]}
+            disableRowSelectionOnClick
+            filterModel={filterModel}
+            onFilterModelChange={(newModel) => setFilterModel(newModel)}
+            localeText={{
+              ...esES.components.MuiDataGrid.defaultProps.localeText,
+              filterPanelInputLabel: 'Valor a filtrar',
+              filterPanelOperator: 'Operador',
+              filterPanelColumns: 'Filtrar por columna',
+              toolbarColumns: 'Columnas visibles',
+              toolbarFilters: 'Filtros',
+              toolbarExport: 'Exportar',
+            }}
+          />
+        </Box>
+      </CardContent>
     </Card>
-    );
+  );
 }

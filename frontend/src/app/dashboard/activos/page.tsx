@@ -1,12 +1,23 @@
 import React from 'react';
+import type { Metadata } from 'next';
+import { config } from '@/config';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 
-import ActivosTable from '@/components/dashboard/activos/ActivosTable';
+import ContentActivosPage from './contentpage';
 
-export default function ActivosPage() {
+export const metadata = { title: `Activos | Dashboard | ${config.site.name}` } satisfies Metadata;
+
+export default function ActivosPage(): React.JSX.Element {
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Lista de Activos</h1>
-      <ActivosTable />
-    </div>
-  )
+    <Stack spacing={2}>
+      <div>
+        <Typography variant="h4">Lista de Activos</Typography>
+      </div>
+
+      <ContentActivosPage/>
+
+    </Stack>
+  );
 }

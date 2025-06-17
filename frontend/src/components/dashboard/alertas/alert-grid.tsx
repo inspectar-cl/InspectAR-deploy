@@ -7,9 +7,10 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardHeader from '@mui/material/CardHeader';
 import { DataGrid, GridColDef, GridFilterModel, GridColumnVisibilityModel} from '@mui/x-data-grid';
+import { Activo } from '@/types/'
 import { esES } from '@mui/x-data-grid/locales';
 
-import { activosMock, alertasMock} from '@/mocks/'
+import { activosMock} from '@/mocks/'
 
 //Import de estatus personalizado
 import {
@@ -17,27 +18,10 @@ import {
   STATUS_OPTIONS,
 } from './status';
 
-type Activo = {
-  id: string
-  tipoActivo: string
-  estado: 'OK' | 'Medio' | 'Crítico'
-  descripcion: string
-  ubicacion: string
-}
-
-type Alerta = {
-  id: string
-  tipoActivo: string
-  descripcion: string
-  estado: 'Medio' | 'Crítico'
-  ubicacion: string
-  fecha: string
-  atendida: boolean
-}
+const activos = activosMock;
 
 // Configuración rutas de obtención de datos desde db.
 import Services from '@/modules/Services'
-const activos = activosMock;
 
 const gs = new Services()
 
@@ -45,7 +29,7 @@ const uris = {
   GET: `/activo`
 }
 
-const columns: GridColDef<Activo>[] = [
+const columns: GridColDef<(typeof activos)[number]>[] = [
   { field: 'id', headerName: 'ID', width: 90 },
   {
     field: 'id_edificio',
@@ -78,10 +62,16 @@ const columns: GridColDef<Activo>[] = [
   },
 ];
 
-export default function DataGridDemo({ sx }: { sx?: any }) {
+export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: any; edificioSeleccionado?: string | null;}) {
+  const [filterModel, setFilterModel] = React.useState<GridFilterModel>({
+    items: [],
+  });
+
   const [activos, setActivos] = React.useState<Activo[]>([])
+  
   const hasFetchedRef = React.useRef(false)
 
+  // Función para obtener los activos
   const getActivos = async () => {
     try {
       const response = await gs.get(uris.GET)
@@ -89,10 +79,10 @@ export default function DataGridDemo({ sx }: { sx?: any }) {
 
       // Transformación de los datos de la db
       const transformados = response.map((item: any, index: number) => ({
-        id: item.activo_id || `B${index + 1}`, // o usa item.id si lo prefieres
+        id: item.activo_id || `B${index + 1}`, // Segun el id que se tenga
         tipoActivo: item.nombre || 'Activo sin nombre',
-        estado: item.estado || 'NN', // Esto puedes modificarlo con lógica si tienes
-        descripcion: item.descripcion || 'NN', // Aquí también puedes usar lógica si quieres
+        estado: item.estado || 'NN', // Modificarlo con logica correspondiente
+        descripcion: item.descripcion || 'NN', // Modificarlo con logica correspondiente
         ubicacion: item.ubicacion || 'Ubicación desconocida'
       }));
 
@@ -110,15 +100,40 @@ export default function DataGridDemo({ sx }: { sx?: any }) {
       getActivos()
     }
   }, [])
+
+  React.useEffect(() => {
+    if (edificioSeleccionado) {
+      setFilterModel({
+        items: [
+          {
+            field: 'id_edificio',
+            operator: 'equals',
+            value: edificioSeleccionado,
+          },
+        ],
+      });
+    } else {
+      setFilterModel({ items: [] }); // Quitar filtro
+    }
+  }, [edificioSeleccionado]);
+
+  //Modelo de columnas invisibles al inicio
+  const [columnVisibilityModel, setColumnVisibilityModel] =
+    React.useState<GridColumnVisibilityModel>({
+      id: false,
+      id_edificio: false,
+    });
+
   return (
     <Card sx={sx}>
       <CardHeader title="Estado de Activos" />
         <CardContent>
-            <Box>
-              activos: {JSON.stringify(activos, null, 2)}
-            </Box>
             <Box sx={{ height: 600, width: '100%' }}>
                 <DataGrid 
+                    columnVisibilityModel={columnVisibilityModel}
+                    onColumnVisibilityModelChange={(newModel) =>
+                      setColumnVisibilityModel(newModel)
+                    }
                     onRowClick={(params) => {window.location.href = paths.dashboard.activoDetail(params.row.id);}}
                     showToolbar
                     rows={activos}
@@ -132,6 +147,8 @@ export default function DataGridDemo({ sx }: { sx?: any }) {
                     }}
                     pageSizeOptions={[9]}
                     disableRowSelectionOnClick
+                    filterModel={filterModel}
+                    onFilterModelChange={(newModel) => setFilterModel(newModel)}
                     localeText={{
                       ...esES.components.MuiDataGrid.defaultProps.localeText,
                       filterPanelInputLabel: 'Valor a filtrar',

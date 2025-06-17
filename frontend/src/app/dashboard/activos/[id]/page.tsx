@@ -1,6 +1,6 @@
 'use client';
 
-import { activosMock } from '@/mocks'; // tu mock de activos
+import { activosMock } from '@/mocks'; // mock de activos
 import * as React from 'react';
 import Card from '@mui/material/Card';
 import CardMedia from '@mui/material/CardMedia';

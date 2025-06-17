@@ -5,4 +5,5 @@ export type Activo = {
   descripcion: string
   ubicacion: string
   img: string
+  id_edificio: string
 }

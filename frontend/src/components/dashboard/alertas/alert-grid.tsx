@@ -1,14 +1,15 @@
 'use client';
 
 import * as React from 'react';
-import RouterLink from 'next/link';
 import { paths } from '@/paths';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardHeader from '@mui/material/CardHeader';
-import { DataGrid, GridColDef, QuickFilter} from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridFilterModel, GridColumnVisibilityModel} from '@mui/x-data-grid';
 import { esES } from '@mui/x-data-grid/locales';
+
+import { activosMock, alertasMock} from '@/mocks/'
 
 //Import de estatus personalizado
 import {
@@ -36,6 +37,7 @@ type Alerta = {
 
 // Configuración rutas de obtención de datos desde db.
 import Services from '@/modules/Services'
+const activos = activosMock;
 
 const gs = new Services()
 
@@ -46,9 +48,19 @@ const uris = {
 const columns: GridColDef<Activo>[] = [
   { field: 'id', headerName: 'ID', width: 90 },
   {
+    field: 'id_edificio',
+    headerName: 'ID edificio',
+    width: 90,
+  },
+  {
     field: 'tipoActivo',
     headerName: 'Tipo de Activo',
     width: 150,
+  },
+  {
+    field: 'ubicacion',
+    headerName: 'Ubicación',
+    width: 160,
   },
   {
     field: 'estado',
@@ -62,12 +74,7 @@ const columns: GridColDef<Activo>[] = [
     field: 'descripcion',
     headerName: 'Descripción',
     description: 'Descripcion de estado del activo',
-    width: 160,
-  },
-  {
-    field: 'ubicacion',
-    headerName: 'Ubicación',
-    width: 160,
+    width: 320,
   },
 ];
 
@@ -138,5 +145,5 @@ export default function DataGridDemo({ sx }: { sx?: any }) {
             </Box>
         </CardContent>
     </Card>
-    );
+  );
 }

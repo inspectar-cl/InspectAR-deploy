@@ -1,7 +1,7 @@
 export type Activo = {
   id: string
   tipoActivo: string
-  estado: 'OK' | 'Medio' | 'Crítico'
+  estado: 'OK' | 'Medio' | 'Crítico' | 'NN'
   descripcion: string
   ubicacion: string
   img: string

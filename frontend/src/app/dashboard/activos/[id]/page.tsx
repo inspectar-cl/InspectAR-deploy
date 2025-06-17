@@ -10,6 +10,7 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box'
 import dayjs from 'dayjs';
+import { Activo } from '@/types/'
 import type { Metadata } from 'next';
 import { config } from '@/config';
 
@@ -39,15 +40,6 @@ export default function ActivoDetailPage({ params }: { params: { id: string } })
 
   console.log("id:", id)
 
-  type Activo = {
-    id: string
-    tipoActivo: string
-    estado: 'OK' | 'Medio' | 'Crítico' | 'NN'
-    descripcion: string
-    ubicacion: string
-    img: string
-  }
-
   const [activo, setActivo] = React.useState<Activo | null>(null)
   const [sensores, setSensores] = React.useState<any[]>([])
 
@@ -61,7 +53,8 @@ export default function ActivoDetailPage({ params }: { params: { id: string } })
         estado: 'NN', // Por ahora no viene
         descripcion: 'NN', // Por ahora no viene
         ubicacion: response.ubicacion ?? 'NN',
-        img: 'https://www.sondagua.cl/blog/wp-content/uploads/2021/10/bomba-para-extraccion-de-agua.jpg' // temporal
+        img: 'https://www.sondagua.cl/blog/wp-content/uploads/2021/10/bomba-para-extraccion-de-agua.jpg', // temporal
+        id_edificio: 'NN',
       }
 
       setActivo(activoTransformado)

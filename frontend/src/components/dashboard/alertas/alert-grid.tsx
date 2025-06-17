@@ -83,7 +83,8 @@ export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: any; edi
         tipoActivo: item.nombre || 'Activo sin nombre',
         estado: item.estado || 'NN', // Modificarlo con logica correspondiente
         descripcion: item.descripcion || 'NN', // Modificarlo con logica correspondiente
-        ubicacion: item.ubicacion || 'Ubicación desconocida'
+        ubicacion: item.ubicacion || 'Ubicación desconocida',
+        id_edificio: item.id_edificio || 'ID no obtenida'
       }));
 
       console.log("Activos transformados:", transformados)

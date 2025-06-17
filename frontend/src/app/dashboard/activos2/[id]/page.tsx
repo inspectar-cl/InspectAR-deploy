@@ -1,5 +1,7 @@
+'use client';
+
 import { activosMock } from '@/mocks'; // tu mock de activos
-import React from 'react';
+import * as React from 'react';
 import Card from '@mui/material/Card';
 import CardMedia from '@mui/material/CardMedia';
 import CardContent from '@mui/material/CardContent';
@@ -19,18 +21,96 @@ import { TemperatureProgress } from '@/components/dashboard/overview/temperature
 import { LatestProducts } from '@/components/dashboard/overview/latest-products';
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr/Warning';
 import Grid from '@mui/material/Grid';
+import { ScatterWithArgs} from '@/components/dashboard/overview/scatterwithargs'
 
-export const metadata = { title: `Activos | Dashboard | ${config.site.name}` } satisfies Metadata;
+// export const metadata = { title: `Activos | Dashboard | ${config.site.name}` } satisfies Metadata;
 
-export default async function ActivoDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+// Configuración rutas de obtención de datos desde db.
+import Services from '@/modules/Services'
 
-  const activo = activosMock.find((a) => a.id === id);
+const gs = new Services()
+
+const uris = {
+  GET: `/lectura`
+}
+
+export default function ActivoDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
+
+  console.log("id:", id)
+
+  type Activo = {
+    id: string
+    tipoActivo: string
+    estado: 'OK' | 'Medio' | 'Crítico' | 'NN'
+    descripcion: string
+    ubicacion: string
+    img: string
+  }
+
+  const [activo, setActivo] = React.useState<Activo | null>(null)
+  const [sensores, setSensores] = React.useState<any[]>([])
+
+  const getDetalleActivo = async () => {
+    try {
+      const response = await gs.get(`/lectura/${id}/datos`)
+
+      const activoTransformado: Activo = {
+        id: response.activo_id ?? 'NN',
+        tipoActivo: response.nombre ?? 'NN',
+        estado: 'NN', // Por ahora no viene
+        descripcion: 'NN', // Por ahora no viene
+        ubicacion: response.ubicacion ?? 'NN',
+        img: 'https://www.sondagua.cl/blog/wp-content/uploads/2021/10/bomba-para-extraccion-de-agua.jpg' // temporal
+      }
+
+      setActivo(activoTransformado)
+      setSensores(response.sensores ?? [])
+
+    } catch (error) {
+      console.error('Error al obtener el activo', error)
+    }
+  }
+  
+  // Actualización del método a penas se recarga la página
+  const hasFetchedRef = React.useRef(false)
+  
+  React.useEffect(() => {
+    if (!hasFetchedRef.current) {
+      hasFetchedRef.current = true
+      getDetalleActivo()
+    }
+  }, [])
+
+  // Estos nombres tendrían que ser dinámicos, de momento quedarán así.
+  // Extracción de los valores de cada sensor:
+  const sensorTemp = sensores.find(s => s.sensor_id === 'temp1')
+  const sensorPres = sensores.find(s => s.sensor_id === 'pres1')
+  const sensorCaud = sensores.find(s => s.sensor_id === 'caud1')
+
+  // Obtención de valores actuales
+  const temperatura = sensorTemp?.datos?.at(-1)?.valor ?? 0
+
+  const getDiffInfo = (sensorId: string) => {
+    const datos = sensores.find(s => s.sensor_id === sensorId)?.datos ?? []
+    const ultimo = datos.at(-1)?.valor ?? 0
+    const penultimo = datos.at(-2)?.valor ?? 0
+    const diff = ultimo - penultimo
+    const trend = (diff >= 0 ? 'up' : 'down') as 'up' | 'down'
+
+    return {
+      valor: ultimo,
+      diff: Math.abs(diff),
+      trend
+    }
+  }
+
+  const presionInfo = getDiffInfo('pres1')
+  const caudalInfo = getDiffInfo('caud1')
 
   if (!activo) {
     return <div style={{ padding: '1rem' }}>No se encontró el activo con ID: {id}</div>;
   }
-
   return (
     <Box sx={{ p: 2 }}>
       {/* FILA SUPERIOR */}
@@ -76,8 +156,14 @@ export default async function ActivoDetailPage({ params }: { params: Promise<{ i
         </Grid>
         <Grid size={{md:4, xs:12}}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Budget diff={5} trend="up" sx={{ height: 192 }} value="48 m³/h" />
-            <TotalCustomers diff={10} trend="down" sx={{ height: 192}} value="15 Psi" />
+            {/* Caudal */}
+            <Budget diff={parseFloat(caudalInfo.diff.toFixed(2))}
+              trend={caudalInfo.trend} 
+              sx={{ height: 192 }} 
+              value={`${caudalInfo.valor.toFixed(2)} m³/h`}
+            />
+            {/* Presión */}
+            <TotalCustomers diff={parseFloat(presionInfo.diff.toFixed(2))} trend={presionInfo.trend} sx={{ height: 192}} value={`${presionInfo.valor.toFixed(2)} Psi`} />
           </Box>
         </Grid>
       </Grid>
@@ -86,46 +172,48 @@ export default async function ActivoDetailPage({ params }: { params: Promise<{ i
       <Grid container spacing={2} sx={{ mt: 2 }}>
         {/* Scatter: 70% */}
         <Grid size={{md:10, xs:12}}>
-          <Scatter sx={{ height: 480 }} />
+          <ScatterWithArgs sx={{ height: 480 }} dataCaudal={sensorCaud} dataPresion={sensorPres} dataTemp={sensorTemp} />
         </Grid>
         {/* ScoreChart: 30% */}
         <Grid size={{md:2, xs:12}}>
-          <TemperatureProgress  value={75} /> {/* 🔥 Aquí lo usas */}
+          {/* Temperatura */}
+          <TemperatureProgress value={temperatura} /> {/* 🔥 Aquí lo usas */}
         </Grid>
         <Grid size={{md:3, xs:12}}>
           <ScoreChart sx={{ height: 450 }} />
         </Grid>
-      <Grid size={{lg:9, md:6, xs:12}}>
-        <LatestProducts
-          products={[
-            {
-              id: 'SENS-005',
-              name: 'Motor sobrecalentado, riesgo de falla',
-              icon: <WarningIcon size={32} weight="fill" color="#ff0000"/>,
-              updatedAt: dayjs().subtract(18, 'minutes').subtract(5, 'hour').toDate(),
-            },
-            {
-              id: 'SENS-004',
-              name: 'Subida del caudal',
-              icon: <WarningIcon size={32} weight="fill" color="#ff0000"/>,
-              updatedAt: dayjs().subtract(41, 'minutes').subtract(3, 'hour').toDate(),
-            },
-            {
-              id: 'SENS-003',
-              name: 'Presion muy baja',
-              icon: <WarningIcon size={32} weight="fill" color="#ff9214" />,
-              updatedAt: dayjs().subtract(5, 'minutes').subtract(3, 'hour').toDate(),
-            },
-            {
-              id: 'SENS-002',
-              name: 'Aumento inusual de temperatura',
-              icon: <WarningIcon size={32} weight="fill" color="#ff9214" />,
-              updatedAt: dayjs().subtract(23, 'minutes').subtract(2, 'hour').toDate(),
-            },
-          ]}
-          sx={{ height: 450 }}
-        />
-      </Grid>
+      
+        <Grid size={{lg:9, md:6, xs:12}}>
+          <LatestProducts
+            products={[
+              {
+                id: 'SENS-005',
+                name: 'Motor sobrecalentado, riesgo de falla',
+                icon: <WarningIcon size={32} weight="fill" color="#ff0000"/>,
+                updatedAt: dayjs().subtract(18, 'minutes').subtract(5, 'hour').toDate(),
+              },
+              {
+                id: 'SENS-004',
+                name: 'Subida del caudal',
+                icon: <WarningIcon size={32} weight="fill" color="#ff0000"/>,
+                updatedAt: dayjs().subtract(41, 'minutes').subtract(3, 'hour').toDate(),
+              },
+              {
+                id: 'SENS-003',
+                name: 'Presion muy baja',
+                icon: <WarningIcon size={32} weight="fill" color="#ff9214" />,
+                updatedAt: dayjs().subtract(5, 'minutes').subtract(3, 'hour').toDate(),
+              },
+              {
+                id: 'SENS-002',
+                name: 'Aumento inusual de temperatura',
+                icon: <WarningIcon size={32} weight="fill" color="#ff9214" />,
+                updatedAt: dayjs().subtract(23, 'minutes').subtract(2, 'hour').toDate(),
+              },
+            ]}
+            sx={{ height: 450 }}
+          />
+        </Grid>
       </Grid>
     </Box>
   );

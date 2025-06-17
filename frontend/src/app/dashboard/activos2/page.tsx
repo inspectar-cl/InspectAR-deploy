@@ -15,9 +15,9 @@ export default function ActivosPage(): React.JSX.Element {
       <div>
         <Typography variant="h4">Lista de Activos</Typography>
       </div>
-    <Grid size={{lg:20, md:10, xs:20}}>
-        <DataGridDemo sx={{ height: '100%' }}/>
-    </Grid>
+      <Grid size={{lg:20, md:10, xs:20}}>
+          <DataGridDemo sx={{ height: '100%' }}/>
+      </Grid>
     </Stack>
   );
 }

@@ -34,25 +34,16 @@ type Alerta = {
   atendida: boolean
 }
 
-const activos: Activo[] = [
-  { id: 'A1', tipoActivo: 'Ascensor #1', estado: 'OK', descripcion: 'Funciona correctamente', ubicacion: 'Edificio A, Santiago'},
-  { id: 'A2', tipoActivo: 'Ascensor #2', estado: 'OK', descripcion: 'Funciona correctamente', ubicacion: 'Edificio A, Santiago' },
-  { id: 'A3', tipoActivo: 'Ascensor #3', estado: 'Medio', descripcion: 'Mantenimiento programado no realizado', ubicacion: 'Edificio A, Santiago' },
-  { id: 'A4', tipoActivo: 'Ascensor #4', estado: 'Medio', descripcion: 'Puerta atascada, requiere revisión', ubicacion: 'Edificio B, Santiago' },
-  { id: 'C1', tipoActivo: 'Caldera #1', estado: 'Crítico', descripcion: 'Temperatura fuera de rango, riesgo de daño', ubicacion: 'Edificio A, Santiago' },
-  { id: 'C2', tipoActivo: 'Caldera #2', estado: 'Crítico', descripcion: 'Anomalía detectada – revisar urgentemente', ubicacion: 'Edificio B, Santiago' },
-  { id: 'C3', tipoActivo: 'Caldera #3', estado: 'Crítico', descripcion: 'Fuga de gas detectada', ubicacion: 'Edificio C, Santiago' },
-  { id: 'C4', tipoActivo: 'Caldera #4', estado: 'Crítico', descripcion: 'Presión excesiva, riesgo de explosión', ubicacion: 'Edificio C, Santiago' },
-  { id: 'B1', tipoActivo: 'Bomba de Agua #1', estado: 'Crítico', descripcion: 'Motor sobrecalentado, riesgo de falla', ubicacion: 'Edificio A, Santiago' },
-  { id: 'B2', tipoActivo: 'Bomba de Agua #2', estado: 'Crítico', descripcion: 'Fuga de presión, riesgo de parada', ubicacion: 'Edificio A, Santiago' },
-  { id: 'B3', tipoActivo: 'Bomba de Agua #3', estado: 'Crítico', descripcion: 'Riesgo crítico de falla en 7 días', ubicacion: 'Edificio B, Santiago' },
-  { id: 'B4', tipoActivo: 'Bomba de Agua #4', estado: 'Crítico', descripcion: 'Nivel de agua crítico', ubicacion: 'Edificio B, Santiago' },
-  { id: 'E1', tipoActivo: 'Sistema Eléctrico #1', estado: 'Medio', descripcion: 'Sobrecarga detectada, monitorear consumo', ubicacion: 'Edificio A, Santiago' },
-  { id: 'E2', tipoActivo: 'Sistema Eléctrico #2', estado: 'Medio', descripcion: 'Pico de voltaje registrado', ubicacion: 'Edificio B, Santiago' },
-  { id: 'E3', tipoActivo: 'Sistema Eléctrico #3', estado: 'Medio', descripcion: 'Variación de frecuencia, revisar panel', ubicacion: 'Edificio C, Santiago' },
-]
+// Configuración rutas de obtención de datos desde db.
+import Services from '@/modules/Services'
 
-const columns: GridColDef<(typeof activos)[number]>[] = [
+const gs = new Services()
+
+const uris = {
+  GET: `/activo`
+}
+
+const columns: GridColDef<Activo>[] = [
   { field: 'id', headerName: 'ID', width: 90 },
   {
     field: 'tipoActivo',
@@ -81,10 +72,44 @@ const columns: GridColDef<(typeof activos)[number]>[] = [
 ];
 
 export default function DataGridDemo({ sx }: { sx?: any }) {
+  const [activos, setActivos] = React.useState<Activo[]>([])
+  const hasFetchedRef = React.useRef(false)
+
+  const getActivos = async () => {
+    try {
+      const response = await gs.get(uris.GET)
+      console.log("Response:", response)
+
+      // Transformación de los datos de la db
+      const transformados = response.map((item: any, index: number) => ({
+        id: item.activo_id || `B${index + 1}`, // o usa item.id si lo prefieres
+        tipoActivo: item.nombre || 'Activo sin nombre',
+        estado: item.estado || 'NN', // Esto puedes modificarlo con lógica si tienes
+        descripcion: item.descripcion || 'NN', // Aquí también puedes usar lógica si quieres
+        ubicacion: item.ubicacion || 'Ubicación desconocida'
+      }));
+
+      console.log("Activos transformados:", transformados)
+      setActivos(transformados)
+      return activos
+    } catch (error) {
+      console.error("Error al obtener los items.", error)
+    }
+  }
+
+  React.useEffect(() => {
+    if (!hasFetchedRef.current) {
+      hasFetchedRef.current = true
+      getActivos()
+    }
+  }, [])
   return (
     <Card sx={sx}>
       <CardHeader title="Estado de Activos" />
         <CardContent>
+            <Box>
+              activos: {JSON.stringify(activos, null, 2)}
+            </Box>
             <Box sx={{ height: 600, width: '100%' }}>
                 <DataGrid 
                     onRowClick={(params) => {window.location.href = paths.dashboard.activoDetail(params.row.id);}}

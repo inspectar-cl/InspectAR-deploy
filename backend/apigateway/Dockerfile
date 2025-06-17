@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 3500
 
 # Comando para arrancar tu API Gateway
-CMD ["node", "server.js"]
+CMD ["npm", "run", "dev"]

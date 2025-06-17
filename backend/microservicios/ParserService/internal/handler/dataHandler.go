@@ -102,7 +102,15 @@ func (h *DataHandler) GetSensorByActivo(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, allLecturas)
+	respuesta := gin.H{
+		"id":         activo.ID,
+		"activo_id":  activo.ActivoID,
+		"nombre":     activo.Nombre,
+		"ubicacion":  activo.Ubicacion,
+		"sensores":   allLecturas,
+	}
+
+	c.JSON(http.StatusOK, respuesta)
 }
 
 // GET /activo

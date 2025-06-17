@@ -15,5 +15,7 @@ type Activo struct {
 	ActivoID  string             `bson:"activo_id" json:"activo_id"`
 	Nombre    string             `bson:"nombre" json:"nombre"`
 	Ubicacion string             `bson:"ubicacion" json:"ubicacion"`
+	Estado 	  string			 `bson:"estado" json:"estado"`
+	EdificioID string			 `bson:"id_edificio" json:"id_edificio"`
 	Sensores  []Sensor           `bson:"sensores" json:"sensores"`
 }

@@ -6,7 +6,6 @@ import dayjs from 'dayjs';
 import { config } from '@/config';
 import { Budget } from '@/components/dashboard/overview/budget';
 import { LatestOrders } from '@/components/dashboard/overview/latest-orders';
-import { LatestProducts } from '@/components/dashboard/overview/latest-products';
 import { Sales } from '@/components/dashboard/overview/sales';
 import { TasksProgress } from '@/components/dashboard/overview/tasks-progress';
 import { TotalCustomers } from '@/components/dashboard/overview/total-customers';
@@ -15,6 +14,7 @@ import { Traffic } from '@/components/dashboard/overview/traffic';
 import { Scatter } from '@/components/dashboard/overview/scatter';
 import ScoreChart from '@/components/dashboard/overview/score-chart';
 import DataGridDemo from '@/components/dashboard/alertas/alert-grid';
+import {MapaActivos} from '@/components/dashboard//overview/mapa-activos';
 
 export const metadata = { title: `Overview | Dashboard | ${config.site.name}` } satisfies Metadata;
 
@@ -50,6 +50,10 @@ export default function Page(): React.JSX.Element {
       </Grid>
       <Grid size={{lg:4, md:6, xs:12}}>
         <ScoreChart sx={{ height: '100%' }}/>
+      </Grid>
+      
+      <Grid size={{lg:8, md:6, xs:12}}>
+        <MapaActivos/>
       </Grid>
 
       <Grid size={{lg:8, md:6, xs:12}}>

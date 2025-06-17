@@ -1,17 +1,17 @@
 # InspectAR Backend
 
-Este proyecto es el backend de InspectAR.
+Este proyecto corresponde al backend de **InspectAR**, encargado de gestionar la lógica del servidor y la conexión con la base de datos.
 
-## Inicio rápido
+## 🐳 Inicio rápido con Docker
 
-Para iniciar el servidor en modo desarrollo, ejecuta:
+### Requisitos
+
+- Tener [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y en ejecución.
+- Verificar que el archivo `apigateway/.env` esté correctamente configurado con las variables de entorno necesarias.
+
+### Iniciar los servicios
+
+Para levantar los servicios con Docker, ejecuta:
 
 ```bash
-npm run dev
-```
-
-Asegúrate de tener instaladas las dependencias con:
-
-```bash
-npm install
-```
+docker compose up --build

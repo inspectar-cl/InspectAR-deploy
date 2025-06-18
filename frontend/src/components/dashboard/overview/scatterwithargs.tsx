@@ -5,7 +5,12 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardHeader from '@mui/material/CardHeader';
 import Divider from '@mui/material/Divider';
-import { useTheme } from '@mui/material/styles';
+import dayjs from 'dayjs';
+import Select from '@mui/material/Select'
+import MenuItem from '@mui/material/MenuItem'
+import FormControl from '@mui/material/FormControl'
+import InputLabel from '@mui/material/InputLabel'
+
 import { ScatterChart } from '@mui/x-charts/ScatterChart';
 import { useScatterSeries, useXScale, useYScale } from '@mui/x-charts/hooks';
 
@@ -22,14 +27,20 @@ type Props = {
 }
 
 export function ScatterWithArgs({ sx, dataCaudal, dataPresion, dataTemp }: Props) {
-  const theme = useTheme()
 
-  const convert = (sensor: SensorData) =>
-    sensor.datos.map((item, index) => ({
-      x: new Date(item.tiempo).getTime(),
-      y: item.valor,
-      id: index,
-    }))
+  const [rangoMinutos, setrangoMinutos] = React.useState(30); // por defecto: ultimos 30 min
+
+  const convert = (sensor: SensorData) => {
+    const oneHourAgo = dayjs().subtract(rangoMinutos, 'minute');
+
+    return sensor.datos
+      .filter(item => dayjs(item.tiempo).isAfter(oneHourAgo))
+      .map((item, index) => ({
+        x: dayjs(item.tiempo).valueOf(),
+        y: item.valor,
+        id: index,
+      }));
+  };
 
   const series = React.useMemo(
     () => [
@@ -37,7 +48,7 @@ export function ScatterWithArgs({ sx, dataCaudal, dataPresion, dataTemp }: Props
       { id: 'presion', data: convert(dataPresion), label: 'Presión' },
       { id: 'temperatura', data: convert(dataTemp), label: 'Temperatura' },
     ],
-    [dataCaudal, dataPresion, dataTemp]
+    [dataCaudal, dataPresion, dataTemp, rangoMinutos]
   )
 
   // Dibuja las líneas conectando los puntos
@@ -56,7 +67,23 @@ export function ScatterWithArgs({ sx, dataCaudal, dataPresion, dataTemp }: Props
 
   return (
     <Card sx={sx}>
-      <CardHeader title="Mediciones en Tiempo Real" />
+      <CardHeader title="Mediciones en Tiempo Real" 
+        /*action={
+          <FormControl size="small" sx={{ minWidth: 160, mb: 2 }}>
+            <InputLabel id="rango-label">Rango de tiempo</InputLabel>
+            <Select
+              labelId="rango-label"
+              value={rangoMinutos}
+              label="Rango de tiempo"
+              onChange={(e) => setrangoMinutos(Number(e.target.value))}
+            >
+              <MenuItem value={30}>Últimos 30 minutos</MenuItem>
+              <MenuItem value={60}>Última hora</MenuItem>
+              <MenuItem value={240}>Últimas 4 horas</MenuItem>
+            </Select>
+          </FormControl>
+        }*/
+      />
       <CardContent>
         <ScatterChart
           series={series}

@@ -107,6 +107,7 @@ func (h *DataHandler) GetSensorByActivo(c *gin.Context) {
 		"activo_id":  activo.ActivoID,
 		"nombre":     activo.Nombre,
 		"ubicacion":  activo.Ubicacion,
+		"estado": 	  activo.Estado,
 		"sensores":   allLecturas,
 	}
 

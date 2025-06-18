@@ -38,10 +38,11 @@ export default function ActivoDetailClient({ id }: { id: string }) {
   const fetchData = async () => {
     try {
       const response = await gs.get(`/lectura/${id}/datos`);
+      console.log("response", response)
       const activoTransformado: Activo = {
         id: response.activo_id ?? 'NN',
         tipoActivo: response.nombre ?? 'NN',
-        estado: 'NN',
+        estado: response.estado ?? 'NN',
         descripcion: 'NN',
         ubicacion: response.ubicacion ?? 'NN',
         img: 'https://www.sondagua.cl/blog/wp-content/uploads/2021/10/bomba-para-extraccion-de-agua.jpg',

@@ -73,3 +73,13 @@ func (r *ActivoRepository) ExistActivo(ctx context.Context, activoID string) (bo
 	}
 	return count > 0, nil
 }
+
+func (r *ActivoRepository) ActualizarEstado(ctx context.Context, activoID string, nuevoEstado string) error {
+	filter := bson.M{"activo_id": activoID}
+	update := bson.M{"$set": bson.M{"estado": nuevoEstado}}
+
+	log.Printf("Actualizando estado del activo %s a '%s'", activoID, nuevoEstado)
+
+	_, err := r.collection.UpdateOne(ctx, filter, update)
+	return err
+}

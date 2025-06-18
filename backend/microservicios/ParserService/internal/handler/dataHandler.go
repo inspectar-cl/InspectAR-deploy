@@ -144,3 +144,27 @@ func (h *DataHandler) GetSensorLastData(c *gin.Context) {
 
 	c.JSON(http.StatusOK, result)
 }
+
+// PUT /activo/:activo_id/estado
+func (h *DataHandler) UpdActivoEstado(c *gin.Context) {
+	activoID := c.Param("activo_id")
+
+	// Leer el nuevo estado desde el cuerpo del request
+	var body struct {
+		Estado string `json:"estado"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil || body.Estado == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Estado inválido o faltante"})
+		return
+	}
+
+	// Actualizar en la base de datos
+	err := h.activoService.ActualizarEstado(c.Request.Context(), activoID, body.Estado)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo actualizar el estado"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Estado actualizado correctamente"})
+}
+

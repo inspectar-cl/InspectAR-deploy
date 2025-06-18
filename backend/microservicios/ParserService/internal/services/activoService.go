@@ -38,3 +38,7 @@ func (s *ActivoService) AgregarSensor(ctx context.Context, activoID string, sens
 func (s *ActivoService) GetAllActivos(ctx context.Context) ([]models.Activo, error) {
 	return s.activoRepo.GetAllActivos(ctx)
 }
+
+func (s *ActivoService) ActualizarEstado(ctx context.Context, activoID string, nuevoEstado string) error {
+	return s.activoRepo.ActualizarEstado(ctx, activoID, nuevoEstado)
+}

@@ -3,7 +3,17 @@
     {
       "id": "BombaDeAgua11",
       "name": "Caudal Alto",
-      "updatedAt": "2025-06-18 16:54:19"
+      "updatedAt": "2025-06-18 17:46:03"
+    },
+    {
+      "id": "BombaDeAgua12",
+      "name": "Presion Alta",
+      "updatedAt": "2025-06-18 17:46:03"
+    },
+    {
+      "id": "BombaDeAgua1",
+      "name": "Temperatura Alta",
+      "updatedAt": "2025-06-18 17:46:03"
     }
   ]
 }

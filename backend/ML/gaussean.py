@@ -7,6 +7,7 @@ import requests
 
 from escribirJson import escribir_alerta
 from cambiarEstado import put_estado
+from enviarCorreo import enviar_correo
 
 activo_id = "BombaDeAgua1"
 
@@ -56,6 +57,7 @@ def run_model(queue: Queue):
                         estado = "Medio"
                     else:
                         estado = "Crítico"
+                        enviar_correo(activo_id)
 
                     put_estado(estado)
 

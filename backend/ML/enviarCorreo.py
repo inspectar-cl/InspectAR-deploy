@@ -1,5 +1,6 @@
 from email.mime.text import MIMEText
 import smtplib
+import datetime
 
 def enviar_correo(activo):
 #Configuracion del correo
@@ -7,8 +8,10 @@ def enviar_correo(activo):
     contraseña = "kdgz xadt ebwt dsgv"
     destinatario = "diego.morella20@gmail.com"
 
+    hora = datetime.datetime.now()
+
     #Crear cuerpo del mensaje
-    cuerpo = f"Se ha detectado una anomalia critica en los sensores!.\n Activo afectado: {activo}\n"
+    cuerpo = f"Se ha detectado una anomalia critica en los sensores!.\nActivo afectado: {activo}\nHora alerta: {hora}\n "
 
     mensaje = MIMEText(cuerpo)
     mensaje["Subject"] = "🚨 Alerta de Anomalía Detectada - InspectAR"

@@ -3,7 +3,6 @@ import os
 from river import naive_bayes
 from multiprocessing import Queue
 import time
-import requests
 
 from escribirJson import escribir_alerta
 from cambiarEstado import put_estado

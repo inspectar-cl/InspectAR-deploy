@@ -8,7 +8,7 @@ export const paths = {
     activos: '/dashboard/activos',
     informe: '/errors/not-found',
     planos: '/errors/not-found',
-    graficos: '/errors/not-found',
+    graficos: '/dashboard/graficos',
     settings: '/dashboard/settings',
     activoDetail: (id: string) => `/dashboard/activos/${id}`,
   },

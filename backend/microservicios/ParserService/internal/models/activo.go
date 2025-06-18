@@ -14,7 +14,9 @@ type Activo struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	ActivoID    string             `bson:"activo_id" json:"activo_id"`
 	Nombre      string             `bson:"nombre" json:"nombre"`
+	Estado 		string			   `bson:"estado" json:"estado"`
 	Ubicacion   string             `bson:"ubicacion" json:"ubicacion"`
 	Sensores    []Sensor           `bson:"sensores" json:"sensores"`
 	Id_edificio string             `bson:"id_edificio" json:"id_edificio"`
+
 }

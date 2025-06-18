@@ -51,7 +51,7 @@ export function LatestProducts({ products = [], sx }: LatestProductsProps): Reac
             <ListItemText
               primary={product.name}
               primaryTypographyProps={{ variant: 'subtitle1' }}
-              secondary={`Actualizado ${dayjs(product.updatedAt).format('MMM D, YYYY')}`}
+              secondary={`Actualizado ${dayjs(product.updatedAt).format('MMM D, YYYY - HH:MM')}`}
               secondaryTypographyProps={{ variant: 'body2' }}
             />
             <IconButton edge="end">
@@ -61,6 +61,10 @@ export function LatestProducts({ products = [], sx }: LatestProductsProps): Reac
         ))}
       </List>
       <Divider />
+      {/*
+      
+      Eliminar comentario en el futuro para proximas vistas
+      
       <CardActions sx={{ justifyContent: 'flex-end' }}>
         <Button
           color="inherit"
@@ -71,6 +75,8 @@ export function LatestProducts({ products = [], sx }: LatestProductsProps): Reac
           Ver todo
         </Button>
       </CardActions>
+      
+      */}
     </Card>
   );
 }

@@ -24,6 +24,8 @@ import { ScatterWithArgs} from '@/components/dashboard/overview/scatterwithargs'
 // Configuración rutas de obtención de datos desde db.
 import Services from '@/modules/Services'
 
+import dataAlertas from '@/mocks/alerts.json'
+
 const gs = new Services()
 
 export default function ActivoDetailClient({ id }: { id: string }) {
@@ -170,32 +172,14 @@ export default function ActivoDetailClient({ id }: { id: string }) {
       
         <Grid size={{lg:9, md:6, xs:12}}>
           <LatestProducts
-            products={[
-              {
-                id: 'SENS-005',
-                name: 'Motor sobrecalentado, riesgo de falla',
-                icon: <WarningIcon size={32} weight="fill" color="#ff0000"/>,
-                updatedAt: dayjs().subtract(18, 'minutes').subtract(5, 'hour').toDate(),
-              },
-              {
-                id: 'SENS-004',
-                name: 'Subida del caudal',
-                icon: <WarningIcon size={32} weight="fill" color="#ff0000"/>,
-                updatedAt: dayjs().subtract(41, 'minutes').subtract(3, 'hour').toDate(),
-              },
-              {
-                id: 'SENS-003',
-                name: 'Presion muy baja',
-                icon: <WarningIcon size={32} weight="fill" color="#ff9214" />,
-                updatedAt: dayjs().subtract(5, 'minutes').subtract(3, 'hour').toDate(),
-              },
-              {
-                id: 'SENS-002',
-                name: 'Aumento inusual de temperatura',
-                icon: <WarningIcon size={32} weight="fill" color="#ff9214" />,
-                updatedAt: dayjs().subtract(23, 'minutes').subtract(2, 'hour').toDate(),
-              },
-            ]}
+            products={
+              dataAlertas.products.map(alerta => ({
+                id: alerta.id,
+                name: alerta.name,
+                icon: <WarningIcon size={32} weight="fill" color="#ff0000" />,
+                updatedAt: dayjs(alerta.updatedAt).toDate()
+              }))
+            }
             sx={{ height: 450 }}
           />
         </Grid>

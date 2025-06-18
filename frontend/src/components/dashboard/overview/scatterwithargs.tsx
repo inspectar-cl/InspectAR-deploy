@@ -11,6 +11,8 @@ import MenuItem from '@mui/material/MenuItem'
 import FormControl from '@mui/material/FormControl'
 import InputLabel from '@mui/material/InputLabel'
 
+import { useRouter } from 'next/navigation';
+
 import { ScatterChart } from '@mui/x-charts/ScatterChart';
 import { useScatterSeries, useXScale, useYScale } from '@mui/x-charts/hooks';
 
@@ -27,10 +29,15 @@ type Props = {
 }
 
 export function ScatterWithArgs({ sx, dataCaudal, dataPresion, dataTemp }: Props) {
-
+  const router = useRouter();
   const [rangoMinutos, setrangoMinutos] = React.useState(30); // por defecto: ultimos 30 min
 
   const convert = (sensor: SensorData) => {
+    if (!sensor?.datos || sensor.datos.length === 0) {
+      router.push('/errors');
+      return []; //Para que no falle el map, nos vamos a error page
+    }
+
     const oneHourAgo = dayjs().subtract(rangoMinutos, 'minute');
 
     return sensor.datos

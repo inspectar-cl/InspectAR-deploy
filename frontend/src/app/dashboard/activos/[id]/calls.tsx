@@ -37,37 +37,37 @@ export default function ActivoDetailClient({ id }: { id: string }) {
   const hasFetchedRef = React.useRef(false)
   
   useEffect(() => {
-  const fetchData = async () => {
-    try {
-      const response = await gs.get(`/lectura/${id}/datos`);
-      console.log("response", response)
-      const activoTransformado: Activo = {
-        id: response.activo_id ?? 'NN',
-        tipoActivo: response.nombre ?? 'NN',
-        estado: response.estado ?? 'NN',
-        descripcion: 'NN',
-        ubicacion: response.ubicacion ?? 'NN',
-        img: 'https://www.sondagua.cl/blog/wp-content/uploads/2021/10/bomba-para-extraccion-de-agua.jpg',
-        id_edificio: 'NN',
-      };
-      setActivo(activoTransformado);
-      setSensores(response.sensores ?? []);
-    } catch (err) {
-      console.error('Error al obtener el activo', err);
-    }
-  };
+    const fetchData = async () => {
+      try {
+        const response = await gs.get(`/lectura/${id}/datos`);
+        console.log("response", response)
+        const activoTransformado: Activo = {
+          id: response.activo_id ?? 'NN',
+          tipoActivo: response.nombre ?? 'NN',
+          estado: response.estado ?? 'NN',
+          descripcion: 'NN',
+          ubicacion: response.ubicacion ?? 'NN',
+          img: 'https://www.sondagua.cl/blog/wp-content/uploads/2021/10/bomba-para-extraccion-de-agua.jpg',
+          id_edificio: 'NN',
+        };
+        setActivo(activoTransformado);
+        setSensores(response.sensores ?? []);
+      } catch (err) {
+        console.error('Error al obtener el activo', err);
+      }
+    };
 
-  // Llamado inicial inmediato
-  fetchData();
-
-  // Intervalo de actualización cada 5 segundos
-  const interval = setInterval(() => {
+    // Llamado inicial inmediato
     fetchData();
-  }, 5000);
 
-  // Limpieza del intervalo al desmontar componente
-  return () => clearInterval(interval);
-}, [id]);
+    // Intervalo de actualización cada 5 segundos
+    const interval = setInterval(() => {
+      fetchData();
+    }, 5000);
+
+    // Limpieza del intervalo al desmontar componente
+    return () => clearInterval(interval);
+  }, [id]);
 
   // Estos nombres tendrían que ser dinámicos, de momento quedarán así.
   // Extracción de los valores de cada sensor:

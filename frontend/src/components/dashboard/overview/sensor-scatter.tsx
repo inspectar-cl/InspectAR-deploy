@@ -25,26 +25,16 @@ type SensorData = {
 type Props = {
   sx?: any
   //dataTemp: SensorData
-  dataTemp: number
+  dataTemp: SensorData
 }
 
 export function SensorScatter({ sx, dataTemp }: Props) {
   const router = useRouter();
   const [rangoMinutos, setrangoMinutos] = React.useState(30); // por defecto: ultimos 30 min
 
-  const now = new Date().getTime();
-  const data1 = [
-    { x: now - 5 * 60 * 1000, y: 300, id: 1 },
-    { x: now - 4 * 60 * 1000, y: 450, id: 2 },
-    { x: now - 3 * 60 * 1000, y: 500, id: 3 },
-    { x: now - 2 * 60 * 1000, y: 350, id: 4 },
-    { x: now - 1 * 60 * 1000, y: 280, id: 5 },
-  ];
-
-
   const convert = (sensor: SensorData) => {
     if (!sensor?.datos || sensor.datos.length === 0) {
-      router.push('/errors');
+      // router.push('/errors');
       return []; //Para que no falle el map, nos vamos a error page
     }
 
@@ -61,8 +51,8 @@ export function SensorScatter({ sx, dataTemp }: Props) {
   
   const series = React.useMemo(
     () => [
-      //{ id: 'temperatura', data: convert(dataTemp), label: 'Temperatura' },
-      { id: 'temperatura', data: data1, label: 'Temperatura', color: 'red'},
+      { id: 'temperatura', data: convert(dataTemp), label: 'Temperatura' },
+      // { id: 'temperatura', data: data1, label: 'Temperatura', color: 'red'},
     ],
     [ dataTemp, rangoMinutos]
   )
@@ -117,8 +107,8 @@ export function SensorScatter({ sx, dataTemp }: Props) {
           ]}
           yAxis={[{label: 'Valor Medido' }]}
         >
-          <LinkPoints seriesId="caudal" />
-          <LinkPoints seriesId="presion" />
+          {/* <LinkPoints seriesId="caudal" />
+          <LinkPoints seriesId="presion" /> */}
           <LinkPoints seriesId="temperatura" />
         </ScatterChart>
       </CardContent>

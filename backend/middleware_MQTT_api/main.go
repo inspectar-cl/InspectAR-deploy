@@ -16,15 +16,22 @@ import (
 )
 
 func main() {
-	time.Sleep(8 * time.Second) // Esperar 2 segundos antes de iniciar
+	fmt.Println("🚀 Iniciando middleware MQTT...")
+
 	// Configuración del broker
-	broker := "emqx:1883" // Cambia si usas Docker o IP diferente
+	broker := "emqx:1883"
 	clientID := "go-subscriber"
+	maxRetries := 10
+	retryDelay := 5 * time.Second
 
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(broker)
 	opts.SetClientID(clientID)
+	opts.SetAutoReconnect(true)
+	opts.SetConnectRetry(true)
+	opts.SetConnectRetryInterval(retryDelay)
 	opts.SetDefaultPublishHandler(messageHandler)
+
 	opts.OnConnect = func(c mqtt.Client) {
 		fmt.Println("✅ Conectado al broker MQTT")
 		if token := c.Subscribe("sensors/#", 0, nil); token.Wait() && token.Error() != nil {
@@ -33,14 +40,38 @@ func main() {
 			fmt.Println("📡 Suscrito al topic 'sensors/#'")
 		}
 	}
+
 	opts.OnConnectionLost = func(c mqtt.Client, err error) {
 		fmt.Println("🔌 Conexión perdida:", err)
+		fmt.Println("🔄 Intentando reconectar...")
 	}
 
-	// Crear cliente y conectar
+	opts.OnReconnecting = func(c mqtt.Client, opts *mqtt.ClientOptions) {
+		fmt.Println("🔄 Reconectando al broker MQTT...")
+	}
+
+	// Crear cliente y conectar con reintentos
 	client := mqtt.NewClient(opts)
-	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		panic(token.Error())
+
+	fmt.Printf("🔌 Intentando conectar a %s...\n", broker)
+	for i := 0; i < maxRetries; i++ {
+		fmt.Printf("📡 Intento %d/%d de conexión...\n", i+1, maxRetries)
+
+		if token := client.Connect(); token.Wait() && token.Error() != nil {
+			fmt.Printf("❌ Error en intento %d: %v\n", i+1, token.Error())
+			if i < maxRetries-1 {
+				fmt.Printf("⏳ Esperando %v antes del siguiente intento...\n", retryDelay)
+				time.Sleep(retryDelay)
+			}
+		} else {
+			fmt.Println("✅ Conexión establecida exitosamente!")
+			break
+		}
+
+		if i == maxRetries-1 {
+			fmt.Printf("💥 No se pudo conectar después de %d intentos. Terminando...\n", maxRetries)
+			return
+		}
 	}
 
 	// Esperar señal de salida

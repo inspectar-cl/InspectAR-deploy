@@ -1,0 +1,17 @@
+postgres:
+  host: "notification-db"
+  port: 5432
+  user: "notification_user"
+  password: "notification_pass"
+  dbname: "notification_db"
+  sslmode: "disable"
+
+server:
+  port: "8091"
+
+# Configuración de correo se lee desde variables de entorno (.env)
+# Ver archivo .env para configurar EMAIL_SMTP_HOST, EMAIL_SMTP_USERNAME, etc.
+
+# consul:
+#   address: "consul:8500"
+#   service_name: "notification-service"

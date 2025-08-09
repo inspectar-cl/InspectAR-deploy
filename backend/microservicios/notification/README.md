@@ -41,16 +41,271 @@ Microservicio desarrollado en Go que gestiona notificaciones automáticas para e
 
 ## API Endpoints
 
-### Notificaciones
-- `POST /notification` - Crear nueva notificación (envía emails automáticamente)
-- `GET /notification/:activo_id` - Obtener notificaciones por activo
-- `PUT /notification/:notification_id/send` - Reenviar notificación por email
+### 📧 Notificaciones
 
-### Consultas de edificios
-- `GET /edificios` - Listar todos los edificios
-- `GET /edificio/:id` - Obtener edificio específico
-- `GET /edificio/:id/usuarios` - Obtener usuarios de un edificio
-- `GET /edificio/:id/activos` - Obtener activos de un edificio
+#### 1. Crear nueva notificación
+**Ruta:** `POST /notification`
+
+**JSON que recibe:**
+```json
+{
+  "activo_id": 1
+}
+```
+
+**JSON de respuesta (éxito):**
+```json
+{
+  "message": "Notificación creada exitosamente",
+  "notificacion": {
+    "id": 15,
+    "activo_id": 1,
+    "activo": {
+      "id": 1,
+      "nombre": "Sensor Temperatura Planta Baja",
+      "edificio_id": 1,
+      "edificio": {
+        "id": 1,
+        "direccion": "Av. Libertador 1234, CABA",
+        "numero_activos": 3,
+        "created_at": "2025-08-08T03:50:10Z",
+        "updated_at": "2025-08-08T03:50:10Z"
+      },
+      "created_at": "2025-08-08T03:50:10Z",
+      "updated_at": "2025-08-08T03:50:10Z"
+    },
+    "usuario_id": null,
+    "mensaje": "Alerta detectada en Sensor Temperatura Planta Baja",
+    "enviado": true,
+    "created_at": "2025-08-08T03:50:10Z",
+    "sent_at": "2025-08-08T03:50:10Z"
+  }
+}
+```
+
+**Ejemplo curl:**
+```bash
+curl -X POST http://localhost:8091/notification \
+  -H "Content-Type: application/json" \
+  -d '{"activo_id": 1}'
+```
+
+---
+
+#### 2. Obtener notificaciones por activo
+**Ruta:** `GET /notification/:activo_id`
+
+**JSON que recibe:** Ninguno (parámetro en URL)
+
+**JSON de respuesta:**
+```json
+{
+  "notificaciones": [
+    {
+      "id": 15,
+      "activo_id": 1,
+      "activo": {
+        "id": 1,
+        "nombre": "Sensor Temperatura Planta Baja",
+        "edificio_id": 1,
+        "created_at": "2025-08-08T03:50:10Z",
+        "updated_at": "2025-08-08T03:50:10Z"
+      },
+      "usuario_id": null,
+      "mensaje": "Alerta detectada en Sensor Temperatura Planta Baja",
+      "enviado": true,
+      "created_at": "2025-08-08T03:50:10Z",
+      "sent_at": "2025-08-08T03:50:10Z"
+    }
+  ]
+}
+```
+
+**Ejemplo curl:**
+```bash
+curl http://localhost:8091/notification/1
+```
+
+---
+
+#### 3. Reenviar notificación por email
+**Ruta:** `PUT /notification/:notification_id/send`
+
+**JSON que recibe:** Ninguno (parámetro en URL)
+
+**JSON de respuesta:**
+```json
+{
+  "message": "Notificación enviada exitosamente"
+}
+```
+
+**Ejemplo curl:**
+```bash
+curl -X PUT http://localhost:8091/notification/15/send
+```
+
+---
+
+### 🏢 Edificios
+
+#### 4. Listar todos los edificios
+**Ruta:** `GET /edificios`
+
+**JSON que recibe:** Ninguno
+
+**JSON de respuesta:**
+```json
+{
+  "edificios": [
+    {
+      "id": 1,
+      "direccion": "Av. Libertador 1234, CABA",
+      "numero_activos": 3,
+      "created_at": "2025-08-08T03:50:10Z",
+      "updated_at": "2025-08-08T03:50:10Z"
+    },
+    {
+      "id": 2,
+      "direccion": "Corrientes 5678, CABA",
+      "numero_activos": 2,
+      "created_at": "2025-08-08T03:50:10Z",
+      "updated_at": "2025-08-08T03:50:10Z"
+    }
+  ]
+}
+```
+
+**Ejemplo curl:**
+```bash
+curl http://localhost:8091/edificios
+```
+
+---
+
+#### 5. Obtener edificio específico
+**Ruta:** `GET /edificio/:id`
+
+**JSON que recibe:** Ninguno (parámetro en URL)
+
+**JSON de respuesta:**
+```json
+{
+  "edificio": {
+    "id": 1,
+    "direccion": "Av. Libertador 1234, CABA",
+    "numero_activos": 3,
+    "created_at": "2025-08-08T03:50:10Z",
+    "updated_at": "2025-08-08T03:50:10Z"
+  }
+}
+```
+
+**Ejemplo curl:**
+```bash
+curl http://localhost:8091/edificio/1
+```
+
+---
+
+#### 6. Obtener usuarios de un edificio
+**Ruta:** `GET /edificio/:id/usuarios`
+
+**JSON que recibe:** Ninguno (parámetro en URL)
+
+**JSON de respuesta:**
+```json
+{
+  "usuarios": [
+    {
+      "id": 1,
+      "scope": "admin",
+      "usuario": "admin_user",
+      "correo": "joytan33334@gmail.com",
+      "numero": "+54911234567",
+      "edificio_id": 1,
+      "created_at": "2025-08-08T03:50:10Z",
+      "updated_at": "2025-08-08T03:50:10Z"
+    },
+    {
+      "id": 2,
+      "scope": "operator",
+      "usuario": "operator1",
+      "correo": "joytan33334@gmail.com",
+      "numero": "+54911234568",
+      "edificio_id": 1,
+      "created_at": "2025-08-08T03:50:10Z",
+      "updated_at": "2025-08-08T03:50:10Z"
+    }
+  ]
+}
+```
+
+**Ejemplo curl:**
+```bash
+curl http://localhost:8091/edificio/1/usuarios
+```
+
+---
+
+#### 7. Obtener activos de un edificio
+**Ruta:** `GET /edificio/:id/activos`
+
+**JSON que recibe:** Ninguno (parámetro en URL)
+
+**JSON de respuesta:**
+```json
+{
+  "activos": [
+    {
+      "id": 1,
+      "nombre": "Sensor Temperatura Planta Baja",
+      "edificio_id": 1,
+      "created_at": "2025-08-08T03:50:10Z",
+      "updated_at": "2025-08-08T03:50:10Z"
+    },
+    {
+      "id": 2,
+      "nombre": "Sensor Humedad Primer Piso",
+      "edificio_id": 1,
+      "created_at": "2025-08-08T03:50:10Z",
+      "updated_at": "2025-08-08T03:50:10Z"
+    },
+    {
+      "id": 3,
+      "nombre": "Sistema HVAC Principal",
+      "edificio_id": 1,
+      "created_at": "2025-08-08T03:50:10Z",
+      "updated_at": "2025-08-08T03:50:10Z"
+    }
+  ]
+}
+```
+
+**Ejemplo curl:**
+```bash
+curl http://localhost:8091/edificio/1/activos
+```
+
+---
+
+### ❌ Respuestas de Error
+
+Todos los endpoints pueden devolver errores en el siguiente formato:
+
+**Error 400 (Bad Request):**
+```json
+{
+  "error": "Datos inválidos"
+}
+```
+
+**Error 500 (Internal Server Error):**
+```json
+{
+  "error": "Error al crear notificación: record not found"
+}
+```
 
 ## Configuración
 

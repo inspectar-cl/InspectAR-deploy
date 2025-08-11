@@ -30,7 +30,7 @@ type Props = {
 
 export function SensorScatter({ sx, dataTemp }: Props) {
   const router = useRouter();
-  const [rangoMinutos, setrangoMinutos] = React.useState(30); // por defecto: ultimos 30 min
+  const [rangoMinutos, setrangoMinutos] = React.useState(360); // por defecto: ultimos 30 min
 
   const convert = (sensor: SensorData) => {
     if (!sensor?.datos || sensor.datos.length === 0) {

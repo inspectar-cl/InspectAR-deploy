@@ -13,13 +13,13 @@ import dayjs from 'dayjs';
 import { Activo } from '@/types/'
 
 import ScoreChart from '@/components/dashboard/overview/score-chart';
-import { Budget } from '@/components/dashboard/overview/budget';
-import { TotalCustomers } from '@/components/dashboard/overview/total-customers';
+import { Caudal } from '@/components/dashboard/overview/caudal';
+import { Presion } from '@/components/dashboard/overview/presion';
 import { TemperatureProgress } from '@/components/dashboard/overview/temperature';
-import { LatestProducts } from '@/components/dashboard/overview/latest-products';
+import { LatestAlerts } from '@/components/dashboard/overview/latest-alerts';
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr/Warning';
 import Grid from '@mui/material/Grid';
-import { ScatterWithArgs} from '@/components/dashboard/overview/scatterwithargs'
+import { ScatterWithArgs} from '@/components/dashboard/overview/medicionTiempoReal'
 
 // Configuración rutas de obtención de datos desde db.
 import Services from '@/modules/Services'
@@ -41,6 +41,8 @@ export default function ActivoDetailClient({ id }: { id: string }) {
       try {
         const response = await gs.get(`/lectura/${id}/datos`);
         console.log("response", response)
+
+        // Aqui deberian de cargarse la data de los activos (Ojala desde una llamada a API)
         const activoTransformado: Activo = {
           id: response.activo_id ?? 'NN',
           tipoActivo: response.nombre ?? 'NN',
@@ -50,6 +52,7 @@ export default function ActivoDetailClient({ id }: { id: string }) {
           img: 'https://www.sondagua.cl/blog/wp-content/uploads/2021/10/bomba-para-extraccion-de-agua.jpg',
           id_edificio: 'NN',
         };
+
         setActivo(activoTransformado);
         setSensores(response.sensores ?? []);
       } catch (err) {
@@ -102,7 +105,7 @@ export default function ActivoDetailClient({ id }: { id: string }) {
     <Box sx={{ p: 2 }}>
       {/* FILA SUPERIOR */}
       <Grid container spacing={2}>
-        {/* Columna izquierda: Budget y TotalCustomers */}
+        {/* Columna izquierda: Caudal y Presion */}
 
 
         {/* Columna derecha: Tarjeta del activo */}
@@ -144,13 +147,13 @@ export default function ActivoDetailClient({ id }: { id: string }) {
         <Grid size={{md:4, xs:12}}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {/* Caudal */}
-            <Budget diff={parseFloat(caudalInfo.diff.toFixed(2))}
+            <Caudal diff={parseFloat(caudalInfo.diff.toFixed(2))}
               trend={caudalInfo.trend} 
               sx={{ height: 192 }} 
               value={`${caudalInfo.valor.toFixed(2)} m³/h`}
             />
             {/* Presión */}
-            <TotalCustomers diff={parseFloat(presionInfo.diff.toFixed(2))} trend={presionInfo.trend} sx={{ height: 192}} value={`${presionInfo.valor.toFixed(2)} Psi`} />
+            <Presion diff={parseFloat(presionInfo.diff.toFixed(2))} trend={presionInfo.trend} sx={{ height: 192}} value={`${presionInfo.valor.toFixed(2)} Psi`} />
           </Box>
         </Grid>
       </Grid>
@@ -171,9 +174,11 @@ export default function ActivoDetailClient({ id }: { id: string }) {
         </Grid>
       
         <Grid size={{lg:9, md:6, xs:12}}>
-          <LatestProducts
+          <LatestAlerts
+
+            /* Aqui hay que modificar el como llegan las alertas */
             products={
-              dataAlertas.products.map(alerta => ({
+              dataAlertas.alerts.map(alerta => ({
                 id: alerta.id,
                 name: alerta.name,
                 icon: <WarningIcon size={32} weight="fill" color="#ff0000" />,

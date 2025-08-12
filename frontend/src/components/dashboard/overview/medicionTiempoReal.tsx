@@ -1,5 +1,11 @@
 'use client';
 
+/* Esta seccion del codigo corresponde a la grafica con las variables a sensorizar
+
+Aqui se hace llamado a las API para la obtencion de la data correspondiente a cada sensor del activo
+
+*/
+
 import * as React from 'react';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -34,7 +40,7 @@ export function ScatterWithArgs({ sx, dataCaudal, dataPresion, dataTemp }: Props
 
   const convert = (sensor: SensorData) => {
     if (!sensor?.datos || sensor.datos.length === 0) {
-      router.push('/errors');
+      //router.push('/errors'); // Esta linea de aqui hace que vayamos a la page de errors si no hay data en la grafica de sensores
       return []; //Para que no falle el map, nos vamos a error page
     }
 

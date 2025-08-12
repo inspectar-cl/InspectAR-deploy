@@ -9,14 +9,14 @@ import { ArrowDownIcon } from '@phosphor-icons/react/dist/ssr/ArrowDown';
 import { ArrowUpIcon } from '@phosphor-icons/react/dist/ssr/ArrowUp';
 import { DropIcon } from '@phosphor-icons/react/dist/ssr/Drop';
 
-export interface BudgetProps {
+export interface CaudalProps {
   diff?: number;
   trend: 'up' | 'down';
   sx?: SxProps;
   value: string;
 }
 
-export function Budget({ diff, trend, sx, value }: BudgetProps): React.JSX.Element {
+export function Caudal({ diff, trend, sx, value }: CaudalProps): React.JSX.Element {
   const TrendIcon = trend === 'up' ? ArrowUpIcon : ArrowDownIcon;
   const trendColor = trend === 'up' ? 'var(--mui-palette-success-main)' : 'var(--mui-palette-error-main)';
 

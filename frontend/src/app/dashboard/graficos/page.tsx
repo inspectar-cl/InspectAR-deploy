@@ -4,11 +4,11 @@ import Grid from '@mui/material/Grid';
 import dayjs from 'dayjs';
 
 import { config } from '@/config';
-import { Budget } from '@/components/dashboard/overview/budget';
+import { Caudal } from '@/components/dashboard/overview/caudal';
 import { LatestOrders } from '@/components/dashboard/overview/latest-orders';
 import { Sales } from '@/components/dashboard/overview/sales';
 import { TasksProgress } from '@/components/dashboard/overview/tasks-progress';
-import { TotalCustomers } from '@/components/dashboard/overview/total-customers';
+import { Presion } from '@/components/dashboard/overview/presion';
 import { TotalProfit } from '@/components/dashboard/overview/total-profit';
 import { Traffic } from '@/components/dashboard/overview/traffic';
 import { Scatter } from '@/components/dashboard/overview/scatter';
@@ -22,10 +22,10 @@ export default function Page(): React.JSX.Element {
   return (
     <Grid container spacing={3}>
       <Grid size={{lg:3, sm:6, xs:12}}>
-        <Budget diff={12} trend="up" sx={{ height: '100%' }} value="$24k" />
+        <Caudal diff={12} trend="up" sx={{ height: '100%' }} value="$24k" />
       </Grid>
       <Grid size={{lg:3, sm:6, xs:12}}>
-        <TotalCustomers diff={16} trend="down" sx={{ height: '100%' }} value="1.6k" />
+        <Presion diff={16} trend="down" sx={{ height: '100%' }} value="1.6k" />
       </Grid>
       <Grid size={{lg:3, sm:6, xs:12}}>
         <TasksProgress sx={{ height: '100%' }} value={75.5} />

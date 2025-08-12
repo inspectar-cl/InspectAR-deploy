@@ -1,4 +1,4 @@
 {
-  "products": [
+  "alerts": [{ "id": "A2", "name": "EA", "updatedAt": "12-05-2025 10:00"}
   ]
 }

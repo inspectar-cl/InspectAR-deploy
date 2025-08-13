@@ -21,6 +21,13 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatalf("Error al leer config: %v", err)
 	}
+	
+	// Debug: mostrar qué archivo de config se está usando
+	log.Printf("DEBUG: Archivo de configuración usado: %s", viper.ConfigFileUsed())
+	
+	// Debug: mostrar valores clave
+	log.Printf("DEBUG: mongu.uri = %s", viper.GetString("mongu.uri"))
+	log.Printf("DEBUG: influxdb.url = %s", viper.GetString("influxdb.url"))
 }
 
 func main() {

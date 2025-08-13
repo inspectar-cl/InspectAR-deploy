@@ -17,9 +17,9 @@ services:
     container_name: iot-service
     ports:
       - "8090:8090"
-    depends_on:
-      - mongu
-      - influxdb
+    # depends_on:
+    #   - mongu
+    #   - influxdb
     healthcheck:
       test: ["CMD-SHELL", "netstat -an | grep :8090 | grep LISTEN || exit 1"]
       interval: 10s

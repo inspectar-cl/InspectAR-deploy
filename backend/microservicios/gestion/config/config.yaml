@@ -1,0 +1,19 @@
+postgres:
+  host: "localhost"
+  port: 5432
+  user: "gestion_user"
+  password: "gestion_pass"
+  dbname: "gestion_db"
+  sslmode: "disable"
+
+server:
+  port: "8092"
+
+# Para conexión externa (cuando esté en Google Cloud)
+# postgres:
+#   host: "34.39.160.195"
+#   port: 5432
+#   user: "gestion_user"
+#   password: "gestion_pass"
+#   dbname: "gestion_db"
+#   sslmode: "disable"

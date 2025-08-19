@@ -42,6 +42,23 @@ services:
     environment:
       - ENV=production
 
+  # Microservicio de Gestión de Activos y Técnicos
+  gestion-service:
+    build:
+      context: ./microservicios/gestion
+      dockerfile: Dockerfile
+    container_name: gestion-service
+    ports:
+      - "8092:8092"
+    depends_on:
+      - gestion-db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8092/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
   # Base de datos PostgreSQL para notificaciones
   notification-db:
     build:
@@ -56,6 +73,21 @@ services:
       - POSTGRES_USER=notification_user
       - POSTGRES_PASSWORD=notification_pass
       - POSTGRES_DB=notification_db
+
+  # Base de datos PostgreSQL para gestión
+  gestion-db:
+    build:
+      context: ./database/gestion
+      dockerfile: Dockerfile
+    container_name: gestion-db
+    ports:
+      - "5433:5432"
+    volumes:
+      - gestion_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=gestion_user
+      - POSTGRES_PASSWORD=gestion_pass
+      - POSTGRES_DB=gestion_db
 
   emqx:
     image: emqx/emqx:latest
@@ -136,3 +168,4 @@ volumes:
   mongo_data:
   influxdb_data:
   notification_data:
+  gestion_data:

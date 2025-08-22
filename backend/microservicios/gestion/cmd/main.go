@@ -20,7 +20,7 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatalf("Error al leer config: %v", err)
 	}
-	
+
 	log.Printf("Archivo de configuración usado: %s", viper.ConfigFileUsed())
 }
 
@@ -35,17 +35,22 @@ func main() {
 	// Repositorios
 	tecnicoRepo := repository.NewTecnicoRepository(db)
 	accionRepo := repository.NewAccionMantenimientoRepository(db)
+	activoRepo := repository.NewActivoRepository(db)
+	edificioRepo := repository.NewEdificioRepository(db)
+	reporteRepo := repository.NewReporteRepository(db)
 
-	// Servicios
+	// Servicios con las dependencias correctas
 	tecnicoService := services.NewTecnicoService(tecnicoRepo)
 	accionService := services.NewAccionMantenimientoService(accionRepo)
+	reporteService := services.NewReporteService(reporteRepo, activoRepo, accionRepo, edificioRepo)
 
 	// Handlers
 	tecnicoHandler := handlers.NewTecnicoHandler(tecnicoService)
 	accionHandler := handlers.NewAccionMantenimientoHandler(accionService)
+	reporteHandler := handlers.NewReporteHandler(reporteService)
 
 	// Router
-	r := router.SetupRouter(tecnicoHandler, accionHandler)
+	r := router.SetupRouter(tecnicoHandler, accionHandler, reporteHandler)
 
 	// Servidor web
 	port := viper.GetString("server.port")

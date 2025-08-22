@@ -1,5 +1,5 @@
 # Etapa de construcción
-FROM golang:1.23 AS builder
+FROM golang:1.22 AS builder
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ COPY . .
 RUN go build -o /app/main ./cmd/main.go
 
 # Etapa final
-FROM golang:1.23 AS final
+FROM golang:1.22 AS final
 
 WORKDIR /app
 
@@ -26,7 +26,7 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/main .
 
 # Copiar la carpeta de configuración
-COPY config/* /app/config/
+COPY config/config.docker.yaml /app/config/config.yaml
 
 # Exponer el puerto
 EXPOSE 8092

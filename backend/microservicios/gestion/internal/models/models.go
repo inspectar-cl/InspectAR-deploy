@@ -11,44 +11,82 @@ type Tecnico struct {
 	Email        string    `json:"email" db:"email"`
 	Telefono     string    `json:"telefono" db:"telefono"`
 	Especialidad string    `json:"especialidad" db:"especialidad"`
-	Disponible   bool      `json:"disponible" db:"disponible"`
+	Autorizado   bool      `json:"autorizado" db:"autorizado"`
 	CreadoEn     time.Time `json:"creado_en" db:"creado_en"`
+}
+
+// Edificio donde se ubican los activos
+type Edificio struct {
+	ID        int       `json:"id" db:"id"`
+	Nombre    string    `json:"nombre" db:"nombre"`
+	Direccion string    `json:"direccion" db:"direccion"`
+	CreadoEn  time.Time `json:"creado_en" db:"creado_en"`
 }
 
 // Activo gestionado
 type Activo struct {
-	ID          int       `json:"id" db:"id"`
-	ActivoID    string    `json:"activo_id" db:"activo_id"`
-	Nombre      string    `json:"nombre" db:"nombre"`
-	Tipo        string    `json:"tipo" db:"tipo"`
-	Estado      string    `json:"estado" db:"estado"`
-	Ubicacion   string    `json:"ubicacion" db:"ubicacion"`
-	EdificioID  string    `json:"edificio_id" db:"edificio_id"`
-	CreadoEn    time.Time `json:"creado_en" db:"creado_en"`
+	ID         int       `json:"id" db:"id"`
+	ActivoID   string    `json:"activo_id" db:"activo_id"`
+	Nombre     string    `json:"nombre" db:"nombre"`
+	Tipo       string    `json:"tipo" db:"tipo"`
+	Estado     string    `json:"estado" db:"estado"`
+	Ubicacion  string    `json:"ubicacion" db:"ubicacion"`
+	EdificioID int       `json:"edificio_id" db:"edificio_id"`
+	CreadoEn   time.Time `json:"creado_en" db:"creado_en"`
 }
 
 // Acción de mantenimiento colaborativa
 type AccionMantenimiento struct {
-	ID          int       `json:"id" db:"id"`
-	ActivoID    int       `json:"activo_id" db:"activo_id"`
-	TecnicoID   int       `json:"tecnico_id" db:"tecnico_id"`
-	Tipo        string    `json:"tipo" db:"tipo"` // preventivo, correctivo, emergencia
-	Descripcion string    `json:"descripcion" db:"descripcion"`
-	Estado      string    `json:"estado" db:"estado"` // pendiente, en_progreso, completado
-	Prioridad   string    `json:"prioridad" db:"prioridad"` // baja, media, alta, critica
-	FechaInicio time.Time `json:"fecha_inicio" db:"fecha_inicio"`
+	ID          int        `json:"id" db:"id"`
+	ActivoID    int        `json:"activo_id" db:"activo_id"`
+	TecnicoID   int        `json:"tecnico_id" db:"tecnico_id"`
+	Tipo        string     `json:"tipo" db:"tipo"` // preventivo, correctivo, emergencia
+	Descripcion string     `json:"descripcion" db:"descripcion"`
+	Estado      string     `json:"estado" db:"estado"`       // pendiente, en_progreso, completado
+	Prioridad   string     `json:"prioridad" db:"prioridad"` // baja, media, alta, critica
+	FechaInicio time.Time  `json:"fecha_inicio" db:"fecha_inicio"`
 	FechaFin    *time.Time `json:"fecha_fin,omitempty" db:"fecha_fin"`
-	CreadoEn    time.Time `json:"creado_en" db:"creado_en"`
+	CreadoEn    time.Time  `json:"creado_en" db:"creado_en"`
+}
+
+// Relación muchos a muchos entre activos y técnicos
+type ActivoTecnico struct {
+	ActivoID   int       `json:"activo_id" db:"activo_id"`
+	TecnicoID  int       `json:"tecnico_id" db:"tecnico_id"`
+	AsignadoEn time.Time `json:"asignado_en" db:"asignado_en"`
 }
 
 // Reporte automático
 type Reporte struct {
-	ID           int       `json:"id" db:"id"`
-	ActivoID     int       `json:"activo_id" db:"activo_id"`
-	TipoReporte  string    `json:"tipo_reporte" db:"tipo_reporte"` // semanal, mensual, incidente
-	Contenido    string    `json:"contenido" db:"contenido"`
-	GeneradoEn   time.Time `json:"generado_en" db:"generado_en"`
-	Estado       string    `json:"estado" db:"estado"` // generado, enviado, archivado
+	ID          int       `json:"id" db:"id"`
+	ActivoID    int       `json:"activo_id" db:"activo_id"`
+	TipoReporte string    `json:"tipo_reporte" db:"tipo_reporte"` // semanal, mensual, incidente, mantenimiento
+	Contenido   string    `json:"contenido" db:"contenido"`
+	GeneradoEn  time.Time `json:"generado_en" db:"generado_en"`
+	Estado      string    `json:"estado" db:"estado"` // generado, enviado, archivado
+}
+
+// DTOs para responses con relaciones
+type TecnicoConActivos struct {
+	Tecnico `json:",inline"`
+	Activos []Activo `json:"activos,omitempty"`
+}
+
+type ActivoConEdificio struct {
+	Activo   `json:",inline"`
+	Edificio Edificio `json:"edificio"`
+}
+
+type AccionConDetalles struct {
+	AccionMantenimiento `json:",inline"`
+	Activo              Activo  `json:"activo"`
+	Tecnico             Tecnico `json:"tecnico"`
+}
+
+type ReporteCompleto struct {
+	Reporte           `json:",inline"`
+	ActivoConEdificio ActivoConEdificio    `json:"activo"`
+	UltimaAccion      *AccionMantenimiento `json:"ultima_accion,omitempty"`
 }
 
 // DTOs para requests
@@ -64,7 +102,15 @@ type CreateActivoRequest struct {
 	Nombre     string `json:"nombre" binding:"required"`
 	Tipo       string `json:"tipo" binding:"required"`
 	Ubicacion  string `json:"ubicacion" binding:"required"`
-	EdificioID string `json:"edificio_id" binding:"required"`
+	EdificioID int    `json:"edificio_id" binding:"required"`
+}
+
+type UpdateAutorizadoTecnicoRequest struct {
+	Autorizado bool `json:"autorizado" binding:"required"`
+}
+
+type AsignarTecnicoActivoRequest struct {
+	TecnicoID int `json:"tecnico_id" binding:"required"`
 }
 
 type CreateAccionMantenimientoRequest struct {

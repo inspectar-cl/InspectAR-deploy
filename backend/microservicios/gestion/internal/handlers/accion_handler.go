@@ -17,7 +17,7 @@ func NewAccionMantenimientoHandler(service *services.AccionMantenimientoService)
 	return &AccionMantenimientoHandler{service: service}
 }
 
-// POST /acciones
+// POST /acciones - Crear acciones de mantenimiento (preventivo, correctivo, emergencia)
 func (h *AccionMantenimientoHandler) CrearAccion(c *gin.Context) {
 	var req models.CreateAccionMantenimientoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -34,9 +34,26 @@ func (h *AccionMantenimientoHandler) CrearAccion(c *gin.Context) {
 	c.JSON(http.StatusCreated, accion)
 }
 
-// GET /activos/:id/acciones
+// GET /acciones/tecnico/:tecnico_id - Acciones donde el técnico puede buscar sus acciones
+func (h *AccionMantenimientoHandler) ObtenerAccionesPorTecnico(c *gin.Context) {
+	tecnicoID, err := strconv.Atoi(c.Param("tecnico_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de técnico inválido"})
+		return
+	}
+
+	acciones, err := h.service.ObtenerAccionesPorTecnico(tecnicoID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudieron obtener las acciones del técnico"})
+		return
+	}
+
+	c.JSON(http.StatusOK, acciones)
+}
+
+// GET /acciones/activo/:activo_id - Consultar acciones por activo
 func (h *AccionMantenimientoHandler) ObtenerAccionesPorActivo(c *gin.Context) {
-	activoID, err := strconv.Atoi(c.Param("id"))
+	activoID, err := strconv.Atoi(c.Param("activo_id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de activo inválido"})
 		return
@@ -51,7 +68,7 @@ func (h *AccionMantenimientoHandler) ObtenerAccionesPorActivo(c *gin.Context) {
 	c.JSON(http.StatusOK, acciones)
 }
 
-// PUT /acciones/:id/estado
+// PUT /acciones/:id/estado - Actualizar estado de acciones (pendiente, en_progreso, completado)
 func (h *AccionMantenimientoHandler) ActualizarEstado(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -73,7 +90,7 @@ func (h *AccionMantenimientoHandler) ActualizarEstado(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"mensaje": "Estado actualizado correctamente"})
 }
 
-// GET /acciones/pendientes
+// GET /acciones/pendientes - Listar acciones pendientes con prioridad
 func (h *AccionMantenimientoHandler) ObtenerAccionesPendientes(c *gin.Context) {
 	acciones, err := h.service.ObtenerAccionesPendientes()
 	if err != nil {

@@ -1,8 +1,14 @@
 -- Datos de ejemplo para testing
 -- Archivo: 002_insert_sample_data.sql
 
+-- Insertar edificios de ejemplo
+INSERT INTO edificios (nombre, direccion) VALUES
+('Edificio Central', 'Av. Principal 123'),
+('Edificio Norte', 'Calle Secundaria 456'),
+('Edificio Sur', 'Av. Industrial 789');
+
 -- Insertar técnicos especializados
-INSERT INTO tecnicos (nombre, email, telefono, especialidad, disponible) VALUES
+INSERT INTO tecnicos (nombre, email, telefono, especialidad, autorizado) VALUES
 ('Juan Pérez', 'juan.perez@inspectar.com', '+56912345678', 'Sistemas Hidráulicos', true),
 ('María González', 'maria.gonzalez@inspectar.com', '+56987654321', 'Electricidad Industrial', true),
 ('Carlos Rodríguez', 'carlos.rodriguez@inspectar.com', '+56911223344', 'Mecánica Industrial', false),
@@ -14,14 +20,14 @@ INSERT INTO tecnicos (nombre, email, telefono, especialidad, disponible) VALUES
 
 -- Insertar activos de ejemplo
 INSERT INTO activos (activo_id, nombre, tipo, estado, ubicacion, edificio_id) VALUES
-('AC-1001', 'Caldera Principal', 'Caldera', 'operativo', 'Sala de Calderas 1', 'ED-01'),
-('AC-1002', 'Compresor Auxiliar', 'Compresor', 'mantenimiento', 'Sala de Compresores', 'ED-01'),
-('AC-1003', 'Bomba Hidráulica 1', 'Bomba', 'operativo', 'Sala de Bombas', 'ED-02'),
-('AC-1004', 'Motor Eléctrico Principal', 'Motor', 'operativo', 'Sala de Motores', 'ED-01'),
-('AC-1005', 'Sistema de Ventilación', 'Ventilación', 'alerta', 'Techo Edificio 1', 'ED-01'),
-('AC-1006', 'Transformador Eléctrico', 'Transformador', 'operativo', 'Subestación', 'ED-02'),
-('AC-1007', 'Chiller Industrial', 'Refrigeración', 'operativo', 'Sala de Refrigeración', 'ED-02'),
-('AC-1008', 'Generador de Emergencia', 'Generador', 'standby', 'Sala de Generadores', 'ED-01');
+('AC-1001', 'Caldera Principal', 'Caldera', 'operativo', 'Sala de Calderas 1', 1),
+('AC-1002', 'Compresor Auxiliar', 'Compresor', 'mantenimiento', 'Sala de Compresores', 1),
+('AC-1003', 'Bomba Hidráulica 1', 'Bomba', 'operativo', 'Sala de Bombas', 2),
+('AC-1004', 'Motor Eléctrico Principal', 'Motor', 'operativo', 'Sala de Motores', 1),
+('AC-1005', 'Sistema de Ventilación', 'Ventilación', 'alerta', 'Techo Edificio 1', 1),
+('AC-1006', 'Transformador Eléctrico', 'Transformador', 'operativo', 'Subestación', 2),
+('AC-1007', 'Chiller Industrial', 'Refrigeración', 'operativo', 'Sala de Refrigeración', 2),
+('AC-1008', 'Generador de Emergencia', 'Generador', 'standby', 'Sala de Generadores', 1);
 
 -- Insertar acciones de mantenimiento
 INSERT INTO acciones_mantenimiento (activo_id, tecnico_id, tipo, descripcion, estado, prioridad) VALUES
@@ -46,6 +52,19 @@ INSERT INTO reportes (activo_id, tipo_reporte, contenido, estado) VALUES
 (6, 'mensual', 'Reporte mensual: Transformador eléctrico con mediciones de aislamiento dentro de especificaciones.', 'enviado'),
 (7, 'mantenimiento', 'Mantenimiento programado: Chiller industrial requiere limpieza de serpentines la próxima semana.', 'generado'),
 (8, 'semanal', 'Reporte semanal: Generador de emergencia probado exitosamente. Tiempo de arranque: 12 segundos.', 'enviado');
+
+-- Insertar relaciones entre activos y técnicos
+INSERT INTO activos_tecnicos (activo_id, tecnico_id) VALUES
+(1, 1), -- Juan Pérez asignado a Caldera Principal
+(1, 6), -- Laura Fernández asignada a Caldera Principal
+(2, 3), -- Carlos Rodríguez asignado a Compresor Auxiliar
+(3, 1), -- Juan Pérez asignado a Bomba Hidráulica 1
+(3, 4), -- Ana Silva asignada a Bomba Hidráulica 1
+(4, 2), -- María González asignada a Motor Eléctrico Principal
+(5, 2), -- María González asignada a Sistema de Ventilación
+(6, 2), -- María González asignada a Transformador Eléctrico
+(7, 7), -- Roberto Castro asignado a Chiller Industrial
+(8, 5); -- Pedro Morales asignado a Generador de Emergencia
 
 -- Actualizar algunas fechas para tener datos más realistas
 UPDATE acciones_mantenimiento 

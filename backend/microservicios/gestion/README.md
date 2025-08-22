@@ -1,165 +1,190 @@
-# Microservicio de Gestión de Activos y Técnicos
+# Microservicio de Gestión
 
-Este microservicio maneja la gestión de activos industriales, técnicos especializados y acciones de mantenimiento colaborativas.
+Microservicio encargado de la gestión de técnicos especializados, acciones de mantenimiento colaborativas y generación de reportes automáticos.
 
-## Funcionalidades implementadas
+## Funcionalidades
 
 ### HdU16 - Lista de contactos de técnicos especializados
-- Crear técnicos con especialidades
-- Listar todos los técnicos disponibles
-- Consultar información de un técnico específico
-- Actualizar disponibilidad de técnicos
+- ✅ Crear técnicos con especialidades
+- ✅ Listar todos los técnicos disponibles
+- ✅ Listar técnicos relacionados con un activo específico
+- ✅ Listar técnicos relacionados con un edificio (indirectamente a través de activos)
+- ✅ Consultar información de un técnico específico
+- ✅ Actualizar estado autorizado de técnicos
+- ✅ Asignar técnicos a activos (relación muchos a muchos)
 
 ### HdU13 - Acciones de mantención colaborativas
-- Crear acciones de mantenimiento (preventivo, correctivo, emergencia)
-- Asignar técnicos a acciones específicas
-- Actualizar estado de acciones (pendiente, en_progreso, completado)
-- Consultar acciones por activo
-- Listar acciones pendientes con prioridad
+- ✅ Crear acciones de mantenimiento (preventivo, correctivo, emergencia)
+- ✅ Asignar técnicos a acciones específicas
+- ✅ Actualizar estado de acciones (pendiente, en_progreso, completado)
+- ✅ Consultar acciones por técnico
+- ✅ Consultar acciones por activo
+- ✅ Listar acciones pendientes con prioridad
 
-### HdU04 - Reportes automáticos (TODO)
-- Generación automática de reportes
-- Reportes por activo
-- Reportes periódicos
+### HdU04 - Reportes automáticos
+- ✅ Generación automática de reportes por activo (PDF)
+- ✅ Reportes por activo con información completa
 
-## Estructura del proyecto
-
-```
-gestion/
-├── cmd/
-│   └── main.go                    # Punto de entrada
-├── config/
-│   └── config.yaml               # Configuración
-├── api/
-│   └── router/
-│       └── router.go             # Rutas HTTP
-├── internal/
-│   ├── models/
-│   │   └── models.go             # Estructuras de datos
-│   ├── handlers/
-│   │   ├── tecnico_handler.go    # Handlers de técnicos
-│   │   └── accion_handler.go     # Handlers de acciones
-│   ├── services/
-│   │   ├── tecnico_service.go    # Lógica de negocio técnicos
-│   │   └── accion_service.go     # Lógica de negocio acciones
-│   ├── repository/
-│   │   ├── tecnico_repository.go # Acceso a datos técnicos
-│   │   └── accion_repository.go  # Acceso a datos acciones
-│   └── database/
-│       └── postgres.go           # Conexión PostgreSQL
-├── Dockerfile
-└── README.md
-```
-
-## Endpoints disponibles
+## API Endpoints
 
 ### Técnicos
 
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| GET | `/tecnicos` | Listar todos los técnicos |
-| POST | `/tecnicos` | Crear un nuevo técnico |
-| GET | `/tecnicos/:id` | Obtener técnico por ID |
-| PUT | `/tecnicos/:id/disponibilidad` | Actualizar disponibilidad |
+#### Crear técnico
+```http
+POST /tecnicos
+Content-Type: application/json
+
+{
+  "nombre": "Juan Pérez",
+  "email": "juan.perez@empresa.com",
+  "telefono": "+56912345678",
+  "especialidad": "Sistemas Hidráulicos"
+}
+```
+
+#### Listar todos los técnicos
+```http
+GET /tecnicos
+```
+
+#### Listar técnicos por activo
+```http
+GET /tecnicos/activo/{activo_id}?solo_autorizados=true
+```
+
+#### Listar técnicos por edificio
+```http
+GET /tecnicos/edificio/{edificio_id}?solo_autorizados=true
+```
+
+#### Obtener técnico específico
+```http
+GET /tecnicos/{id}
+```
+
+#### Actualizar estado autorizado
+```http
+PUT /tecnicos/{id}/autorizado
+Content-Type: application/json
+
+{
+  "autorizado": true
+}
+```
+
+#### Asignar técnico a activo
+```http
+POST /activos/{activo_id}/tecnicos
+Content-Type: application/json
+
+{
+  "tecnico_id": 1
+}
+```
 
 ### Acciones de Mantenimiento
 
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| POST | `/acciones` | Crear nueva acción de mantenimiento |
-| GET | `/activos/:id/acciones` | Obtener acciones de un activo |
-| PUT | `/acciones/:id/estado` | Actualizar estado de acción |
-| GET | `/acciones/pendientes` | Listar acciones pendientes |
+#### Crear acción de mantenimiento
+```http
+POST /acciones
+Content-Type: application/json
 
-### Health Check
-
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| GET | `/health` | Estado del servicio |
-
-## Ejemplos de uso
-
-### Crear un técnico
-```bash
-curl -X POST http://localhost:8092/tecnicos \
-  -H "Content-Type: application/json" \
-  -d '{
-    "nombre": "Juan Pérez",
-    "email": "juan.perez@empresa.com",
-    "telefono": "+56912345678",
-    "especialidad": "Sistemas Hidráulicos"
-  }'
+{
+  "activo_id": 1,
+  "tecnico_id": 1,
+  "tipo": "preventivo",
+  "descripcion": "Revisión mensual de válvulas",
+  "prioridad": "alta"
+}
 ```
 
-### Crear acción de mantenimiento
-```bash
-curl -X POST http://localhost:8092/acciones \
-  -H "Content-Type: application/json" \
-  -d '{
-    "activo_id": 1,
-    "tecnico_id": 1,
-    "tipo": "preventivo",
-    "descripcion": "Revisión mensual de válvulas",
-    "prioridad": "media"
-  }'
+#### Obtener acciones por técnico
+```http
+GET /acciones/tecnico/{tecnico_id}
 ```
 
-### Listar técnicos disponibles
-```bash
-curl http://localhost:8092/tecnicos
+#### Obtener acciones por activo
+```http
+GET /acciones/activo/{activo_id}
 ```
 
-### Actualizar estado de acción
-```bash
-curl -X PUT http://localhost:8092/acciones/1/estado \
-  -H "Content-Type: application/json" \
-  -d '{"estado": "en_progreso"}'
+#### Actualizar estado de acción
+```http
+PUT /acciones/{id}/estado
+Content-Type: application/json
+
+{
+  "estado": "en_progreso"
+}
 ```
+
+#### Listar acciones pendientes con prioridad
+```http
+GET /acciones/pendientes
+```
+
+### Reportes
+
+#### Generar reporte PDF por activo
+```http
+POST /reportes/activo/{activo_id}
+```
+Retorna: Archivo PDF para descarga
+
+#### Obtener reportes de un activo
+```http
+GET /reportes/activo/{activo_id}
+```
+
+## Estructura de Base de Datos
+
+### Tablas principales:
+- **`tecnicos`** - Técnicos especializados con campo `autorizado`
+- **`edificios`** - Edificios donde se ubican los activos
+- **`activos`** - Activos industriales (relacionados con edificios)
+- **`acciones_mantenimiento`** - Acciones de mantenimiento colaborativas
+- **`reportes`** - Reportes automáticos generados
+- **`activos_tecnicos`** - Tabla intermedia para relación muchos a muchos
+
+### Relaciones:
+- `edificios` ↔ `activos` (uno a muchos)
+- `activos` ↔ `tecnicos` (muchos a muchos vía `activos_tecnicos`)
+- `activos` ↔ `acciones_mantenimiento` (uno a muchos)
+- `tecnicos` ↔ `acciones_mantenimiento` (uno a muchos)
 
 ## Configuración
 
-Edita `config/config.yaml` para configurar la conexión a PostgreSQL:
-
-```yaml
-postgres:
-  host: "localhost"
-  port: 5432
-  user: "gestion_user"
-  password: "gestion_pass"
-  dbname: "gestion_db"
-  sslmode: "disable"
-
-server:
-  port: "8092"
-```
+El microservicio utiliza PostgreSQL como base de datos. La configuración se encuentra en:
+- `config/config.yaml` - Configuración general
+- Variables de entorno para conexión a base de datos
 
 ## Ejecución
 
-### Con Go directo
 ```bash
-cd microservicios/gestion
+# Ejecutar la base de datos
+docker-compose up gestion-db
+
+# Ejecutar el microservicio
 go run cmd/main.go
 ```
 
-### Con Docker
-```bash
-docker build -t gestion-service .
-docker run -p 8092:8092 gestion-service
-```
+El servicio estará disponible en el puerto `8092`.
 
-## Base de datos
+## Estados y Tipos
 
-El servicio requiere una base de datos PostgreSQL con las siguientes tablas:
-- `tecnicos`: Información de técnicos especializados
-- `activos`: Catálogo de activos (sincronizado con ParserService)
-- `acciones_mantenimiento`: Acciones de mantenimiento colaborativas
-- `reportes`: Reportes automáticos generados
+### Estados de Acciones:
+- `pendiente` - Acción creada pero no iniciada
+- `en_progreso` - Acción siendo ejecutada
+- `completado` - Acción finalizada
+- `cancelado` - Acción cancelada
 
-**Nota**: La estructura de la base de datos debe ser creada previamente. Ver `database/gestion/` para scripts de inicialización.
+### Tipos de Mantenimiento:
+- `preventivo` - Mantenimiento programado
+- `correctivo` - Reparación de fallas
+- `emergencia` - Mantenimiento urgente
 
-## Próximos pasos
-
-1. Implementar handlers de reportes (HdU04)
-2. Sincronización con ParserService para activos
-3. Sistema de notificaciones para acciones críticas
-4. Dashboard de gestión en tiempo real
+### Prioridades:
+- `baja` - Prioridad baja
+- `media` - Prioridad media
+- `alta` - Prioridad alta
+- `critica` - Prioridad crítica

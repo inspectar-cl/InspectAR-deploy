@@ -8,7 +8,15 @@ CREATE TABLE IF NOT EXISTS tecnicos (
     email VARCHAR(255) UNIQUE NOT NULL,
     telefono VARCHAR(50),
     especialidad VARCHAR(100) NOT NULL,
-    disponible BOOLEAN DEFAULT true,
+    autorizado BOOLEAN DEFAULT true,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla de edificios
+CREATE TABLE IF NOT EXISTS edificios (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL,
+    direccion VARCHAR(255),
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -20,7 +28,7 @@ CREATE TABLE IF NOT EXISTS activos (
     tipo VARCHAR(100) NOT NULL,
     estado VARCHAR(50) DEFAULT 'operativo',
     ubicacion VARCHAR(255),
-    edificio_id VARCHAR(100),
+    edificio_id INTEGER REFERENCES edificios(id) ON DELETE SET NULL,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -48,18 +56,30 @@ CREATE TABLE IF NOT EXISTS reportes (
     estado VARCHAR(50) DEFAULT 'generado' CHECK (estado IN ('generado', 'enviado', 'archivado'))
 );
 
+-- Tabla intermedia para la relación muchos a muchos entre activos y técnicos
+CREATE TABLE IF NOT EXISTS activos_tecnicos (
+    activo_id INTEGER NOT NULL REFERENCES activos(id) ON DELETE CASCADE,
+    tecnico_id INTEGER NOT NULL REFERENCES tecnicos(id) ON DELETE CASCADE,
+    asignado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (activo_id, tecnico_id)
+);
+
 -- Índices para mejorar rendimiento
 CREATE INDEX IF NOT EXISTS idx_tecnicos_especialidad ON tecnicos(especialidad);
-CREATE INDEX IF NOT EXISTS idx_tecnicos_disponible ON tecnicos(disponible);
+CREATE INDEX IF NOT EXISTS idx_tecnicos_autorizado ON tecnicos(autorizado);
 CREATE INDEX IF NOT EXISTS idx_activos_estado ON activos(estado);
 CREATE INDEX IF NOT EXISTS idx_activos_tipo ON activos(tipo);
+CREATE INDEX IF NOT EXISTS idx_activos_edificio ON activos(edificio_id);
 CREATE INDEX IF NOT EXISTS idx_acciones_estado ON acciones_mantenimiento(estado);
 CREATE INDEX IF NOT EXISTS idx_acciones_prioridad ON acciones_mantenimiento(prioridad);
 CREATE INDEX IF NOT EXISTS idx_acciones_activo ON acciones_mantenimiento(activo_id);
 CREATE INDEX IF NOT EXISTS idx_reportes_tipo ON reportes(tipo_reporte);
 CREATE INDEX IF NOT EXISTS idx_reportes_fecha ON reportes(generado_en);
+CREATE INDEX IF NOT EXISTS idx_activos_tecnicos_activo ON activos_tecnicos(activo_id);
+CREATE INDEX IF NOT EXISTS idx_activos_tecnicos_tecnico ON activos_tecnicos(tecnico_id);
 
 COMMENT ON TABLE tecnicos IS 'Técnicos especializados para mantenimiento (HdU16)';
+COMMENT ON TABLE edificios IS 'Edificios donde se ubican los activos';
 COMMENT ON TABLE activos IS 'Activos industriales gestionados';
 COMMENT ON TABLE acciones_mantenimiento IS 'Acciones de mantenimiento colaborativas (HdU13)';
 COMMENT ON TABLE reportes IS 'Reportes automáticos generados (HdU04)';

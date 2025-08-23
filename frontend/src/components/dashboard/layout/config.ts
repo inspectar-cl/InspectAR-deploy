@@ -6,7 +6,7 @@ export const navItems = [
   { key: 'alertas', title: 'Alertas', href: paths.dashboard.alertas, icon: 'warning-circle' },
   { key: 'activos', title: 'Lista de activos', href: paths.dashboard.activos, icon: 'building-apartment' },
   { key: 'graficos', title: 'Gráficos', href: paths.dashboard.graficos, icon: 'chart-line' },
-  { key: 'informe', title: 'Informes', href: paths.dashboard.informe, icon: 'file-text' },
+  { key: 'reportes-tecnicos', title: 'Reportes técnicos', href: paths.dashboard.reportesTecnicos, icon: 'file-text' },
   { key: 'planos', title: 'Planos', href: paths.dashboard.planos, icon: 'blueprint' },
   { key: 'settings', title: 'Settings', href: paths.dashboard.settings, icon: 'gear-six' },
   { key: 'account', title: 'Account', href: paths.dashboard.account, icon: 'user' },

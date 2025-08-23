@@ -34,17 +34,17 @@ const columns: GridColDef<(typeof activos)[number]>[] = [
   {
     field: 'id_edificio',
     headerName: 'ID edificio',
-    width: 90,
+    flex: 0.5, minWidth: 50, // diseño responsivo
   },
   {
     field: 'tipoActivo',
     headerName: 'Tipo de Activo',
-    width: 150,
+    flex: 1.5, minWidth: 120, // diseño responsivo
   },
   {
     field: 'ubicacion',
     headerName: 'Ubicación',
-    width: 160,
+    flex: 1.5, minWidth: 160, // diseño responsivo
   },
   {
     field: 'estado',
@@ -52,13 +52,15 @@ const columns: GridColDef<(typeof activos)[number]>[] = [
     headerName: 'Estado',
     type: 'singleSelect',
     valueOptions: STATUS_OPTIONS,
-    width: 110,
+    flex: 1,
+    minWidth: 100, // diseño responsivo
   },
   {
     field: 'descripcion',
     headerName: 'Descripción',
     description: 'Descripcion de estado del activo',
-    width: 320,
+    flex: 2,
+    minWidth: 220, // diseño responsivo
   },
 ];
 
@@ -158,7 +160,23 @@ export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: any; edi
                       toolbarColumns: 'Columnas visibles',
                       toolbarFilters: 'Filtros',
                       toolbarExport: 'Exportar',
-                    }}
+                      // Traducción de paginación
+                      paginationRowsPerPage: 'Activos por página',
+                      noRowsLabel: 'No hay activos disponibles',
+                      footerTotalRows: 'Total de activos:',
+                      footerTotalVisibleRows: (visibleCount, totalCount) =>
+                      `${visibleCount.toLocaleString()} de ${totalCount.toLocaleString()}`,
+                      footerRowSelected: (count) =>                          count > 1
+                        ? `${count.toLocaleString()} activos seleccionados`
+                        : `${count.toLocaleString()} activo seleccionado`,
+                      paginationDisplayedRows: ({ from, to, count, estimated }) => {
+                        if (!estimated) {                            
+                          return `${from}–${to} de ${count !== -1 ? count : `más de ${to}`}`;
+                        }
+                        const estimatedLabel = estimated && estimated > to ? `alrededor de ${estimated}` : `más de ${to}`;
+                        return `${from}–${to} de ${count !== -1 ? count : estimatedLabel}`;
+                        },
+                      }}
                 />
             </Box>
         </CardContent>

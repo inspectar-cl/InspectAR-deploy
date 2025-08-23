@@ -6,7 +6,7 @@ export const paths = {
     account: '/dashboard/account',
     alertas: '/dashboard/alertas',
     activos: '/dashboard/activos',
-    informe: '/errors/not-found',
+    reportesTecnicos: '/dashboard/reportes-tecnicos',
     planos: '/errors/not-found',
     graficos: '/dashboard/graficos',
     settings: '/dashboard/settings',

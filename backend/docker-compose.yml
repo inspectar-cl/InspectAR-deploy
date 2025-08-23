@@ -4,11 +4,8 @@ services:
     container_name: apigateway
     ports:
       - "3500:3500"
-    environment:
-      - NODE_ENV=development
-    volumes:
-      - ./apigateway:/usr/src/app
-      - /usr/src/app/node_modules
+    # volumes:
+    #   - ./apigateway:/app
   # Microservicio
   iot-service:
     build:

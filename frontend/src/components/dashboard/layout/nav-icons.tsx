@@ -1,5 +1,6 @@
 import type { Icon } from '@phosphor-icons/react/dist/lib/types';
 import { ChartPieIcon } from '@phosphor-icons/react/dist/ssr/ChartPie';
+import { BroadcastIcon } from '@phosphor-icons/react/dist/ssr/Broadcast';
 import { GearSixIcon } from '@phosphor-icons/react/dist/ssr/GearSix';
 import { PlugsConnectedIcon } from '@phosphor-icons/react/dist/ssr/PlugsConnected';
 import { UserIcon } from '@phosphor-icons/react/dist/ssr/User';
@@ -21,6 +22,7 @@ export const navIcons = {
   'chart-line': ChartLineIcon,
   'file-text': FileTextIcon,
   'blueprint': BlueprintIcon,
+  'broadcast': BroadcastIcon,
   user: UserIcon,
   users: UsersIcon,
 } as Record<string, Icon>;

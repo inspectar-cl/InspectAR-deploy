@@ -13,6 +13,8 @@ import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/di
 import { Users as UsersIcon } from '@phosphor-icons/react/dist/ssr/Users';
 
 import { usePopover } from '@/hooks/use-popover';
+import { useNotifications } from '@/contexts/notifications';
+import { NotificationsPopover } from './notifications-popover';
 
 import { MobileNav } from './mobile-nav';
 import { UserPopover } from './user-popover';
@@ -21,6 +23,8 @@ export function MainNav(): React.JSX.Element {
   const [openNav, setOpenNav] = React.useState<boolean>(false);
 
   const userPopover = usePopover<HTMLDivElement>();
+  const bellPopover = usePopover<HTMLButtonElement>();
+  const { unreadCount } = useNotifications();
 
   return (
     <React.Fragment>
@@ -61,8 +65,8 @@ export function MainNav(): React.JSX.Element {
               </IconButton>
             </Tooltip>
             <Tooltip title="Notifications">
-              <Badge badgeContent={4} color="success" variant="dot">
-                <IconButton>
+              <Badge color="error" badgeContent={unreadCount} invisible={unreadCount === 0}>
+                <IconButton ref={bellPopover.anchorRef} onClick={bellPopover.handleOpen}>
                   <BellIcon />
                 </IconButton>
               </Badge>
@@ -76,6 +80,7 @@ export function MainNav(): React.JSX.Element {
           </Stack>
         </Stack>
       </Box>
+      <NotificationsPopover anchorEl={bellPopover.anchorRef.current} onClose={bellPopover.handleClose} open={bellPopover.open} />
       <UserPopover anchorEl={userPopover.anchorRef.current} onClose={userPopover.handleClose} open={userPopover.open} />
       <MobileNav
         onClose={() => {

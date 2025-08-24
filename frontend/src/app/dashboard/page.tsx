@@ -7,19 +7,16 @@ import Grid from '@mui/material/Grid';
 import { TemperatureProgress } from '@/components/dashboard/overview/temperature';
 
 import { config } from '@/config';
-//Import SensorScatter es temporal, luego eliminar
 import { SensorScatter } from '@/components/dashboard/overview/sensor-scatter';
 import { Activo } from '@/types/'
 
 import Services from '@/modules/Services'
 const gs = new Services()
 
-// export const metadata = { title: `Overview | Dashboard | ${config.site.name}` } satisfies Metadata;
 
 export default function Page(): React.JSX.Element {
   const [activo, setActivo] = React.useState<Activo | null>(null)
   const [sensores, setSensores] = React.useState<any[]>([])
-  // const dataTemp = 1;
 
   const hasFetchedRef = React.useRef(false)
 
@@ -70,7 +67,6 @@ export default function Page(): React.JSX.Element {
       </Grid>
 
       <Grid size={{md:2, xs:12}}>
-        {/* Temperatura */}
         <TemperatureProgress value={temperaturaInfo} />
       </Grid>
 

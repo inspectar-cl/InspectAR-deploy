@@ -14,45 +14,61 @@ import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
-import dayjs from 'dayjs';
+import Button from '@mui/material/Button';
+import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 
 import { useSelection } from '@/hooks/use-selection';
 
-function noop(): void {
-  // do nothing
+export interface Activo_contactos {
+  id_activo: string;
+  nombre_activo: string;
 }
 
-export interface Customer {
+export interface Contacto {
   id: string;
+  id_edificio: string;
   avatar: string;
   name: string;
   email: string;
-  address: { city: string; state: string; country: string; street: string };
+  activo: Activo_contactos[];
   phone: string;
-  createdAt: Date;
+  especialidad: String;
 }
 
-interface CustomersTableProps {
+interface ContactosTableProps {
   count?: number;
   page?: number;
-  rows?: Customer[];
+  rows?: Contacto[];
   rowsPerPage?: number;
+  onPageChange?: (event: unknown, newPage: number) => void;
+  onRowsPerPageChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onSendRequest: (selectedRows: Contacto[]) => void;
 }
 
-export function CustomersTable({
+export function ContactosTable({
   count = 0,
   rows = [],
   page = 0,
   rowsPerPage = 0,
-}: CustomersTableProps): React.JSX.Element {
+  onPageChange = () => {},
+  onRowsPerPageChange = () => {},
+  onSendRequest,
+}: ContactosTableProps): React.JSX.Element {
   const rowIds = React.useMemo(() => {
-    return rows.map((customer) => customer.id);
+    return rows.map((contacto) => contacto.id);
   }, [rows]);
 
   const { selectAll, deselectAll, selectOne, deselectOne, selected } = useSelection(rowIds);
 
   const selectedSome = (selected?.size ?? 0) > 0 && (selected?.size ?? 0) < rows.length;
   const selectedAll = rows.length > 0 && selected?.size === rows.length;
+
+  const handleEnviarSolicitud = () => {
+      const selectedRows = rows.filter(row => selected.has(row.id));
+      onSendRequest(selectedRows);
+  };
+
+  const isButtonDisabled = selected.size === 0;
 
   return (
     <Card>
@@ -73,11 +89,11 @@ export function CustomersTable({
                   }}
                 />
               </TableCell>
-              <TableCell>Name</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Location</TableCell>
-              <TableCell>Phone</TableCell>
-              <TableCell>Signed Up</TableCell>
+              <TableCell>Nombre</TableCell>
+              <TableCell>Activo asociado</TableCell>
+              <TableCell>Correo</TableCell>
+              <TableCell>Teléfono</TableCell>
+              <TableCell>Especialidad</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -104,12 +120,23 @@ export function CustomersTable({
                       <Typography variant="subtitle2">{row.name}</Typography>
                     </Stack>
                   </TableCell>
-                  <TableCell>{row.email}</TableCell>
-                  <TableCell>
-                    {row.address.city}, {row.address.state}, {row.address.country}
+                  <TableCell
+                    sx={{
+                      maxWidth: 200,
+                      overflowY: 'auto',
+                    }}
+                  >
+                    <Stack direction="column" spacing={0.5}>
+                      {row.activo.map((a) => (
+                        <Typography key={a.id_activo} variant="body2">
+                          {a.nombre_activo}
+                        </Typography>
+                      ))}
+                    </Stack>
                   </TableCell>
+                  <TableCell>{row.email}</TableCell>
                   <TableCell>{row.phone}</TableCell>
-                  <TableCell>{dayjs(row.createdAt).format('MMM D, YYYY')}</TableCell>
+                  <TableCell>{row.especialidad}</TableCell>
                 </TableRow>
               );
             })}
@@ -117,15 +144,25 @@ export function CustomersTable({
         </Table>
       </Box>
       <Divider />
-      <TablePagination
-        component="div"
-        count={count}
-        onPageChange={noop}
-        onRowsPerPageChange={noop}
-        page={page}
-        rowsPerPage={rowsPerPage}
-        rowsPerPageOptions={[5, 10, 25]}
-      />
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
+        <Button
+          startIcon={<PlusIcon fontSize="var(--icon-fontSize-md)" />}
+          variant="contained"
+          onClick={handleEnviarSolicitud}
+          disabled={isButtonDisabled}
+        >
+          Enviar solicitud
+        </Button>
+        <TablePagination
+          component="div"
+          count={count}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          onPageChange={onPageChange}
+          onRowsPerPageChange={onRowsPerPageChange}
+          rowsPerPageOptions={[5, 10, 25]}
+        />
+      </Box>
     </Card>
   );
 }

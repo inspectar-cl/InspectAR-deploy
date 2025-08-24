@@ -9,6 +9,7 @@ export const paths = {
     sensores: '/dashboard/sensores',
     reportesTecnicos: '/dashboard/reportes-tecnicos',
     planos: '/errors/not-found',
+    contactos: '/dashboard/contactos',
     graficos: '/dashboard/graficos',
     settings: '/dashboard/settings',
     activoDetail: (id: string) => `/dashboard/activos/${id}`,

@@ -11,6 +11,7 @@ import { BuildingApartmentIcon } from '@phosphor-icons/react/dist/ssr/BuildingAp
 import { ChartLineIcon } from '@phosphor-icons/react/dist/ssr/ChartLine';
 import { FileTextIcon } from '@phosphor-icons/react/dist/ssr/FileText';
 import { BlueprintIcon } from '@phosphor-icons/react/dist/ssr/Blueprint';
+import { AddressBookIcon } from '@phosphor-icons/react/dist/ssr/AddressBook';
 
 export const navIcons = {
   'chart-pie': ChartPieIcon,
@@ -23,6 +24,7 @@ export const navIcons = {
   'file-text': FileTextIcon,
   'blueprint': BlueprintIcon,
   'broadcast': BroadcastIcon,
+  'adressBook': AddressBookIcon,
   user: UserIcon,
   users: UsersIcon,
 } as Record<string, Icon>;

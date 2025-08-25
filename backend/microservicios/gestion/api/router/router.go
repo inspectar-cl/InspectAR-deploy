@@ -2,6 +2,7 @@ package router
 
 import (
 	"gestion/internal/handlers"
+	"strconv"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -26,11 +27,35 @@ func SetupRouter(tecnicoHandler *handlers.TecnicoHandler, accionHandler *handler
 		c.JSON(200, gin.H{"status": "ok", "service": "gestion"})
 	})
 
+	// Test route for debugging
+	r.GET("/test", func(c *gin.Context) {
+		c.JSON(200, gin.H{"message": "test route works"})
+	})
+
 	// Rutas de técnicos (HdU16 - Lista de contactos de técnicos especializados)
 	r.POST("/tecnicos", tecnicoHandler.CrearTecnico)
 	r.GET("/tecnicos", tecnicoHandler.ListarTodosLosTecnicos)
 	r.GET("/tecnicos/activo/:activo_id", tecnicoHandler.ListarTecnicosPorActivo)       // Técnicos relacionados con un activo
 	r.GET("/tecnicos/edificio/:edificio_id", tecnicoHandler.ListarTecnicosPorEdificio) // Técnicos relacionados con un edificio
+
+	// RUTA PRINCIPAL: Activos por técnico (usando /activos-de-tecnico/ para evitar conflicto)
+	r.GET("/activos-de-tecnico/:tecnico_id", func(c *gin.Context) {
+		tecnicoID, err := strconv.Atoi(c.Param("tecnico_id"))
+		if err != nil {
+			c.JSON(400, gin.H{"error": "ID de técnico inválido"})
+			return
+		}
+
+		// Llamar al método público del handler
+		activos, err := tecnicoHandler.ObtenerActivosDirecto(tecnicoID)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "No se pudieron obtener los activos del técnico", "details": err.Error()})
+			return
+		}
+
+		c.JSON(200, activos)
+	})
+
 	r.GET("/tecnicos/:id", tecnicoHandler.ObtenerTecnico)
 	r.PUT("/tecnicos/:id/autorizado", tecnicoHandler.ActualizarAutorizado)
 	r.POST("/activos/:activo_id/tecnicos", tecnicoHandler.AsignarTecnicoAActivo) // Asignar técnico a activo
@@ -48,3 +73,5 @@ func SetupRouter(tecnicoHandler *handlers.TecnicoHandler, accionHandler *handler
 
 	return r
 }
+
+// Checking current router configuration for técnicos endpoints

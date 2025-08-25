@@ -12,6 +12,7 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 - ✅ Consultar información de un técnico específico
 - ✅ Actualizar estado autorizado de técnicos
 - ✅ Asignar técnicos a activos (relación muchos a muchos)
+- 🎯 **✅ Obtener activos asociados a un técnico** (`GET /activos-de-tecnico/{tecnico_id}`)
 
 ### HdU13 - Acciones de mantención colaborativas
 - ✅ Crear acciones de mantenimiento (preventivo, correctivo, emergencia)
@@ -27,113 +28,337 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 
 ## API Endpoints
 
-### Técnicos
+### 🏥 Health Check
 
-#### Crear técnico
-```http
-POST /tecnicos
-Content-Type: application/json
-
+#### Verificar estado del servicio
+```bash
+curl -X GET http://localhost:8092/health
+```
+**Respuesta:**
+```json
 {
-  "nombre": "Juan Pérez",
-  "email": "juan.perez@empresa.com",
-  "telefono": "+56912345678",
-  "especialidad": "Sistemas Hidráulicos"
+  "status": "ok",
+  "service": "gestion"
 }
 ```
 
-#### Listar todos los técnicos
-```http
-GET /tecnicos
+---
+
+### 🧑‍🔧 Técnicos (HdU16)
+
+#### Crear técnico
+```bash
+curl -X POST http://localhost:8092/tecnicos \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Ana Silva",
+    "email": "ana.silva@empresa.com",
+    "telefono": "+56955667788",
+    "especialidad": "Instrumentación"
+  }'
+```
+**Respuesta:**
+```json
+{
+  "id": 9,
+  "nombre": "Ana Silva",
+  "email": "ana.silva@empresa.com",
+  "telefono": "+56955667788",
+  "especialidad": "Instrumentación",
+  "autorizado": true,
+  "creado_en": "2025-08-25T15:30:00Z"
+}
+```
+
+#### Listar todos los técnicos autorizados
+```bash
+curl -X GET http://localhost:8092/tecnicos
+```
+**Respuesta:**
+```json
+[
+  {
+    "id": 1,
+    "nombre": "Juan Pérez",
+    "email": "juan.perez@inspectar.com",
+    "telefono": "+56912345678",
+    "especialidad": "Sistemas Hidráulicos",
+    "autorizado": true,
+    "creado_en": "2025-08-20T22:49:18.024565Z"
+  },
+  {
+    "id": 2,
+    "nombre": "María González",
+    "email": "maria.gonzalez@inspectar.com",
+    "telefono": "+56987654321",
+    "especialidad": "Electricidad Industrial",
+    "autorizado": true,
+    "creado_en": "2025-08-20T22:49:18.024565Z"
+  }
+]
 ```
 
 #### Listar técnicos por activo
-```http
-GET /tecnicos/activo/{activo_id}?solo_autorizados=true
+```bash
+curl -X GET http://localhost:8092/tecnicos/activo/1
+```
+**Respuesta:**
+```json
+[
+  {
+    "id": 1,
+    "nombre": "Juan Pérez",
+    "email": "juan.perez@inspectar.com",
+    "telefono": "+56912345678",
+    "especialidad": "Sistemas Hidráulicos",
+    "autorizado": true,
+    "creado_en": "2025-08-20T22:49:18.024565Z"
+  },
+  {
+    "id": 6,
+    "nombre": "Laura Fernández",
+    "email": "laura.fernandez@inspectar.com",
+    "telefono": "+56933445566",
+    "especialidad": "Calderas y Vapor",
+    "autorizado": true,
+    "creado_en": "2025-08-20T22:49:18.024565Z"
+  }
+]
 ```
 
 #### Listar técnicos por edificio
-```http
-GET /tecnicos/edificio/{edificio_id}?solo_autorizados=true
+```bash
+curl -X GET http://localhost:8092/tecnicos/edificio/1
+```
+**Respuesta:**
+```json
+[
+  {
+    "id": 1,
+    "nombre": "Juan Pérez",
+    "email": "juan.perez@inspectar.com",
+    "telefono": "+56912345678",
+    "especialidad": "Sistemas Hidráulicos",
+    "autorizado": true,
+    "creado_en": "2025-08-20T22:49:18.024565Z"
+  }
+]
 ```
 
 #### Obtener técnico específico
-```http
-GET /tecnicos/{id}
+```bash
+curl -X GET http://localhost:8092/tecnicos/1
+```
+**Respuesta:**
+```json
+{
+  "id": 1,
+  "nombre": "Juan Pérez",
+  "email": "juan.perez@inspectar.com",
+  "telefono": "+56912345678",
+  "especialidad": "Sistemas Hidráulicos",
+  "autorizado": true,
+  "creado_en": "2025-08-20T22:49:18.024565Z"
+}
+```
+
+#### 🎯 **RUTA PRINCIPAL: Obtener activos asociados a un técnico**
+```bash
+curl -X GET http://localhost:8092/activos-de-tecnico/1
+```
+**Respuesta:**
+```json
+[
+  {
+    "id": 3,
+    "activo_id": "AC-1003",
+    "nombre": "Bomba Hidráulica 1",
+    "tipo": "Bomba",
+    "estado": "operativo",
+    "ubicacion": "Sala de Bombas",
+    "edificio_id": 2,
+    "creado_en": "2025-08-20T22:49:18.026008Z"
+  },
+  {
+    "id": 1,
+    "activo_id": "AC-1001",
+    "nombre": "Caldera Principal",
+    "tipo": "Caldera",
+    "estado": "operativo",
+    "ubicacion": "Sala de Calderas 1",
+    "edificio_id": 1,
+    "creado_en": "2025-08-20T22:49:18.026008Z"
+  }
+]
 ```
 
 #### Actualizar estado autorizado
-```http
-PUT /tecnicos/{id}/autorizado
-Content-Type: application/json
-
+```bash
+curl -X PUT http://localhost:8092/tecnicos/1/autorizado \
+  -H "Content-Type: application/json" \
+  -d '{"autorizado": false}'
+```
+**Respuesta:**
+```json
 {
-  "autorizado": true
+  "mensaje": "Estado autorizado actualizado correctamente"
 }
 ```
 
 #### Asignar técnico a activo
-```http
-POST /activos/{activo_id}/tecnicos
-Content-Type: application/json
-
+```bash
+curl -X POST http://localhost:8092/activos/1/tecnicos \
+  -H "Content-Type: application/json" \
+  -d '{"tecnico_id": 2}'
+```
+**Respuesta:**
+```json
 {
-  "tecnico_id": 1
+  "mensaje": "Técnico asignado al activo correctamente"
 }
 ```
 
-### Acciones de Mantenimiento
+---
+
+### 🔧 Acciones de Mantenimiento (HdU13)
 
 #### Crear acción de mantenimiento
-```http
-POST /acciones
-Content-Type: application/json
-
+```bash
+curl -X POST http://localhost:8092/acciones \
+  -H "Content-Type: application/json" \
+  -d '{
+    "activo_id": 1,
+    "tecnico_id": 1,
+    "tipo": "preventivo",
+    "descripcion": "Revisión mensual de válvulas",
+    "prioridad": "alta"
+  }'
+```
+**Respuesta:**
+```json
 {
+  "id": 11,
   "activo_id": 1,
   "tecnico_id": 1,
   "tipo": "preventivo",
   "descripcion": "Revisión mensual de válvulas",
-  "prioridad": "alta"
+  "estado": "pendiente",
+  "prioridad": "alta",
+  "fecha_inicio": "2025-08-25T15:30:00Z",
+  "creado_en": "2025-08-25T15:30:00Z"
 }
 ```
 
 #### Obtener acciones por técnico
-```http
-GET /acciones/tecnico/{tecnico_id}
+```bash
+curl -X GET http://localhost:8092/acciones/tecnico/1
+```
+**Respuesta:**
+```json
+[
+  {
+    "id": 1,
+    "activo_id": 1,
+    "tecnico_id": 1,
+    "tipo": "preventivo",
+    "descripcion": "Inspección mensual de calderas",
+    "estado": "pendiente",
+    "prioridad": "alta",
+    "fecha_inicio": "2025-08-20T22:49:18.027847Z",
+    "creado_en": "2025-08-20T22:49:18.027847Z",
+    "activo": "Caldera Principal",
+    "tecnico": "Juan Pérez"
+  }
+]
 ```
 
 #### Obtener acciones por activo
-```http
-GET /acciones/activo/{activo_id}
+```bash
+curl -X GET http://localhost:8092/acciones/activo/1
+```
+**Respuesta:**
+```json
+[
+  {
+    "id": 1,
+    "activo_id": 1,
+    "tecnico_id": 1,
+    "tipo": "preventivo",
+    "descripcion": "Inspección mensual de calderas",
+    "estado": "pendiente",
+    "prioridad": "alta",
+    "fecha_inicio": "2025-08-20T22:49:18.027847Z",
+    "creado_en": "2025-08-20T22:49:18.027847Z",
+    "activo": "Caldera Principal",
+    "tecnico": "Juan Pérez"
+  }
+]
 ```
 
 #### Actualizar estado de acción
-```http
-PUT /acciones/{id}/estado
-Content-Type: application/json
-
+```bash
+curl -X PUT http://localhost:8092/acciones/1/estado \
+  -H "Content-Type: application/json" \
+  -d '{"estado": "en_progreso"}'
+```
+**Respuesta:**
+```json
 {
-  "estado": "en_progreso"
+  "mensaje": "Estado de acción actualizado correctamente"
 }
 ```
 
 #### Listar acciones pendientes con prioridad
-```http
-GET /acciones/pendientes
+```bash
+curl -X GET http://localhost:8092/acciones/pendientes
+```
+**Respuesta:**
+```json
+[
+  {
+    "id": 1,
+    "activo_id": 1,
+    "tecnico_id": 1,
+    "tipo": "preventivo",
+    "descripcion": "Inspección mensual de calderas",
+    "estado": "pendiente",
+    "prioridad": "alta",
+    "fecha_inicio": "2025-08-20T22:49:18.027847Z",
+    "creado_en": "2025-08-20T22:49:18.027847Z",
+    "activo": "Caldera Principal",
+    "tecnico": "Juan Pérez"
+  }
+]
 ```
 
-### Reportes
+---
+
+### 📊 Reportes (HdU04)
 
 #### Generar reporte PDF por activo
-```http
-POST /reportes/activo/{activo_id}
+```bash
+curl -X POST http://localhost:8092/reportes/activo/1
 ```
-Retorna: Archivo PDF para descarga
+**Respuesta:** Archivo PDF para descarga
 
 #### Obtener reportes de un activo
-```http
-GET /reportes/activo/{activo_id}
+```bash
+curl -X GET http://localhost:8092/reportes/activo/1
+```
+**Respuesta:**
+```json
+[
+  {
+    "id": 1,
+    "activo_id": 1,
+    "tipo": "mantenimiento",
+    "formato": "PDF",
+    "contenido": "Reporte detallado de mantenimiento...",
+    "generado_por": "Sistema",
+    "creado_en": "2025-08-20T22:49:18.028743Z",
+    "activo": "Caldera Principal"
+  }
+]
 ```
 
 ## Estructura de Base de Datos
@@ -151,6 +376,41 @@ GET /reportes/activo/{activo_id}
 - `activos` ↔ `tecnicos` (muchos a muchos vía `activos_tecnicos`)
 - `activos` ↔ `acciones_mantenimiento` (uno a muchos)
 - `tecnicos` ↔ `acciones_mantenimiento` (uno a muchos)
+
+## Ejemplos de Uso
+
+### 🎯 Obtener activos de un técnico específico (RUTA PRINCIPAL)
+```bash
+curl -X GET http://localhost:8092/activos-de-tecnico/1
+```
+
+### Listar técnicos autorizados
+```bash
+curl -X GET http://localhost:8092/tecnicos
+```
+
+### Obtener técnicos asociados a un activo
+```bash
+curl -X GET http://localhost:8092/tecnicos/activo/1
+```
+
+### Crear nueva acción de mantenimiento
+```bash
+curl -X POST http://localhost:8092/acciones \
+  -H "Content-Type: application/json" \
+  -d '{
+    "activo_id": 1,
+    "tecnico_id": 1,
+    "tipo": "preventivo",
+    "descripcion": "Revisión mensual de válvulas",
+    "prioridad": "alta"
+  }'
+```
+
+### Generar reporte automático
+```bash
+curl -X POST http://localhost:8092/reportes/activo/1
+```
 
 ## Configuración
 

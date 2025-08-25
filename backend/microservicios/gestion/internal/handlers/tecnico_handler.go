@@ -143,3 +143,25 @@ func (h *TecnicoHandler) AsignarTecnicoAActivo(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"mensaje": "Técnico asignado al activo correctamente"})
 }
+
+// GET /tecnicos/:tecnico_id/activos - Obtener activos asociados a un técnico (RUTA PRINCIPAL)
+func (h *TecnicoHandler) ObtenerActivosPorTecnico(c *gin.Context) {
+	tecnicoID, err := strconv.Atoi(c.Param("tecnico_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de técnico inválido"})
+		return
+	}
+
+	activos, err := h.service.ObtenerActivosPorTecnico(tecnicoID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudieron obtener los activos del técnico", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, activos)
+}
+
+// ObtenerActivosDirecto - Método público para acceder directamente desde el router
+func (h *TecnicoHandler) ObtenerActivosDirecto(tecnicoID int) (interface{}, error) {
+	return h.service.ObtenerActivosPorTecnico(tecnicoID)
+}

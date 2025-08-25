@@ -47,3 +47,8 @@ func (s *TecnicoService) ActualizarAutorizado(id int, autorizado bool) error {
 func (s *TecnicoService) AsignarTecnicoAActivo(activoID, tecnicoID int) error {
 	return s.repo.AsignarTecnicoAActivo(activoID, tecnicoID)
 }
+
+// Obtener activos asociados a un técnico (RUTA PRINCIPAL)
+func (s *TecnicoService) ObtenerActivosPorTecnico(tecnicoID int) ([]models.Activo, error) {
+	return s.repo.ObtenerActivosPorTecnico(tecnicoID)
+}

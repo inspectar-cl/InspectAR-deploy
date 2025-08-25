@@ -1,0 +1,36 @@
+server:
+  port: 8093
+  host: "0.0.0.0"
+
+database:
+  host: "localhost"
+  port: 5433
+  user: "documentacion_user"
+  password: "documentacion_pass"
+  dbname: "documentacion_db"
+  sslmode: "disable"
+
+storage:
+  type: "minio" # minio o local
+  minio:
+    endpoint: "localhost:9000"
+    access_key: "minioadmin"
+    secret_key: "minioadmin"
+    bucket: "documentos"
+    secure: false
+  local:
+    upload_dir: "./storage/uploads"
+
+gemini:
+  api_key: "${GEMINI_API_KEY}"
+  project_id: "${GCP_PROJECT_ID}"
+  location: "us-central1"
+
+cors:
+  allowed_origins: ["*"]
+  allowed_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  allowed_headers: ["Content-Type", "Authorization"]
+
+limits:
+  max_file_size_mb: 50
+  allowed_extensions: [".pdf", ".docx"]

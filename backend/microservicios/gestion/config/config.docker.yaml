@@ -1,0 +1,10 @@
+postgres:
+  host: "gestion-db"
+  port: 5432
+  user: "gestion_user"
+  password: "gestion_pass"
+  dbname: "gestion_db"
+  sslmode: "disable"
+
+server:
+  port: "8092"

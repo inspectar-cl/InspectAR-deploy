@@ -7,20 +7,14 @@ import (
 )
 
 // Registra las rutas /api/* y las conecta con los proxies
-func RegisterRoutes(r *gin.Engine, sensoresURL, activoURL string) {
+func RegisterRoutes(r *gin.Engine, GestionURL string) {
 	// Ej: /healthz
 	r.GET("/healthz", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"ok": true})
 	})
 
-	// /api/sensores/* → http://SENSORES_URL/*
-	r.Any("/api/sensores/*proxyPath", func(c *gin.Context) {
-		NewReverseProxy(sensoresURL, "/api/sensores", "").ServeHTTP(c.Writer, c.Request)
-	})
-
-	// /api/activo/* → http://ACTIVO_URL/activo/*
-	// (tu MS espera prefijo /activo en backend)
-	r.Any("/api/activo/*proxyPath", func(c *gin.Context) {
-		NewReverseProxy(activoURL, "/api/activo", "/activo").ServeHTTP(c.Writer, c.Request)
+	// Redirige cualquier ruta /api/gestion/* al microservicio de gestión
+	r.Any("/api/gestion/*proxyPath", func(c *gin.Context) {
+		NewReverseProxy(GestionURL, "/api/gestion", "").ServeHTTP(c.Writer, c.Request)
 	})
 }

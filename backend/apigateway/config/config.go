@@ -7,10 +7,8 @@ import (
 )
 
 type Config struct {
-	Port        string
-	FrontURL    string
-	SensoresURL string
-	ActivoURL   string
+	Port       string
+	GestionURL string
 }
 
 func getenv(key, def string) string {
@@ -21,12 +19,10 @@ func getenv(key, def string) string {
 }
 
 func Load() *Config {
-	_ = godotenv.Load() // opcional en prod
+	_ = godotenv.Load()
 
 	return &Config{
 		Port:        getenv("GATEWAY_PORT", "3500"),
-		FrontURL:    getenv("FRONT_URL", "http://localhost:3000"),
-		SensoresURL: getenv("SENSORES_URL", "http://localhost:4000"),
-		ActivoURL:   getenv("ACTIVO_URL", "http://localhost:8090"),
+		GestionURL:  getenv("GESTION_URL", "http://localhost:8092"), // TODO: Quitar lo segundo en producción (?)
 	}
 }

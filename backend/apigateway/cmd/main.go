@@ -15,10 +15,10 @@ func main() {
 
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
-	r.Use(middleware.CORS(cfg.FrontURL))
+	r.Use(middleware.CORS("*"))
 
 	// Rutas de proxy
-	proxy.RegisterRoutes(r, cfg.SensoresURL, cfg.ActivoURL)
+	proxy.RegisterRoutes(r, cfg.GestionURL)
 
 	log.Printf("API Gateway escuchando en :%s", cfg.Port)
 	if err := r.Run(":" + cfg.Port); err != nil {

@@ -23,6 +23,6 @@ func Load() *Config {
 
 	return &Config{
 		Port:        getenv("GATEWAY_PORT", "3500"),
-		GestionURL:  getenv("GESTION_URL", "http://localhost:8092"), // TODO: Quitar lo segundo en producción (?)
+		GestionURL:  getenv("GESTION_URL", "http://localhost:8092"), // Lo segundo es la segunda ruta que verificará.
 	}
 }

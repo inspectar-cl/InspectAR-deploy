@@ -1,20 +1,29 @@
 package proxy
 
 import (
-	"net/http"
+    "net/http"
+    "os"
 
-	"github.com/gin-gonic/gin"
+    "github.com/gin-gonic/gin"
 )
 
-// Registra las rutas /api/* y las conecta con los proxies
-func RegisterRoutes(r *gin.Engine, GestionURL string) {
-	// Ej: /healthz
-	r.GET("/healthz", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"ok": true})
-	})
+func RegisterRoutes(r *gin.Engine) {
+    // Endpoint de salud
+    r.GET("/healthz", func(c *gin.Context) {
+        c.JSON(http.StatusOK, gin.H{"ok": true})
+    })
 
-	// Redirige cualquier ruta /api/gestion/* al microservicio de gestión
-	r.Any("/api/gestion/*proxyPath", func(c *gin.Context) {
-		NewReverseProxy(GestionURL, "/api/gestion", "").ServeHTTP(c.Writer, c.Request)
-	})
+    // Registra todas las rutas definidas en ProxyRoutes
+    for _, route := range ProxyRoutes {
+        target := os.Getenv(route.TargetEnvVar)
+        if target == "" {
+            continue // Si no está definida la variable, ignora la ruta
+        }
+        // Closure para capturar variables correctamente
+        func(pathPrefix, target, prependPath string) {
+            r.Any(pathPrefix+"/*proxyPath", func(c *gin.Context) {
+                NewReverseProxy(target, pathPrefix, prependPath).ServeHTTP(c.Writer, c.Request)
+            })
+        }(route.PathPrefix, target, route.PrependPath)
+    }
 }

@@ -18,7 +18,7 @@ func main() {
 	r.Use(middleware.CORS("*"))
 
 	// Rutas de proxy
-	proxy.RegisterRoutes(r, cfg.GestionURL)
+	proxy.RegisterRoutes(r)
 
 	log.Printf("API Gateway escuchando en :%s", cfg.Port)
 	if err := r.Run(":" + cfg.Port); err != nil {

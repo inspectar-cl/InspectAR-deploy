@@ -1,13 +1,17 @@
-# Dockerfile para microservicio de documentación
+# Multi-stage build para optimizar imagen final
 FROM golang:1.22-alpine AS builder
 
-# Instalar dependencias del sistema
-RUN apk add --no-cache git
+# Información de mantenimiento
+LABEL maintainer="InspectAR Team"
+LABEL description="Microservicio de Documentación Técnica - InspectAR"
+
+# Instalar dependencias necesarias para compilación
+RUN apk add --no-cache git ca-certificates tzdata
 
 # Establecer directorio de trabajo
 WORKDIR /app
 
-# Copiar go.mod y go.sum
+# Copiar archivos de dependencias
 COPY go.mod go.sum ./
 
 # Descargar dependencias
@@ -16,33 +20,46 @@ RUN go mod download
 # Copiar código fuente
 COPY . .
 
-# Compilar la aplicación
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd
+# Compilar aplicación con optimizaciones
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags='-w -s -extldflags "-static"' \
+    -a -installsuffix cgo \
+    -o documentacion-service ./cmd/main.go
 
-# Imagen final
+# Imagen final mínima
 FROM alpine:latest
 
-# Instalar ca-certificates para HTTPS
-RUN apk --no-cache add ca-certificates
+# Instalar certificados CA y crear usuario no-root
+RUN apk --no-cache add ca-certificates tzdata && \
+    addgroup -g 1001 -S appuser && \
+    adduser -u 1001 -S appuser -G appuser
 
-# Crear directorio de trabajo
-WORKDIR /root/
+# Crear directorio para almacenamiento local
+RUN mkdir -p /app/storage && \
+    chown -R appuser:appuser /app
 
-# Copiar el binario compilado
-COPY --from=builder /app/main .
+# Establecer directorio de trabajo
+WORKDIR /app
 
-# Copiar archivos de configuración
-COPY --from=builder /app/config ./config
+# Copiar binario compilado
+COPY --from=builder /app/documentacion-service .
 
-# Crear directorio para storage local
-RUN mkdir -p /root/storage/uploads
+# Crear directorio de configuración y copiar archivos si existen
+RUN mkdir -p ./config
 
-# Exponer puerto
-EXPOSE 8093
+# Cambiar a usuario no-root
+USER appuser
+
+# Exponer puerto del microservicio
+EXPOSE 8092
 
 # Variables de entorno por defecto
-ENV DOC_SERVER_PORT=8093
-ENV DOC_SERVER_HOST=0.0.0.0
+ENV GIN_MODE=release
+ENV PORT=8092
 
-# Comando para ejecutar la aplicación
-CMD ["./main"]
+# Healthcheck para verificar estado del servicio
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8092/health || exit 1
+
+# Comando por defecto
+CMD ["./documentacion-service"]

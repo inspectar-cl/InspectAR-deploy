@@ -1,19 +1,19 @@
 server:
-  port: 8093
+  port: 8092
   host: "0.0.0.0"
 
 database:
-  host: "localhost"
-  port: 5433
+  host: "documentacion-db"
+  port: 5434
   user: "documentacion_user"
-  password: "documentacion_pass"
+  password: "documentacion_secure_pass"
   dbname: "documentacion_db"
   sslmode: "disable"
 
 storage:
   type: "minio" # minio o local
   minio:
-    endpoint: "localhost:9000"
+    endpoint: "minio:9000"
     access_key: "minioadmin"
     secret_key: "minioadmin"
     bucket: "documentos"

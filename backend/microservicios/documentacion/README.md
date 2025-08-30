@@ -1,388 +1,579 @@
-# Microservicio de Documentación y Conocimiento
+# 📄 Microservicio de Documentación Técnica
 
-Microservicio especializado en la gestión de documentos técnicos, fichas técnicas de activos industriales y análisis de documentos mediante inteligencia artificial con Gemini.
+Microservicio especializado en la gestión de documentos técnicos asociados a activos industriales, con capacidades de análisis de IA utilizando Google Gemini.
 
-## Funcionalidades
+## 🚀 Características Principales
 
-### HdU05 - Subida de documentación técnica y almacenamiento
-- ✅ Subir documentos en formatos PDF y DOCX
-- ✅ Asociar documentos a activos específicos
-- ✅ Categorización automática (ficha técnica, informe de mantenimiento, diagnóstico, manual fabricante, certificación)
-- ✅ Búsqueda y filtrado por categoría, fecha de emisión o palabra clave
-- ✅ Almacenamiento en MinIO o sistema de archivos local
-- ✅ Gestión de metadatos y control de versiones
+### Funcionalidades Implementadas
 
-### HdU23 - Fichas técnicas de activos
-- ✅ Acceso directo a fichas técnicas por activo
-- ✅ Exportación en formato PDF
-- ✅ Identificación automática de documentos de fabricante
-- ✅ Vista integrada con información del activo
-- ✅ Descarga directa desde la vista del activo
+- **HdU05**: Subida de documentos técnicos asociados a activos
+- **HdU23**: Gestión y consulta de fichas técnicas
+- **HdU19**: Análisis de documentos con IA Gemini (bajo demanda)
 
-### HdU19 - Lectura y análisis semántico con Gemini (IA)
-- ✅ Análisis automático de documentos PDF
-- ✅ Extracción de información clave mediante IA
-- ✅ Identificación y descripción de gráficos y diagramas
-- ✅ Resumen inteligente de contenido técnico
-- ✅ Construcción de historial de mantenimiento enriquecido
-- ✅ Procesamiento asíncrono para documentos grandes
+### Capacidades Técnicas
 
-## Arquitectura
+- ✅ Almacenamiento híbrido (MinIO + PostgreSQL)
+- ✅ Búsqueda de texto completo optimizada
+- ✅ Análisis de IA con Google Gemini
+- ✅ **Consultas interactivas** - Preguntas específicas sobre documentos
+- ✅ API REST completa con documentación
+- ✅ Validación de tipos de archivo
+- ✅ Gestión de metadatos enriquecidos
 
-### Stack Tecnológico
-- **Backend**: Go 1.22 con Gin Framework
-- **Base de Datos**: PostgreSQL 15 
-- **Storage**: MinIO (S3-compatible) o Local File System
-- **IA**: Google Gemini 1.5 Flash
-- **Contenedores**: Docker & Docker Compose
+## 🏗️ Arquitectura
 
-### Estructura de Datos
 ```
-documentos/
-├── metadata (PostgreSQL)
-│   ├── id, activo_id, tecnico_id
-│   ├── nombre, descripcion, categoria
-│   ├── tipo_archivo, tamano_bytes
-│   ├── fecha_emision, palabras_clave
-│   └── es_ficha_tecnica
-├── archivos (MinIO/Local)
-│   ├── PDFs técnicos
-│   └── Documentos DOCX
-└── analisis_ia (PostgreSQL)
-    ├── resumen automático
-    ├── puntos_claves (JSON)
-    └── graficos detectados (JSON)
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Cliente Web   │────│   API Gateway    │────│  Documentación  │
+│                 │    │   (Puerto 3500)  │    │  (Puerto 8092)  │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+                                                        │
+                                            ┌───────────┼───────────┐
+                                            │           │           │
+                                    ┌───────▼───┐ ┌────▼────┐ ┌────▼────┐
+                                    │PostgreSQL │ │  MinIO  │ │ Gemini  │
+                                    │(Puerto    │ │(Puerto  │ │   IA    │
+                                    │ 5434)     │ │ 9000)   │ │         │
+                                    └───────────┘ └─────────┘ └─────────┘
 ```
 
-## API Endpoints
+## 🛠️ Tecnologías Utilizadas
 
-### 🏥 Health Check
+- **Lenguaje**: Go 1.22
+- **Framework**: Gin (HTTP Router)
+- **Base de Datos**: PostgreSQL 15 con búsqueda full-text
+- **Almacenamiento**: MinIO (compatible S3)
+- **IA**: Google Gemini API
+- **Containerización**: Docker + Docker Compose
 
-#### Verificar estado del servicio
+## 📁 Estructura del Proyecto
+
+```
+microservicios/documentacion/
+├── cmd/
+│   └── main.go                 # Punto de entrada
+├── internal/
+│   ├── models/                 # Modelos de datos
+│   │   ├── documento.go
+│   │   └── analisis_ia.go
+│   ├── handlers/               # Controladores HTTP
+│   │   ├── documento_handler.go
+│   │   ├── analisis_handler.go
+│   │   └── health_handler.go
+│   ├── services/               # Lógica de negocio
+│   │   ├── documento_service.go
+│   │   ├── analisis_service.go
+│   │   └── gemini_service.go
+│   ├── repository/             # Acceso a datos
+│   │   ├── documento_repository.go
+│   │   └── analisis_repository.go
+│   └── storage/                # Almacenamiento de archivos
+│       ├── minio_storage.go
+│       ├── local_storage.go
+│       └── storage_interface.go
+├── api/
+│   └── router/                 # Configuración de rutas
+│       └── router.go
+├── config/                     # Configuración
+│   ├── config.yaml
+│   └── config.go
+├── Dockerfile                  # Imagen Docker
+├── go.mod                      # Dependencias Go
+├── go.sum
+└── README.md                   # Este archivo
+
+database/documentacion/         # Base de datos separada
+├── init.sql                    # Schema PostgreSQL
+├── Dockerfile                  # Imagen de BD
+├── entrypoint.sh              # Script de inicialización
+└── README.md                   # Documentación de BD
+```
+
+## 🚀 Instalación y Uso
+
+### Prerrequisitos
+
+- Docker y Docker Compose
+- Go 1.22+ (para desarrollo local)
+- Clave API de Google Gemini
+
+### Configuración
+
+1. **Configurar variables de entorno**:
 ```bash
-curl -X GET http://localhost:8093/health
-```
-**Respuesta:**
-```json
-{
-  "status": "ok",
-  "service": "documentacion"
-}
+export GEMINI_API_KEY="your-gemini-api-key"
+export GCP_PROJECT_ID="your-gcp-project-id"
 ```
 
----
-
-### 📄 Documentos (HdU05)
-
-#### Subir documento técnico
+2. **Iniciar servicios con Docker Compose**:
 ```bash
-curl -X POST http://localhost:8093/documentos \
-  -F "archivo=@manual_caldera.pdf" \
+# Desde el directorio backend/
+docker-compose up documentacion-service documentacion-db minio
+```
+
+3. **Verificar servicios**:
+```bash
+# API Health Check
+curl http://localhost:8092/health
+
+# Dashboard MinIO
+open http://localhost:9001
+```
+
+## 📚 API Endpoints
+
+### Documentos
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/v1/documentos` | Listar documentos con filtros |
+| `POST` | `/api/v1/documentos` | Subir nuevo documento |
+| `GET` | `/api/v1/documentos/{id}` | Obtener documento específico |
+| `PUT` | `/api/v1/documentos/{id}` | Actualizar metadatos |
+| `DELETE` | `/api/v1/documentos/{id}` | Eliminar documento |
+| `GET` | `/api/v1/documentos/{id}/download` | Descargar archivo |
+
+### Búsqueda
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/v1/documentos/buscar` | Búsqueda por texto |
+| `GET` | `/api/v1/documentos/activo/{activo_id}` | Documentos por activo |
+| `GET` | `/api/v1/documentos/fichas-tecnicas` | Solo fichas técnicas |
+
+### Análisis IA
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `POST` | `/api/v1/documentos/{id}/analizar` | Analizar con IA |
+| `GET` | `/api/v1/documentos/{id}/analisis` | Obtener análisis |
+| `POST` | `/api/v1/documentos/{id}/consultar` | Hacer pregunta específica sobre el documento |
+
+## 🔧 Ejemplos de Uso
+
+### Subir Documento
+
+```bash
+curl -X POST http://localhost:8092/api/v1/documentos \
+  -F "archivo=@ficha_tecnica.pdf" \
   -F "activo_id=1" \
-  -F "nombre=Manual Técnico Caldera Principal" \
-  -F "descripcion=Manual completo de operación y mantenimiento" \
-  -F "categoria=manual_fabricante" \
-  -F "fecha_emision=2024-01-15" \
-  -F "subido_por=admin" \
-  -F "palabras_clave=caldera,manual,operacion,mantenimiento" \
-  -F "es_ficha_tecnica=false"
+  -F "nombre=Ficha Técnica Caldera Principal" \
+  -F "categoria=ficha_tecnica" \
+  -F "descripcion=Especificaciones técnicas oficiales" \
+  -F "palabras_clave=caldera,bosch,500kw"
 ```
-**Respuesta:**
+
+### Buscar Documentos
+
+```bash
+# Búsqueda por texto
+curl "http://localhost:8092/api/v1/documentos/buscar?q=caldera mantenimiento"
+
+# Documentos de un activo específico
+curl "http://localhost:8092/api/v1/documentos/activo/1"
+
+# Solo fichas técnicas
+curl "http://localhost:8092/api/v1/documentos/fichas-tecnicas"
+```
+
+### Analizar con IA
+
+```bash
+# Solicitar análisis
+curl -X POST http://localhost:8092/api/v1/documentos/1/analizar
+
+# Obtener resultados
+curl http://localhost:8092/api/v1/documentos/1/analisis
+```
+
+### Consulta Interactiva con IA
+
+```bash
+# Hacer pregunta específica sobre el documento
+curl -X POST http://localhost:8092/api/v1/documentos/1/consultar \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pregunta": "¿Cuál es la presión de agua de esta bomba?"
+  }'
+
+# Pregunta sobre mantenimiento
+curl -X POST http://localhost:8092/api/v1/documentos/2/consultar \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pregunta": "¿Cuándo fue la última mantención registrada?"
+  }'
+
+# Pregunta sobre especificaciones técnicas
+curl -X POST http://localhost:8092/api/v1/documentos/1/consultar \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pregunta": "¿Qué capacidad térmica tiene esta caldera y cuál es su eficiencia?"
+  }'
+```
+
+**Respuesta típica:**
 ```json
 {
-  "id": 5,
-  "activo_id": 1,
-  "nombre": "Manual Técnico Caldera Principal",
-  "descripcion": "Manual completo de operación y mantenimiento",
-  "categoria": "manual_fabricante",
-  "tipo_archivo": "pdf",
-  "ruta_archivo": "1_20240825_143022_manual_caldera.pdf",
-  "tamano_bytes": 2048576,
-  "fecha_emision": "2024-01-15T00:00:00Z",
-  "subido_por": "admin",
-  "palabras_clave": "caldera,manual,operacion,mantenimiento",
-  "es_ficha_tecnica": false,
-  "creado_en": "2025-08-25T14:30:22Z"
+  "pregunta": "¿Cuál es la presión de agua de esta bomba?",
+  "respuesta": "Según la ficha técnica, la bomba hidráulica Grundfos tiene una presión máxima de operación de 150 PSI (10.3 bar). La presión de trabajo recomendada es de 120-140 PSI para óptimo rendimiento.",
+  "documento_id": 1,
+  "confianza": 0.95,
+  "fuentes": ["Tabla de especificaciones técnicas", "Sección 3.2 - Parámetros operacionales"],
+  "procesado_en": "2025-08-29T10:30:00Z"
 }
 ```
 
-#### Obtener documento por ID
-```bash
-curl -X GET http://localhost:8093/documentos/1
+## 🗃️ Base de Datos
+
+### Esquema Principal
+
+```sql
+-- Tabla de documentos
+CREATE TABLE documentos (
+    id SERIAL PRIMARY KEY,
+    activo_id INTEGER NOT NULL,
+    nombre VARCHAR(255) NOT NULL,
+    categoria VARCHAR(50) NOT NULL,
+    ruta_archivo VARCHAR(500) NOT NULL,
+    texto_busqueda tsvector, -- Para búsqueda full-text
+    es_ficha_tecnica BOOLEAN DEFAULT FALSE,
+    creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabla de análisis IA
+CREATE TABLE analisis_ia (
+    id SERIAL PRIMARY KEY,
+    documento_id INTEGER REFERENCES documentos(id),
+    resumen TEXT NOT NULL,
+    puntos_claves JSONB,
+    estado VARCHAR(20) DEFAULT 'procesando'
+);
+
+-- Tabla de consultas interactivas (NUEVA)
+CREATE TABLE consultas_ia (
+    id SERIAL PRIMARY KEY,
+    documento_id INTEGER REFERENCES documentos(id),
+    pregunta TEXT NOT NULL,
+    respuesta TEXT NOT NULL,
+    confianza DECIMAL(3,2),
+    fuentes JSONB,
+    creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 ```
+
+## 🤖 Consultas Interactivas con IA
+
+### Funcionalidad Nueva: Preguntas Específicas
+
+El endpoint `/api/v1/documentos/{id}/consultar` permite hacer preguntas específicas sobre el contenido de cualquier documento, ideal para:
+
+- **Consultas técnicas**: "¿Cuál es la presión máxima de esta bomba?"
+- **Información de mantenimiento**: "¿Cuándo fue la última mantención?"
+- **Especificaciones**: "¿Qué capacidad tiene este equipo?"
+- **Procedimientos**: "¿Cómo se calibra este instrumento?"
+
+### Ejemplos Prácticos
+
+#### 1. Consultas sobre Especificaciones Técnicas
+```bash
+curl -X POST http://localhost:8092/api/v1/documentos/1/consultar \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pregunta": "¿Cuál es la capacidad térmica y eficiencia de esta caldera?"
+  }'
+```
+
 **Respuesta:**
 ```json
 {
-  "id": 1,
-  "activo_id": 1,
-  "nombre": "Ficha Técnica Caldera Principal",
-  "descripcion": "Especificaciones técnicas oficiales del fabricante",
-  "categoria": "ficha_tecnica",
-  "tipo_archivo": "pdf",
-  "tamano_bytes": 2048576,
-  "fecha_emision": "2024-01-15T00:00:00Z",
-  "subido_por": "admin",
-  "palabras_clave": "caldera,especificaciones,fabricante",
-  "es_ficha_tecnica": true,
-  "creado_en": "2025-08-25T10:30:00Z"
+  "pregunta": "¿Cuál es la capacidad térmica y eficiencia de esta caldera?",
+  "respuesta": "La caldera Bosch tiene una capacidad térmica de 500kW y una eficiencia energética del 92%. Opera con gas natural o GLP y está certificada ISO 9001.",
+  "confianza": 0.98,
+  "fuentes": ["Tabla de especificaciones principales", "Sección 2.1 - Características técnicas"]
 }
 ```
 
-#### Descargar archivo
+#### 2. Consultas sobre Mantenimiento
 ```bash
-curl -X GET http://localhost:8093/documentos/1/descargar -o documento.pdf
+curl -X POST http://localhost:8092/api/v1/documentos/3/consultar \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pregunta": "¿Cuándo fue la última mantención y qué se hizo?"
+  }'
 ```
-**Respuesta:** Descarga directa del archivo PDF
 
-#### Buscar documentos con filtros
-```bash
-curl -X GET "http://localhost:8093/documentos/buscar?categoria=ficha_tecnica&palabra_clave=caldera&fecha_desde=2024-01-01"
-```
 **Respuesta:**
 ```json
 {
-  "documentos": [
+  "pregunta": "¿Cuándo fue la última mantención y qué se hizo?",
+  "respuesta": "La última mantención fue el 30 de enero de 2024. Se realizó limpieza de quemadores, calibración de termostatos, reemplazo de filtros de aire y verificación de sistemas de seguridad. Estado general: Satisfactorio.",
+  "confianza": 0.95,
+  "fuentes": ["Reporte de mantención enero 2024", "Checklist de inspección"]
+}
+```
+
+#### 3. Consultas sobre Presiones y Parámetros
+```bash
+curl -X POST http://localhost:8092/api/v1/documentos/5/consultar \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pregunta": "¿Cuánta presión de agua maneja esta bomba hidráulica?"
+  }'
+```
+
+**Respuesta:**
+```json
+{
+  "pregunta": "¿Cuánta presión de agua maneja esta bomba hidráulica?",
+  "respuesta": "La bomba hidráulica Grundfos de 50HP maneja una presión máxima de operación de 150 PSI. La presión de trabajo recomendada es entre 120-140 PSI para óptimo rendimiento y vida útil del equipo.",
+  "confianza": 0.97,
+  "fuentes": ["Ficha técnica Grundfos", "Tabla de parámetros operacionales"]
+}
+```
+
+### Implementación Técnica
+
+#### Flujo de Procesamiento
+1. **Recepción**: El endpoint recibe la pregunta en JSON
+2. **Validación**: Verifica que el documento existe y es accesible
+3. **Optimización**: Busca consultas similares previas (cache inteligente)
+4. **Procesamiento IA**: Analiza pregunta + contexto del documento
+5. **Respuesta**: Procesa y estructura la respuesta con metadatos
+6. **Persistencia**: Guarda la consulta para optimizar futuras preguntas
+
+#### Prompt Optimizado para IA
+El sistema construye prompts específicos basados en:
+- **Contexto del documento**: Metadatos y contenido extraído
+- **Tipo de pregunta**: Técnica, mantenimiento, especificaciones
+- **Categoría del documento**: Ficha técnica, manual, reporte
+- **Palabras clave**: Términos relevantes del documento
+
+#### Cache Inteligente
+- Detecta preguntas similares con > 80% de coincidencia
+- Reutiliza respuestas para optimizar tiempo de respuesta
+- Header `X-Consulta-Cache: similar` indica respuesta desde cache
+
+### Casos de Uso Reales
+
+#### Consulta sobre Bomba Hidráulica
+```bash
+curl -X POST http://localhost:8092/api/v1/documentos/5/consultar \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pregunta": "¿Cuánta presión de agua maneja esta bomba hidráulica Grundfos?"
+  }'
+```
+
+**Respuesta esperada:**
+```json
+{
+  "pregunta": "¿Cuánta presión de agua maneja esta bomba hidráulica Grundfos?",
+  "respuesta": "La bomba hidráulica Grundfos de 50HP maneja una presión máxima de operación de 150 PSI (10.3 bar). La presión de trabajo recomendada está entre 120-140 PSI para óptimo rendimiento y vida útil del equipo.",
+  "documento_id": 5,
+  "confianza": 0.97,
+  "fuentes": ["Ficha técnica Grundfos", "Tabla de parámetros operacionales"],
+  "tiempo_respuesta_ms": 1250,
+  "procesado_en": "2025-08-29T10:30:00Z"
+}
+```
+
+#### Consulta sobre Mantenimiento
+```bash
+curl -X POST http://localhost:8092/api/v1/documentos/3/consultar \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pregunta": "¿Cuándo fue la última mantención de esta caldera y qué trabajos se realizaron?"
+  }'
+```
+
+**Respuesta esperada:**
+```json
+{
+  "pregunta": "¿Cuándo fue la última mantención de esta caldera y qué trabajos se realizaron?",
+  "respuesta": "La última mantención preventiva fue realizada el 30 de enero de 2024. Se ejecutaron las siguientes tareas: limpieza de quemadores, calibración de termostatos, reemplazo de filtros de aire y verificación de sistemas de seguridad. El estado general del equipo fue evaluado como satisfactorio con próxima inspección programada para abril 2024.",
+  "documento_id": 3,
+  "confianza": 0.95,
+  "fuentes": ["Reporte de mantención enero 2024", "Checklist de actividades realizadas"],
+  "tiempo_respuesta_ms": 1450,
+  "procesado_en": "2025-08-29T10:31:00Z"
+}
+```
+
+#### Consulta sobre Especificaciones
+```bash
+curl -X POST http://localhost:8092/api/v1/documentos/1/consultar \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pregunta": "¿Cuál es la capacidad térmica y eficiencia de esta caldera Bosch?"
+  }'
+```
+
+### Endpoints Adicionales
+
+#### Historial de Consultas
+```bash
+# Obtener últimas 10 consultas de un documento
+curl "http://localhost:8092/api/v1/documentos/1/consultas?limit=10"
+
+# Paginación
+curl "http://localhost:8092/api/v1/documentos/1/consultas?limit=5&offset=10"
+```
+
+#### Estadísticas Globales
+```bash
+curl "http://localhost:8092/api/v1/consultas/estadisticas"
+```
+
+**Respuesta de estadísticas:**
+```json
+{
+  "total_consultas": 156,
+  "confianza_promedio": 0.89,
+  "tiempo_promedio_ms": 1350,
+  "consultas_hoy": 23,
+  "documentos_mas_consultados": [
     {
-      "id": 1,
-      "activo_id": 1,
-      "nombre": "Ficha Técnica Caldera Principal",
-      "categoria": "ficha_tecnica",
-      "fecha_emision": "2024-01-15T00:00:00Z"
-    }
-  ],
-  "total": 1,
-  "filtros": {
-    "categoria": "ficha_tecnica",
-    "palabra_clave": "caldera",
-    "fecha_desde": "2024-01-01T00:00:00Z"
-  }
-}
-```
-
----
-
-### 🏭 Documentos por Activo
-
-#### Obtener todos los documentos de un activo
-```bash
-curl -X GET http://localhost:8093/activos/1/documentos
-```
-**Respuesta:**
-```json
-{
-  "activo_id": 1,
-  "documentos": [
-    {
-      "id": 1,
-      "nombre": "Ficha Técnica Caldera Principal",
-      "categoria": "ficha_tecnica",
-      "es_ficha_tecnica": true
+      "documento_id": 1,
+      "nombre_documento": "Ficha Técnica Caldera Bosch",
+      "total_consultas": 45
     },
     {
-      "id": 2,
-      "nombre": "Informe Mantenimiento Enero 2024",
-      "categoria": "informe_mantenimiento",
-      "es_ficha_tecnica": false
-    }
-  ],
-  "total": 2
-}
-```
-
-#### Obtener historial de mantenimiento completo
-```bash
-curl -X GET http://localhost:8093/activos/1/historial
-```
-**Respuesta:**
-```json
-{
-  "activo_id": 1,
-  "documentos_total": 2,
-  "ultimo_mantenimiento": "2024-01-30T00:00:00Z",
-  "documentos": [...],
-  "analisis_ia": [
-    {
-      "id": 1,
-      "documento_id": 1,
-      "resumen": "Documento técnico que especifica las características operacionales...",
-      "puntos_claves": ["Presión máxima: 150 PSI", "Temperatura operación: 180°C"],
-      "graficos": ["Diagrama de flujo del sistema", "Tabla de especificaciones"],
-      "estado": "completado"
+      "documento_id": 5,
+      "nombre_documento": "Bomba Hidráulica Grundfos",
+      "total_consultas": 32
     }
   ]
 }
 ```
 
----
+### Optimizaciones
 
-### 📋 Fichas Técnicas (HdU23)
+- **Índice GIN** para búsqueda de texto completo
+- **Índices compuestos** para consultas frecuentes
+- **Configuración en español** para stemming
+- **Triggers automáticos** para actualización de vectores
 
-#### 🎯 **RUTA PRINCIPAL: Obtener ficha técnica de un activo**
+## 🔒 Seguridad
+
+- Validación estricta de tipos de archivo (.pdf, .docx)
+- Límite de tamaño de archivo (50MB por defecto)
+- Sanitización de nombres de archivo
+- Usuario no-root en contenedor Docker
+- Variables de entorno para credenciales
+
+## 📊 Monitoreo
+
+### Health Checks
+
 ```bash
-curl -X GET http://localhost:8093/activos/1/ficha-tecnica
-```
-**Respuesta:**
-```json
-{
-  "id": 1,
-  "activo_id": 1,
-  "nombre": "Ficha Técnica Caldera Principal",
-  "descripcion": "Especificaciones técnicas oficiales del fabricante",
-  "categoria": "ficha_tecnica",
-  "tipo_archivo": "pdf",
-  "ruta_archivo": "ficha_caldera_principal.pdf",
-  "tamano_bytes": 2048576,
-  "fecha_emision": "2024-01-15T00:00:00Z",
-  "subido_por": "admin",
-  "es_ficha_tecnica": true,
-  "creado_en": "2025-08-25T10:30:00Z"
-}
+# Health check básico
+curl http://localhost:8092/health
+
+# Health check con detalles
+curl http://localhost:8092/health/detailed
 ```
 
----
+### Métricas Disponibles
 
-### 🤖 Análisis con IA (HdU19)
+- Estado de conexión a base de datos
+- Estado de conexión a MinIO
+- Estadísticas de uso de almacenamiento
+- Tiempo de respuesta de IA
 
-#### Solicitar análisis de IA de un documento
+## 🚀 Desarrollo Local
+
+### Configuración del Entorno
+
 ```bash
-curl -X POST http://localhost:8093/documentos/1/analizar
-```
-**Respuesta:**
-```json
-{
-  "mensaje": "Análisis iniciado",
-  "analisis": {
-    "id": 1,
-    "documento_id": 1,
-    "estado": "procesando",
-    "creado_en": "2025-08-25T14:45:00Z"
-  },
-  "estado": "procesando"
-}
-```
+# Clonar y navegar al directorio
+cd microservicios/documentacion
 
-#### Obtener resultado del análisis de IA
-```bash
-curl -X GET http://localhost:8093/documentos/1/analisis
-```
-**Respuesta:**
-```json
-{
-  "id": 1,
-  "documento_id": 1,
-  "resumen": "Esta ficha técnica describe una caldera industrial con capacidad de 500kW, diseñada para operación continua en entornos industriales. Incluye especificaciones de presión, temperatura y requisitos de mantenimiento.",
-  "puntos_claves": [
-    "Capacidad térmica: 500kW",
-    "Presión máxima operación: 150 PSI",
-    "Temperatura máxima: 180°C",
-    "Combustible: Gas natural/GLP",
-    "Mantenimiento requerido cada 3 meses"
-  ],
-  "graficos": [
-    "Diagrama esquemático del sistema de combustión",
-    "Tabla de especificaciones técnicas principales",
-    "Gráfico de eficiencia vs carga operativa"
-  ],
-  "estado": "completado",
-  "creado_en": "2025-08-25T14:45:00Z"
-}
-```
-
-## Configuración
-
-### Variables de Entorno
-```bash
-# Base de datos
-DOC_DATABASE_HOST=localhost
-DOC_DATABASE_PORT=5433
-DOC_DATABASE_USER=documentacion_user
-DOC_DATABASE_PASSWORD=documentacion_pass
-DOC_DATABASE_DBNAME=documentacion_db
-
-# Storage
-DOC_STORAGE_TYPE=minio  # o "local"
-
-# MinIO (opcional)
-DOC_STORAGE_MINIO_ENDPOINT=localhost:9000
-DOC_STORAGE_MINIO_ACCESS_KEY=minioadmin
-DOC_STORAGE_MINIO_SECRET_KEY=minioadmin
-DOC_STORAGE_MINIO_BUCKET=documentos
-
-# Gemini IA (opcional)
-GEMINI_API_KEY=your_gemini_api_key
-GCP_PROJECT_ID=your_gcp_project_id
-```
-
-### Límites y Restricciones
-- **Tamaño máximo de archivo**: 50MB
-- **Formatos soportados**: PDF, DOCX
-- **Categorías válidas**: ficha_tecnica, informe_mantenimiento, diagnostico, manual_fabricante, certificacion
-
-## Ejecución
-
-### Con Docker Compose
-```bash
-# Iniciar servicios de base de datos y storage
-docker-compose up documentacion-db minio -d
-
-# Iniciar microservicio
-docker-compose up documentacion-service
-```
-
-### Desarrollo Local
-```bash
 # Instalar dependencias
 go mod tidy
 
-# Ejecutar
+# Ejecutar tests
+go test ./...
+
+# Ejecutar en modo desarrollo
 go run cmd/main.go
 ```
 
-El servicio estará disponible en el puerto `8093`.
+### Variables de Entorno para Desarrollo
 
-## Estructura de Base de Datos
+```bash
+export GIN_MODE=debug
+export DB_HOST=localhost
+export DB_PORT=5434
+export MINIO_ENDPOINT=localhost:9000
+export GEMINI_API_KEY=your-api-key
+```
 
-### Tablas principales:
-- **`documentos`** - Metadatos de documentos técnicos
-- **`analisis_ia`** - Resultados de análisis con Gemini
+## 🐛 Troubleshooting
 
-### Relaciones:
-- `documentos` ↔ `analisis_ia` (uno a muchos)
-- `documentos` → `activos` (referencia externa al microservicio de gestión)
+### Problemas Comunes
 
-## Casos de Uso
+1. **Error de conexión a base de datos**:
+   ```bash
+   # Verificar que PostgreSQL esté corriendo
+   docker-compose ps documentacion-db
+   ```
 
-### 🔧 Para Técnicos
-- Subir reportes de mantenimiento con IA que extrae automáticamente información clave
-- Acceder a fichas técnicas durante trabajo en campo
-- Consultar historial completo de intervenciones en un activo
+2. **MinIO no accesible**:
+   ```bash
+   # Reiniciar servicio MinIO
+   docker-compose restart minio
+   ```
 
-### 🏢 Para Inspectores
-- Cargar documentación técnica de activos críticos
-- Buscar documentos por palabras clave o fechas
-- Generar reportes automáticos con análisis de IA
+3. **API Gemini no responde**:
+   ```bash
+   # Verificar clave API
+   echo $GEMINI_API_KEY
+   ```
 
-### 📊 Para Administradores
-- Gestionar biblioteca centralizada de documentación técnica
-- Monitorear análisis de IA y extraer insights
-- Mantener histórico completo de documentación por activo
+### Logs
 
-## Estados y Tipos
+```bash
+# Ver logs del microservicio
+docker-compose logs -f documentacion-service
 
-### Categorías de Documentos:
-- `ficha_tecnica` - Especificaciones del fabricante
-- `informe_mantenimiento` - Reportes de mantenimiento
-- `diagnostico` - Análisis de problemas
-- `manual_fabricante` - Manuales oficiales
-- `certificacion` - Certificados y validaciones
+# Ver logs de la base de datos
+docker-compose logs -f documentacion-db
+```
 
-### Estados de Análisis IA:
-- `procesando` - Análisis en curso
-- `completado` - Análisis terminado exitosamente
-- `error` - Error en el procesamiento
+## 📈 Roadmap
 
-## Integración con Otros Microservicios
+### Próximas Características
 
-- **Gestión**: Obtiene información de activos y técnicos
-- **Notificaciones**: Envía alertas cuando se completan análisis
-- **API Gateway**: Rutas centralizadas para acceso frontend
+- [ ] Versioning de documentos
+- [ ] Comentarios y anotaciones
+- [ ] Notificaciones de nuevos documentos
+- [ ] API GraphQL
+- [ ] Integración con más proveedores de IA
+- [ ] Dashboard de analytics
+
+### Mejoras de Rendimiento
+
+- [ ] Cache Redis para búsquedas frecuentes
+- [ ] Compresión automática de archivos
+- [ ] CDN para distribución de contenido
+- [ ] Paginación optimizada
+
+## 🤝 Contribución
+
+1. Fork del repositorio
+2. Crear branch de feature (`git checkout -b feature/nueva-funcionalidad`)
+3. Commit de cambios (`git commit -am 'Añadir nueva funcionalidad'`)
+4. Push al branch (`git push origin feature/nueva-funcionalidad`)
+5. Crear Pull Request
+
+## 📄 Licencia
+
+Este proyecto es parte del sistema InspectAR y está sujeto a las políticas de licencia del proyecto principal.
+
+---
+
+**Contacto**: Equipo de Desarrollo InspectAR
+**Versión**: 1.0.0
+**Puerto del Microservicio**: 8092
+**Puerto de Base de Datos**: 5434
+**Última actualización**: Agosto 2025

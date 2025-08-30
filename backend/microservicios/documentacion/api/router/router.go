@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(documentoHandler *handlers.DocumentoHandler) *gin.Engine {
+func SetupRouter(documentoHandler *handlers.DocumentoHandler, consultaHandler *handlers.ConsultaHandler) *gin.Engine {
 	r := gin.Default()
 
 	// CORS middleware
@@ -31,22 +31,28 @@ func SetupRouter(documentoHandler *handlers.DocumentoHandler) *gin.Engine {
 		c.JSON(200, gin.H{"message": "Microservicio de Documentación funcionando"})
 	})
 
-	// Rutas de documentos (HdU05 - Subida de documentación técnica)
-	r.POST("/documentos", documentoHandler.SubirDocumento)                                    // Subir documento
-	r.GET("/documentos/:id", documentoHandler.ObtenerDocumento)                              // Obtener documento por ID
-	r.GET("/documentos/:id/descargar", documentoHandler.DescargarDocumento)                  // Descargar archivo
-	r.GET("/documentos/buscar", documentoHandler.BuscarDocumentos)                           // Buscar con filtros
-	
-	// Rutas por activo
-	r.GET("/activos/:activo_id/documentos", documentoHandler.ObtenerDocumentosPorActivo)     // Documentos de un activo
-	r.GET("/activos/:activo_id/historial", documentoHandler.ObtenerHistorialMantenimiento)  // Historial completo
-	
-	// Rutas de fichas técnicas (HdU23 - Fichas técnicas de activos)
-	r.GET("/activos/:activo_id/ficha-tecnica", documentoHandler.ObtenerFichaTecnica)         // Ficha técnica específica
-	
-	// Rutas de análisis IA (HdU19 - Lectura y análisis con Gemini)
-	r.POST("/documentos/:id/analizar", documentoHandler.AnalizarDocumentoIA)                 // Solicitar análisis IA
-	r.GET("/documentos/:id/analisis", documentoHandler.ObtenerAnalisisIA)                    // Obtener análisis IA
+	// API v1
+	v1 := r.Group("/api/v1")
+	{
+		// Rutas de documentos (HdU05 - Subida de documentación técnica)
+		v1.POST("/documentos", documentoHandler.SubirDocumento)                 // Subir documento
+		v1.GET("/documentos/:id", documentoHandler.ObtenerDocumento)            // Obtener documento por ID
+		v1.GET("/documentos/:id/download", documentoHandler.DescargarDocumento) // Descargar archivo
+		v1.GET("/documentos/buscar", documentoHandler.BuscarDocumentos)         // Buscar con filtros
+
+		// Rutas por activo
+		v1.GET("/documentos/activo/:activo_id", documentoHandler.ObtenerDocumentosPorActivo) // Documentos de un activo
+		v1.GET("/documentos/fichas-tecnicas", documentoHandler.ObtenerFichaTecnica)          // Solo fichas técnicas
+
+		// Rutas de análisis IA (HdU19 - Lectura y análisis con Gemini)
+		v1.POST("/documentos/:id/analizar", documentoHandler.AnalizarDocumentoIA) // Solicitar análisis IA
+		v1.GET("/documentos/:id/analisis", documentoHandler.ObtenerAnalisisIA)    // Obtener análisis IA
+
+		// Rutas de consultas interactivas (NUEVA FUNCIONALIDAD)
+		v1.POST("/documentos/:id/consultar", consultaHandler.ConsultarDocumento)        // Hacer pregunta específica
+		v1.GET("/documentos/:id/consultas", consultaHandler.ObtenerHistorialConsultas)  // Historial de consultas
+		v1.GET("/consultas/estadisticas", consultaHandler.ObtenerEstadisticasConsultas) // Estadísticas globales
+	}
 
 	return r
 }

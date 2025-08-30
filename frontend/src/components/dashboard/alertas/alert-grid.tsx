@@ -79,21 +79,28 @@ export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: any; edi
       const response = await gs.get(uris.GET)
       console.log("Response:", response)
 
-      // Transformación de los datos de la db
+      // Si no hay datos desde backend, usar mocks
+      if (!response || response.length === 0) {
+        console.warn("No se encontraron activos en backend, usando mocks")
+        setActivos(activosMock)
+        return
+      }
+
+      // Transformacion de los datos de la db
       const transformados = response.map((item: any, index: number) => ({
-        id: item.activo_id || `B${index + 1}`, // Segun el id que se tenga
+        id: item.activo_id || `B${index + 1}`,
         tipoActivo: item.nombre || 'Activo sin nombre',
-        estado: item.estado || 'NN', // Modificarlo con logica correspondiente
-        descripcion: item.descripcion || 'NN', // Modificarlo con logica correspondiente
+        estado: item.estado || 'NN',
+        descripcion: item.descripcion || 'NN',
         ubicacion: item.ubicacion || 'Ubicación desconocida',
         id_edificio: item.id_edificio || 'ID no obtenida'
-      }));
+      }))
 
       console.log("Activos transformados:", transformados)
       setActivos(transformados)
-      return activos
     } catch (error) {
-      console.error("Error al obtener los items.", error)
+      console.error("Error al obtener los items desde backend, usando mocks", error)
+      setActivos(activosMock) // usar mocks si falla la llamada
     }
   }
 

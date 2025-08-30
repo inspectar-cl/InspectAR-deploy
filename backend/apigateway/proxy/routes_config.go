@@ -12,10 +12,20 @@ var ProxyRoutes = []ProxyRoute{
 	// 	PathPrefix:   "/api/usuarios",
 	// 	TargetEnvVar: "USUARIOS_URL",
 	// 	PrependPath:  "",
-	// },
+	// }, // Muy importante esta coma
     {
         PathPrefix:   "/api/gestion",
         TargetEnvVar: "GESTION_URL",
+        PrependPath:  "",
+    },
+    {
+        PathPrefix:   "/api/notificacion",
+        TargetEnvVar: "NOTIFICATION_URL",
+        PrependPath:  "",
+    },
+    {
+        PathPrefix:   "/api/parser",
+        TargetEnvVar: "PARSER_URL",
         PrependPath:  "",
     },
 }

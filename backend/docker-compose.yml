@@ -14,15 +14,51 @@ services:
     container_name: iot-service
     ports:
       - "8090:8090"
-    # depends_on:
-    #   - mongu
-    #   - influxdb
+    depends_on:
+      - mongu
+      - influxdb
     healthcheck:
       test: ["CMD-SHELL", "netstat -an | grep :8090 | grep LISTEN || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
       start_period: 20s
+
+  # Base de datos PostgreSQL para documentación
+  documentacion-db:
+    build:
+      context: ./database/documentacion
+      dockerfile: Dockerfile
+    container_name: documentacion-db
+    ports:
+      - "5434:5432"  # Puerto diferente para evitar conflicto
+    volumes:
+      - documentacion_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=documentacion_user
+      - POSTGRES_PASSWORD=documentacion_pass
+      - POSTGRES_DB=documentacion_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U documentacion_user -d documentacion_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Base de datos PostgreSQL para gestión
+  gestion-db:
+    build:
+      context: ./database/gestion
+      dockerfile: Dockerfile
+    container_name: gestion-db
+    ports:
+      - "5433:5432"
+    volumes:
+      - gestion_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=gestion_user
+      - POSTGRES_PASSWORD=gestion_pass
+      - POSTGRES_DB=gestion_db
 
   # Microservicio de Notificaciones
   notification-service:
@@ -102,42 +138,6 @@ services:
       timeout: 10s
       start_period: 20s
       retries: 3
-
-  # Base de datos PostgreSQL para documentación
-  documentacion-db:
-    build:
-      context: ./database/documentacion
-      dockerfile: Dockerfile
-    container_name: documentacion-db
-    ports:
-      - "5433:5432"  # Puerto diferente para evitar conflicto
-    volumes:
-      - documentacion_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_USER=documentacion_user
-      - POSTGRES_PASSWORD=documentacion_pass
-      - POSTGRES_DB=documentacion_db
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U documentacion_user -d documentacion_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  # Base de datos PostgreSQL para gestión
-  gestion-db:
-    build:
-      context: ./database/gestion
-      dockerfile: Dockerfile
-    container_name: gestion-db
-    ports:
-      - "5433:5432"
-    volumes:
-      - gestion_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_USER=gestion_user
-      - POSTGRES_PASSWORD=gestion_pass
-      - POSTGRES_DB=gestion_db
 
   emqx:
     image: emqx/emqx:latest
@@ -219,3 +219,4 @@ volumes:
   influxdb_data:
   notification_data:
   documentacion_data:
+  gestion_data:

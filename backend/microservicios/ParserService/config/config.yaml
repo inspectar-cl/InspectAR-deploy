@@ -1,23 +1,23 @@
 # Configuración para desarrollo local apuntando a VM en Google Cloud
-mongu:
-  uri: "mongodb://34.39.160.195:27017"
-  database: "iot_db"
+# mongu:
+#   uri: "mongodb://34.39.160.195:27017"
+#   database: "iot_db"
 
-influxdb:
-  url: "http://34.39.160.195:8086"
-  token: "my-super-token"
-  org: "my-org"
-  bucket: "sensores"
+# influxdb:
+#   url: "http://34.39.160.195:8086"
+#   token: "my-super-token"
+#   org: "my-org"
+#   bucket: "sensores"
 
 server:
   port: "8090"
 
 # Configuración para contenedores Docker (comentada)
-# mongu:
-#   uri: "mongodb://mongu:27017"
-#   database: "iot_db"
-# influxdb:
-#   url: "http://influxdb:8086"
-#   token: "my-super-token"
-#   org: "my-org"
-#   bucket: "sensores"
+mongu:
+  uri: "mongodb://mongu:27017"
+  database: "iot_db"
+influxdb:
+  url: "http://influxdb:8086"
+  token: "my-super-token"
+  org: "my-org"
+  bucket: "sensores"

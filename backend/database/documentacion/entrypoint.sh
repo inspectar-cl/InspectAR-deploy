@@ -5,4 +5,4 @@ set -e
 echo "🚀 Iniciando PostgreSQL para microservicio de documentación..."
 
 # Ejecutar el entrypoint original de PostgreSQL
-exec docker-entrypoint.sh "$@"
+exec /usr/local/bin/docker-entrypoint.sh "$@"

@@ -11,11 +11,11 @@ ENV LC_ALL=C.UTF-8
 COPY init.sql /docker-entrypoint-initdb.d/
 
 # Exponer puerto estándar
-EXPOSE 5432
+EXPOSE 5434
 
 # Configurar entrypoint personalizado
-COPY entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/entrypoint.sh
+# COPY entrypoint.sh /usr/local/bin/
+# RUN chmod +x /usr/local/bin/entrypoint.sh
 
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+# ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["postgres"]

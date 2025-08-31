@@ -9,11 +9,12 @@ import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGl
 
 interface Props {
   onFilterChange: (filters: { search: string; especialidad: string | null }, resetPage?: boolean) => void;
+  especialidades: string[];
 }
 
 const tipos_activos = ['Bomba de Agua', 'Sistema Eléctrico', 'Ascensor', 'Caldera']
 
-export function ContactosFilters({ onFilterChange }: Props): React.JSX.Element {
+export function ContactosFilters({ onFilterChange, especialidades }: Props): React.JSX.Element {
   const [search, setSearch] = React.useState('');
   const [tipo, setTipo] = React.useState<string | null>(null);
 
@@ -51,8 +52,7 @@ export function ContactosFilters({ onFilterChange }: Props): React.JSX.Element {
         <Autocomplete
           value={tipo}
           onChange={handleTipoChange}
-          //disablePortal
-          options={tipos_activos}
+          options={especialidades}
           sx={{ width: 300 }}
           renderInput={(params) => <TextField {...params} label="Especialidad" />}
         />

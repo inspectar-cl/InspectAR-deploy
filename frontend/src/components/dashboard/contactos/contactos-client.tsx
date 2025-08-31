@@ -14,9 +14,10 @@ import { CustomAlert } from '@/components/dashboard/alert-popups/customAlertPopu
 
 interface Props {
   contactos: Contacto[];
+  especialidades: string[];
 }
 
-export function ContactosClient({ contactos }: Props) {
+export function ContactosClient({ contactos, especialidades }: Props) {
   const [filter, setFilter] = React.useState({ search: '', especialidad: null as string | null });
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
@@ -115,7 +116,7 @@ export function ContactosClient({ contactos }: Props) {
           </Button>
         </div>
       </Stack>
-      <ContactosFilters onFilterChange={handleFilterChange}/>
+      <ContactosFilters onFilterChange={handleFilterChange} especialidades={especialidades} />
       <ContactosTable
         count={filtered.length}
         page={page}

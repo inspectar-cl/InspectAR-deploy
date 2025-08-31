@@ -56,7 +56,91 @@ CREATE TABLE IF NOT EXISTS reportes (
     estado VARCHAR(50) DEFAULT 'generado' CHECK (estado IN ('generado', 'enviado', 'archivado'))
 );
 
--- Tabla intermedia para la relación muchos a muchos entre activos y técnicos
+-- Tabla de empresas de mantención
+CREATE TABLE IF NOT EXISTS empresas (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL UNIQUE,
+    rut VARCHAR(12) NOT NULL UNIQUE,
+    telefono VARCHAR(20),
+    email VARCHAR(150),
+    direccion VARCHAR(200),
+    activo BOOLEAN DEFAULT true,
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Actualizar tabla de técnicos para incluir empresa
+ALTER TABLE tecnicos 
+ADD COLUMN IF NOT EXISTS apellido VARCHAR(255),
+ADD COLUMN IF NOT EXISTS empresa_id INTEGER REFERENCES empresas(id),
+ADD COLUMN IF NOT EXISTS activo BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN IF NOT EXISTS fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+
+-- Renombrar columna creado_en a fecha_registro para consistencia
+DO $$ 
+BEGIN
+    IF EXISTS(SELECT * FROM information_schema.columns WHERE table_name='tecnicos' AND column_name='creado_en') THEN
+        UPDATE tecnicos SET fecha_registro = creado_en WHERE fecha_registro IS NULL;
+        ALTER TABLE tecnicos DROP COLUMN creado_en;
+    END IF;
+END $$;
+
+-- Tabla de solicitudes técnicas (HdU16)
+CREATE TABLE IF NOT EXISTS solicitudes_tecnico (
+    id SERIAL PRIMARY KEY,
+    tecnico_id INTEGER NOT NULL REFERENCES tecnicos(id) ON DELETE CASCADE,
+    residente_id INTEGER NOT NULL,
+    activo_id INTEGER NOT NULL REFERENCES activos(id) ON DELETE CASCADE,
+    edificio_id INTEGER NOT NULL REFERENCES edificios(id) ON DELETE CASCADE,
+    
+    -- Contenido de la solicitud
+    tipo VARCHAR(50) NOT NULL CHECK (tipo IN ('mantenimiento', 'reparacion', 'inspeccion', 'emergencia', 'consulta')),
+    asunto VARCHAR(200) NOT NULL,
+    descripcion TEXT NOT NULL,
+    prioridad VARCHAR(20) NOT NULL DEFAULT 'media' CHECK (prioridad IN ('baja', 'media', 'alta', 'critica', 'emergencia')),
+    
+    -- Estado y seguimiento
+    estado VARCHAR(50) NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'enviada', 'recibida', 'en_proceso', 'completada', 'cancelada', 'rechazada')),
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_envio TIMESTAMP,
+    fecha_recepcion TIMESTAMP,
+    fecha_completado TIMESTAMP,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Información de contacto
+    medio_contacto VARCHAR(50) NOT NULL CHECK (medio_contacto IN ('email', 'telefono', 'sms', 'ambos')),
+    telefono_contacto VARCHAR(20),
+    email_contacto VARCHAR(150),
+    
+    -- Respuesta del técnico
+    respuesta_tecnico TEXT,
+    notas_internas TEXT
+);
+
+-- Tabla de archivos adjuntos para solicitudes
+CREATE TABLE IF NOT EXISTS archivos_solicitud (
+    id SERIAL PRIMARY KEY,
+    solicitud_id INTEGER NOT NULL REFERENCES solicitudes_tecnico(id) ON DELETE CASCADE,
+    nombre_archivo VARCHAR(255) NOT NULL,
+    ruta_archivo VARCHAR(500) NOT NULL,
+    tipo_archivo VARCHAR(50),
+    tamano_bytes BIGINT,
+    fecha_subida TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla intermedia para activos autorizados por técnico
+CREATE TABLE IF NOT EXISTS activos_tecnicos_autorizados (
+    id SERIAL PRIMARY KEY,
+    tecnico_id INTEGER NOT NULL REFERENCES tecnicos(id) ON DELETE CASCADE,
+    activo_id INTEGER NOT NULL REFERENCES activos(id) ON DELETE CASCADE,
+    edificio_id INTEGER NOT NULL REFERENCES edificios(id) ON DELETE CASCADE,
+    fecha_autorizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    activo BOOLEAN DEFAULT true,
+    UNIQUE(tecnico_id, activo_id)
+);
+
+-- Tabla intermedia para la relación muchos a muchos entre activos y técnicos (mantener compatibilidad)
 CREATE TABLE IF NOT EXISTS activos_tecnicos (
     activo_id INTEGER NOT NULL REFERENCES activos(id) ON DELETE CASCADE,
     tecnico_id INTEGER NOT NULL REFERENCES tecnicos(id) ON DELETE CASCADE,
@@ -67,6 +151,8 @@ CREATE TABLE IF NOT EXISTS activos_tecnicos (
 -- Índices para mejorar rendimiento
 CREATE INDEX IF NOT EXISTS idx_tecnicos_especialidad ON tecnicos(especialidad);
 CREATE INDEX IF NOT EXISTS idx_tecnicos_autorizado ON tecnicos(autorizado);
+CREATE INDEX IF NOT EXISTS idx_tecnicos_activo ON tecnicos(activo);
+CREATE INDEX IF NOT EXISTS idx_tecnicos_empresa ON tecnicos(empresa_id);
 CREATE INDEX IF NOT EXISTS idx_activos_estado ON activos(estado);
 CREATE INDEX IF NOT EXISTS idx_activos_tipo ON activos(tipo);
 CREATE INDEX IF NOT EXISTS idx_activos_edificio ON activos(edificio_id);
@@ -78,8 +164,25 @@ CREATE INDEX IF NOT EXISTS idx_reportes_fecha ON reportes(generado_en);
 CREATE INDEX IF NOT EXISTS idx_activos_tecnicos_activo ON activos_tecnicos(activo_id);
 CREATE INDEX IF NOT EXISTS idx_activos_tecnicos_tecnico ON activos_tecnicos(tecnico_id);
 
+-- Índices para solicitudes técnicas
+CREATE INDEX IF NOT EXISTS idx_solicitudes_tecnico ON solicitudes_tecnico(tecnico_id);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_residente ON solicitudes_tecnico(residente_id);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_activo ON solicitudes_tecnico(activo_id);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_edificio ON solicitudes_tecnico(edificio_id);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_estado ON solicitudes_tecnico(estado);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_tipo ON solicitudes_tecnico(tipo);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_prioridad ON solicitudes_tecnico(prioridad);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_fecha_creacion ON solicitudes_tecnico(fecha_creacion);
+CREATE INDEX IF NOT EXISTS idx_activos_tecnicos_autorizados_tecnico ON activos_tecnicos_autorizados(tecnico_id);
+CREATE INDEX IF NOT EXISTS idx_activos_tecnicos_autorizados_activo ON activos_tecnicos_autorizados(activo_id);
+CREATE INDEX IF NOT EXISTS idx_activos_tecnicos_autorizados_edificio ON activos_tecnicos_autorizados(edificio_id);
+
 COMMENT ON TABLE tecnicos IS 'Técnicos especializados para mantenimiento (HdU16)';
 COMMENT ON TABLE edificios IS 'Edificios donde se ubican los activos';
 COMMENT ON TABLE activos IS 'Activos industriales gestionados';
 COMMENT ON TABLE acciones_mantenimiento IS 'Acciones de mantenimiento colaborativas (HdU13)';
 COMMENT ON TABLE reportes IS 'Reportes automáticos generados (HdU04)';
+COMMENT ON TABLE empresas IS 'Empresas de mantención que emplean técnicos';
+COMMENT ON TABLE solicitudes_tecnico IS 'Solicitudes de trabajo enviadas a técnicos especializados (HdU16)';
+COMMENT ON TABLE archivos_solicitud IS 'Archivos adjuntos a solicitudes técnicas';
+COMMENT ON TABLE activos_tecnicos_autorizados IS 'Técnicos autorizados para trabajar en activos específicos';

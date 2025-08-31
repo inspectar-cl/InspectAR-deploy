@@ -2,6 +2,7 @@ package router
 
 import (
 	"gestion/internal/handlers"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -9,7 +10,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(tecnicoHandler *handlers.TecnicoHandler, accionHandler *handlers.AccionMantenimientoHandler, reporteHandler *handlers.ReporteHandler) *gin.Engine {
+func SetupRouter(
+	tecnicoHandler *handlers.TecnicoHandler,
+	accionHandler *handlers.AccionMantenimientoHandler,
+	reporteHandler *handlers.ReporteHandler,
+	solicitudHandler *handlers.SolicitudHandler,
+) *gin.Engine {
 	r := gin.Default()
 
 	// CORS middleware
@@ -70,6 +76,109 @@ func SetupRouter(tecnicoHandler *handlers.TecnicoHandler, accionHandler *handler
 	// Rutas de reportes (HdU04 - Reportes automáticos)
 	r.POST("/reportes/activo/:activo_id", reporteHandler.GenerarReportePorActivo) // Generar reporte PDF por activo
 	r.GET("/reportes/activo/:activo_id", reporteHandler.ObtenerReportesPorActivo) // Obtener reportes de un activo
+
+	// Rutas de solicitudes técnicas (HdU16 - Sistema de solicitudes)
+	if solicitudHandler != nil {
+		v1 := r.Group("/api/v1")
+		{
+			solicitudes := v1.Group("/solicitudes")
+			{
+				solicitudes.POST("", solicitudHandler.CreateSolicitud)
+				solicitudes.GET("", solicitudHandler.GetSolicitudes)
+				solicitudes.GET("/:id", solicitudHandler.GetSolicitudByID)
+				solicitudes.POST("/:id/enviar", solicitudHandler.EnviarSolicitud)
+				solicitudes.PUT("/:id/estado", solicitudHandler.ActualizarEstadoSolicitud)
+				solicitudes.GET("/estadisticas", solicitudHandler.GetEstadisticasSolicitudes)
+			}
+
+			// Rutas adicionales para técnicos en el contexto de HdU16
+			tecnicos := v1.Group("/tecnicos")
+			{
+				tecnicos.GET("/edificio/:edificio_id", func(c *gin.Context) {
+					// Reutilizar el handler existente
+					tecnicoHandler.ListarTecnicosPorEdificio(c)
+				})
+
+				tecnicos.GET("/activo/:activo_id", func(c *gin.Context) {
+					// Reutilizar el handler existente
+					tecnicoHandler.ListarTecnicosPorActivo(c)
+				})
+
+				tecnicos.GET("/especialidades", func(c *gin.Context) {
+					especialidades := []string{
+						"Electricista",
+						"Plomero",
+						"Técnico HVAC",
+						"Técnico de Ascensores",
+						"Técnico de Seguridad",
+						"Técnico de Redes",
+						"Carpintero",
+						"Pintor",
+						"Técnico de Electrodomésticos",
+					}
+
+					c.JSON(200, gin.H{
+						"message":        "Especialidades disponibles para HdU16",
+						"especialidades": especialidades,
+						"total":          len(especialidades),
+					})
+				})
+			}
+		}
+	} else {
+		// Rutas placeholder para HdU16 cuando no está implementado
+		v1 := r.Group("/api/v1")
+		{
+			solicitudes := v1.Group("/solicitudes")
+			{
+				solicitudes.POST("", func(c *gin.Context) {
+					c.JSON(http.StatusNotImplemented, gin.H{
+						"message": "Funcionalidad de solicitudes en desarrollo",
+						"status":  "not_implemented",
+					})
+				})
+				solicitudes.GET("", func(c *gin.Context) {
+					c.JSON(http.StatusOK, gin.H{
+						"message":     "Sistema de solicitudes HdU16",
+						"solicitudes": []interface{}{},
+						"total":       0,
+					})
+				})
+			}
+
+			// Rutas de técnicos para HdU16
+			tecnicos := v1.Group("/tecnicos")
+			{
+				tecnicos.GET("/edificio/:edificio_id", func(c *gin.Context) {
+					tecnicoHandler.ListarTecnicosPorEdificio(c)
+				})
+
+				tecnicos.GET("/activo/:activo_id", func(c *gin.Context) {
+					tecnicoHandler.ListarTecnicosPorActivo(c)
+				})
+
+				tecnicos.GET("/especialidades", func(c *gin.Context) {
+					especialidades := []string{
+						"Electricista",
+						"Plomero",
+						"Técnico HVAC",
+						"Técnico de Ascensores",
+						"Técnico de Seguridad",
+						"Técnico de Redes",
+						"Carpintero",
+						"Pintor",
+						"Técnico de Electrodomésticos",
+					}
+
+					c.JSON(200, gin.H{
+						"message":        "Especialidades disponibles para HdU16",
+						"especialidades": especialidades,
+						"total":          len(especialidades),
+					})
+				})
+			}
+		}
+	}
 
 	return r
 }

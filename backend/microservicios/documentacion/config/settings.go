@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -61,12 +62,24 @@ type CORSConfig struct {
 }
 
 type LimitsConfig struct {
-	MaxFileSizeMB      int      `mapstructure:"max_file_size_mb"`
+	MaxFileSizeMB     int      `mapstructure:"max_file_size_mb"`
 	AllowedExtensions []string `mapstructure:"allowed_extensions"`
 }
 
 func LoadConfig() (*Config, error) {
-	viper.SetConfigName("config")
+	// Obtener el nombre del archivo de configuración desde variable de entorno
+	configFile := os.Getenv("CONFIG_FILE")
+	if configFile == "" {
+		configFile = "config"
+	} else {
+		// Si se especifica un archivo completo, remover la extensión
+		if strings.HasSuffix(configFile, ".yaml") || strings.HasSuffix(configFile, ".yml") {
+			configFile = strings.TrimSuffix(configFile, ".yaml")
+			configFile = strings.TrimSuffix(configFile, ".yml")
+		}
+	}
+
+	viper.SetConfigName(configFile)
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("./config")
 	viper.AddConfigPath(".")

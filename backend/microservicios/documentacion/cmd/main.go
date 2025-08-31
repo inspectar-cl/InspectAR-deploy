@@ -71,9 +71,11 @@ func main() {
 	// Inicializar repositorios
 	documentoRepo := repository.NewDocumentoRepository(db)
 	analisisRepo := repository.NewAnalisisRepository(db)
+	consultaRepo := repository.NewConsultaRepository(db)
 
 	// Inicializar servicios
 	documentoService := services.NewDocumentoService(documentoRepo, storageService)
+	consultaService := services.NewConsultaService(consultaRepo, documentoRepo, storageService, cfg.Gemini.ProjectID, cfg.Gemini.APIKey)
 
 	// Inicializar servicio de IA (opcional)
 	var aiService *services.AIService
@@ -91,15 +93,16 @@ func main() {
 
 	// Inicializar handlers
 	documentoHandler := handlers.NewDocumentoHandler(documentoService, aiService)
+	consultaHandler := handlers.NewConsultaHandler(consultaService, documentoService)
 
 	// Configurar router
-	r := router.SetupRouter(documentoHandler)
+	r := router.SetupRouter(documentoHandler, consultaHandler)
 
 	// Iniciar servidor
 	serverAddr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
 	log.Printf("Iniciando servidor en %s", serverAddr)
 	log.Printf("Microservicio de Documentación listo en puerto %s", cfg.Server.Port)
-	
+
 	if err := r.Run(serverAddr); err != nil {
 		log.Fatalf("Error iniciando servidor: %v", err)
 	}

@@ -26,11 +26,11 @@ export interface Activo_contactos {
 
 export interface Contacto {
   id: string;
-  id_edificio: string;
+  // id_edificio: string;
   avatar: string;
   name: string;
   email: string;
-  activo: Activo_contactos[];
+  // activo: Activo_contactos[];
   phone: string;
   especialidad: String;
 }
@@ -90,7 +90,7 @@ export function ContactosTable({
                 />
               </TableCell>
               <TableCell>Nombre</TableCell>
-              <TableCell>Activo asociado</TableCell>
+              {/* <TableCell>Activo asociado</TableCell> */}
               <TableCell>Correo</TableCell>
               <TableCell>Teléfono</TableCell>
               <TableCell>Especialidad</TableCell>
@@ -120,7 +120,7 @@ export function ContactosTable({
                       <Typography variant="subtitle2">{row.name}</Typography>
                     </Stack>
                   </TableCell>
-                  <TableCell
+                  {/* <TableCell
                     sx={{
                       maxWidth: 200,
                       overflowY: 'auto',
@@ -133,7 +133,7 @@ export function ContactosTable({
                         </Typography>
                       ))}
                     </Stack>
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell>{row.email}</TableCell>
                   <TableCell>{row.phone}</TableCell>
                   <TableCell>{row.especialidad}</TableCell>

@@ -57,6 +57,59 @@ services:
       - POSTGRES_PASSWORD=notification_pass
       - POSTGRES_DB=notification_db
 
+  # Microservicio de Documentación
+  documentacion-service:
+    build:
+      context: ./microservicios/documentacion
+      dockerfile: Dockerfile
+    container_name: documentacion-service
+    ports:
+      - "8092:8092"
+    depends_on:
+      documentacion-db:
+        condition: service_healthy
+    environment:
+      - GIN_MODE=release
+      - PORT=8092
+      - CONFIG_FILE=config.docker
+      - DOC_DATABASE_HOST=documentacion-db
+      - DOC_DATABASE_PORT=5432
+      - DOC_DATABASE_USER=documentacion_user
+      - DOC_DATABASE_PASSWORD=documentacion_pass
+      - DOC_DATABASE_NAME=documentacion_db
+      - DOC_DATABASE_SSLMODE=disable
+      - DOC_GEMINI_API_KEY=AIzaSyApWlRAMlvyvUUE_9_6tYuMFXn2eL-52gA
+      - DOC_GEMINI_PROJECT_ID=My First Project
+    volumes:
+      - ./microservicios/documentacion/config:/app/config:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8092/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+
+  # Base de datos PostgreSQL para documentación
+  documentacion-db:
+    build:
+      context: ./database/documentacion
+      dockerfile: Dockerfile
+    container_name: documentacion-db
+    ports:
+      - "5433:5432"  # Puerto diferente para evitar conflicto
+    volumes:
+      - documentacion_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=documentacion_user
+      - POSTGRES_PASSWORD=documentacion_pass
+      - POSTGRES_DB=documentacion_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U documentacion_user -d documentacion_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   emqx:
     image: emqx/emqx:latest
     container_name: emqx
@@ -136,3 +189,4 @@ volumes:
   mongo_data:
   influxdb_data:
   notification_data:
+  documentacion_data:

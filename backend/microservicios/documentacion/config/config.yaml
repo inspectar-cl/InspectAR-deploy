@@ -1,0 +1,36 @@
+server:
+  port: 8092
+  host: "localhost"
+
+database:
+  host: "localhost"
+  port: 5432
+  user: "postgres"
+  password: "postgres"
+  dbname: "documentacion_test"
+  sslmode: "disable"
+
+storage:
+  type: "local"
+  minio:
+    endpoint: "localhost:9000"
+    access_key: "minioadmin"
+    secret_key: "minioadmin"
+    bucket: "documentos"
+    secure: false
+  local:
+    upload_dir: "./storage/uploads"
+
+gemini:
+  api_key: "AIzaSyApWlRAMlvyvUUE_9_6tYuMFXn2eL-52gA"
+  project_id: "My First Project"
+  location: "us-central1"
+
+cors:
+  allowed_origins: ["*"]
+  allowed_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  allowed_headers: ["Content-Type", "Authorization"]
+
+limits:
+  max_file_size_mb: 50
+  allowed_extensions: [".pdf", ".docx"]

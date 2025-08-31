@@ -1,0 +1,30 @@
+server:
+  port: 8092
+  host: "0.0.0.0"
+
+database:
+  host: documentacion-db
+  port: 5432
+  user: documentacion_user
+  password: documentacion_pass
+  dbname: documentacion_db
+  sslmode: disable
+
+storage:
+  type: "local"
+  local:
+    upload_dir: "/tmp/uploads"
+
+gemini:
+  api_key: "AIzaSyApWlRAMlvyvUUE_9_6tYuMFXn2eL-52gA"
+  project_id: "My First Project"
+  location: "us-central1"
+
+cors:
+  allowed_origins: ["*"]
+  allowed_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  allowed_headers: ["Content-Type", "Authorization"]
+
+limits:
+  max_file_size_mb: 50
+  allowed_extensions: [".pdf", ".docx"]

@@ -48,7 +48,7 @@ func (h *TecnicoHandler) ListarTodosLosTecnicos(c *gin.Context) {
 // GET /tecnicos/activo/:activo_id - Listar técnicos relacionados con un activo específico
 func (h *TecnicoHandler) ListarTecnicosPorActivo(c *gin.Context) {
 	activoID, err := strconv.Atoi(c.Param("activo_id"))
-	if err != nil {
+	if err != nil || activoID <= 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de activo inválido"})
 		return
 	}
@@ -67,7 +67,7 @@ func (h *TecnicoHandler) ListarTecnicosPorActivo(c *gin.Context) {
 // GET /tecnicos/edificio/:edificio_id - Listar técnicos relacionados con un edificio (indirectamente a través de activos)
 func (h *TecnicoHandler) ListarTecnicosPorEdificio(c *gin.Context) {
 	edificioID, err := strconv.Atoi(c.Param("edificio_id"))
-	if err != nil {
+	if err != nil || edificioID <= 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de edificio inválido"})
 		return
 	}
@@ -86,7 +86,7 @@ func (h *TecnicoHandler) ListarTecnicosPorEdificio(c *gin.Context) {
 // GET /tecnicos/:id - Consultar información de un técnico específico
 func (h *TecnicoHandler) ObtenerTecnico(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
+	if err != nil || id <= 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
 		return
 	}
@@ -103,7 +103,7 @@ func (h *TecnicoHandler) ObtenerTecnico(c *gin.Context) {
 // PUT /tecnicos/:id/autorizado - Actualizar estado autorizado de técnicos
 func (h *TecnicoHandler) ActualizarAutorizado(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
+	if err != nil || id <= 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
 		return
 	}

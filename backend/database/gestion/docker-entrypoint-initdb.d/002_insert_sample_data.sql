@@ -114,17 +114,6 @@ INSERT INTO activos_tecnicos (activo_id, tecnico_id) VALUES
 (8, 1)           -- Bomba Emergencia: Juan
 ON CONFLICT DO NOTHING;
 
--- Insertar activos de ejemplo
-INSERT INTO activos (activo_id, nombre, tipo, estado, ubicacion, edificio_id) VALUES
-('AC-1001', 'Caldera Principal', 'Caldera', 'operativo', 'Sala de Calderas 1', 1),
-('AC-1002', 'Compresor Auxiliar', 'Compresor', 'mantenimiento', 'Sala de Compresores', 1),
-('AC-1003', 'Bomba Hidráulica 1', 'Bomba', 'operativo', 'Sala de Bombas', 2),
-('AC-1004', 'Motor Eléctrico Principal', 'Motor', 'operativo', 'Sala de Motores', 1),
-('AC-1005', 'Sistema de Ventilación', 'Ventilación', 'alerta', 'Techo Edificio 1', 1),
-('AC-1006', 'Transformador Eléctrico', 'Transformador', 'operativo', 'Subestación', 2),
-('AC-1007', 'Chiller Industrial', 'Refrigeración', 'operativo', 'Sala de Refrigeración', 2),
-('AC-1008', 'Generador de Emergencia', 'Generador', 'standby', 'Sala de Generadores', 1);
-
 -- Insertar acciones de mantenimiento
 INSERT INTO acciones_mantenimiento (activo_id, tecnico_id, tipo, descripcion, estado, prioridad) VALUES
 (1, 1, 'preventivo', 'Revisión mensual de válvulas de seguridad en caldera principal', 'pendiente', 'alta'),

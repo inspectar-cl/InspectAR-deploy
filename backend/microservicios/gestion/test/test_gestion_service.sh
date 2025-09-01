@@ -65,6 +65,14 @@ test_route() {
     else
         echo "Response: $body"
     fi
+    
+    # Store the full response body for ID extraction
+    LAST_RESPONSE_BODY="$body"
+}
+
+# Function to extract ID from JSON response
+extract_id_from_response() {
+    echo "$LAST_RESPONSE_BODY" | grep -o '"id":[0-9]*' | head -1 | cut -d: -f2
 }
 
 # Verificar que el servicio esté corriendo
@@ -210,6 +218,7 @@ test_route "POST" "$GESTION_URL/api/v1/solicitudes" "Crear solicitud mantenimien
     "medio_contacto": "email",
     "email_contacto": "admin.edificio@example.com"
 }' "201"
+SOLICITUD_ID_1=$(extract_id_from_response)
 
 # Solicitud 2: Reparación de emergencia
 echo -e "\n${PURPLE}🚨 Solicitud #2: Emergencia - Sistema eléctrico${NC}"
@@ -225,6 +234,7 @@ test_route "POST" "$GESTION_URL/api/v1/solicitudes" "Crear solicitud emergencia 
     "medio_contacto": "telefono",
     "telefono_contacto": "+56912345678"
 }' "201"
+SOLICITUD_ID_2=$(extract_id_from_response)
 
 # Solicitud 3: Inspección de rutina
 echo -e "\n${PURPLE}🔍 Solicitud #3: Inspección sistema HVAC${NC}"
@@ -241,6 +251,7 @@ test_route "POST" "$GESTION_URL/api/v1/solicitudes" "Crear solicitud inspección
     "email_contacto": "mantenimiento@edificio.com",
     "telefono_contacto": "+56987654321"
 }' "201"
+SOLICITUD_ID_3=$(extract_id_from_response)
 
 # Solicitud 4: Consulta técnica
 echo -e "\n${PURPLE}💬 Solicitud #4: Consulta sobre bomba hidráulica${NC}"
@@ -256,6 +267,7 @@ test_route "POST" "$GESTION_URL/api/v1/solicitudes" "Crear consulta técnica bom
     "medio_contacto": "email",
     "email_contacto": "consultas@edificio2.com"
 }' "201"
+SOLICITUD_ID_4=$(extract_id_from_response)
 
 # Solicitud 5: Reparación urgente
 echo -e "\n${PURPLE}⚡ Solicitud #5: Reparación compresor auxiliar${NC}"
@@ -271,6 +283,7 @@ test_route "POST" "$GESTION_URL/api/v1/solicitudes" "Crear solicitud reparación
     "medio_contacto": "telefono",
     "telefono_contacto": "+56911223344"
 }' "201"
+SOLICITUD_ID_5=$(extract_id_from_response)
 
 echo -e "\n${CYAN}📋 CONSULTANDO SOLICITUDES CREADAS${NC}"
 echo "==========================================="
@@ -279,41 +292,41 @@ test_route "GET" "$GESTION_URL/api/v1/solicitudes" "Listar todas las solicitudes
 echo -e "\n${CYAN}🔄 GESTIONANDO SOLICITUDES - FLUJO DE TRABAJO${NC}"
 echo "=============================================="
 
-# Enviar solicitudes prioritarias (ID simulados: 1, 2, 5)
+# Enviar solicitudes prioritarias usando IDs reales
 echo -e "\n${GREEN}📤 ENVIANDO SOLICITUDES PRIORITARIAS${NC}"
 
-echo -e "\n${BLUE}Enviando solicitud #1 (Mantenimiento caldera)${NC}"
-test_route "POST" "$GESTION_URL/api/v1/solicitudes/1/enviar" "Enviar solicitud mantenimiento caldera" '' "200"
+echo -e "\n${BLUE}Enviando solicitud #1 (Mantenimiento caldera) - ID: $SOLICITUD_ID_1${NC}"
+test_route "POST" "$GESTION_URL/api/v1/solicitudes/$SOLICITUD_ID_1/enviar" "Enviar solicitud mantenimiento caldera" '' "200"
 
-echo -e "\n${BLUE}Enviando solicitud #2 (Emergencia eléctrica)${NC}"
-test_route "POST" "$GESTION_URL/api/v1/solicitudes/2/enviar" "Enviar solicitud emergencia eléctrica" '' "200"
+echo -e "\n${BLUE}Enviando solicitud #2 (Emergencia eléctrica) - ID: $SOLICITUD_ID_2${NC}"
+test_route "POST" "$GESTION_URL/api/v1/solicitudes/$SOLICITUD_ID_2/enviar" "Enviar solicitud emergencia eléctrica" '' "200"
 
-echo -e "\n${BLUE}Enviando solicitud #5 (Reparación compresor)${NC}"
-test_route "POST" "$GESTION_URL/api/v1/solicitudes/5/enviar" "Enviar solicitud reparación compresor" '' "200"
+echo -e "\n${BLUE}Enviando solicitud #5 (Reparación compresor) - ID: $SOLICITUD_ID_5${NC}"
+test_route "POST" "$GESTION_URL/api/v1/solicitudes/$SOLICITUD_ID_5/enviar" "Enviar solicitud reparación compresor" '' "200"
 
 # Actualizar estados - Simulando trabajo de técnicos
 echo -e "\n${GREEN}🔧 ACTUALIZANDO ESTADOS - TRABAJO EN PROGRESO${NC}"
 
 echo -e "\n${BLUE}Técnico recibe solicitud #2 (Emergencia)${NC}"
-test_route "PUT" "$GESTION_URL/api/v1/solicitudes/2/estado" "Técnico recibe emergencia eléctrica" '{
+test_route "PUT" "$GESTION_URL/api/v1/solicitudes/$SOLICITUD_ID_2/estado" "Técnico recibe emergencia eléctrica" '{
     "estado": "recibida",
     "comentarios": "Técnico electricista confirma recepción. Se dirige al lugar en 15 minutos."
 }' "200"
 
 echo -e "\n${BLUE}Técnico inicia trabajo solicitud #2${NC}"
-test_route "PUT" "$GESTION_URL/api/v1/solicitudes/2/estado" "Técnico inicia trabajo emergencia" '{
+test_route "PUT" "$GESTION_URL/api/v1/solicitudes/$SOLICITUD_ID_2/estado" "Técnico inicia trabajo emergencia" '{
     "estado": "en_proceso",
     "comentarios": "Diagnóstico completado. Motor presenta sobrecarga. Iniciando reparación."
 }' "200"
 
 echo -e "\n${BLUE}Técnico recibe solicitud #1 (Mantenimiento)${NC}"
-test_route "PUT" "$GESTION_URL/api/v1/solicitudes/1/estado" "Técnico recibe mantenimiento caldera" '{
+test_route "PUT" "$GESTION_URL/api/v1/solicitudes/$SOLICITUD_ID_1/estado" "Técnico recibe mantenimiento caldera" '{
     "estado": "recibida",
     "comentarios": "Programado para mañana 08:00. Técnico especialista en calderas asignado."
 }' "200"
 
 echo -e "\n${BLUE}Técnico recibe solicitud #5 (Compresor)${NC}"
-test_route "PUT" "$GESTION_URL/api/v1/solicitudes/5/estado" "Técnico recibe reparación compresor" '{
+test_route "PUT" "$GESTION_URL/api/v1/solicitudes/$SOLICITUD_ID_5/estado" "Técnico recibe reparación compresor" '{
     "estado": "recibida",
     "comentarios": "Revisando disponibilidad de repuestos. Estimado de inicio: 2 horas."
 }' "200"
@@ -322,42 +335,42 @@ test_route "PUT" "$GESTION_URL/api/v1/solicitudes/5/estado" "Técnico recibe rep
 echo -e "\n${GREEN}✅ COMPLETANDO TRABAJOS${NC}"
 
 echo -e "\n${BLUE}Completando emergencia eléctrica (solicitud #2)${NC}"
-test_route "PUT" "$GESTION_URL/api/v1/solicitudes/2/estado" "Completar emergencia eléctrica" '{
+test_route "PUT" "$GESTION_URL/api/v1/solicitudes/$SOLICITUD_ID_2/estado" "Completar emergencia eléctrica" '{
     "estado": "completada",
     "comentarios": "Trabajo completado exitosamente. Motor reparado y funcionando normalmente. Se reemplazó sobrecarga defectuosa."
 }' "200"
 
 echo -e "\n${BLUE}Iniciando mantenimiento caldera (solicitud #1)${NC}"
-test_route "PUT" "$GESTION_URL/api/v1/solicitudes/1/estado" "Iniciar mantenimiento caldera" '{
+test_route "PUT" "$GESTION_URL/api/v1/solicitudes/$SOLICITUD_ID_1/estado" "Iniciar mantenimiento caldera" '{
     "estado": "en_proceso",
     "comentarios": "Iniciando mantenimiento preventivo. Verificando presión y temperatura."
 }' "200"
 
 echo -e "\n${BLUE}Iniciando reparación compresor (solicitud #5)${NC}"
-test_route "PUT" "$GESTION_URL/api/v1/solicitudes/5/estado" "Iniciar reparación compresor" '{
+test_route "PUT" "$GESTION_URL/api/v1/solicitudes/$SOLICITUD_ID_5/estado" "Iniciar reparación compresor" '{
     "estado": "en_proceso",
     "comentarios": "Repuestos disponibles. Iniciando desmontaje del motor defectuoso."
 }' "200"
 
 # Completar más trabajos
 echo -e "\n${BLUE}Completando mantenimiento caldera (solicitud #1)${NC}"
-test_route "PUT" "$GESTION_URL/api/v1/solicitudes/1/estado" "Completar mantenimiento caldera" '{
+test_route "PUT" "$GESTION_URL/api/v1/solicitudes/$SOLICITUD_ID_1/estado" "Completar mantenimiento caldera" '{
     "estado": "completada",
     "comentarios": "Mantenimiento preventivo completado. Todas las verificaciones exitosas. Próximo mantenimiento en 30 días."
 }' "200"
 
 # Enviar consulta técnica
 echo -e "\n${BLUE}Procesando consulta técnica (solicitud #4)${NC}"
-test_route "POST" "$GESTION_URL/api/v1/solicitudes/4/enviar" "Enviar consulta técnica" '' "200"
+test_route "POST" "$GESTION_URL/api/v1/solicitudes/$SOLICITUD_ID_4/enviar" "Enviar consulta técnica" '' "200"
 
-test_route "PUT" "$GESTION_URL/api/v1/solicitudes/4/estado" "Responder consulta técnica" '{
+test_route "PUT" "$GESTION_URL/api/v1/solicitudes/$SOLICITUD_ID_4/estado" "Responder consulta técnica" '{
     "estado": "completada",
     "comentarios": "Consulta respondida. Se recomienda instalación de variador de frecuencia para mejorar eficiencia en 15%."
 }' "200"
 
 # Cancelar una solicitud
 echo -e "\n${BLUE}Cancelando inspección HVAC (solicitud #3)${NC}"
-test_route "PUT" "$GESTION_URL/api/v1/solicitudes/3/estado" "Cancelar inspección HVAC" '{
+test_route "PUT" "$GESTION_URL/api/v1/solicitudes/$SOLICITUD_ID_3/estado" "Cancelar inspección HVAC" '{
     "estado": "cancelada",
     "comentarios": "Solicitud cancelada por cliente. Reprogramada para próxima semana."
 }' "200"
@@ -366,11 +379,11 @@ echo -e "\n${CYAN}📊 VERIFICANDO ESTADOS FINALES${NC}"
 echo "======================================"
 
 # Consultar solicitudes individuales para verificar estados
-test_route "GET" "$GESTION_URL/api/v1/solicitudes/1" "Estado final solicitud #1" "" "200"
-test_route "GET" "$GESTION_URL/api/v1/solicitudes/2" "Estado final solicitud #2" "" "200"
-test_route "GET" "$GESTION_URL/api/v1/solicitudes/3" "Estado final solicitud #3" "" "200"
-test_route "GET" "$GESTION_URL/api/v1/solicitudes/4" "Estado final solicitud #4" "" "200"
-test_route "GET" "$GESTION_URL/api/v1/solicitudes/5" "Estado final solicitud #5" "" "200"
+test_route "GET" "$GESTION_URL/api/v1/solicitudes/$SOLICITUD_ID_1" "Estado final solicitud #1" "" "200"
+test_route "GET" "$GESTION_URL/api/v1/solicitudes/$SOLICITUD_ID_2" "Estado final solicitud #2" "" "200"
+test_route "GET" "$GESTION_URL/api/v1/solicitudes/$SOLICITUD_ID_3" "Estado final solicitud #3" "" "200"
+test_route "GET" "$GESTION_URL/api/v1/solicitudes/$SOLICITUD_ID_4" "Estado final solicitud #4" "" "200"
+test_route "GET" "$GESTION_URL/api/v1/solicitudes/$SOLICITUD_ID_5" "Estado final solicitud #5" "" "200"
 
 # Estadísticas finales
 echo -e "\n${CYAN}📈 ESTADÍSTICAS DEL SISTEMA${NC}"

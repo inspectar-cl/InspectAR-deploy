@@ -43,13 +43,13 @@ func main() {
 	tecnicoService := services.NewTecnicoService(tecnicoRepo)
 	accionService := services.NewAccionMantenimientoService(accionRepo)
 	reporteService := services.NewReporteService(reporteRepo, activoRepo, accionRepo, edificioRepo)
-	// solicitudService := services.NewSolicitudService(db) // Comentado temporalmente
+	solicitudService := services.NewSolicitudService(db)
 
 	// Handlers
 	tecnicoHandler := handlers.NewTecnicoHandler(tecnicoService)
 	accionHandler := handlers.NewAccionMantenimientoHandler(accionService)
 	reporteHandler := handlers.NewReporteHandler(reporteService)
-	solicitudHandler := handlers.NewSolicitudHandler(nil) // Servicio temporal nil
+	solicitudHandler := handlers.NewSolicitudHandler(solicitudService)
 
 	// Router (ahora con solicitudHandler)
 	r := router.SetupRouter(tecnicoHandler, accionHandler, reporteHandler, solicitudHandler)

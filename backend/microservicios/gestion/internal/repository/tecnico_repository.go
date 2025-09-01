@@ -16,14 +16,14 @@ func NewTecnicoRepository(db *sql.DB) *TecnicoRepository {
 // Create - Crear técnico con especialidades
 func (r *TecnicoRepository) Create(req *models.CreateTecnicoRequest) (*models.Tecnico, error) {
 	query := `
-		INSERT INTO tecnicos (nombre, email, telefono, especialidad, autorizado) 
-		VALUES ($1, $2, $3, $4, true) 
-		RETURNING id, nombre, email, telefono, especialidad, autorizado, creado_en`
+		INSERT INTO tecnicos (nombre, apellido, email, telefono, especialidad, autorizado, empresa_id) 
+		VALUES ($1, '', $2, $3, $4, true, 1) 
+		RETURNING id, nombre, apellido, email, telefono, especialidad, autorizado, empresa_id, fecha_registro`
 
 	var tecnico models.Tecnico
 	err := r.db.QueryRow(query, req.Nombre, req.Email, req.Telefono, req.Especialidad).Scan(
-		&tecnico.ID, &tecnico.Nombre, &tecnico.Email, &tecnico.Telefono,
-		&tecnico.Especialidad, &tecnico.Autorizado, &tecnico.CreadoEn,
+		&tecnico.ID, &tecnico.Nombre, &tecnico.Apellido, &tecnico.Email, &tecnico.Telefono,
+		&tecnico.Especialidad, &tecnico.Autorizado, &tecnico.EmpresaID, &tecnico.CreadoEn,
 	)
 
 	return &tecnico, err
@@ -31,7 +31,7 @@ func (r *TecnicoRepository) Create(req *models.CreateTecnicoRequest) (*models.Te
 
 // GetAll - Listar todos los técnicos
 func (r *TecnicoRepository) GetAll() ([]models.Tecnico, error) {
-	query := `SELECT id, nombre, email, telefono, especialidad, autorizado, creado_en FROM tecnicos ORDER BY nombre`
+	query := `SELECT id, nombre, apellido, email, telefono, especialidad, autorizado, empresa_id, fecha_registro FROM tecnicos ORDER BY nombre`
 
 	rows, err := r.db.Query(query)
 	if err != nil {
@@ -42,8 +42,8 @@ func (r *TecnicoRepository) GetAll() ([]models.Tecnico, error) {
 	var tecnicos []models.Tecnico
 	for rows.Next() {
 		var tecnico models.Tecnico
-		err := rows.Scan(&tecnico.ID, &tecnico.Nombre, &tecnico.Email, &tecnico.Telefono,
-			&tecnico.Especialidad, &tecnico.Autorizado, &tecnico.CreadoEn)
+		err := rows.Scan(&tecnico.ID, &tecnico.Nombre, &tecnico.Apellido, &tecnico.Email, &tecnico.Telefono,
+			&tecnico.Especialidad, &tecnico.Autorizado, &tecnico.EmpresaID, &tecnico.CreadoEn)
 		if err != nil {
 			return nil, err
 		}
@@ -56,7 +56,7 @@ func (r *TecnicoRepository) GetAll() ([]models.Tecnico, error) {
 // GetByActivo - Listar técnicos relacionados con un activo específico
 func (r *TecnicoRepository) GetByActivo(activoID int, soloAutorizados bool) ([]models.Tecnico, error) {
 	query := `
-		SELECT DISTINCT t.id, t.nombre, t.email, t.telefono, t.especialidad, t.autorizado, t.creado_en 
+		SELECT DISTINCT t.id, t.nombre, t.apellido, t.email, t.telefono, t.especialidad, t.autorizado, t.empresa_id, t.fecha_registro 
 		FROM tecnicos t
 		JOIN activos_tecnicos at ON t.id = at.tecnico_id
 		WHERE at.activo_id = $1`
@@ -75,8 +75,8 @@ func (r *TecnicoRepository) GetByActivo(activoID int, soloAutorizados bool) ([]m
 	var tecnicos []models.Tecnico
 	for rows.Next() {
 		var tecnico models.Tecnico
-		err := rows.Scan(&tecnico.ID, &tecnico.Nombre, &tecnico.Email, &tecnico.Telefono,
-			&tecnico.Especialidad, &tecnico.Autorizado, &tecnico.CreadoEn)
+		err := rows.Scan(&tecnico.ID, &tecnico.Nombre, &tecnico.Apellido, &tecnico.Email, &tecnico.Telefono,
+			&tecnico.Especialidad, &tecnico.Autorizado, &tecnico.EmpresaID, &tecnico.CreadoEn)
 		if err != nil {
 			return nil, err
 		}
@@ -89,7 +89,7 @@ func (r *TecnicoRepository) GetByActivo(activoID int, soloAutorizados bool) ([]m
 // GetByEdificio - Listar técnicos relacionados con un edificio (indirectamente a través de activos)
 func (r *TecnicoRepository) GetByEdificio(edificioID int, soloAutorizados bool) ([]models.Tecnico, error) {
 	query := `
-		SELECT DISTINCT t.id, t.nombre, t.email, t.telefono, t.especialidad, t.autorizado, t.creado_en 
+		SELECT DISTINCT t.id, t.nombre, t.apellido, t.email, t.telefono, t.especialidad, t.autorizado, t.empresa_id, t.fecha_registro 
 		FROM tecnicos t
 		JOIN activos_tecnicos at ON t.id = at.tecnico_id
 		JOIN activos a ON at.activo_id = a.id
@@ -109,8 +109,8 @@ func (r *TecnicoRepository) GetByEdificio(edificioID int, soloAutorizados bool) 
 	var tecnicos []models.Tecnico
 	for rows.Next() {
 		var tecnico models.Tecnico
-		err := rows.Scan(&tecnico.ID, &tecnico.Nombre, &tecnico.Email, &tecnico.Telefono,
-			&tecnico.Especialidad, &tecnico.Autorizado, &tecnico.CreadoEn)
+		err := rows.Scan(&tecnico.ID, &tecnico.Nombre, &tecnico.Apellido, &tecnico.Email, &tecnico.Telefono,
+			&tecnico.Especialidad, &tecnico.Autorizado, &tecnico.EmpresaID, &tecnico.CreadoEn)
 		if err != nil {
 			return nil, err
 		}
@@ -122,12 +122,12 @@ func (r *TecnicoRepository) GetByEdificio(edificioID int, soloAutorizados bool) 
 
 // GetByID - Consultar información de un técnico específico
 func (r *TecnicoRepository) GetByID(id int) (*models.Tecnico, error) {
-	query := `SELECT id, nombre, email, telefono, especialidad, autorizado, creado_en FROM tecnicos WHERE id = $1`
+	query := `SELECT id, nombre, apellido, email, telefono, especialidad, autorizado, empresa_id, fecha_registro FROM tecnicos WHERE id = $1`
 
 	var tecnico models.Tecnico
 	err := r.db.QueryRow(query, id).Scan(
-		&tecnico.ID, &tecnico.Nombre, &tecnico.Email, &tecnico.Telefono,
-		&tecnico.Especialidad, &tecnico.Autorizado, &tecnico.CreadoEn,
+		&tecnico.ID, &tecnico.Nombre, &tecnico.Apellido, &tecnico.Email, &tecnico.Telefono,
+		&tecnico.Especialidad, &tecnico.Autorizado, &tecnico.EmpresaID, &tecnico.CreadoEn,
 	)
 
 	return &tecnico, err

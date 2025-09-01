@@ -135,7 +135,7 @@ func (h *SolicitudHandler) GetSolicitudes(c *gin.Context) {
 	}
 
 	// Obtener solicitudes
-	response, err := h.solicitudService.CreateSolicitud(&request)
+	response, err := h.service.GetSolicitudesByFilter(filter, page, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Error al obtener solicitudes",

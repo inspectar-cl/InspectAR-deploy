@@ -4,14 +4,26 @@ import (
 	"time"
 )
 
+// Empresa contratista
+type Empresa struct {
+	ID       int    `json:"id" db:"id"`
+	Nombre   string `json:"nombre" db:"nombre"`
+	RUT      string `json:"rut" db:"rut"`
+	Telefono string `json:"telefono" db:"telefono"`
+	Email    string `json:"email" db:"email"`
+}
+
 // Técnico especializado para mantenimiento
 type Tecnico struct {
 	ID           int       `json:"id" db:"id"`
 	Nombre       string    `json:"nombre" db:"nombre"`
+	Apellido     string    `json:"apellido" db:"apellido"`
 	Email        string    `json:"email" db:"email"`
 	Telefono     string    `json:"telefono" db:"telefono"`
 	Especialidad string    `json:"especialidad" db:"especialidad"`
 	Autorizado   bool      `json:"autorizado" db:"autorizado"`
+	EmpresaID    int       `json:"empresa_id" db:"empresa_id"`
+	Empresa      Empresa   `json:"empresa"`
 	CreadoEn     time.Time `json:"creado_en" db:"creado_en"`
 }
 
@@ -67,6 +79,27 @@ type Reporte struct {
 }
 
 // DTOs para responses con relaciones
+type EmpresaResponse struct {
+	ID       int    `json:"id"`
+	Nombre   string `json:"nombre"`
+	RUT      string `json:"rut"`
+	Telefono string `json:"telefono"`
+	Email    string `json:"email"`
+}
+
+type TecnicoResponse struct {
+	ID             int             `json:"id"`
+	Nombre         string          `json:"nombre"`
+	Apellido       string          `json:"apellido"`
+	NombreCompleto string          `json:"nombre_completo"`
+	Email          string          `json:"email"`
+	Telefono       string          `json:"telefono"`
+	Especialidad   string          `json:"especialidad"`
+	Autorizado     bool            `json:"autorizado"`
+	Empresa        EmpresaResponse `json:"empresa"`
+	CreadoEn       time.Time       `json:"creado_en"`
+}
+
 type TecnicoConActivos struct {
 	Tecnico `json:",inline"`
 	Activos []Activo `json:"activos,omitempty"`

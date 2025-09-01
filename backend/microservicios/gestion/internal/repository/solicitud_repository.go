@@ -59,8 +59,8 @@ func (r *SolicitudRepository) GetSolicitudByID(id int) (*models.SolicitudTecnico
 		SELECT s.id, s.tecnico_id, s.residente_id, s.activo_id, s.edificio_id,
 			   s.tipo, s.asunto, s.descripcion, s.prioridad, s.estado,
 			   s.fecha_creacion, s.fecha_envio, s.fecha_recepcion, s.fecha_completado,
-			   s.medio_contacto, s.telefono_contacto, s.email_contacto,
-			   s.respuesta_tecnico, s.notas_internas,
+			   s.medio_contacto, COALESCE(s.telefono_contacto, ''), COALESCE(s.email_contacto, ''),
+			   COALESCE(s.respuesta_tecnico, ''), COALESCE(s.notas_internas, ''),
 			   t.id, t.nombre, t.apellido, t.email, t.telefono, t.especialidad, t.empresa_id,
 			   e.id, e.nombre, e.rut, e.telefono
 		FROM solicitudes_tecnico s
@@ -126,8 +126,8 @@ func (r *SolicitudRepository) GetSolicitudesByFilter(filter models.SolicitudFilt
 		SELECT s.id, s.tecnico_id, s.residente_id, s.activo_id, s.edificio_id,
 			   s.tipo, s.asunto, s.descripcion, s.prioridad, s.estado,
 			   s.fecha_creacion, s.fecha_envio, s.fecha_recepcion, s.fecha_completado,
-			   s.medio_contacto, s.telefono_contacto, s.email_contacto,
-			   s.respuesta_tecnico,
+			   s.medio_contacto, COALESCE(s.telefono_contacto, ''), COALESCE(s.email_contacto, ''),
+			   COALESCE(s.respuesta_tecnico, ''),
 			   t.nombre, t.apellido, t.email, t.telefono, t.especialidad,
 			   e.nombre as empresa_nombre, e.rut ` +
 		baseQuery + whereClause +

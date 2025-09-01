@@ -30,12 +30,12 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 FROM alpine:latest
 
 # Instalar certificados CA y crear usuario no-root
-RUN apk --no-cache add ca-certificates tzdata && \
+RUN apk --no-cache add ca-certificates tzdata bash && \
     addgroup -g 1001 -S appuser && \
     adduser -u 1001 -S appuser -G appuser
 
 # Crear directorio para almacenamiento local
-RUN mkdir -p /app/storage && \
+RUN mkdir -p /app/storage /app/uploads && \
     chown -R appuser:appuser /app
 
 # Establecer directorio de trabajo
@@ -44,8 +44,17 @@ WORKDIR /app
 # Copiar binario compilado
 COPY --from=builder /app/documentacion-service .
 
+# Copiar archivos PDF iniciales y scripts
+COPY --from=builder /app/storage/initial-files ./storage/initial-files/
+COPY --from=builder /app/scripts/ ./scripts/
+
 # Crear directorio de configuración y copiar archivos si existen
 RUN mkdir -p ./config
+
+# Hacer el script ejecutable (como root antes de cambiar usuario)
+USER root
+RUN chmod +x ./scripts/init-files.sh && \
+    chmod +x ./scripts/entrypoint.sh
 
 # Cambiar a usuario no-root
 USER appuser
@@ -61,5 +70,5 @@ ENV PORT=8092
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8092/health || exit 1
 
-# Comando por defecto
-CMD ["./documentacion-service"]
+# Comando por defecto usando entrypoint
+CMD ["bash", "./scripts/entrypoint.sh"]

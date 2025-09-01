@@ -82,8 +82,8 @@ func (s *ConsultaService) ObtenerHistorial(documentoID int, limit, offset int) (
 }
 
 // ObtenerEstadisticas obtiene estadísticas globales de consultas
-func (s *ConsultaService) ObtenerEstadisticas() (*models.EstadisticasConsultas, error) {
-	return s.consultaRepo.ObtenerEstadisticas()
+func (s *ConsultaService) ObtenerEstadisticas() (map[string]interface{}, error) {
+	return s.consultaRepo.GetEstadisticas()
 }
 
 // Métodos de simulación (para desarrollo/testing)

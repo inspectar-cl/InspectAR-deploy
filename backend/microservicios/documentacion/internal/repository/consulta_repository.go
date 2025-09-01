@@ -291,3 +291,49 @@ func (r *ConsultaRepository) BuscarPorTexto(texto string, limit int) ([]models.C
 
 	return consultas, rows.Err()
 }
+
+// GetEstadisticas obtiene estadísticas generales de consultas
+func (r *ConsultaRepository) GetEstadisticas() (map[string]interface{}, error) {
+	query := `
+		SELECT 
+			COUNT(*) as total_consultas,
+			COUNT(DISTINCT documento_id) as documentos_consultados,
+			AVG(confianza) as confianza_promedio,
+			AVG(tiempo_respuesta_ms) as tiempo_promedio_ms,
+			COUNT(CASE WHEN confianza >= 0.8 THEN 1 END) as consultas_alta_confianza,
+			DATE_TRUNC('day', MAX(creado_en)) as ultima_consulta
+		FROM consultas_ia`
+
+	var totalConsultas, documentosConsultados, consultasAltaConfianza int
+	var confianzaPromedio, tiempoPromedioMs float64
+	var ultimaConsulta sql.NullTime
+
+	err := r.db.QueryRow(query).Scan(
+		&totalConsultas,
+		&documentosConsultados,
+		&confianzaPromedio,
+		&tiempoPromedioMs,
+		&consultasAltaConfianza,
+		&ultimaConsulta,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener estadísticas: %v", err)
+	}
+
+	estadisticas := map[string]interface{}{
+		"total_consultas":          totalConsultas,
+		"documentos_consultados":   documentosConsultados,
+		"confianza_promedio":       fmt.Sprintf("%.2f", confianzaPromedio),
+		"tiempo_promedio_ms":       fmt.Sprintf("%.2f", tiempoPromedioMs),
+		"consultas_alta_confianza": consultasAltaConfianza,
+	}
+
+	if ultimaConsulta.Valid {
+		estadisticas["ultima_consulta"] = ultimaConsulta.Time
+	} else {
+		estadisticas["ultima_consulta"] = nil
+	}
+
+	return estadisticas, nil
+}

@@ -35,10 +35,13 @@ func SetupRouter(documentoHandler *handlers.DocumentoHandler, consultaHandler *h
 	v1 := r.Group("/api/v1")
 	{
 		// Rutas de documentos (HdU05 - Subida de documentación técnica)
+		// NOTA: Las rutas específicas DEBEN ir antes que las parametrizadas
+		v1.GET("/documentos", documentoHandler.ListarDocumentos)                // Listar todos los documentos
+		v1.GET("/documentos/buscar", documentoHandler.BuscarDocumentos)         // Buscar con filtros
 		v1.POST("/documentos", documentoHandler.SubirDocumento)                 // Subir documento
 		v1.GET("/documentos/:id", documentoHandler.ObtenerDocumento)            // Obtener documento por ID
+		v1.PUT("/documentos/:id", documentoHandler.ActualizarDocumento)         // Actualizar documento
 		v1.GET("/documentos/:id/download", documentoHandler.DescargarDocumento) // Descargar archivo
-		v1.GET("/documentos/buscar", documentoHandler.BuscarDocumentos)         // Buscar con filtros
 
 		// Rutas por activo
 		v1.GET("/documentos/activo/:activo_id", documentoHandler.ObtenerDocumentosPorActivo) // Documentos de un activo

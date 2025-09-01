@@ -34,7 +34,7 @@ func (h *DocumentoHandler) SubirDocumento(c *gin.Context) {
 
 	// Parsear JSON del formulario
 	var req models.CreateDocumentoRequest
-	
+
 	// Obtener campos del formulario
 	activoIDStr := c.PostForm("activo_id")
 	activoID, err := strconv.Atoi(activoIDStr)
@@ -101,8 +101,8 @@ func (h *DocumentoHandler) SubirDocumento(c *gin.Context) {
 func (h *DocumentoHandler) ObtenerDocumento(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+	if err != nil || id <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido - debe ser un número positivo"})
 		return
 	}
 
@@ -137,6 +137,62 @@ func (h *DocumentoHandler) ObtenerDocumentosPorActivo(c *gin.Context) {
 	})
 }
 
+// ListarDocumentos obtiene todos los documentos con filtros opcionales
+func (h *DocumentoHandler) ListarDocumentos(c *gin.Context) {
+	// Obtener parámetros de query opcionales
+	var activoID *int
+	if activoIDStr := c.Query("activo_id"); activoIDStr != "" {
+		if id, err := strconv.Atoi(activoIDStr); err == nil {
+			activoID = &id
+		}
+	}
+
+	soloFichasTecnicas := c.Query("solo_fichas_tecnicas") == "true"
+
+	documentos, err := h.documentoService.ListarDocumentos(activoID, soloFichasTecnicas)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error obteniendo documentos"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"documentos": documentos,
+		"total":      len(documentos),
+		"filtros": gin.H{
+			"activo_id":            activoID,
+			"solo_fichas_tecnicas": soloFichasTecnicas,
+		},
+	})
+}
+
+// ActualizarDocumento actualiza un documento existente
+func (h *DocumentoHandler) ActualizarDocumento(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil || id <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido - debe ser un número positivo"})
+		return
+	}
+
+	var req models.UpdateDocumentoRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos", "details": err.Error()})
+		return
+	}
+
+	documento, err := h.documentoService.ActualizarDocumento(id, &req)
+	if err != nil {
+		if err.Error() == "documento no encontrado" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Documento no encontrado"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error actualizando documento"})
+		return
+	}
+
+	c.JSON(http.StatusOK, documento)
+}
+
 // ObtenerFichaTecnica obtiene la ficha técnica de un activo (HdU23)
 func (h *DocumentoHandler) ObtenerFichaTecnica(c *gin.Context) {
 	activoIDStr := c.Param("activo_id")
@@ -159,8 +215,8 @@ func (h *DocumentoHandler) ObtenerFichaTecnica(c *gin.Context) {
 func (h *DocumentoHandler) DescargarDocumento(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+	if err != nil || id <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido - debe ser un número positivo"})
 		return
 	}
 
@@ -173,7 +229,7 @@ func (h *DocumentoHandler) DescargarDocumento(c *gin.Context) {
 
 	c.Header("Content-Disposition", "attachment; filename="+filename)
 	c.Header("Content-Type", "application/octet-stream")
-	
+
 	// Copiar archivo a la respuesta
 	c.DataFromReader(http.StatusOK, -1, "application/octet-stream", file, nil)
 }
@@ -181,6 +237,23 @@ func (h *DocumentoHandler) DescargarDocumento(c *gin.Context) {
 // BuscarDocumentos busca documentos con filtros (HdU05)
 func (h *DocumentoHandler) BuscarDocumentos(c *gin.Context) {
 	var filtros models.DocumentoFiltros
+
+	// Validar que se proporcione al menos un parámetro de búsqueda
+	queryParams := c.Request.URL.Query()
+	validParams := []string{"q", "activo_id", "categoria", "palabra_clave", "fecha_desde", "fecha_hasta", "es_ficha_tecnica"}
+	hasValidParam := false
+
+	for _, param := range validParams {
+		if queryParams.Get(param) != "" {
+			hasValidParam = true
+			break
+		}
+	}
+
+	if !hasValidParam {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Se requiere al menos un parámetro de búsqueda (q, activo_id, categoria, palabra_clave, fecha_desde, fecha_hasta, es_ficha_tecnica)"})
+		return
+	}
 
 	// Parsear query parameters
 	if activoIDStr := c.Query("activo_id"); activoIDStr != "" {
@@ -191,6 +264,11 @@ func (h *DocumentoHandler) BuscarDocumentos(c *gin.Context) {
 
 	filtros.Categoria = c.Query("categoria")
 	filtros.PalabraClave = c.Query("palabra_clave")
+
+	// Soporte para parámetro 'q' como alias de palabra_clave
+	if q := c.Query("q"); q != "" {
+		filtros.PalabraClave = q
+	}
 
 	// Fechas
 	if fechaDesdeStr := c.Query("fecha_desde"); fechaDesdeStr != "" {
@@ -284,9 +362,9 @@ func (h *DocumentoHandler) AnalizarDocumentoIA(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusAccepted, gin.H{
-		"mensaje":    "Análisis iniciado",
-		"analisis":   analisis,
-		"estado":     "procesando",
+		"mensaje":  "Análisis iniciado",
+		"analisis": analisis,
+		"estado":   "procesando",
 	})
 }
 

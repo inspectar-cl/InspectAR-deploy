@@ -28,11 +28,22 @@ func (h *ConsultaHandler) ConsultarDocumento(c *gin.Context) {
 	// Obtener ID del documento
 	documentoIDStr := c.Param("id")
 	documentoID, err := strconv.Atoi(documentoIDStr)
-	if err != nil {
+	if err != nil || documentoID <= 0 {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "ID de documento inválido",
+			"error":   "ID de documento inválido - debe ser un número positivo",
 			"code":    "INVALID_DOCUMENT_ID",
 			"details": err.Error(),
+		})
+		return
+	}
+
+	// Verificar que el documento existe antes de procesar la consulta
+	_, err = h.documentoService.ObtenerDocumento(documentoID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   "Documento no encontrado",
+			"code":    "DOCUMENT_NOT_FOUND",
+			"details": "El documento especificado no existe",
 		})
 		return
 	}

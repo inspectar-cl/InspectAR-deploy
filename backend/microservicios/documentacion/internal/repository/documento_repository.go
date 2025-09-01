@@ -78,6 +78,55 @@ func (r *DocumentoRepository) GetByID(id int) (*models.Documento, error) {
 	return &doc, nil
 }
 
+// GetAll obtiene todos los documentos con filtros opcionales
+func (r *DocumentoRepository) GetAll(activoID *int, soloFichasTecnicas bool) ([]models.Documento, error) {
+	query := `
+		SELECT id, activo_id, tecnico_id, nombre, descripcion, categoria,
+			   tipo_archivo, ruta_archivo, tamano_bytes, fecha_emision,
+			   subido_por, palabras_clave, es_ficha_tecnica, creado_en, actualizado_en
+		FROM documentos WHERE 1=1`
+
+	var args []interface{}
+	argCount := 0
+
+	// Filtro por activo_id si se proporciona
+	if activoID != nil {
+		argCount++
+		query += fmt.Sprintf(" AND activo_id = $%d", argCount)
+		args = append(args, *activoID)
+	}
+
+	// Filtro por fichas técnicas si se solicita
+	if soloFichasTecnicas {
+		query += " AND es_ficha_tecnica = true"
+	}
+
+	query += " ORDER BY creado_en DESC"
+
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var documentos []models.Documento
+	for rows.Next() {
+		var doc models.Documento
+		err := rows.Scan(
+			&doc.ID, &doc.ActivoID, &doc.TecnicoID, &doc.Nombre, &doc.Descripcion,
+			&doc.Categoria, &doc.TipoArchivo, &doc.RutaArchivo, &doc.TamanoBytes,
+			&doc.FechaEmision, &doc.SubidoPor, &doc.PalabrasClave, &doc.EsFichaTecnica,
+			&doc.CreadoEn, &doc.ActualizadoEn,
+		)
+		if err != nil {
+			return nil, err
+		}
+		documentos = append(documentos, doc)
+	}
+
+	return documentos, nil
+}
+
 // GetByActivoID obtiene todos los documentos de un activo
 func (r *DocumentoRepository) GetByActivoID(activoID int) ([]models.Documento, error) {
 	query := `
@@ -263,4 +312,75 @@ func (r *DocumentoRepository) GetHistorialMantenimiento(activoID int) (*models.H
 	}
 
 	return historial, nil
+}
+
+// Update actualiza un documento existente
+func (r *DocumentoRepository) Update(id int, req *models.UpdateDocumentoRequest) (*models.Documento, error) {
+	// Construir query dinámicamente basado en los campos presentes
+	setParts := []string{}
+	args := []interface{}{id} // ID siempre es el primer argumento
+	argCount := 2
+
+	if req.Nombre != nil {
+		setParts = append(setParts, fmt.Sprintf("nombre = $%d", argCount))
+		args = append(args, *req.Nombre)
+		argCount++
+	}
+
+	if req.Descripcion != nil {
+		setParts = append(setParts, fmt.Sprintf("descripcion = $%d", argCount))
+		args = append(args, *req.Descripcion)
+		argCount++
+	}
+
+	if req.Categoria != nil {
+		setParts = append(setParts, fmt.Sprintf("categoria = $%d", argCount))
+		args = append(args, *req.Categoria)
+		argCount++
+	}
+
+	if req.PalabrasClave != nil {
+		setParts = append(setParts, fmt.Sprintf("palabras_clave = $%d", argCount))
+		args = append(args, *req.PalabrasClave)
+		argCount++
+	}
+
+	if req.EsFichaTecnica != nil {
+		setParts = append(setParts, fmt.Sprintf("es_ficha_tecnica = $%d", argCount))
+		args = append(args, *req.EsFichaTecnica)
+		argCount++
+	}
+
+	// Siempre actualizar timestamp
+	setParts = append(setParts, "actualizado_en = NOW()")
+
+	if len(setParts) == 1 { // Solo timestamp, no hay campos para actualizar
+		return nil, fmt.Errorf("no hay campos para actualizar")
+	}
+
+	query := fmt.Sprintf(`
+		UPDATE documentos 
+		SET %s
+		WHERE id = $1
+		RETURNING id, activo_id, tecnico_id, nombre, descripcion, categoria,
+				  tipo_archivo, ruta_archivo, tamano_bytes, fecha_emision,
+				  subido_por, palabras_clave, es_ficha_tecnica, creado_en, actualizado_en
+	`, strings.Join(setParts, ", "))
+
+	var doc models.Documento
+	err := r.db.QueryRow(query, args...).Scan(
+		&doc.ID, &doc.ActivoID, &doc.TecnicoID, &doc.Nombre, &doc.Descripcion,
+		&doc.Categoria, &doc.TipoArchivo, &doc.RutaArchivo, &doc.TamanoBytes,
+		&doc.FechaEmision, &doc.SubidoPor, &doc.PalabrasClave, &doc.EsFichaTecnica,
+		&doc.CreadoEn, &doc.ActualizadoEn,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("documento no encontrado")
+		}
+		return nil, err
+	}
+
+	return &doc, nil
 }

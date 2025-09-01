@@ -68,6 +68,16 @@ func (s *DocumentoService) ObtenerDocumentosPorActivo(activoID int) ([]models.Do
 	return s.repo.GetByActivoID(activoID)
 }
 
+// ListarDocumentos obtiene todos los documentos con filtros opcionales
+func (s *DocumentoService) ListarDocumentos(activoID *int, soloFichasTecnicas bool) ([]models.Documento, error) {
+	return s.repo.GetAll(activoID, soloFichasTecnicas)
+}
+
+// ActualizarDocumento actualiza un documento existente
+func (s *DocumentoService) ActualizarDocumento(id int, req *models.UpdateDocumentoRequest) (*models.Documento, error) {
+	return s.repo.Update(id, req)
+}
+
 // ObtenerFichaTecnica obtiene la ficha técnica de un activo (HdU23)
 func (s *DocumentoService) ObtenerFichaTecnica(activoID int) (*models.Documento, error) {
 	return s.repo.GetFichaTecnicaPorActivo(activoID)

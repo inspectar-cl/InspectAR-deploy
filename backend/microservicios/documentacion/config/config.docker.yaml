@@ -13,7 +13,7 @@ database:
 storage:
   type: "local"
   local:
-    upload_dir: "/tmp/uploads"
+    upload_dir: "/app/uploads"
 
 gemini:
   api_key: "AIzaSyApWlRAMlvyvUUE_9_6tYuMFXn2eL-52gA"

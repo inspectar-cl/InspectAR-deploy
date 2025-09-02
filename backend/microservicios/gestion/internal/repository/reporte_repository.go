@@ -17,7 +17,7 @@ func (r *ReporteRepository) Create(reporte *models.Reporte) (*models.Reporte, er
 	query := `
 		INSERT INTO reportes (activo_id, tipo_reporte, contenido, generado_en, estado)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, creado_en
+		RETURNING id, generado_en
 	`
 
 	err := r.db.QueryRow(

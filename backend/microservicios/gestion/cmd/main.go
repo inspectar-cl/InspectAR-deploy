@@ -43,14 +43,16 @@ func main() {
 	tecnicoService := services.NewTecnicoService(tecnicoRepo)
 	accionService := services.NewAccionMantenimientoService(accionRepo)
 	reporteService := services.NewReporteService(reporteRepo, activoRepo, accionRepo, edificioRepo)
+	solicitudService := services.NewSolicitudService(db)
 
 	// Handlers
 	tecnicoHandler := handlers.NewTecnicoHandler(tecnicoService)
 	accionHandler := handlers.NewAccionMantenimientoHandler(accionService)
 	reporteHandler := handlers.NewReporteHandler(reporteService)
+	solicitudHandler := handlers.NewSolicitudHandler(solicitudService)
 
-	// Router
-	r := router.SetupRouter(tecnicoHandler, accionHandler, reporteHandler)
+	// Router (ahora con solicitudHandler)
+	r := router.SetupRouter(tecnicoHandler, accionHandler, reporteHandler, solicitudHandler)
 
 	// Servidor web
 	port := viper.GetString("server.port")

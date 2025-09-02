@@ -60,15 +60,15 @@ RUN chmod +x ./scripts/init-files.sh && \
 USER appuser
 
 # Exponer puerto del microservicio
-EXPOSE 8092
+EXPOSE 8093
 
 # Variables de entorno por defecto
 ENV GIN_MODE=release
-ENV PORT=8092
+ENV PORT=8093
 
 # Healthcheck para verificar estado del servicio
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8092/health || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8093/health || exit 1
 
 # Comando por defecto usando entrypoint
 CMD ["bash", "./scripts/entrypoint.sh"]

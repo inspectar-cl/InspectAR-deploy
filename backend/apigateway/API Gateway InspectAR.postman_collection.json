@@ -34,6 +34,25 @@
 			"name": "👨‍🔧 Gestión (via Gateway)",
 			"item": [
 				{
+					"name": "Health Check Gestión",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/health",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Listar Técnicos",
 					"request": {
 						"method": "GET",
@@ -81,6 +100,26 @@
 					"response": []
 				},
 				{
+					"name": "Obtener Técnico por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/tecnicos/1",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"tecnicos",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Técnicos por Activo",
 					"request": {
 						"method": "GET",
@@ -102,7 +141,228 @@
 					"response": []
 				},
 				{
-					"name": "Crear Solicitud de Servicio",
+					"name": "Técnicos por Edificio",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/tecnicos/edificio/1",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"tecnicos",
+								"edificio",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Activos de un Técnico (RUTA PRINCIPAL)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/activos-de-tecnico/1",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"activos-de-tecnico",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar Estado Autorizado",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"autorizado\": false\n}"
+						},
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/tecnicos/1/autorizado",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"tecnicos",
+								"1",
+								"autorizado"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Asignar Técnico a Activo",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tecnico_id\": 2\n}"
+						},
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/activos/1/tecnicos",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"activos",
+								"1",
+								"tecnicos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Acción de Mantenimiento",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"titulo\": \"Mantenimiento preventivo caldera\",\n  \"descripcion\": \"Revisión mensual programada\",\n  \"tipo\": \"preventivo\",\n  \"prioridad\": \"media\",\n  \"activo_id\": 1,\n  \"tecnico_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/acciones",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"acciones"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Acciones Pendientes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/acciones/pendientes",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"acciones",
+								"pendientes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Acciones por Técnico",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/acciones/tecnico/1",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"acciones",
+								"tecnico",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Acciones por Activo",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/acciones/activo/1",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"acciones",
+								"activo",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar Estado de Acción",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"estado\": \"en_progreso\"\n}"
+						},
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/acciones/1/estado",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"acciones",
+								"1",
+								"estado"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Solicitud de Servicio (API v1)",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -130,9 +390,218 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Listar Solicitudes (API v1)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/api/v1/solicitudes",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"api",
+								"v1",
+								"solicitudes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Solicitud Específica (API v1)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/api/v1/solicitudes/123",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"api",
+								"v1",
+								"solicitudes",
+								"123"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Enviar Solicitud a Técnico (API v1)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/api/v1/solicitudes/123/enviar",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"api",
+								"v1",
+								"solicitudes",
+								"123",
+								"enviar"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar Estado Solicitud (API v1)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"estado\": \"aprobada\"\n}"
+						},
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/api/v1/solicitudes/123/estado",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"api",
+								"v1",
+								"solicitudes",
+								"123",
+								"estado"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Estadísticas de Solicitudes (API v1)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/api/v1/solicitudes/estadisticas",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"api",
+								"v1",
+								"solicitudes",
+								"estadisticas"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Técnicos por Edificio (API v1)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/api/v1/tecnicos/edificio/1",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"api",
+								"v1",
+								"tecnicos",
+								"edificio",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Técnicos por Activo (API v1)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/api/v1/tecnicos/activo/1",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"api",
+								"v1",
+								"tecnicos",
+								"activo",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Lista de Especialidades (API v1)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/api/v1/tecnicos/especialidades",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"api",
+								"v1",
+								"tecnicos",
+								"especialidades"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reportes por Activo",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/reportes/activo/1",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"reportes",
+								"activo",
+								"1"
+							]
+						}
+					},
+					"response": []
 				}
 			],
-			"description": "Peticiones al microservicio de Gestión a través del API Gateway"
+			"description": "Peticiones al microservicio de Gestión a través del API Gateway - Incluye técnicos, acciones de mantenimiento, solicitudes API v1 y reportes"
 		},
 		{
 			"name": "📧 Notificaciones (via Gateway)",
@@ -186,6 +655,27 @@
 					"response": []
 				},
 				{
+					"name": "Reenviar Notificación por Email",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/notificacion/notification/15/send",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"notificacion",
+								"notification",
+								"15",
+								"send"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Listar Edificios",
 					"request": {
 						"method": "GET",
@@ -203,9 +693,71 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Obtener Edificio Específico",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/notificacion/edificio/1",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"notificacion",
+								"edificio",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Usuarios de un Edificio",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/notificacion/edificio/1/usuarios",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"notificacion",
+								"edificio",
+								"1",
+								"usuarios"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Activos de un Edificio",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/notificacion/edificio/1/activos",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"notificacion",
+								"edificio",
+								"1",
+								"activos"
+							]
+						}
+					},
+					"response": []
 				}
 			],
-			"description": "Peticiones al microservicio de Notificaciones a través del API Gateway"
+			"description": "Peticiones al microservicio de Notificaciones a través del API Gateway - Incluye notificaciones automáticas, gestión de edificios, usuarios y activos"
 		},
 		{
 			"name": "🔧 IoT/Parser (via Gateway)",
@@ -278,6 +830,36 @@
 					"response": []
 				},
 				{
+					"name": "Actualizar Estado de Activo",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"estado\": \"mantenimiento\"\n}"
+						},
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/parser/activo/AC-1001/estado",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"parser",
+								"activo",
+								"AC-1001",
+								"estado"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Registrar Lectura de Sensor",
 					"request": {
 						"method": "POST",
@@ -289,7 +871,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"sensor_id\": \"TEMP-01\",\n  \"valor\": 85.4,\n  \"timestamp\": \"2025-09-01T15:45:10Z\"\n}"
+							"raw": "{\n  \"sensor_id\": \"TEMP-01\",\n  \"valor\": 85.4,\n  \"timestamp\": \"{{timestamp}}\"\n}"
 						},
 						"url": {
 							"raw": "{{GATEWAY_URL}}/api/parser/lectura",
@@ -306,7 +888,7 @@
 					"response": []
 				},
 				{
-					"name": "Obtener Datos de Activo",
+					"name": "Obtener Datos de Activo (Histórico)",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -325,13 +907,54 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Obtener Último Dato de Sensores",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/parser/lectura/AC-1001/datos/ultimo",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"parser",
+								"lectura",
+								"AC-1001",
+								"datos",
+								"ultimo"
+							]
+						}
+					},
+					"response": []
 				}
 			],
-			"description": "Peticiones al microservicio IoT/Parser a través del API Gateway"
+			"description": "Peticiones al microservicio IoT/Parser a través del API Gateway - Gestión de activos industriales y lecturas de sensores en tiempo real"
 		},
 		{
 			"name": "📄 Documentación (via Gateway)",
 			"item": [
+				{
+					"name": "Health Check Documentación",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/documentacion/health",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"documentacion",
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
 				{
 					"name": "Listar Documentos",
 					"request": {
@@ -391,7 +1014,97 @@
 					"response": []
 				},
 				{
-					"name": "Buscar Documentos",
+					"name": "Obtener Documento Específico",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/documentacion/documentos/1",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"documentacion",
+								"documentos",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar Metadatos de Documento",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"palabras_clave\": \"caldera,bosch,500kw,mantenimiento\",\n  \"activo_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/documentacion/documentos/1",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"documentacion",
+								"documentos",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar Documento",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/documentacion/documentos/1",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"documentacion",
+								"documentos",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Descargar Archivo",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/documentacion/documentos/1/download",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"documentacion",
+								"documentos",
+								"1",
+								"download"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Documentos por Texto",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -411,6 +1124,47 @@
 									"key": "q",
 									"value": "caldera mantenimiento"
 								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Documentos por Activo",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/documentacion/documentos/activo/1",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"documentacion",
+								"documentos",
+								"activo",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Fichas Técnicas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/documentacion/documentos/fichas-tecnicas",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"documentacion",
+								"documentos",
+								"fichas-tecnicas"
 							]
 						}
 					},
@@ -438,7 +1192,28 @@
 					"response": []
 				},
 				{
-					"name": "Consulta IA Interactiva",
+					"name": "Obtener Análisis IA",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/documentacion/documentos/1/analisis",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"documentacion",
+								"documentos",
+								"1",
+								"analisis"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Consulta IA Interactiva - Especificaciones",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -466,9 +1241,69 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Consulta IA Interactiva - Mantenimiento",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pregunta\": \"¿Cuándo fue la última mantención y qué trabajos se realizaron?\"\n}"
+						},
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/documentacion/documentos/3/consultar",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"documentacion",
+								"documentos",
+								"3",
+								"consultar"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Consulta IA Interactiva - Presión Bomba",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pregunta\": \"¿Cuánta presión de agua maneja esta bomba hidráulica?\"\n}"
+						},
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/documentacion/documentos/5/consultar",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"documentacion",
+								"documentos",
+								"5",
+								"consultar"
+							]
+						}
+					},
+					"response": []
 				}
 			],
-			"description": "Peticiones al microservicio de Documentación a través del API Gateway (con prepend /api/v1)"
+			"description": "Peticiones al microservicio de Documentación a través del API Gateway (con prepend /api/v1) - Incluye gestión de documentos, análisis IA y consultas interactivas"
 		}
 	],
 	"event": [

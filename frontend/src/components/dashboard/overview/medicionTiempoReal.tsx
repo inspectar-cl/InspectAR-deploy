@@ -81,8 +81,8 @@ export function ScatterWithArgs({ sx, dataCaudal, dataPresion, dataTemp }: Props
   return (
     <Card sx={sx}>
       <CardHeader title="Mediciones en Tiempo Real" 
-        /*action={
-          <FormControl size="small" sx={{ minWidth: 160, mb: 2 }}>
+        action={
+          <FormControl size="small" sx={{ minWidth: 220, mb: 2 }}>
             <InputLabel id="rango-label">Rango de tiempo</InputLabel>
             <Select
               labelId="rango-label"
@@ -93,9 +93,10 @@ export function ScatterWithArgs({ sx, dataCaudal, dataPresion, dataTemp }: Props
               <MenuItem value={30}>Últimos 30 minutos</MenuItem>
               <MenuItem value={60}>Última hora</MenuItem>
               <MenuItem value={240}>Últimas 4 horas</MenuItem>
+              <MenuItem value={720}>Últimas 12 horas</MenuItem>
             </Select>
           </FormControl>
-        }*/
+        }
       />
       <CardContent>
         <ScatterChart

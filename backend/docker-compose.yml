@@ -60,6 +60,21 @@ services:
       - POSTGRES_PASSWORD=gestion_pass
       - POSTGRES_DB=gestion_db
 
+  # Base de datos PostgreSQL para notificaciones
+  notification-db:
+    build:
+      context: ./database/notification
+      dockerfile: Dockerfile
+    container_name: notification-db
+    ports:
+      - "5432:5432"
+    volumes:
+      - notification_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=notification_user
+      - POSTGRES_PASSWORD=notification_pass
+      - POSTGRES_DB=notification_db
+
   # Microservicio de Notificaciones
   notification-service:
     build:
@@ -74,6 +89,7 @@ services:
       - ./microservicios/notification/.env
     environment:
       - ENV=production
+    restart: on-failure
 
   # Microservicio de Gestión de Activos y Técnicos
   gestion-service:
@@ -91,23 +107,9 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
+    restart: on-failure
 
-  # Base de datos PostgreSQL para notificaciones
-  notification-db:
-    build:
-      context: ./database/notification
-      dockerfile: Dockerfile
-    container_name: notification-db
-    ports:
-      - "5432:5432"
-    volumes:
-      - notification_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_USER=notification_user
-      - POSTGRES_PASSWORD=notification_pass
-      - POSTGRES_DB=notification_db
-
- # Microservicio de Documentación
+  # Microservicio de Documentación
   documentacion-service:
     build:
       context: ./microservicios/documentacion
@@ -138,6 +140,7 @@ services:
       timeout: 10s
       start_period: 20s
       retries: 3
+    restart: on-failure
 
   emqx:
     image: emqx/emqx:latest

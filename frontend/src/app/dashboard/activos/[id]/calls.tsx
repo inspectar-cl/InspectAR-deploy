@@ -181,7 +181,7 @@ export default function ActivoDetailClient({ id }: { id: string }) {
       <Grid container spacing={2} sx={{ mt: 2 }}>
         {/* Scatter: 70% */}
         <Grid size={{md:10, xs:12}}>
-          <ScatterWithArgs sx={{ height: 480 }} dataCaudal={sensorCaud} dataPresion={sensorPres} dataTemp={sensorTemp} />
+          <ScatterWithArgs sx={{ height: 500 }} dataCaudal={sensorCaud} dataPresion={sensorPres} dataTemp={sensorTemp} />
         </Grid>
         {/* ScoreChart: 30% */}
         <Grid size={{md:2, xs:12}}>

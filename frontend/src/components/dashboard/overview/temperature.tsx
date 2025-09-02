@@ -23,7 +23,7 @@ export function TemperatureProgress({ value, sx }: TemperatureProgressProps): Re
         flexDirection: 'column',
         justifyContent: 'flex-start',
         alignItems: 'center',
-        height: 480,
+        height: 500,
         width: 210,
         paddingTop: 2,
         paddingBottom: 2,

@@ -79,7 +79,7 @@ export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: any; edi
       const response = await gs.get(uris.GET)
       console.log("Response:", response)
 
-      // Si no hay datos desde backend, usar mocks
+      // Si no hay datos desde backend, usamos mocks
       if (!response || response.length === 0) {
         console.warn("No se encontraron activos en backend, usando mocks")
         setActivos(activosMock)

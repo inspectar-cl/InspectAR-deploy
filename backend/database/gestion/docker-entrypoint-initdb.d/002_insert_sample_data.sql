@@ -138,18 +138,18 @@ INSERT INTO reportes (activo_id, tipo_reporte, contenido, estado) VALUES
 (7, 'mantenimiento', 'Mantenimiento programado: Chiller industrial requiere limpieza de serpentines la próxima semana.', 'generado'),
 (8, 'semanal', 'Reporte semanal: Generador de emergencia probado exitosamente. Tiempo de arranque: 12 segundos.', 'enviado');
 
--- Insertar relaciones entre activos y técnicos
-INSERT INTO activos_tecnicos (activo_id, tecnico_id) VALUES
-(1, 1), -- Juan Pérez asignado a Caldera Principal
-(1, 6), -- Laura Fernández asignada a Caldera Principal
-(2, 3), -- Carlos Rodríguez asignado a Compresor Auxiliar
-(3, 1), -- Juan Pérez asignado a Bomba Hidráulica 1
-(3, 4), -- Ana Silva asignada a Bomba Hidráulica 1
-(4, 2), -- María González asignada a Motor Eléctrico Principal
-(5, 2), -- María González asignada a Sistema de Ventilación
-(6, 2), -- María González asignada a Transformador Eléctrico
-(7, 7), -- Roberto Castro asignado a Chiller Industrial
-(8, 5); -- Pedro Morales asignado a Generador de Emergencia
+-- -- Insertar relaciones entre activos y técnicos
+-- INSERT INTO activos_tecnicos (activo_id, tecnico_id) VALUES
+-- (1, 1), -- Juan Pérez asignado a Caldera Principal
+-- (1, 6), -- Laura Fernández asignada a Caldera Principal
+-- (2, 3), -- Carlos Rodríguez asignado a Compresor Auxiliar
+-- (3, 1), -- Juan Pérez asignado a Bomba Hidráulica 1
+-- (3, 4), -- Ana Silva asignada a Bomba Hidráulica 1
+-- (4, 2), -- María González asignada a Motor Eléctrico Principal
+-- (5, 2), -- María González asignada a Sistema de Ventilación
+-- (6, 2), -- María González asignada a Transformador Eléctrico
+-- (7, 7), -- Roberto Castro asignado a Chiller Industrial
+-- (8, 5); -- Pedro Morales asignado a Generador de Emergencia
 
 -- Actualizar algunas fechas para tener datos más realistas
 UPDATE acciones_mantenimiento 

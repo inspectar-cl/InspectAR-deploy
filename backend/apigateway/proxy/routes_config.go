@@ -28,5 +28,10 @@ var ProxyRoutes = []ProxyRoute{
         TargetEnvVar: "PARSER_URL",
         PrependPath:  "",
     },
+    {
+        PathPrefix:   "/api/documentacion",
+        TargetEnvVar: "DOCUMENTATION_URL",
+        PrependPath:  "",
+    },
 }
 

@@ -1,0 +1,523 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		"name": "API Gateway InspectAR",
+		"description": "Colección de ejemplos para probar el API Gateway de InspectAR. Todas las peticiones pasan por el gateway en el puerto 3500 y se redistribuyen automáticamente a los microservicios correspondientes.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "inspectAR"
+	},
+	"item": [
+		{
+			"name": "🌐 API Gateway Health",
+			"item": [
+				{
+					"name": "Gateway Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/healthz",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"healthz"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints para verificar el estado del API Gateway"
+		},
+		{
+			"name": "👨‍🔧 Gestión (via Gateway)",
+			"item": [
+				{
+					"name": "Listar Técnicos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/tecnicos",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"tecnicos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Técnico",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Juan Pérez\",\n  \"telefono\": \"+56912345678\",\n  \"email\": \"juan.perez@ejemplo.com\",\n  \"especialidades\": [\"electricidad\", \"hvac\"],\n  \"edificio_id\": 1,\n  \"autorizado\": true\n}"
+						},
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/tecnicos",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"tecnicos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Técnicos por Activo",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/tecnicos/activo/1",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"tecnicos",
+								"activo",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Solicitud de Servicio",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tipo\": \"mantenimiento\",\n  \"asunto\": \"Revisión de caldera principal\",\n  \"descripcion\": \"La caldera presenta ruidos anómalos\",\n  \"activo_id\": 1,\n  \"prioridad\": \"alta\"\n}"
+						},
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/gestion/api/v1/solicitudes",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"gestion",
+								"api",
+								"v1",
+								"solicitudes"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Peticiones al microservicio de Gestión a través del API Gateway"
+		},
+		{
+			"name": "📧 Notificaciones (via Gateway)",
+			"item": [
+				{
+					"name": "Crear Notificación",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"activo_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/notificacion/notification",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"notificacion",
+								"notification"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Notificaciones por Activo",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/notificacion/notification/1",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"notificacion",
+								"notification",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Edificios",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/notificacion/edificios",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"notificacion",
+								"edificios"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Peticiones al microservicio de Notificaciones a través del API Gateway"
+		},
+		{
+			"name": "🔧 IoT/Parser (via Gateway)",
+			"item": [
+				{
+					"name": "Listar Activos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/parser/activo",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"parser",
+								"activo"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Activo",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"activo_id\": \"AC-1004\",\n  \"nombre\": \"Caldera Nueva\",\n  \"estado\": \"operativo\",\n  \"ubicacion\": \"Sala 4\",\n  \"sensores\": [\n    {\n      \"sensor_id\": \"TEMP-04\",\n      \"tipo\": \"temperatura\",\n      \"unidad\": \"C\"\n    },\n    {\n      \"sensor_id\": \"PRES-04\",\n      \"tipo\": \"presion\",\n      \"unidad\": \"bar\"\n    }\n  ],\n  \"id_edificio\": \"ED-01\"\n}"
+						},
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/parser/activo",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"parser",
+								"activo"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Activo Específico",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/parser/activo/AC-1001",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"parser",
+								"activo",
+								"AC-1001"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Registrar Lectura de Sensor",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"sensor_id\": \"TEMP-01\",\n  \"valor\": 85.4,\n  \"timestamp\": \"2025-09-01T15:45:10Z\"\n}"
+						},
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/parser/lectura",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"parser",
+								"lectura"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Datos de Activo",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/parser/lectura/AC-1001/datos",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"parser",
+								"lectura",
+								"AC-1001",
+								"datos"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Peticiones al microservicio IoT/Parser a través del API Gateway"
+		},
+		{
+			"name": "📄 Documentación (via Gateway)",
+			"item": [
+				{
+					"name": "Listar Documentos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/documentacion/documentos",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"documentacion",
+								"documentos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Subir Documento",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "archivo",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "palabras_clave",
+									"value": "caldera,manual,mantenimiento",
+									"type": "text"
+								},
+								{
+									"key": "activo_id",
+									"value": "1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/documentacion/documentos",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"documentacion",
+								"documentos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Documentos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/documentacion/documentos/buscar?q=caldera mantenimiento",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"documentacion",
+								"documentos",
+								"buscar"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "caldera mantenimiento"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Analizar Documento con IA",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/documentacion/documentos/1/analizar",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"documentacion",
+								"documentos",
+								"1",
+								"analizar"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Consulta IA Interactiva",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pregunta\": \"¿Cuál es la presión máxima de operación de esta caldera?\"\n}"
+						},
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/documentacion/documentos/1/consultar",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"documentacion",
+								"documentos",
+								"1",
+								"consultar"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Peticiones al microservicio de Documentación a través del API Gateway (con prepend /api/v1)"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"// Configuración automática de timestamp para pruebas",
+					"pm.globals.set('timestamp', new Date().toISOString());"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"// Tests automáticos básicos",
+					"pm.test('Status code is not 5xx', function () {",
+					"    pm.expect(pm.response.code).to.be.below(500);",
+					"});",
+					"",
+					"pm.test('Response time is acceptable', function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+					"});",
+					"",
+					"// Log del proxy para debug",
+					"console.log('🌐 Gateway Response:', {",
+					"    status: pm.response.code,",
+					"    time: pm.response.responseTime + 'ms',",
+					"    url: pm.request.url.toString()",
+					"});"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "GATEWAY_URL",
+			"value": "http://localhost:3500",
+			"description": "URL base del API Gateway"
+		},
+		{
+			"key": "timestamp",
+			"value": "",
+			"description": "Timestamp automático para pruebas"
+		}
+	]
+}

@@ -1,0 +1,70 @@
+{
+	"info": {
+		"_postman_id": "d3a8a5df-83d9-46f4-ac97-7495cec3d7c6",
+		"name": "Microservices InspectAR",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "45585352"
+	},
+	"item": [
+		{
+			"name": "Microservicio Documentación",
+			"item": []
+		},
+		{
+			"name": "Microservicio Gestión",
+			"item": []
+		},
+		{
+			"name": "Microservicio IoT",
+			"item": []
+		},
+		{
+			"name": "Microservicio Notificaciones",
+			"item": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "DOCUMENTATION_URL",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "GestionURL",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "PARSER_URL",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "NOTIFICATION_URL",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

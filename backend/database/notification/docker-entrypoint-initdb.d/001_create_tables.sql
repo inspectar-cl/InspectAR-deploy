@@ -31,19 +31,29 @@ CREATE TABLE activos (
 -- Crear tabla notificaciones
 CREATE TABLE notificaciones (
     id SERIAL PRIMARY KEY,
-    activo_id INTEGER NOT NULL REFERENCES activos(id) ON DELETE CASCADE,
-    usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
-    mensaje TEXT NOT NULL,
-    enviado BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    sent_at TIMESTAMP NULL
+    building_id INTEGER REFERENCES edificios(id) ON DELETE CASCADE,
+    asset_id INTEGER REFERENCES activos(id) ON DELETE CASCADE,
+    sensor_id VARCHAR(255), -- ID del sensor que generó la alerta
+    message TEXT NOT NULL,
+    alert_type VARCHAR(100) NOT NULL, -- sensor_disconnected, sensor_problem, asset_offline, etc.
+    tipo VARCHAR(50) NOT NULL, -- sensor, alerta, mantenimiento, sistema, etc.
+    prioridad VARCHAR(20) NOT NULL DEFAULT 'medium', -- low, medium, high, critical
+    notification_mail BOOLEAN DEFAULT FALSE,
+    notification_sms BOOLEAN DEFAULT FALSE,
+    status VARCHAR(20) DEFAULT 'pending', -- pending, sent, failed
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Crear índices para mejorar rendimiento
 CREATE INDEX idx_usuarios_edificio_id ON usuarios(edificio_id);
 CREATE INDEX idx_activos_edificio_id ON activos(edificio_id);
-CREATE INDEX idx_notificaciones_activo_id ON notificaciones(activo_id);
-CREATE INDEX idx_notificaciones_usuario_id ON notificaciones(usuario_id);
+CREATE INDEX idx_notificaciones_building_id ON notificaciones(building_id);
+CREATE INDEX idx_notificaciones_asset_id ON notificaciones(asset_id);
+CREATE INDEX idx_notificaciones_sensor_id ON notificaciones(sensor_id);
+CREATE INDEX idx_notificaciones_tipo ON notificaciones(tipo);
+CREATE INDEX idx_notificaciones_prioridad ON notificaciones(prioridad);
+CREATE INDEX idx_notificaciones_status ON notificaciones(status);
+CREATE INDEX idx_notificaciones_created_at ON notificaciones(created_at);
 
 -- Crear trigger para actualizar numero_activos en edificios
 CREATE OR REPLACE FUNCTION update_numero_activos()

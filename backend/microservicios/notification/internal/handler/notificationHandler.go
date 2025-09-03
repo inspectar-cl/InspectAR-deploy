@@ -19,6 +19,31 @@ func NewNotificationHandler(notificationSvc *services.NotificationService) *Noti
 	}
 }
 
+// POST /sensor/alert
+func (h *NotificationHandler) CreateSensorAlert(c *gin.Context) {
+	var request models.SensorAlertRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Datos inválidos",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	notificacion, err := h.notificationService.CreateSensorAlert(request)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Error al crear alerta de sensor: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message":      "Alerta de sensor creada y enviada exitosamente",
+		"notificacion": notificacion,
+	})
+}
+
 // POST /notification
 func (h *NotificationHandler) CreateNotification(c *gin.Context) {
 	var request models.NotificationRequest
@@ -76,6 +101,19 @@ func (h *NotificationHandler) SendNotification(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Notificación enviada exitosamente",
+	})
+}
+
+// GET /tipos-notificacion
+func (h *NotificationHandler) GetTiposNotificacion(c *gin.Context) {
+	tipos, err := h.notificationService.GetAllTiposNotificacion()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener tipos de notificación"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"tipos_notificacion": tipos,
 	})
 }
 
@@ -149,5 +187,33 @@ func (h *NotificationHandler) GetActivosByEdificioID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"activos": activos,
+	})
+}
+
+// POST /technician/contact
+func (h *NotificationHandler) SendTechnicianContact(c *gin.Context) {
+	var request models.TechnicianContactRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Datos inválidos",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	err := h.notificationService.SendTechnicianContactRequest(request)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Error al enviar solicitud de contacto técnico: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":           "Solicitud de contacto técnico enviada exitosamente",
+		"technician_email":  request.TechnicianEmail,
+		"user_email":        request.UserEmail,
+		"activo_id":         request.ActivoID,
+		"priority":          request.Priority,
 	})
 }

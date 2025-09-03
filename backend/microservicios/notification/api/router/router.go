@@ -22,8 +22,13 @@ func SetupRouter(notificationHandler *handlers.NotificationHandler) *gin.Engine 
 
 	// Rutas para notificaciones
 	r.POST("/notification", notificationHandler.CreateNotification)
+	r.POST("/sensor/alert", notificationHandler.CreateSensorAlert) // Nueva ruta para alertas de sensor
 	r.GET("/notification/:activo_id", notificationHandler.GetNotificationsByActivoID)
 	r.PUT("/notification/:notification_id/send", notificationHandler.SendNotification)
+	r.GET("/tipos-notificacion", notificationHandler.GetTiposNotificacion) // Nueva ruta para tipos de notificación
+
+	// Rutas para comunicación con técnicos
+	r.POST("/technician/contact", notificationHandler.SendTechnicianContact) // Nueva ruta para contacto técnico
 
 	// Rutas para edificios
 	r.GET("/edificios", notificationHandler.GetAllEdificios)

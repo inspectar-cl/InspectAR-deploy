@@ -29,6 +29,36 @@ func (r *NotificationRepository) GetNotificationsByActivoID(activoID uint) ([]mo
 	return notificaciones, err
 }
 
+func (r *NotificationRepository) UpdateNotification(notification *models.Notificacion) error {
+	return r.db.Save(notification).Error
+}
+
+// Métodos para Tipos de Notificación
+func (r *NotificationRepository) GetTipoNotificacionByNombre(nombre string) (*models.TipoNotificacion, error) {
+	var tipo models.TipoNotificacion
+	err := r.db.Where("nombre = ? AND activo = ?", nombre, true).First(&tipo).Error
+	return &tipo, err
+}
+
+func (r *NotificationRepository) GetAllTiposNotificacion() ([]models.TipoNotificacion, error) {
+	var tipos []models.TipoNotificacion
+	err := r.db.Where("activo = ?", true).Find(&tipos).Error
+	return tipos, err
+}
+
+// Métodos adicionales para Usuarios
+func (r *NotificationRepository) GetUsuariosByScope(scope string) ([]models.Usuario, error) {
+	var usuarios []models.Usuario
+	err := r.db.Preload("Edificio").Where("scope = ?", scope).Find(&usuarios).Error
+	return usuarios, err
+}
+
+func (r *NotificationRepository) GetAllUsuarios() ([]models.Usuario, error) {
+	var usuarios []models.Usuario
+	err := r.db.Preload("Edificio").Find(&usuarios).Error
+	return usuarios, err
+}
+
 func (r *NotificationRepository) UpdateNotificationStatus(id uint, enviado bool) error {
 	return r.db.Model(&models.Notificacion{}).Where("id = ?", id).Update("enviado", enviado).Error
 }

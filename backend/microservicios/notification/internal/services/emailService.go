@@ -51,6 +51,27 @@ func NewEmailService() *EmailService {
 	}
 }
 
+func (e *EmailService) SendAlertEmail(toEmail, subject, htmlContent string) error {
+	// Crear el mensaje de correo
+	m := gomail.NewMessage()
+	m.SetHeader("From", e.fromEmail)
+	m.SetHeader("To", toEmail)
+	m.SetHeader("Subject", subject)
+	m.SetBody("text/html", htmlContent)
+
+	// Configurar el dialer SMTP
+	d := gomail.NewDialer(e.smtpHost, e.smtpPort, e.smtpUsername, e.smtpPassword)
+
+	// Enviar el correo
+	if err := d.DialAndSend(m); err != nil {
+		log.Printf("Error enviando correo a %s: %v", toEmail, err)
+		return err
+	}
+
+	log.Printf("📧 Correo de alerta enviado exitosamente a: %s", toEmail)
+	return nil
+}
+
 func (e *EmailService) SendNotificationEmail(activo *models.Activo, usuarios []models.Usuario, mensaje string) error {
 	if len(usuarios) == 0 {
 		log.Println("No hay usuarios para enviar el correo")

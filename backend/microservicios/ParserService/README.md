@@ -1,285 +1,203 @@
-# ParserService - Microservicio IoT para InspectAR
+# Parser Service - Microservicio de Análisis de Datos IoT
 
-El ParserService (iot-service) es un microservicio encargado de la gestión de activos industriales y sus lecturas de sensores en tiempo real. Proporciona una API REST para crear, consultar y actualizar activos, así como para registrar y consultar lecturas de sensores.
+## 📊 Funcionalidades Principales
 
-## Características principales
+### 1. **Gestión de Activos y Sensores**
+- Registro y gestión de activos industriales
+- Almacenamiento de lecturas de sensores en InfluxDB
+- Consulta de datos históricos y en tiempo real
 
-- Gestión de activos industriales con múltiples sensores
-- Registro de lecturas de sensores en tiempo real
-- Consultas históricas y en tiempo real de datos de sensores
-- Actualización de estados de activos
-- Persistencia en MongoDB (metadatos) e InfluxDB (series temporales)
+### 2. **🆕 Sistema de Monitoreo de Estado de Sensores**
+- **Detección automática de desconexión**: Si un sensor no envía datos por 5 minutos, se marca como desconectado
+- **Estado persistente en MongoDB**: Cada sensor tiene un registro de estado (activo/inactivo)
+- **Notificaciones automáticas**: Se envían notificaciones cuando un sensor se desconecta
+- **Monitoreo en tiempo real**: Verificación cada 2 minutos de sensores desconectados
 
-## Arquitectura
+## � Respuesta de Consulta de Activo con Estado de Sensores
 
-- **API REST**: Implementada con Gin Framework
-- **Base de datos**: 
-  - MongoDB: Almacenamiento de activos y metadatos
-  - InfluxDB: Almacenamiento de series temporales (lecturas de sensores)
-- **Implementado en**: Go 1.23
+El endpoint `GET /activo/:activo_id/sensores/estado` retorna:
 
-## Endpoints disponibles
-
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| GET | `/activo` | Listar todos los activos |
-| POST | `/activo` | Crear un nuevo activo |
-| GET | `/activo/:activo_id` | Obtener un activo específico |
-| PUT | `/activo/:activo_id/estado` | Actualizar el estado de un activo |
-| POST | `/lectura` | Registrar una lectura de sensor |
-| GET | `/lectura/:activo_id/datos` | Obtener lecturas de todos los sensores de un activo |
-| GET | `/lectura/:activo_id/datos/ultimo` | Obtener la última lectura de cada sensor de un activo |
-
-## Ejemplos de uso
-
-### 1. Listar todos los activos
-
-**Petición:**
-```bash
-curl http://34.39.160.195:8090/activo
-```
-
-**Respuesta:**
-```json
-[
-  {
-    "id": "64f8a9c87c1b3e001e0b6d23",
-    "activo_id": "AC-1001",
-    "nombre": "Caldera Principal",
-    "estado": "operativo",
-    "ubicacion": "Sala 1",
-    "sensores": [
-      {
-        "sensor_id": "TEMP-01",
-        "tipo": "temperatura",
-        "unidad": "C"
-      },
-      {
-        "sensor_id": "PRES-01",
-        "tipo": "presion",
-        "unidad": "bar"
-      }
-    ],
-    "id_edificio": "ED-01"
-  },
-  {
-    "id": "64f8b1a87c1b3e001e0b6d24",
-    "activo_id": "AC-1002",
-    "nombre": "Compresor Auxiliar",
-    "estado": "mantenimiento",
-    "ubicacion": "Sala 2",
-    "sensores": [
-      {
-        "sensor_id": "TEMP-02",
-        "tipo": "temperatura",
-        "unidad": "C"
-      }
-    ],
-    "id_edificio": "ED-01"
-  }
-]
-```
-
-### 2. Crear un activo
-
-**Petición:**
-```bash
-curl -X POST http://34.39.160.195:8090/activo \
-  -H "Content-Type: application/json" \
-  -d '{
-    "activo_id": "AC-1003",
-    "nombre": "Bomba Hidráulica", 
-    "estado": "operativo",
-    "ubicacion": "Sala 3",
-    "sensores": [
-      {"sensor_id": "FLOW-01", "tipo": "flujo", "unidad": "l/min"},
-      {"sensor_id": "PRES-03", "tipo": "presion", "unidad": "bar"}
-    ],
-    "id_edificio": "ED-01"
-  }'
-```
-
-**Respuesta:**
 ```json
 {
-  "activo_id": "AC-1003"
-}
-```
-
-### 3. Obtener un activo específico
-
-**Petición:**
-```bash
-curl http://34.39.160.195:8090/activo/AC-1001
-```
-
-**Respuesta:**
-```json
-{
-  "id": "64f8a9c87c1b3e001e0b6d23",
-  "activo_id": "AC-1001",
+  "id": "...",
+  "activo_id": "CALDERA_001",
   "nombre": "Caldera Principal",
-  "estado": "operativo",
-  "ubicacion": "Sala 1",
+  "ubicacion": "Planta Baja",
+  "estado": "activo",
+  "id_edificio": "edificio_001",
+  "total_sensores": 3,
   "sensores": [
     {
-      "sensor_id": "TEMP-01",
-      "tipo": "temperatura",
-      "unidad": "C"
+      "sensor_id": "TEMP_001",
+      "tipo": "temperatura", 
+      "unidad": "°C",
+      "estado": "connected",           // connected | disconnected | never_connected
+      "is_active": true,
+      "last_seen": "2025-09-03T10:30:00Z",
+      "first_seen": "2025-09-01T08:00:00Z",
+      "total_reports": 1458,
+      "created_at": "2025-09-01T08:00:00Z",
+      "updated_at": "2025-09-03T10:30:00Z"
     },
     {
-      "sensor_id": "PRES-01",
+      "sensor_id": "PRESS_001",
       "tipo": "presion",
-      "unidad": "bar"
+      "unidad": "bar", 
+      "estado": "disconnected",
+      "is_active": false,
+      "last_seen": "2025-09-03T09:45:00Z",
+      "total_reports": 892
+    },
+    {
+      "sensor_id": "VIBR_001",
+      "tipo": "vibracion",
+      "unidad": "Hz",
+      "estado": "never_connected",     // Nunca ha enviado datos
+      "is_active": false,
+      "total_reports": 0
     }
   ],
-  "id_edificio": "ED-01"
-}
-```
-
-### 4. Registrar una lectura de sensor
-
-**Petición:**
-```bash
-curl -X POST http://34.39.160.195:8090/lectura \
-  -H "Content-Type: application/json" \
-  -d '{
-    "sensor_id": "TEMP-01",
-    "valor": 85.4,
-    "timestamp": "2025-08-13T03:45:10Z"
-  }'
-```
-
-**Respuesta:**
-```json
-{
-  "mensaje": "Lectura registrada en InfluxDB"
-}
-```
-
-### 5. Obtener lecturas de un activo
-
-**Petición:**
-```bash
-curl http://34.39.160.195:8090/lectura/AC-1001/datos
-```
-
-**Respuesta:**
-```json
-{
-  "id": "64f8a9c87c1b3e001e0b6d23",
-  "activo_id": "AC-1001",
-  "nombre": "Caldera Principal",
-  "ubicacion": "Sala 1",
-  "estado": "operativo",
-  "sensores": [
-    {
-      "sensor_id": "TEMP-01",
-      "datos": [
-        {
-          "timestamp": "2025-08-13T03:45:10Z",
-          "valor": 85.4
-        },
-        {
-          "timestamp": "2025-08-13T03:46:15Z",
-          "valor": 86.2
-        }
-      ]
-    },
-    {
-      "sensor_id": "PRES-01",
-      "datos": [
-        {
-          "timestamp": "2025-08-13T03:45:11Z",
-          "valor": 3.2
-        },
-        {
-          "timestamp": "2025-08-13T03:46:16Z",
-          "valor": 3.3
-        }
-      ]
-    }
-  ]
-}
-```
-
-### 6. Obtener último dato de cada sensor
-
-**Petición:**
-```bash
-curl http://34.39.160.195:8090/lectura/AC-1001/datos/ultimo
-```
-
-**Respuesta:**
-```json
-{
-  "TEMP-01": {
-    "timestamp": "2025-08-13T03:46:15Z",
-    "valor": 86.2
-  },
-  "PRES-01": {
-    "timestamp": "2025-08-13T03:46:16Z",
-    "valor": 3.3
+  "resumen": {
+    "sensores_activos": 1,
+    "sensores_desconectados": 1, 
+    "sensores_nunca_conectados": 1
   }
 }
 ```
 
-### 7. Actualizar estado de un activo
+### Estados de Sensores:
+- **`connected`**: Sensor activo enviando datos
+- **`disconnected`**: Sensor que envió datos pero está inactivo (>5 min sin datos)
+- **`never_connected`**: Sensor registrado pero nunca ha enviado datos
 
-**Petición:**
-```bash
-curl -X PUT http://34.39.160.195:8090/activo/AC-1001/estado \
-  -H "Content-Type: application/json" \
-  -d '{
-    "estado": "mantenimiento"
-  }'
+## �🚀 Endpoints Disponibles
+
+### Gestión de Activos
+```
+POST /activo - Crear nuevo activo
+GET /activo - Listar todos los activos
+GET /activo/:activo_id - Obtener activo específico
+GET /activo/:activo_id/sensores/estado - 🆕 Obtener activo con estado de sensores
+PUT /activo/:activo_id/estado - Actualizar estado del activo
 ```
 
-**Respuesta:**
-```json
-{
-  "message": "Estado actualizado correctamente"
+### Gestión de Lecturas
+```
+POST /lectura - Registrar nueva lectura de sensor
+GET /lectura/:activo_id/datos - Obtener datos históricos
+GET /lectura/:activo_id/datos/ultimo - Obtener última lectura
+```
+
+### 🆕 Monitoreo de Sensores
+```
+GET /api/sensors/status - Estado de todos los sensores
+GET /api/sensors/status/:sensor_id - Estado de un sensor específico
+GET /api/sensors/stats - Estadísticas generales (activos/inactivos)
+POST /api/sensors/check-disconnected - Verificación manual de desconexiones
+GET /api/sensors/health - Health check del sistema de monitoreo
+```
+
+## 📋 Modelos de Datos
+
+### SensorStatus (MongoDB)
+```go
+type SensorStatus struct {
+    SensorID     string    `json:"sensor_id"`
+    IsActive     bool      `json:"is_active"`
+    LastSeen     time.Time `json:"last_seen"`
+    FirstSeen    time.Time `json:"first_seen"`
+    TotalReports int64     `json:"total_reports"`
+    CreatedAt    time.Time `json:"created_at"`
+    UpdatedAt    time.Time `json:"updated_at"`
 }
 ```
 
-## Configuración
-
-El servicio utiliza un archivo de configuración `config.yaml` que define las conexiones a las bases de datos:
+## ⚙️ Configuración
 
 ```yaml
-mongu:
-  uri: "mongodb://34.39.160.195:27017"
-  database: "iot_db"
+# config/config.yaml
+sensor:
+  timeout_minutes: 5  # Tiempo para considerar desconectado
 
-influxdb:
-  url: "http://34.39.160.195:8086"
-  token: "my-super-token"
-  org: "my-org"
-  bucket: "sensores"
-
-server:
-  port: "8090"
+notification:
+  url: "http://notification-service:8091/notification"  # Servicio de notificaciones
 ```
 
-## Ejecución
+## 🔄 Flujo de Funcionamiento
 
-### Con Docker Compose
+1. **Llegada de Datos**: Cuando llega una lectura (`POST /lectura`):
+   - Se guarda en InfluxDB
+   - Se actualiza el estado del sensor en MongoDB (marca como activo)
+
+2. **Monitoreo Automático**: Cada 2 minutos:
+   - Se buscan sensores que no han enviado datos por 5+ minutos
+   - Se marcan como inactivos
+   - Se envía notificación (console.log + HTTP opcional)
+
+3. **Consulta de Estado**: 
+   - Los endpoints permiten consultar el estado en tiempo real
+   - Se pueden obtener estadísticas de sensores activos/inactivos
+
+## 🧪 Testing
+
+### Test Completo de Monitoreo
 ```bash
-# Reconstruir la imagen (si se modificó la configuración)
-docker-compose build iot-service
-
-# Ejecutar el servicio
-docker-compose up iot-service
+cd tests
+./test_monitoring.sh
 ```
 
-### Directamente (para desarrollo)
+### 🆕 Test de Consulta de Activo con Estado de Sensores
 ```bash
-cd microservicios/ParserService
-go run cmd/main.go
+cd tests  
+./test_activo_sensores_estado.sh
 ```
 
-## Requisitos para desarrollo
+Este test verifica:
+- Creación de activo con sensores
+- Consulta de sensores sin datos (never_connected)
+- Envío de datos y detección de sensores conectados
+- Resumen de estadísticas por activo
+- Validación de estructura de respuesta
 
-- Go 1.23 o superior
-- MongoDB 4.4 o superior
-- InfluxDB 2.7 o superior
+## 📦 Dependencias Principales
+
+- **MongoDB**: Estado persistente de sensores
+- **InfluxDB**: Datos de tiempo real
+- **Gin**: Framework web
+- **Viper**: Configuración
+
+## 🚨 Notificaciones
+
+Cuando un sensor se desconecta:
+1. **Console Log**: Mensaje detallado en logs
+2. **HTTP Request**: (Opcional) POST al servicio de notificaciones
+3. **Estado Persistente**: Actualización en MongoDB
+
+## 🔍 Ejemplos de Uso
+
+### Consultar estado de sensores de un activo
+```bash
+# Obtener activo con estado detallado de sensores
+curl http://localhost:8090/activo/CALDERA_001/sensores/estado
+
+# Respuesta incluye:
+# - Información completa del activo
+# - Estado de cada sensor (connected/disconnected/never_connected) 
+# - Última actividad y estadísticas por sensor
+# - Resumen consolidado de estados
+```
+
+### Flujo típico de monitoreo
+```bash
+# 1. Consultar todos los activos
+curl http://localhost:8090/activo
+
+# 2. Ver estado de sensores de un activo específico  
+curl http://localhost:8090/activo/ACTIVO_ID/sensores/estado
+
+# 3. Ver estadísticas globales de sensores
+curl http://localhost:8090/api/sensors/stats
+
+# 4. Forzar verificación de desconexiones
+curl -X POST http://localhost:8090/api/sensors/check-disconnected
+```

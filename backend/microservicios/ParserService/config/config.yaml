@@ -12,7 +12,7 @@
 server:
   port: "8090"
 
-# Configuración para contenedores Docker (comentada)
+# Configuración para contenedores Docker
 mongu:
   uri: "mongodb://mongu:27017"
   database: "iot_db"
@@ -21,3 +21,11 @@ influxdb:
   token: "my-super-token"
   org: "my-org"
   bucket: "sensores"
+
+# Configuración de monitoreo de sensores
+sensor:
+  timeout_minutes: 5  # Tiempo en minutos para considerar un sensor desconectado
+
+# Configuración de notificaciones (opcional)
+notification:
+  url: "http://notification-service:8091/sensor/alert"  # URL del servicio de notificaciones

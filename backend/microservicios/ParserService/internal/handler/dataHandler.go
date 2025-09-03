@@ -11,14 +11,16 @@ import (
 )
 
 type DataHandler struct {
-	activoService *services.ActivoService
-	sensorService *services.SensorService
+	activoService     *services.ActivoService
+	sensorService     *services.SensorService
+	monitoringService *services.SensorMonitoringService
 }
 
-func NewDataHandler(activoSvc *services.ActivoService, sensorSvc *services.SensorService) *DataHandler {
+func NewDataHandler(activoSvc *services.ActivoService, sensorSvc *services.SensorService, monitoringSvc *services.SensorMonitoringService) *DataHandler {
 	return &DataHandler{
-		activoService: activoSvc,
-		sensorService: sensorSvc,
+		activoService:     activoSvc,
+		sensorService:     sensorSvc,
+		monitoringService: monitoringSvc,
 	}
 }
 
@@ -57,10 +59,18 @@ func (h *DataHandler) CreateLectura(c *gin.Context) {
 		return
 	}
 
+	// Insertar lectura en InfluxDB
 	err = h.sensorService.InsertarLectura(c.Request.Context(), data.SensorID, data.Valor, timestamp)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo registrar la lectura en InfluxDB"})
 		return
+	}
+
+	// Actualizar estado del sensor en MongoDB
+	err = h.monitoringService.UpdateSensorActivity(data.SensorID, timestamp)
+	if err != nil {
+		// Log error pero no fallar la request principal
+		c.Header("X-Warning", "Error al actualizar estado del sensor")
 	}
 
 	c.JSON(http.StatusOK, gin.H{"mensaje": "Lectura registrada en InfluxDB"})
@@ -103,12 +113,12 @@ func (h *DataHandler) GetSensorByActivo(c *gin.Context) {
 	}
 
 	respuesta := gin.H{
-		"id":         activo.ID,
-		"activo_id":  activo.ActivoID,
-		"nombre":     activo.Nombre,
-		"ubicacion":  activo.Ubicacion,
-		"estado": 	  activo.Estado,
-		"sensores":   allLecturas,
+		"id":        activo.ID,
+		"activo_id": activo.ActivoID,
+		"nombre":    activo.Nombre,
+		"ubicacion": activo.Ubicacion,
+		"estado":    activo.Estado,
+		"sensores":  allLecturas,
 	}
 
 	c.JSON(http.StatusOK, respuesta)
@@ -169,3 +179,91 @@ func (h *DataHandler) UpdActivoEstado(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Estado actualizado correctamente"})
 }
 
+// GET /activo/:activo_id/sensores/estado - Obtiene un activo con el estado de sus sensores
+func (h *DataHandler) GetActivoWithSensorStatus(c *gin.Context) {
+	activoID := c.Param("activo_id")
+
+	// Obtener el activo
+	activo, err := h.activoService.ObtenerActivo(c.Request.Context(), activoID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Activo no encontrado"})
+		return
+	}
+
+	// Crear la respuesta con información del activo y estado de sensores
+	response := gin.H{
+		"id":          activo.ID,
+		"activo_id":   activo.ActivoID,
+		"nombre":      activo.Nombre,
+		"ubicacion":   activo.Ubicacion,
+		"estado":      activo.Estado,
+		"id_edificio": activo.Id_edificio,
+		"sensores":    []gin.H{},
+	}
+
+	// Obtener estado de cada sensor
+	var sensoresConEstado []gin.H
+	for _, sensor := range activo.Sensores {
+		sensorInfo := gin.H{
+			"sensor_id":     sensor.SensorID,
+			"tipo":          sensor.Tipo,
+			"unidad":        sensor.Unidad,
+			"estado":        "unknown", // Default
+			"is_active":     false,     // Default
+			"last_seen":     nil,       // Default
+			"total_reports": 0,         // Default
+		}
+
+		// Obtener estado del sensor desde el servicio de monitoreo
+		sensorStatus, err := h.monitoringService.GetSensorStatus(sensor.SensorID)
+		if err == nil && sensorStatus != nil {
+			var estado string
+			if sensorStatus.IsActive {
+				estado = "connected"
+			} else {
+				estado = "disconnected"
+			}
+
+			sensorInfo["estado"] = estado
+			sensorInfo["is_active"] = sensorStatus.IsActive
+			sensorInfo["last_seen"] = sensorStatus.LastSeen
+			sensorInfo["first_seen"] = sensorStatus.FirstSeen
+			sensorInfo["total_reports"] = sensorStatus.TotalReports
+			sensorInfo["created_at"] = sensorStatus.CreatedAt
+			sensorInfo["updated_at"] = sensorStatus.UpdatedAt
+		} else {
+			// Si no hay información de estado, el sensor nunca ha enviado datos
+			sensorInfo["estado"] = "never_connected"
+		}
+
+		sensoresConEstado = append(sensoresConEstado, sensorInfo)
+	}
+
+	response["sensores"] = sensoresConEstado
+	response["total_sensores"] = len(activo.Sensores)
+
+	// Agregar estadísticas resumidas
+	activeSensors := 0
+	disconnectedSensors := 0
+	neverConnectedSensors := 0
+
+	for _, sensor := range sensoresConEstado {
+		estado := sensor["estado"].(string)
+		switch estado {
+		case "connected":
+			activeSensors++
+		case "disconnected":
+			disconnectedSensors++
+		case "never_connected":
+			neverConnectedSensors++
+		}
+	}
+
+	response["resumen"] = gin.H{
+		"sensores_activos":          activeSensors,
+		"sensores_desconectados":    disconnectedSensors,
+		"sensores_nunca_conectados": neverConnectedSensors,
+	}
+
+	c.JSON(http.StatusOK, response)
+}

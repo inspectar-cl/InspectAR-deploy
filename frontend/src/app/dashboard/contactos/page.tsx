@@ -18,6 +18,7 @@ export default function Page(): React.JSX.Element {
     const fetchContactos = async () => {
       try {
         const response = await gs.get("/gestion/tecnicos");
+        console.log("response", response)
         const contactosMapeados = Array.isArray(response)
           ? response.map((c: any) => ({
               id: c.id,

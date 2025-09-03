@@ -85,7 +85,7 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 | Método | Endpoint | Descripción | Estado |
 |--------|----------|-------------|---------|
 | `GET` | `/reportes/activo/{activo_id}` | Obtener reportes de un activo | ✅ Funcionando |
-| `POST` | `/reportes/activo/{activo_id}` | Generar reporte PDF por activo | ⚠️ Issue DB |
+| `POST` | `/reportes/activo/{activo_id}` | Generar reporte PDF por activo | ✅ **IMPLEMENTADO** |
 
 ### 📋 Rutas de Solicitudes API v1 (HdU16) - 🎉 COMPLETAMENTE IMPLEMENTADAS
 

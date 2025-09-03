@@ -30,4 +30,31 @@ export default class Services {
                 }))
         }
     }
+
+    async post(uri, data) {
+        return await apiClient.post(uri, data)
+            .then(res => res.data)
+            .catch(error => ({
+                mensaje: "error inesperado",
+                error: error.response
+            }))
+    }
+
+    async put(uri, data) {
+        return await apiClient.put(uri, data)
+            .then(res => res.data)
+            .catch(error => ({
+                mensaje: "error inesperado",
+                error: error.response
+            }))
+    }
+
+    async delete(uri) {
+        return await apiClient.delete(uri)
+            .then(res => res.data)
+            .catch(error => ({
+                mensaje: "error inesperado",
+                error: error.response
+            }))
+    }
 }

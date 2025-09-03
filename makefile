@@ -9,3 +9,6 @@ run-gestion:
 
 run-doc:
 	cd backend && docker compose up --build documentacion-db documentacion-service
+
+run-front:
+	cd frontend && npm run dev

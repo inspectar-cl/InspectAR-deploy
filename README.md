@@ -1,13 +1,30 @@
-# InspectAR está dividido en dos partes principales: **backend** y **frontend**.
+# InspectAR
 
-- Para ejecutar el **backend**, navega a la carpeta correspondiente y ejecuta:
-    ```
-    npm run dev
-    ```
+## Requisitos
+- Docker y Docker Compose (para el backend)
+- Node.js y npm instalados en WSL (para el frontend)
 
-- Para ejecutar el **frontend**, navega a la carpeta del frontend y ejecuta:
-    ```
-    npm run dev
-    ```
+## Ejecución
 
-Asegúrate de tener instaladas las dependencias necesarias con `npm install` en cada carpeta antes de iniciar los servidores.
+### Backend
+```bash
+make run-b
+```
+
+### Frontend
+Primero instala las dependencias (solo la primera vez):
+```bash
+cd frontend && npm install
+```
+
+Luego ejecuta:
+```bash
+make run-front
+```
+
+### Detener Backend
+```bash
+make stop-b
+```
+
+**Nota**: Si usas WSL, asegúrate de tener Node.js instalado directamente en WSL, no en Windows.

@@ -4,39 +4,50 @@ import CardMedia from '@mui/material/CardMedia';
 import CardActions from '@mui/material/CardActions';
 import SendIcon from '@mui/icons-material/Send';
 import Slide from '@mui/material/Slide';
-import { useTheme } from '@mui/material/styles';
 import ChatIcon from '@mui/icons-material/Chat';
 
+import Services from '@/modules/Services'
+const gs = new Services()
 
-export function ChatBotCard() {
+type Message = {
+  pregunta: string;
+  respuesta: string;
+};
+
+export function ChatBotCard ({ id }: { id: string }) {
   const [open, setOpen] = React.useState(false);
   const [inputR, setInput] = React.useState('');
-  const [respuesta, setRespuesta] = React.useState('');
   const [loading, setLoading] = React.useState(false);
 
-  const theme = useTheme();
+  const [messages, setMessages] = React.useState<Message[]>([]);
 
-  const inspai = '../../../../assets/inspai.png';
-
-  const API_URL = '/api/chat';
+  const inspy = '../../../../assets/inspai.png';
 
   const handleSend = async () => {
     if (!inputR.trim()) return;
 
     setLoading(true);
-    try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pregunta: inputR }), // la API recibe la pregunta
-      });
+    const API_URL = `/documentos/${id}/consultar`;
 
-      const data = await res.json();
-      setRespuesta(data.respuesta); // la API devuelve la respuesta
+    try {
+      const response = await gs.post(API_URL, { pregunta: inputR });
+
+      const newMessage = {
+        pregunta: inputR,
+        respuesta:
+          response?.mensaje === 'error inesperado'
+            ? 'Error al obtener respuesta de Inspy'
+            : response.respuesta || 'Sin respuesta de Inspy',
+      };
+
+      setMessages((prev) => [...prev, newMessage]);
       setInput('');
     } catch (error) {
       console.error('Error llamando a la API:', error);
-      setRespuesta('Error al obtener respuesta del bot');
+      setMessages((prev) => [
+        ...prev,
+        { pregunta: inputR, respuesta: 'Error al obtener respuesta de Inspy' },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -74,7 +85,7 @@ export function ChatBotCard() {
                 <CardMedia
                   component="img"
                   height="140"
-                  image= {inspai}
+                  image= {inspy}
                   alt="InspecAR PET"
                 />
                 <CardContent sx={{ pt: 2, pb: 1 }}>
@@ -86,20 +97,37 @@ export function ChatBotCard() {
                   </Typography>
                 </CardContent>
 
-                <Box component="form" sx={{ m: 2}}>
-                    <TextField
-                      multiline
-                      rows={5}
-                      maxRows={5}
-                      fullWidth
-                      focused
-                      InputProps={{ readOnly: true}}
-                      value={
-                        loading
-                          ? 'Generando respuesta...'
-                          : respuesta || 'Aquí aparecerá la respuesta del bot'
-                      }
-                    />
+                <Box component="form" sx={{
+                  m: 2,
+                  minHeight: 200,
+                  maxHeight: 250,
+                  overflowY: "auto",
+                  border: "1px solid #6e6e6eff",
+                  borderRadius: 1,
+                  p: 1,
+                }}>
+                    {messages.length === 0 && (
+                      <Typography variant="body2" color="text.secondary">
+                        Hola, soy Inspy ¡Estoy para ayudarte!
+                      </Typography>
+                    )}
+
+                    {messages.map((msg, index) => {
+                      const isLast = index === messages.length - 1;
+                      const typed = msg.respuesta;
+
+                      return (
+                        <Box key={index} sx={{ mb: 2 }}>
+                          <Typography variant="subtitle2" color="primary">
+                            Tu pregunta: {msg.pregunta}
+                          </Typography>
+                          <Typography variant="body2">
+                            {isLast && loading ? 'Generando respuesta...' : isLast ? typed : msg.respuesta}
+                          </Typography>
+                          <Divider sx={{ my: 1 }} />
+                        </Box>
+                      );
+                    })}
                 </Box>
 
                 <Divider />
@@ -109,7 +137,7 @@ export function ChatBotCard() {
                       label="Pregunta"
                       variant="standard"
                       multiline
-                      rows={3}
+                      minRows={3}
                       maxRows={3}
                       fullWidth
                       value={inputR}

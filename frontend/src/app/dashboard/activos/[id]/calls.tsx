@@ -209,7 +209,7 @@ export default function ActivoDetailClient({ id }: { id: string }) {
           />
         </Grid>
         <Grid size={{md:4, xs:12}}>
-          <ChatBotCard />
+          <ChatBotCard id={id}/>
         </Grid>
       </Grid>
     </Box>

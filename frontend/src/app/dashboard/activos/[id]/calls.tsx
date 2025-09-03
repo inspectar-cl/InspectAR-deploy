@@ -30,10 +30,11 @@ import dataAlertas from '@/mocks/alerts.json'
 
 const gs = new Services()
 
-export default function ActivoDetailClient({ id }: { id: string }) {
+export default function ActivoDetailClient({ id }: { id: string}) {
 
   const [activo, setActivo] = React.useState<Activo | null>(null)
   const [sensores, setSensores] = React.useState<any[]>([])
+  const [documentId, setDocumentId] = React.useState<string | null>(null);
 
   // Actualización del método a penas se recarga la página
   const hasFetchedRef = React.useRef(false)
@@ -57,6 +58,10 @@ export default function ActivoDetailClient({ id }: { id: string }) {
 
         setActivo(activoTransformado);
         setSensores(response.sensores ?? []);
+        
+        // Aqui hago llamado a API para obtener id de documento del activo
+        const docResponse = await gs.get(`/documentos/activo/${id}`);
+        setDocumentId(docResponse.documento_id ?? 'none00'); //none00 como id vacia
       } catch (err) {
         console.error('Error al obtener el activo', err);
       }
@@ -209,7 +214,7 @@ export default function ActivoDetailClient({ id }: { id: string }) {
           />
         </Grid>
         <Grid size={{md:4, xs:12}}>
-          <ChatBotCard id={id}/>
+          <ChatBotCard id={documentId}/>
         </Grid>
       </Grid>
     </Box>

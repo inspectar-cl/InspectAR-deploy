@@ -14,7 +14,7 @@ type Message = {
   respuesta: string;
 };
 
-export function ChatBotCard ({ id }: { id: string }) {
+export function ChatBotCard ({ id }: { id: string | null}) {
   const [open, setOpen] = React.useState(false);
   const [inputR, setInput] = React.useState('');
   const [loading, setLoading] = React.useState(false);

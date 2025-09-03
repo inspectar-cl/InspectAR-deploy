@@ -7,7 +7,7 @@
 if [ -n "$API_BASE_URL" ]; then
     BASE_URL="$API_BASE_URL"
 else
-    BASE_URL="http://localhost:8092"
+    BASE_URL="http://localhost:8093"
 fi
 
 API_URL="$BASE_URL/api/v1"

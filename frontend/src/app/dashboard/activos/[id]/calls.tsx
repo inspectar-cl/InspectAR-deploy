@@ -21,6 +21,7 @@ import { LatestAlerts } from '@/components/dashboard/overview/latest-alerts';
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr/Warning';
 import Grid from '@mui/material/Grid';
 import { ScatterWithArgs} from '@/components/dashboard/overview/medicionTiempoReal'
+import { ChatBotCard } from '@/components/dashboard/overview/chatbot'
 
 // Configuración rutas de obtención de datos desde db.
 import Services from '@/modules/Services'
@@ -206,6 +207,9 @@ export default function ActivoDetailClient({ id }: { id: string }) {
             }
             sx={{ height: 450 }}
           />
+        </Grid>
+        <Grid size={{md:4, xs:12}}>
+          <ChatBotCard />
         </Grid>
       </Grid>
     </Box>

@@ -137,7 +137,7 @@ export function useActivosWithSensors() {
         return;
       }
 
-      // 2. Para cada activo, obtener sensores y últimos valores
+      // 2. Para cada activo, obtener sensores, últimos valores y datos históricos
       const activosConSensores = await Promise.all(
         todosLosActivos.map(async (activo) => {
           try {
@@ -160,9 +160,46 @@ export function useActivosWithSensors() {
               console.warn(`No se pudieron obtener últimos valores para ${activo.activo_id}:`, error);
             }
 
+            // Obtener datos históricos (todos los datos del activo)
+            let datosHistoricos: any = {};
+            try {
+              const historicosResponse = await gs.get(`/parser/lectura/${activo.activo_id}/datos`);
+              console.log(`📊 Respuesta datos históricos para ${activo.activo_id}:`, historicosResponse);
+              datosHistoricos = historicosResponse || {};
+            } catch (error) {
+              console.warn(`No se pudieron obtener datos históricos para ${activo.activo_id}:`, error);
+            }
+
             // Transformar sensores al formato del frontend
             const sensoresTransformados: SensorRow[] = activoConSensores.sensores.map((sensor) => {
               const ultimoValor = ultimosValores[sensor.sensor_id];
+              
+              // Buscar datos históricos para este sensor
+              let history24h: SensorSample[] = [];
+              
+              if (datosHistoricos.sensores && Array.isArray(datosHistoricos.sensores)) {
+                const sensorData = datosHistoricos.sensores.find(
+                  (s: any) => s.sensor_id === sensor.sensor_id
+                );
+                
+                if (sensorData && sensorData.datos && Array.isArray(sensorData.datos)) {
+                  // Convertir datos al formato SensorSample
+                  history24h = sensorData.datos.map((dato: any) => ({
+                    ts: new Date(dato.tiempo),
+                    value: dato.valor,
+                    unit: sensor.unidad
+                  }));
+                  
+                  // Filtrar solo las últimas 24 horas
+                  const hace24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+                  history24h = history24h.filter(sample => sample.ts >= hace24h);
+                  
+                  // Ordenar por timestamp descendente (más reciente primero)
+                  history24h.sort((a, b) => b.ts.getTime() - a.ts.getTime());
+                  
+                  console.log(`📈 History24h para ${sensor.sensor_id}:`, history24h.length, 'muestras');
+                }
+              }
               
               return {
                 id: sensor.sensor_id,
@@ -172,7 +209,7 @@ export function useActivosWithSensors() {
                 lastValue: ultimoValor?.valor || 0,
                 lastSeen: sensor.last_seen ? new Date(sensor.last_seen) : new Date(Date.now() - 10 * 60 * 1000), // 10 min ago si no hay fecha
                 status: sensor.estado, // Usar el estado directamente del backend
-                // history24h se puede agregar más tarde si es necesario
+                history24h: history24h // ← Agregar los datos históricos aquí
               };
             });
 

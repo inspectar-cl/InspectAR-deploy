@@ -38,7 +38,7 @@ func NewAIService(cfg *config.GeminiConfig, analisisRepo *repository.AnalisisRep
 		return nil, fmt.Errorf("error inicializando cliente Gemini: %v", err)
 	}
 
-	model := client.GenerativeModel("gemini-1.5-flash")
+	model := client.GenerativeModel("gemini-2.5-flash")
 	model.SetTemperature(0.2)
 
 	return &AIService{
@@ -104,7 +104,7 @@ func (s *AIService) procesarAnalisisAsync(analisisID, documentoID int) {
 
 	// Analizar con Gemini
 	ctx := context.Background()
-	
+
 	// Para archivos PDF, usamos el contenido como texto
 	// En una implementación completa, necesitarías un extractor de texto de PDF
 	resp, err := s.model.GenerateContent(ctx, genai.Text(prompt+"\n\nContenido del documento (extracto): "+string(contenido[:min(2000, len(contenido))])))
@@ -117,7 +117,7 @@ func (s *AIService) procesarAnalisisAsync(analisisID, documentoID int) {
 	// Procesar respuesta
 	if len(resp.Candidates) > 0 && len(resp.Candidates[0].Content.Parts) > 0 {
 		resultado := fmt.Sprintf("%v", resp.Candidates[0].Content.Parts[0])
-		
+
 		// Extraer información estructurada
 		resumen, puntosClaves, graficos := s.procesarResultadoIA(resultado)
 
@@ -176,11 +176,11 @@ Enfócate especialmente en:
 func (s *AIService) procesarResultadoIA(resultado string) (resumen, puntosClaves, graficos string) {
 	// Parser simple para extraer las secciones
 	// En una implementación más robusta, usarías regex o parsing más sofisticado
-	
+
 	lines := strings.Split(resultado, "\n")
 	var currentSection string
 	var resumenLines, puntosLines, graficosLines []string
-	
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if strings.HasPrefix(line, "RESUMEN:") {
@@ -203,9 +203,9 @@ func (s *AIService) procesarResultadoIA(resultado string) (resumen, puntosClaves
 			}
 		}
 	}
-	
+
 	resumen = strings.TrimSpace(strings.Join(resumenLines, " "))
-	
+
 	// Intentar parsear JSON para puntos claves y gráficos
 	puntosStr := strings.TrimSpace(strings.Join(puntosLines, " "))
 	if strings.HasPrefix(puntosStr, "[") {
@@ -216,7 +216,7 @@ func (s *AIService) procesarResultadoIA(resultado string) (resumen, puntosClaves
 		puntosJSON, _ := json.Marshal(defaultPuntos)
 		puntosClaves = string(puntosJSON)
 	}
-	
+
 	graficosStr := strings.TrimSpace(strings.Join(graficosLines, " "))
 	if strings.HasPrefix(graficosStr, "[") {
 		graficos = graficosStr
@@ -226,7 +226,7 @@ func (s *AIService) procesarResultadoIA(resultado string) (resumen, puntosClaves
 		graficosJSON, _ := json.Marshal(defaultGraficos)
 		graficos = string(graficosJSON)
 	}
-	
+
 	return resumen, puntosClaves, graficos
 }
 

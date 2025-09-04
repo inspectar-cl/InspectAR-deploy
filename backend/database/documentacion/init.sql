@@ -98,6 +98,7 @@ INSERT INTO documentos (
 -- Documentos para activo 1 (AC-1001 - Caldera Principal)
 (1, NULL, 'Ficha Técnica Caldera Principal Bosch', 'Especificaciones técnicas oficiales del fabricante para caldera industrial', 'ficha_tecnica', 'pdf', '1_ficha_tecnica_caldera_bosch.pdf', 2048576, '2024-01-15', 'admin_sistema', 'caldera,bosch,ficha tecnica,especificaciones,fabricante', true),
 (1, 1, 'Manual de Operación Caldera Bosch', 'Manual completo de operación, mantenimiento preventivo y correctivo', 'manual_fabricante', 'pdf', '1_manual_operacion_caldera.pdf', 5242880, '2024-01-15', 'tecnico_juan', 'manual,operacion,mantenimiento,caldera,procedimientos', false),
+(1, NULL, 'Certificación de Seguridad Caldera Principal', 'Documento de certificación de seguridad emitido por organismo competente', 'certificacion', 'pdf', '1_certificacion_seguridad.pdf', 1528617, '2024-01-10', 'admin_sistema', 'certificacion,seguridad,caldera,normativas,cumplimiento', false),
 
 -- Documentos para activo 2 (AC-1002 - Bomba Centrífuga A)
 (2, NULL, 'Ficha Técnica Bomba Centrífuga Grundfos', 'Especificaciones técnicas bomba centrífuga', 'ficha_tecnica', 'pdf', '2_ficha_tecnica_bomba_grundfos.pdf', 1524288, '2023-12-10', 'admin_sistema', 'bomba,grundfos,ficha tecnica,centrifuga', true),
@@ -130,6 +131,12 @@ INSERT INTO analisis_ia (documento_id, resumen, puntos_claves, graficos_detectad
  'completado'),
 
 (3,
+ 'Certificación de seguridad para caldera industrial que valida el cumplimiento de normativas nacionales e internacionales. Documento oficial emitido por organismo certificador autorizado.',
+ '["Certificación vigente hasta: Enero 2025", "Normas cumplidas: ISO 14001, OHSAS 18001", "Inspección realizada: Diciembre 2023", "Estado de seguridad: CONFORME", "Sistemas de protección verificados", "Válvulas de seguridad calibradas", "Sistema de monitoreo operativo"]',
+ '["Tabla de normativas aplicables", "Checklist de verificación de seguridad", "Diagrama de sistemas de protección", "Certificados de calibración de instrumentos"]',
+ 'completado'),
+
+(4,
  'Reporte de mantenimiento preventivo que documenta la inspección completa de la caldera, incluyendo verificación de sistemas de seguridad, limpieza de componentes y calibración de instrumentos.',
  '["Estado general: Satisfactorio", "Presión de prueba: 145 PSI (Normal)", "Limpieza de quemadores realizada", "Calibración de termostatos completada", "Reemplazo de filtros de aire", "Próxima inspección: Abril 2024"]',
  '["Tabla de mediciones de presión", "Checklist de inspección visual", "Fotografías de componentes inspeccionados"]',
@@ -152,13 +159,27 @@ INSERT INTO consultas_ia (documento_id, pregunta, respuesta, confianza, fuentes,
  980),
 
 (3,
+ '¿Está vigente la certificación de seguridad?',
+ 'Sí, la certificación de seguridad está vigente hasta enero de 2025. El documento confirma el cumplimiento de normativas ISO 14001 y OHSAS 18001, con inspección realizada en diciembre de 2023.',
+ 0.99,
+ '["Fecha de vigencia", "Normativas aplicables", "Fecha de inspección"]',
+ 890),
+
+(3,
+ '¿Qué normativas cumple la caldera?',
+ 'La caldera cumple con las normativas ISO 14001 (gestión ambiental) y OHSAS 18001 (seguridad y salud ocupacional). También cuenta con verificación de sistemas de protección y calibración de válvulas de seguridad.',
+ 0.97,
+ '["Tabla de normativas aplicables", "Sistemas de protección verificados", "Certificados de calibración"]',
+ 1100),
+
+(4,
  '¿Cuándo fue la última mantención?',
  'La última mantención preventiva fue realizada el 30 de enero de 2024. Se ejecutaron tareas de limpieza de quemadores, calibración de termostatos y reemplazo de filtros de aire. El estado general del equipo fue evaluado como satisfactorio.',
  0.95,
  '["Fecha del reporte", "Checklist de actividades realizadas", "Evaluación del estado general"]',
  1450),
 
-(5,
+(6,
  '¿Cuánta presión maneja esta bomba?',
  'La bomba hidráulica Grundfos de 50HP tiene una presión máxima de operación de 150 PSI. Se recomienda operar entre 120-140 PSI para óptimo rendimiento y mayor vida útil del equipo.',
  0.97,

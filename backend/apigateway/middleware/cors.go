@@ -18,11 +18,16 @@ import (
 // }
 
 func CORS() gin.HandlerFunc {
-    return cors.New(cors.Config{
-        AllowAllOrigins:  true, // Permite cualquier origen
-        AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-        AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-        AllowCredentials: false, // Debe ser false si AllowAllOrigins es true
-        MaxAge:           12 * time.Hour,
-    })
+	return cors.New(cors.Config{
+		AllowAllOrigins: true,
+		AllowMethods:    []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders: []string{
+			"Origin", "Content-Type", "Accept", "Authorization",
+			"ngrok-skip-browser-warning",
+		},
+		// Si quieres permitir cualquier header:
+		// AllowHeaders: []string{"*"},
+		AllowCredentials: false,
+		MaxAge:           12 * time.Hour,
+	})
 }

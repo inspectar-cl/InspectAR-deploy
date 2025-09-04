@@ -929,9 +929,167 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Obtener Activo con Estado de Sensores",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/parser/activo/AC-1001/sensores/estado",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"parser",
+								"activo",
+								"AC-1001",
+								"sensores",
+								"estado"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Agregar Sensor a Activo",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"sensor_id\": \"NUEVO-SENSOR-01\",\n  \"tipo\": \"presion\",\n  \"unidad\": \"bar\"\n}"
+						},
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/parser/activo/AC-1001/sensores",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"parser",
+								"activo",
+								"AC-1001",
+								"sensores"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Estado de Todos los Sensores",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/parser/api/sensors/status",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"parser",
+								"api",
+								"sensors",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Estado de Sensor Específico",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/parser/api/sensors/status/TEMP-01",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"parser",
+								"api",
+								"sensors",
+								"status",
+								"TEMP-01"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verificar Sensores Desconectados",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/parser/api/sensors/check-disconnected",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"parser",
+								"api",
+								"sensors",
+								"check-disconnected"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Estadísticas de Sensores",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/parser/api/sensors/stats",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"parser",
+								"api",
+								"sensors",
+								"stats"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Health Check Sensores",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/parser/api/sensors/health",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"parser",
+								"api",
+								"sensors",
+								"health"
+							]
+						}
+					},
+					"response": []
 				}
 			],
-			"description": "Peticiones al microservicio IoT/Parser a través del API Gateway - Gestión de activos industriales y lecturas de sensores en tiempo real"
+			"description": "Peticiones al microservicio IoT/Parser a través del API Gateway - Gestión de activos industriales, lecturas de sensores en tiempo real y monitoreo avanzado de estado de sensores"
 		},
 		{
 			"name": "📄 Documentación (via Gateway)",
@@ -1301,9 +1459,56 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Historial de Consultas de Documento",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/documentacion/documentos/1/consultas?limit=10",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"documentacion",
+								"documentos",
+								"1",
+								"consultas"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Estadísticas Globales de Consultas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/api/documentacion/consultas/estadisticas",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"api",
+								"documentacion",
+								"consultas",
+								"estadisticas"
+							]
+						}
+					},
+					"response": []
 				}
 			],
-			"description": "Peticiones al microservicio de Documentación a través del API Gateway (con prepend /api/v1) - Incluye gestión de documentos, análisis IA y consultas interactivas"
+			"description": "Peticiones al microservicio de Documentación a través del API Gateway (con prepend /api/v1) - Incluye gestión de documentos, análisis IA, consultas interactivas y estadísticas"
 		}
 	],
 	"event": [

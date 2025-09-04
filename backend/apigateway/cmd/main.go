@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"apigateway/config"
-	// "apigateway/middleware"
+	"apigateway/middleware"
 	"apigateway/proxy"
 )
 
@@ -15,8 +15,7 @@ func main() {
 
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
-	// r.Use(middleware.CORS())
-	// r.Use(middleware.CORS(cfg.FrontendURL))
+	r.Use(middleware.CORS())
 
 	// Rutas de proxy
 	proxy.RegisterRoutes(r)

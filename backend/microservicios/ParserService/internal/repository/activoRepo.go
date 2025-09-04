@@ -16,7 +16,7 @@ type ActivoRepository struct {
 
 func NewActivoRepository(db *mongo.Database) *ActivoRepository {
 	return &ActivoRepository{
-		collection: db.Collection("iot_db"),
+		collection: db.Collection("activos"),
 	}
 }
 

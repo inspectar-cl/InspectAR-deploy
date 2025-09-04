@@ -218,6 +218,29 @@ services:
       - DOCKER_INFLUXDB_INIT_BUCKET=sensores
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-token
 
+  # Servicio de inicialización de datos
+  data-sync-init:
+    image: mongo:latest
+    container_name: data-sync-init
+    depends_on:
+      - mongu
+      - gestion-db
+      - notification-db
+      - documentacion-db
+    volumes:
+      - ./scripts:/scripts
+    working_dir: /scripts
+    command: >
+      bash -c "
+        echo '🔄 Iniciando sincronización automática de datos...';
+        apt-get update -qq && apt-get install -y netcat-traditional > /dev/null 2>&1;
+        echo '📋 Herramientas instaladas...';
+        chmod +x /scripts/simple_data_init.sh;
+        /scripts/simple_data_init.sh;
+        echo '🎉 Proceso de inicialización automática finalizado.';
+      "
+    restart: "no"
+
 volumes:
   mongo_data:
   influxdb_data:

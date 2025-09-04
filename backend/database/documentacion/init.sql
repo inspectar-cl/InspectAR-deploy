@@ -89,29 +89,37 @@ CREATE INDEX IF NOT EXISTS idx_consultas_documento_id ON consultas_ia(documento_
 CREATE INDEX IF NOT EXISTS idx_consultas_fecha ON consultas_ia(creado_en);
 CREATE INDEX IF NOT EXISTS idx_consultas_confianza ON consultas_ia(confianza) WHERE confianza IS NOT NULL;
 
--- Insertar datos de ejemplo
+-- Insertar documentos para todos los activos sincronizados (IDs 1-8)
 INSERT INTO documentos (
     activo_id, tecnico_id, nombre, descripcion, categoria, 
     tipo_archivo, ruta_archivo, tamano_bytes, fecha_emision, 
     subido_por, palabras_clave, es_ficha_tecnica
 ) VALUES 
--- Ficha técnica de caldera
-(1, NULL, 'Ficha Técnica Caldera Principal Bosch', 'Especificaciones técnicas oficiales del fabricante para caldera industrial de 500kW', 'ficha_tecnica', 'pdf', '1_ficha_tecnica_caldera_bosch.pdf', 2048576, '2024-01-15', 'admin_sistema', 'caldera,bosch,ficha tecnica,500kw,especificaciones,fabricante', true),
+-- Documentos para activo 1 (AC-1001 - Caldera Principal)
+(1, NULL, 'Ficha Técnica Caldera Principal Bosch', 'Especificaciones técnicas oficiales del fabricante para caldera industrial', 'ficha_tecnica', 'pdf', '1_ficha_tecnica_caldera_bosch.pdf', 2048576, '2024-01-15', 'admin_sistema', 'caldera,bosch,ficha tecnica,especificaciones,fabricante', true),
+(1, 1, 'Manual de Operación Caldera Bosch', 'Manual completo de operación, mantenimiento preventivo y correctivo', 'manual_fabricante', 'pdf', '1_manual_operacion_caldera.pdf', 5242880, '2024-01-15', 'tecnico_juan', 'manual,operacion,mantenimiento,caldera,procedimientos', false),
 
--- Manual de operación
-(1, 2, 'Manual de Operación y Mantenimiento', 'Manual completo de operación, mantenimiento preventivo y correctivo', 'manual_fabricante', 'pdf', '1_manual_operacion_caldera.pdf', 5242880, '2024-01-15', 'tecnico_juan', 'manual,operacion,mantenimiento,caldera,procedimientos', false),
+-- Documentos para activo 2 (AC-1002 - Bomba Centrífuga A)
+(2, NULL, 'Ficha Técnica Bomba Centrífuga Grundfos', 'Especificaciones técnicas bomba centrífuga', 'ficha_tecnica', 'pdf', '2_ficha_tecnica_bomba_grundfos.pdf', 1524288, '2023-12-10', 'admin_sistema', 'bomba,grundfos,ficha tecnica,centrifuga', true),
+(2, 1, 'Manual Mantenimiento Bomba Grundfos', 'Procedimientos de mantenimiento preventivo y correctivo', 'manual_fabricante', 'pdf', '2_manual_bomba_grundfos.pdf', 3145728, '2023-12-10', 'tecnico_juan', 'bomba,mantenimiento,grundfos,procedimientos', false),
 
--- Reporte de mantenimiento
-(1, 1, 'Reporte Mantenimiento Preventivo Enero 2024', 'Inspección mensual realizada según programa de mantenimiento', 'reporte_mantenimiento', 'pdf', '1_reporte_enero_2024.pdf', 1048576, '2024-01-30', 'tecnico_maria', 'mantenimiento,preventivo,enero,inspeccion,caldera', false),
+-- Documentos para activo 3 (AC-1003 - Bomba Hidráulica 1)  
+(3, NULL, 'Ficha Técnica Bomba Hidráulica Wilo', 'Especificaciones técnicas bomba hidráulica Wilo', 'ficha_tecnica', 'pdf', '3_ficha_tecnica_bomba_wilo.pdf', 1800000, '2024-02-01', 'admin_sistema', 'bomba,wilo,hidraulica,ficha tecnica', true),
 
--- Certificación de seguridad
-(1, NULL, 'Certificación de Seguridad Industrial', 'Certificado de cumplimiento de normas de seguridad industrial', 'certificacion', 'pdf', '1_certificacion_seguridad.pdf', 815432, '2024-02-01', 'inspector_seguridad', 'certificacion,seguridad,industrial,normas,cumplimiento', false),
+-- Documentos para activo 4 (AC-1004 - Ascensor Norte)
+(4, NULL, 'Ficha Técnica Ascensor Norte', 'Especificaciones técnicas del ascensor', 'ficha_tecnica', 'pdf', '4_ficha_tecnica_ascensor.pdf', 2200000, '2024-01-20', 'admin_sistema', 'ascensor,ficha tecnica,especificaciones', true),
 
--- Documentos para bomba hidráulica (activo 2)
-(2, 3, 'Ficha Técnica Bomba Hidráulica Grundfos', 'Especificaciones técnicas bomba centrífuga 50HP', 'ficha_tecnica', 'pdf', '2_ficha_tecnica_bomba_grundfos.pdf', 1524288, '2023-12-10', 'admin_sistema', 'bomba,hidraulica,grundfos,ficha tecnica,50hp,centrifuga', true),
+-- Documentos para activo 5 (AC-1005 - Transformador Secundario)
+(5, NULL, 'Ficha Técnica Transformador Secundario ABB', 'Especificaciones técnicas transformador ABB', 'ficha_tecnica', 'pdf', '5_ficha_tecnica_transformador_abb.pdf', 1950000, '2024-01-25', 'admin_sistema', 'transformador,abb,ficha tecnica,secundario', true),
 
--- Diagnóstico de falla
-(2, 2, 'Diagnóstico de Vibración Excesiva', 'Análisis de causa raíz para vibración anormal en bomba', 'diagnostico', 'pdf', '2_diagnostico_vibracion.pdf', 2097152, '2024-02-15', 'tecnico_carlos', 'diagnostico,vibracion,bomba,analisis,causa raiz,falla', false);
+-- Documentos para activo 6 (AC-1006 - Transformador Principal)
+(6, NULL, 'Ficha Técnica Transformador Principal ABB', 'Especificaciones técnicas transformador principal ABB', 'ficha_tecnica', 'pdf', '6_ficha_tecnica_transformador_principal.pdf', 2100000, '2024-01-25', 'admin_sistema', 'transformador,abb,ficha tecnica,principal', true),
+
+-- Documentos para activo 7 (AC-1007 - Ascensor Central)
+(7, NULL, 'Ficha Técnica Ascensor Central Otis', 'Especificaciones técnicas ascensor Otis', 'ficha_tecnica', 'pdf', '7_ficha_tecnica_ascensor_otis.pdf', 2300000, '2024-01-30', 'admin_sistema', 'ascensor,otis,ficha tecnica,central', true),
+
+-- Documentos para activo 8 (AC-1008 - Bomba de Emergencia)
+(8, NULL, 'Ficha Técnica Bomba Emergencia Pedrollo', 'Especificaciones técnicas bomba de emergencia', 'ficha_tecnica', 'pdf', '8_ficha_tecnica_bomba_pedrollo.pdf', 1700000, '2024-02-05', 'admin_sistema', 'bomba,pedrollo,emergencia,ficha tecnica', true);
 
 -- Insertar algunos análisis de IA de ejemplo
 INSERT INTO analisis_ia (documento_id, resumen, puntos_claves, graficos_detectados, estado) VALUES 

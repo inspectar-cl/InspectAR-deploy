@@ -29,13 +29,13 @@ const DocumentosAsociados = () => {
 
       <Button variant="contained">Guardar Documento</Button>
 
-      <Box sx={{ mt: 3, border: "1px solid #ccc", borderRadius: 2, p: 2 }}>
+      {/*<Box sx={{ mt: 3, border: "1px solid #ccc", borderRadius: 2, p: 2 }}>
         <Typography variant="subtitle1">Documentos Cargados</Typography>
         <ul>
           <li>Informe de Mantención - Ascensor - 01/07/2025</li>
           <li>Ficha Técnica - Caldera - 15/06/2025</li>
         </ul>
-      </Box>
+      </Box>*/}
       <Box sx={{ mt:3 }}>
         <DataGrid
             autoHeight

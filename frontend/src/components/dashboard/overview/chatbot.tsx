@@ -14,7 +14,7 @@ type Message = {
   respuesta: string;
 };
 
-export function ChatBotCard ({ id }: { id: string | null}) {
+export function ChatBotCard ({ id }: { id: string | Number | null}) {
   const [open, setOpen] = React.useState(false);
   const [inputR, setInput] = React.useState('');
   const [loading, setLoading] = React.useState(false);
@@ -27,7 +27,7 @@ export function ChatBotCard ({ id }: { id: string | null}) {
     if (!inputR.trim()) return;
 
     setLoading(true);
-    const API_URL = `/documentos/${id}/consultar`;
+    const API_URL = `/documentacion/documentos/${id}/consultar`;
 
     try {
       const response = await gs.post(API_URL, { pregunta: inputR });

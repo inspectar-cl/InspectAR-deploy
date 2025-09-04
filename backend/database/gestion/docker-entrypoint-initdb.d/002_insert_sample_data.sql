@@ -1,15 +1,6 @@
 -- Datos de ejemplo para testing
 -- Archivo: 002_insert_sample_data.sql
 
--- Insertar edificios de ejemplo
-INSERT INTO edificios (nombre, direccion) VALUES
-('Edificio Central', 'Av. Principal 123'),
-('Edificio Norte', 'Calle Secundaria 456'),
-('Edificio Sur', 'Av. Industrial 789');
-
--- Insertar datos de muestra para el microservicio de gestión
--- Archivo: 002_insert_sample_data.sql
-
 -- Insertar empresas de mantención
 INSERT INTO empresas (nombre, rut, telefono, email, direccion) VALUES
 ('Mantención Integral SpA', '12345678-9', '+56912345678', 'contacto@mantencion.cl', 'Av. Providencia 1234, Santiago'),

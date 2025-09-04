@@ -187,4 +187,6 @@ COMMENT ON TABLE solicitudes_tecnico IS 'Solicitudes de trabajo enviadas a técn
 COMMENT ON TABLE archivos_solicitud IS 'Archivos adjuntos a solicitudes técnicas';
 COMMENT ON TABLE activos_tecnicos_autorizados IS 'Técnicos autorizados para trabajar en activos específicos';
 
--- Comentarios sobre las tablas creadas
+-- Migración para actualizar tipos de activos existentes y agregar restricción CHECK
+ALTER TABLE activos ADD CONSTRAINT activos_tipo_check 
+CHECK (tipo IN ('caldera', 'bomba de agua', 'ascensor', 'transformador'));

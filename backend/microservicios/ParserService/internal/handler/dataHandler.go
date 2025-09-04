@@ -267,3 +267,40 @@ func (h *DataHandler) GetActivoWithSensorStatus(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
+
+// POST /activo/:activo_id/sensores - Agregar sensor a un activo existente
+func (h *DataHandler) AddSensorToActivo(c *gin.Context) {
+	activoID := c.Param("activo_id")
+
+	var sensor models.Sensor
+	if err := c.ShouldBindJSON(&sensor); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos del sensor inválidos"})
+		return
+	}
+
+	// Validar campos requeridos
+	if sensor.SensorID == "" || sensor.Tipo == "" || sensor.Unidad == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Los campos sensor_id, tipo y unidad son requeridos"})
+		return
+	}
+
+	// Validar que el activo existe
+	_, err := h.activoService.ObtenerActivo(c.Request.Context(), activoID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Activo no encontrado"})
+		return
+	}
+
+	// Agregar el sensor al activo
+	err = h.activoService.AgregarSensor(c.Request.Context(), activoID, sensor)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo agregar el sensor al activo"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"mensaje":   "Sensor agregado correctamente al activo",
+		"activo_id": activoID,
+		"sensor":    sensor,
+	})
+}

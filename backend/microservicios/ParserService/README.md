@@ -70,6 +70,47 @@ El endpoint `GET /activo/:activo_id/sensores/estado` retorna:
 - **`disconnected`**: Sensor que envió datos pero está inactivo (>5 min sin datos)
 - **`never_connected`**: Sensor registrado pero nunca ha enviado datos
 
+## 🔧 Agregar Sensores a Activos Existentes
+
+### Endpoint: `POST /activo/:activo_id/sensores`
+
+Permite agregar nuevos sensores a un activo ya registrado en el sistema.
+
+#### Ejemplo de Request:
+```bash
+curl -X POST http://localhost:8090/activo/AC-1001/sensores \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sensor_id": "TEMP_001",
+    "tipo": "temperatura",
+    "unidad": "°C"
+  }'
+```
+
+#### Ejemplo de Response:
+```json
+{
+  "mensaje": "Sensor agregado correctamente al activo",
+  "activo_id": "AC-1001",
+  "sensor": {
+    "sensor_id": "TEMP_001",
+    "tipo": "temperatura",
+    "unidad": "°C"
+  }
+}
+```
+
+#### Validaciones:
+- ✅ El activo debe existir (404 si no existe)
+- ✅ Campos requeridos: `sensor_id`, `tipo`, `unidad` (400 si faltan)
+- ✅ Formato JSON válido (400 si es inválido)
+
+#### Códigos de Respuesta:
+- **200**: Sensor agregado exitosamente
+- **400**: Datos inválidos o campos faltantes
+- **404**: Activo no encontrado
+- **500**: Error interno del servidor
+
 ## �🚀 Endpoints Disponibles
 
 ### Gestión de Activos
@@ -78,6 +119,7 @@ POST /activo - Crear nuevo activo
 GET /activo - Listar todos los activos
 GET /activo/:activo_id - Obtener activo específico
 GET /activo/:activo_id/sensores/estado - 🆕 Obtener activo con estado de sensores
+POST /activo/:activo_id/sensores - 🆕 Agregar sensor a activo existente
 PUT /activo/:activo_id/estado - Actualizar estado del activo
 ```
 
@@ -159,6 +201,18 @@ Este test verifica:
 - Resumen de estadísticas por activo
 - Validación de estructura de respuesta
 
+### 🔧 Test de Agregar Sensores a Activos
+```bash
+cd tests
+./test_add_sensor_to_activo.sh
+```
+
+Este test verifica:
+- Agregar sensores a activos existentes
+- Validaciones de campos requeridos
+- Manejo de errores (activo inexistente, datos inválidos)
+- Verificación de la integridad de los datos agregados
+
 ## 📦 Dependencias Principales
 
 - **MongoDB**: Estado persistente de sensores
@@ -187,6 +241,30 @@ curl http://localhost:8090/activo/CALDERA_001/sensores/estado
 # - Resumen consolidado de estados
 ```
 
+### Agregar sensores a activos existentes
+```bash
+# Agregar sensor de temperatura
+curl -X POST http://localhost:8090/activo/AC-1001/sensores \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sensor_id": "TEMP_001",
+    "tipo": "temperatura",
+    "unidad": "°C"
+  }'
+
+# Agregar sensor de presión
+curl -X POST http://localhost:8090/activo/AC-1001/sensores \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sensor_id": "PRESS_001", 
+    "tipo": "presion",
+    "unidad": "bar"
+  }'
+
+# Verificar que los sensores se agregaron
+curl http://localhost:8090/activo/AC-1001
+```
+
 ### Flujo típico de monitoreo
 ```bash
 # 1. Consultar todos los activos
@@ -195,9 +273,14 @@ curl http://localhost:8090/activo
 # 2. Ver estado de sensores de un activo específico  
 curl http://localhost:8090/activo/ACTIVO_ID/sensores/estado
 
-# 3. Ver estadísticas globales de sensores
+# 3. Agregar sensor nuevo a un activo
+curl -X POST http://localhost:8090/activo/ACTIVO_ID/sensores \
+  -H "Content-Type: application/json" \
+  -d '{"sensor_id":"NUEVO_001","tipo":"humedad","unidad":"%"}'
+
+# 4. Ver estadísticas globales de sensores
 curl http://localhost:8090/api/sensors/stats
 
-# 4. Forzar verificación de desconexiones
+# 5. Forzar verificación de desconexiones
 curl -X POST http://localhost:8090/api/sensors/check-disconnected
 ```

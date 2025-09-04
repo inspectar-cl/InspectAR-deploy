@@ -128,12 +128,12 @@ func (s *ConsultaService) ConsultarConIA(documentoID int, pregunta string, docum
 // consultarConGemini realiza una consulta real con Gemini
 func (s *ConsultaService) consultarConGemini(documentoID int, pregunta string, documento *models.Documento) (string, float64, []string, error) {
 	log.Printf("🤖 Iniciando consulta con Gemini para documento %d: %s", documentoID, pregunta)
-	
+
 	// Para PDFs, usar Gemini File API directamente
 	if documento.TipoArchivo == "pdf" {
 		return s.consultarPDFConGemini(documentoID, pregunta, documento)
 	}
-	
+
 	// Para otros tipos de archivo, usar método de texto
 	return s.consultarTextoConGemini(documentoID, pregunta, documento)
 }
@@ -141,7 +141,7 @@ func (s *ConsultaService) consultarConGemini(documentoID int, pregunta string, d
 // consultarPDFConGemini procesa PDFs usando Gemini File API
 func (s *ConsultaService) consultarPDFConGemini(documentoID int, pregunta string, documento *models.Documento) (string, float64, []string, error) {
 	log.Printf("📄 Procesando PDF con Gemini File API...")
-	
+
 	// Obtener archivo del storage
 	file, err := s.storageService.GetFile(documento.RutaArchivo)
 	if err != nil {
@@ -162,7 +162,7 @@ func (s *ConsultaService) consultarPDFConGemini(documentoID int, pregunta string
 	// Subir archivo a Gemini File API
 	ctx := context.Background()
 	uploadResp, err := s.geminiClient.UploadFile(ctx, "", bytes.NewReader(contenidoPDF), &genai.UploadFileOptions{
-		MIMEType: "application/pdf",
+		MIMEType:    "application/pdf",
 		DisplayName: documento.Nombre,
 	})
 	if err != nil {
@@ -174,9 +174,9 @@ func (s *ConsultaService) consultarPDFConGemini(documentoID int, pregunta string
 
 	// Crear prompt para análisis del PDF
 	prompt := s.crearPromptParaPDF(pregunta, documento)
-	
+
 	// Consultar con Gemini usando el archivo subido
-	resp, err := s.geminiModel.GenerateContent(ctx, 
+	resp, err := s.geminiModel.GenerateContent(ctx,
 		genai.FileData{URI: uploadResp.URI},
 		genai.Text(prompt),
 	)
@@ -229,7 +229,7 @@ func (s *ConsultaService) consultarTextoConGemini(documentoID int, pregunta stri
 
 	// Convertir a texto y limpiar caracteres no UTF-8
 	contenidoTexto := s.limpiarTextoUTF8(string(contenido))
-	
+
 	// Limitar contenido para no exceder límites de la API
 	if len(contenidoTexto) > 2000 {
 		contenidoTexto = contenidoTexto[:2000] + "..."
@@ -294,7 +294,7 @@ FUENTES: ["sección1", "página X", "tabla Y", "diagrama Z"]
 
 Analiza el documento y responde:
 `, documento.Nombre, documento.Categoria, documento.Descripcion, documento.PalabrasClave, pregunta)
-}// crearPromptConsulta crea un prompt específico para consultas sobre documentos
+} // crearPromptConsulta crea un prompt específico para consultas sobre documentos
 func (s *ConsultaService) crearPromptConsulta(pregunta string, documento *models.Documento, contenido string) string {
 	return fmt.Sprintf(`
 Eres un asistente técnico especializado en documentación industrial. 

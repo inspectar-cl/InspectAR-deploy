@@ -27,23 +27,10 @@ dayjs.extend(relativeTime);
 
 import { useNotifications } from '@/contexts/notifications';
 
-type SensorStatus = 'active' | 'inactive';
+type SensorStatus = 'connected' | 'disconnected' | 'never_connected';
 
-export interface SensorSample {
-  ts: Date;
-  value: number;
-  unit: string;
-}
-
-export interface SensorRow {
-  id: string;
-  name: string;       // "Sensor Caudal 1"
-  type: string;       // "caudal / presión / temp"
-  unit: string;       // "L/s", "bar", "°C"
-  lastValue: number;  // último valor recibido
-  lastSeen: Date;     // timestamp último envío
-  history24h?: SensorSample[];
-}
+import { useState, useEffect, useCallback } from 'react';
+import { SensorRow, SensorSample } from '@/hooks/useActivosWithSensors';
 
 export interface LatestSensorsProps {
   assetName: string;
@@ -54,7 +41,7 @@ export interface LatestSensorsProps {
 
 function computeStatus(lastSeen: Date): SensorStatus {
   const minutes = dayjs().diff(dayjs(lastSeen), 'minute');
-  return minutes > 5 ? 'inactive' : 'active';
+  return minutes > 5 ? 'disconnected' : 'connected';
 }
 
 export function LatestSensors({ assetName, imageUrl, sensors = [], sx }: LatestSensorsProps): React.JSX.Element {
@@ -64,23 +51,23 @@ export function LatestSensors({ assetName, imageUrl, sensors = [], sx }: LatestS
   // Notificaciones y memoria de estado por sensor
   const { push, getSensorStatus, setSensorStatus } = useNotifications();
 
-  // Detectar transiciones y disparar notis SOLO en el cambio de test
+  // Detectar transiciones y disparar notis SOLO en el cambio de estado
   React.useEffect(() => {
     sensors.forEach((s) => {
-      const prev = getSensorStatus(s.id);                  // 'active' | 'inactive' | undefined
-      const now: SensorStatus = computeStatus(s.lastSeen); // estado actual
+      const prev = getSensorStatus(s.id);                  // 'connected' | 'disconnected' | 'never_connected' | undefined
+      const now: SensorStatus = s.status; // Usar el estado que viene del backend
 
       if (prev && prev !== now) {
-        if (prev === 'active' && now === 'inactive') {
+        if (prev === 'connected' && now === 'disconnected') {
           push({
-            title: `${assetName}: ${s.name} inactivo`,
+            title: `${assetName}: ${s.name} desconectado`,
             body: `Sin transmisión desde ${dayjs(s.lastSeen).fromNow()} (ID: ${s.id})`,
             severity: 'warning',
             meta: { sensorId: s.id, assetName, type: s.type },
           });
-        } else if (prev === 'inactive' && now === 'active') {
+        } else if (prev === 'disconnected' && now === 'connected') {
           push({
-            title: `${assetName}: ${s.name} volvió a activo`,
+            title: `${assetName}: ${s.name} reconectado`,
             body: `Último envío ${dayjs(s.lastSeen).fromNow()} (ID: ${s.id})`,
             severity: 'success',
             meta: { sensorId: s.id, assetName, type: s.type },
@@ -124,7 +111,7 @@ export function LatestSensors({ assetName, imageUrl, sensors = [], sx }: LatestS
     }
   };
 
-  const inactiveSensors = sensors.filter(s => computeStatus(s.lastSeen) === 'inactive');
+  const inactiveSensors = sensors.filter(s => s.status === 'disconnected');
 
   return (
     <Card sx={sx}>
@@ -147,8 +134,8 @@ export function LatestSensors({ assetName, imageUrl, sensors = [], sx }: LatestS
           <Box sx={{ px: 2, pt: 2 }}>
             <Alert severity="warning">
               {inactiveSensors.length === 1
-                ? `1 sensor inactivo: ${inactiveSensors[0].name} (ID ${inactiveSensors[0].id})`
-                : `${inactiveSensors.length} sensores inactivos`}
+                ? `1 sensor desconectado: ${inactiveSensors[0].name} (ID ${inactiveSensors[0].id})`
+                : `${inactiveSensors.length} sensores desconectados`}
             </Alert>
           </Box>
           <Divider sx={{ mt: 2 }} />
@@ -169,9 +156,10 @@ export function LatestSensors({ assetName, imageUrl, sensors = [], sx }: LatestS
           </TableHead>
           <TableBody>
             {paginatedSensors.map((s) => {
-              const status = computeStatus(s.lastSeen);
-              const color = status === 'active' ? 'success' : 'error';
-              const label = status === 'active' ? 'Activo' : 'Inactivo';
+              const status = s.status; // Usar el estado del backend
+              const color = status === 'connected' ? 'success' : 'error';
+              const label = status === 'connected' ? 'Conectado' : 
+                           status === 'disconnected' ? 'Desconectado' : 'Nunca conectado';
 
               return (
                 <TableRow

@@ -21,8 +21,8 @@ export type NotificationsContextType = {
     remove: (id: string) => void;
     clear: () => void;
 // Registro de estado conocido por sensor para detectar transiciones
-    getSensorStatus: (sensorId: string) => 'active'|'inactive'|undefined;
-    setSensorStatus: (sensorId: string, status: 'active'|'inactive') => void;
+    getSensorStatus: (sensorId: string) => 'connected'|'disconnected'|'never_connected'|undefined;
+    setSensorStatus: (sensorId: string, status: 'connected'|'disconnected'|'never_connected') => void;
 };
 
 
@@ -36,7 +36,7 @@ function uid() {
 
 export function NotificationsProvider({ children }: { children: React.ReactNode }) {
     const [notifications, setNotifications] = React.useState<Notification[]>([]);
-    const sensorStatusRef = React.useRef<Map<string, 'active'|'inactive'>>(new Map());
+    const sensorStatusRef = React.useRef<Map<string, 'connected'|'disconnected'|'never_connected'>>(new Map());
     const push: NotificationsContextType['push'] = React.useCallback((n) => {
         setNotifications((prev) => [
             { id: n.id ?? uid(), ts: n.ts ?? new Date(), read: n.read ?? false, severity: 'warning', ...n },
@@ -65,7 +65,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     }, []);
 
 
-    const setSensorStatus = React.useCallback((sensorId: string, status: 'active'|'inactive') => {
+    const setSensorStatus = React.useCallback((sensorId: string, status: 'connected'|'disconnected'|'never_connected') => {
         sensorStatusRef.current.set(sensorId, status);
     }, []);
 

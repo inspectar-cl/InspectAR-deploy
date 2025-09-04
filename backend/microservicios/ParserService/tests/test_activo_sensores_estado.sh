@@ -87,7 +87,7 @@ echo "--------------------------------------------------------"
 
 # Test 1: Crear un activo de prueba
 ACTIVO_TEST='{
-    "activo_id": "TEST_SENSOR_STATUS_001",
+    "activo_id": "AC-1001",
     "nombre": "Caldera de Prueba - Estado Sensores",
     "ubicacion": "Planta Test",
     "estado": "activo",

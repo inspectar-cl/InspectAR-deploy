@@ -59,6 +59,7 @@ services:
       - POSTGRES_USER=gestion_user
       - POSTGRES_PASSWORD=gestion_pass
       - POSTGRES_DB=gestion_db
+    restart: on-failure
 
   # Base de datos PostgreSQL para notificaciones
   notification-db:

@@ -42,7 +42,7 @@ export default function ActivoDetailClient({ id }: { id: string}) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await gs.get(`parser/lectura/${id}/datos`);
+        const response = await gs.get(`/parser/lectura/${id}/datos`);
         console.log("response", response)
 
         // Aqui deberian de cargarse la data de los activos (Ojala desde una llamada a API)
@@ -60,7 +60,8 @@ export default function ActivoDetailClient({ id }: { id: string}) {
         setSensores(response.sensores ?? []);
         
         // Aqui hago llamado a API para obtener id de documento del activo
-        const docResponse = await gs.get(`/documentos/activo/${id}`);
+        //const docResponse = await gs.get(`/documentacion/documentos/activo/${id}`);
+        const docResponse = await gs.get(`/documentacion/documentos/activo/1`);
         console.log("doc Response: ", docResponse)
         setDocumentId(docResponse.documento_id ?? 'none00'); //none00 como id vacia
       } catch (err) {
@@ -153,7 +154,7 @@ export default function ActivoDetailClient({ id }: { id: string}) {
                   variant="outlined"
                   startIcon={<DownloadSimple size={18} />}
                   component="a"
-                  href="/archivos/ficha_tecnica_bomba.pdf"
+                  href="/documentos/ficha_tecnica_bomba.pdf"
                   download="ficha_tecnica_bomba.pdf"
                   target="_blank"
                   rel="noopener"
@@ -215,7 +216,7 @@ export default function ActivoDetailClient({ id }: { id: string}) {
           />
         </Grid>
         <Grid size={{md:4, xs:12}}>
-          <ChatBotCard id={documentId}/>
+          <ChatBotCard id={/*documentId*/ 1}/>
         </Grid>
       </Grid>
     </Box>

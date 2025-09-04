@@ -17,6 +17,10 @@ interface Props {
   especialidades: string[];
 }
 
+import { useEffect, useState } from 'react';
+import Services from '@/modules/Services'
+const gs = new Services()
+
 export function ContactosClient({ contactos, especialidades }: Props) {
   const [filter, setFilter] = React.useState({ search: '', especialidad: null as string | null });
   const [page, setPage] = React.useState(0);
@@ -43,27 +47,48 @@ export function ContactosClient({ contactos, especialidades }: Props) {
     if (resetPage) setPage(0);
   };
 
-  const handleSendRequest = (selectedRows: Contacto[]) => {
+  const handleSendRequest = async (selectedRows: Contacto[]) => {
     console.log('Contactos seleccionados para enviar solicitud:', selectedRows);
-    // Aqui llamar a la API para enviar notificacion a los contactos seleccionados
+    
+    try {
+      // Enviar notificación a cada contacto seleccionado
+      const promises = selectedRows.map(async (contacto) => {
+        const payload = {
+          activo_id: 1, // Valor temporal como int
+          message: "Solicitud de contacto técnico enviada exitosamente",
+          priority: "high", // Valor temporal
+          technician_email: contacto.email,
+          user_email: "admin@inspectar.cl", // Valor temporal
+          user_name: "Admin InspectAR" // Valor temporal
+        };
+        
+        console.log(`Enviando notificación a ${contacto.email}:`, payload);
+        return await gs.post("/notificacion/technician/contact", payload);
+      });
 
-    //Realizar esta alerta si sale bien el envio por la API
-    setAlertState({
-      open: true,
-      title: '¡Éxito!',
-      message: `Se ha enviado la solicitud a ${selectedRows.length} contacto(s).`,
-      severity: 'success',
-    });
+      // Esperar a que todas las llamadas se completen
+      const results = await Promise.all(promises);
+      console.log('Resultados de envío:', results);
 
-    // Realizar esta alerta si sale mal el envio por API (descomentar)
-    {/*
-    setAlertState({
-      open: true,
-      title: '¡Ups!',
-      message: `Hubo un problema enviando de solicitud(es).`,
-      severity: 'error',
-    });
-    */}
+      // Realizar esta alerta si sale bien el envio por la API
+      setAlertState({
+        open: true,
+        title: '¡Éxito!',
+        message: `Se ha enviado la solicitud a ${selectedRows.length} contacto(s).`,
+        severity: 'success',
+      });
+
+    } catch (error) {
+      console.error('Error al enviar notificaciones:', error);
+      
+      // Realizar esta alerta si sale mal el envio por API
+      setAlertState({
+        open: true,
+        title: '¡Ups!',
+        message: `Hubo un problema enviando las solicitud(es).`,
+        severity: 'error',
+      });
+    }
     
     setTimeout(() => {
       setAlertState(prev => ({ ...prev, open: false }));
@@ -110,11 +135,11 @@ export function ContactosClient({ contactos, especialidades }: Props) {
             */ }
           </Stack>
         </Stack>
-        <div>
+        {/* <div>
           <Button startIcon={<PlusIcon fontSize="var(--icon-fontSize-md)" />} variant="contained">
             Añadir
           </Button>
-        </div>
+        </div> */}
       </Stack>
       <ContactosFilters onFilterChange={handleFilterChange} especialidades={especialidades} />
       <ContactosTable

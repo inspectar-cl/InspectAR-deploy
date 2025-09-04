@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS activos (
     id SERIAL PRIMARY KEY,
     activo_id VARCHAR(100) UNIQUE NOT NULL,
     nombre VARCHAR(255) NOT NULL,
-    tipo VARCHAR(100) NOT NULL,
+    tipo VARCHAR(100) NOT NULL CHECK (tipo IN ('caldera', 'bomba de agua', 'ascensor', 'transformador')),
     estado VARCHAR(50) DEFAULT 'operativo',
     ubicacion VARCHAR(255),
     edificio_id INTEGER REFERENCES edificios(id) ON DELETE SET NULL,
@@ -186,3 +186,17 @@ COMMENT ON TABLE empresas IS 'Empresas de mantención que emplean técnicos';
 COMMENT ON TABLE solicitudes_tecnico IS 'Solicitudes de trabajo enviadas a técnicos especializados (HdU16)';
 COMMENT ON TABLE archivos_solicitud IS 'Archivos adjuntos a solicitudes técnicas';
 COMMENT ON TABLE activos_tecnicos_autorizados IS 'Técnicos autorizados para trabajar en activos específicos';
+
+-- Migración para actualizar tipos de activos existentes y agregar restricción CHECK
+DO $$ 
+BEGIN
+    -- Agregar restricción CHECK para tipos de activos si no existe
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.check_constraints 
+        WHERE constraint_name = 'activos_tipo_check' 
+        AND table_name = 'activos'
+    ) THEN
+        ALTER TABLE activos ADD CONSTRAINT activos_tipo_check 
+        CHECK (tipo IN ('caldera', 'bomba de agua', 'ascensor', 'transformador'));
+    END IF;
+END $$;

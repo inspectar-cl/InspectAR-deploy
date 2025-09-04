@@ -11,12 +11,12 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 - Testing completo exitoso en todas las rutas
 
 **📊 Estadísticas de Implementación:**
-- **26 rutas totales** configuradas
-- **25 rutas funcionando** (96% operativas)
+- **30 rutas totales** configuradas
+- **29 rutas funcionando** (96.7% operativas)
 - **1 ruta con issue DB** (reporte PDF)
 - **0 rutas pendientes** de implementación
 
-**🚀 Última Actualización:** 31 de Agosto 2025 - Sistema de Solicitudes HdU16 completado
+**🚀 Última Actualización:** 3 de Septiembre 2025 - Rutas de Activos agregadas
 
 ## Funcionalidades
 
@@ -101,12 +101,21 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 | `GET` | `/api/v1/tecnicos/activo/{activo_id}` | Técnicos por activo (API v1) | ✅ Funcionando |
 | `GET` | `/api/v1/tecnicos/especialidades` | Lista de especialidades | ✅ Funcionando |
 
+### 🏗️ Rutas de Activos - 🆕 NUEVAS RUTAS AGREGADAS
+
+| Método | Endpoint | Descripción | Estado |
+|--------|----------|-------------|---------|
+| `GET` | `/activos` | Obtener todos los activos | ✅ **IMPLEMENTADO** |
+| `GET` | `/activos/{id}` | Obtener activo específico por ID | ✅ **IMPLEMENTADO** |
+| `GET` | `/activos/edificio/{edificio_id}` | 🎯 **Filtrar activos por edificio** | ✅ **IMPLEMENTADO** |
+| `GET` | `/activos/tipo/{tipo}` | 🎯 **Filtrar activos por tipo** | ✅ **IMPLEMENTADO** |
+
 ### 🎯 Resumen de Estado
 
-- **✅ Funcionando**: 25 rutas operativas (100% IMPLEMENTADAS)
+- **✅ Funcionando**: 29 rutas operativas (100% IMPLEMENTADAS)
 - **🔧 No implementado**: 0 rutas pendientes  
 - **⚠️ Issue DB**: 1 ruta con problema de schema
-- **Total**: 26 rutas configuradas
+- **Total**: 30 rutas configuradas
 
 ### ⚡ Tests Rápidos
 
@@ -123,10 +132,17 @@ curl http://localhost:8092/api/v1/tecnicos/edificio/1
 # Activos de un técnico (RUTA PRINCIPAL)
 curl http://localhost:8092/activos-de-tecnico/1
 
+# 🆕 NUEVAS RUTAS DE ACTIVOS
+curl http://localhost:8092/activos
+curl http://localhost:8092/activos/1
+curl http://localhost:8092/activos/edificio/1
+curl "http://localhost:8092/activos/tipo/bomba%20de%20agua"
+curl http://localhost:8092/activos/tipo/caldera
+
 # Acciones pendientes
 curl http://localhost:8092/acciones/pendientes
 
-# 🎉 NUEVAS RUTAS DE SOLICITUDES IMPLEMENTADAS
+# 🎉 RUTAS DE SOLICITUDES IMPLEMENTADAS
 curl http://localhost:8092/api/v1/solicitudes
 curl -X POST http://localhost:8092/api/v1/solicitudes -H "Content-Type: application/json" -d '{"tipo":"mantenimiento","asunto":"Test"}'
 curl http://localhost:8092/api/v1/solicitudes/123
@@ -600,6 +616,142 @@ curl -X GET http://localhost:8092/reportes/activo/1
   }
 ]
 ```
+
+---
+
+### 🏗️ Activos - 🆕 NUEVAS RUTAS IMPLEMENTADAS
+
+#### Obtener todos los activos
+```bash
+curl -X GET http://localhost:8092/activos
+```
+**Respuesta:**
+```json
+{
+  "activos": [
+    {
+      "id": 1,
+      "activo_id": "AC-1001",
+      "nombre": "Caldera Principal",
+      "tipo": "caldera",
+      "estado": "operativo",
+      "ubicacion": "Sala de Calderas 1",
+      "edificio_id": 1,
+      "creado_en": "2025-09-03T20:06:09Z"
+    }
+  ],
+  "total": 8
+}
+```
+
+#### 🎯 **NUEVA RUTA: Obtener activos por edificio**
+```bash
+curl -X GET http://localhost:8092/activos/edificio/1
+```
+**Respuesta:**
+```json
+{
+  "edificio_id": 1,
+  "activos": [
+    {
+      "id": 1,
+      "activo_id": "AC-1001",
+      "nombre": "Caldera Principal",
+      "tipo": "caldera",
+      "estado": "operativo",
+      "ubicacion": "Sala de Calderas 1",
+      "edificio_id": 1,
+      "creado_en": "2025-09-03T20:06:09Z"
+    },
+    {
+      "id": 2,
+      "activo_id": "AC-1002",
+      "nombre": "Bomba Centrífuga A",
+      "tipo": "bomba de agua",
+      "estado": "operativo",
+      "ubicacion": "Sala de Bombas",
+      "edificio_id": 1,
+      "creado_en": "2025-09-03T20:06:09Z"
+    }
+  ],
+  "total": 3
+}
+```
+
+#### 🎯 **NUEVA RUTA: Obtener activos por tipo**
+```bash
+# Tipos válidos: caldera, bomba de agua, ascensor, transformador
+curl -X GET "http://localhost:8092/activos/tipo/bomba%20de%20agua"
+```
+**Respuesta:**
+```json
+{
+  "tipo": "bomba de agua",
+  "activos": [
+    {
+      "id": 2,
+      "activo_id": "AC-1002",
+      "nombre": "Bomba Centrífuga A",
+      "tipo": "bomba de agua",
+      "estado": "operativo",
+      "ubicacion": "Sala de Bombas",
+      "edificio_id": 1,
+      "creado_en": "2025-09-03T20:06:09Z"
+    },
+    {
+      "id": 3,
+      "activo_id": "AC-1003",
+      "nombre": "Bomba Hidráulica 1",
+      "tipo": "bomba de agua",
+      "estado": "operativo",
+      "ubicacion": "Sala de Bombas",
+      "edificio_id": 2,
+      "creado_en": "2025-09-03T20:06:09Z"
+    }
+  ],
+  "total": 3
+}
+```
+
+#### Obtener activo específico por ID
+```bash
+curl -X GET http://localhost:8092/activos/1
+```
+**Respuesta:**
+```json
+{
+  "id": 1,
+  "activo_id": "AC-1001",
+  "nombre": "Caldera Principal",
+  "tipo": "caldera",
+  "estado": "operativo",
+  "ubicacion": "Sala de Calderas 1",
+  "edificio_id": 1,
+  "creado_en": "2025-09-03T20:06:09Z"
+}
+```
+
+#### Validación de tipos de activos
+```bash
+# Error con tipo inválido
+curl -X GET http://localhost:8092/activos/tipo/motor
+```
+**Respuesta:**
+```json
+{
+  "error": "Tipo de activo inválido",
+  "tipo_recibido": "motor",
+  "tipos_validos": [
+    "caldera",
+    "bomba de agua",
+    "ascensor",
+    "transformador"
+  ],
+  "details": "tipo de activo inválido: motor. Tipos permitidos: [caldera bomba de agua ascensor transformador]"
+}
+```
+
+---
 
 ## Estructura de Base de Datos
 

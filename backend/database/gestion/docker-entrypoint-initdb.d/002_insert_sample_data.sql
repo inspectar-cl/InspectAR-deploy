@@ -37,16 +37,16 @@ INSERT INTO tecnicos (nombre, apellido, email, telefono, especialidad, empresa_i
 ('Carmen', 'Rojas', 'carmen.rojas@servicios.cl', '+56999988877', 'Seguridad Industrial', 2, true, true)
 ON CONFLICT (email) DO NOTHING;
 
--- Insertar activos industriales
+-- Insertar activos industriales (solo tipos permitidos: caldera, bomba de agua, ascensor, transformador)
 INSERT INTO activos (activo_id, nombre, tipo, estado, ubicacion, edificio_id) VALUES
-('AC-1001', 'Caldera Principal', 'Caldera', 'operativo', 'Sala de Calderas 1', 1),
-('AC-1002', 'Bomba Centrífuga A', 'Bomba', 'operativo', 'Sala de Bombas', 1),
-('AC-1003', 'Bomba Hidráulica 1', 'Bomba', 'operativo', 'Sala de Bombas', 2),
-('AC-1004', 'Sistema HVAC Norte', 'HVAC', 'operativo', 'Azotea Torre Norte', 2),
-('AC-1005', 'Compresor Industrial', 'Compresor', 'mantenimiento', 'Planta Industrial', 3),
-('AC-1006', 'Transformador Principal', 'Transformador', 'operativo', 'Subestación Eléctrica', 3),
-('AC-1007', 'Sistema de Control PLC', 'Control', 'operativo', 'Sala de Control', 4),
-('AC-1008', 'Bomba de Emergencia', 'Bomba', 'stand_by', 'Planta de Emergencia', 4)
+('AC-1001', 'Caldera Principal', 'caldera', 'operativo', 'Sala de Calderas 1', 1),
+('AC-1002', 'Bomba Centrífuga A', 'bomba de agua', 'operativo', 'Sala de Bombas', 1),
+('AC-1003', 'Bomba Hidráulica 1', 'bomba de agua', 'operativo', 'Sala de Bombas', 2),
+('AC-1004', 'Ascensor Norte', 'ascensor', 'operativo', 'Torre Norte - Piso 1', 2),
+('AC-1005', 'Transformador Secundario', 'transformador', 'mantenimiento', 'Subestación Secundaria', 3),
+('AC-1006', 'Transformador Principal', 'transformador', 'operativo', 'Subestación Eléctrica', 3),
+('AC-1007', 'Ascensor Central', 'ascensor', 'operativo', 'Edificio Central - Hall', 1),
+('AC-1008', 'Bomba de Emergencia', 'bomba de agua', 'stand_by', 'Planta de Emergencia', 4)
 ON CONFLICT (activo_id) DO NOTHING;
 
 -- Autorizar técnicos para activos específicos

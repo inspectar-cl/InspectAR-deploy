@@ -4,6 +4,32 @@ import (
 	"time"
 )
 
+// Tipos de activos permitidos
+const (
+	TipoCaldera       = "caldera"
+	TipoBombaAgua     = "bomba de agua"
+	TipoAscensor      = "ascensor"
+	TipoTransformador = "transformador"
+)
+
+// TiposActivosValidos contiene todos los tipos de activos permitidos
+var TiposActivosValidos = []string{
+	TipoCaldera,
+	TipoBombaAgua,
+	TipoAscensor,
+	TipoTransformador,
+}
+
+// ValidarTipoActivo verifica si un tipo de activo es válido
+func ValidarTipoActivo(tipo string) bool {
+	for _, tipoValido := range TiposActivosValidos {
+		if tipo == tipoValido {
+			return true
+		}
+	}
+	return false
+}
+
 // Empresa contratista
 type Empresa struct {
 	ID       int    `json:"id" db:"id"`

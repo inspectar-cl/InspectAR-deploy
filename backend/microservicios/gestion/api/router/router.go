@@ -13,6 +13,7 @@ import (
 func SetupRouter(
 	tecnicoHandler *handlers.TecnicoHandler,
 	accionHandler *handlers.AccionMantenimientoHandler,
+	activoHandler *handlers.ActivoHandler,
 	reporteHandler *handlers.ReporteHandler,
 	solicitudHandler *handlers.SolicitudHandler,
 ) *gin.Engine {
@@ -65,6 +66,12 @@ func SetupRouter(
 	r.GET("/tecnicos/:id", tecnicoHandler.ObtenerTecnico)
 	r.PUT("/tecnicos/:id/autorizado", tecnicoHandler.ActualizarAutorizado)
 	r.POST("/activos/:activo_id/tecnicos", tecnicoHandler.AsignarTecnicoAActivo) // Asignar técnico a activo
+
+	// 🎯 Rutas de activos - NUEVAS RUTAS AGREGADAS
+	r.GET("/activos", activoHandler.GetAllActivos)                              // Obtener todos los activos
+	r.GET("/activos/:id", activoHandler.GetActivoByID)                          // Obtener activo por ID
+	r.GET("/activos/edificio/:edificio_id", activoHandler.GetActivosByEdificio) // Filtrar activos por edificio
+	r.GET("/activos/tipo/:tipo", activoHandler.GetActivosByTipo)                // Filtrar activos por tipo
 
 	// Rutas de acciones de mantenimiento (HdU13 - Acciones de mantención colaborativas)
 	r.POST("/acciones", accionHandler.CrearAccion)

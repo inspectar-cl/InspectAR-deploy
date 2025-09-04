@@ -26,7 +26,7 @@ import Services from '@/modules/Services'
 const gs = new Services()
 
 const uris = {
-  GET: `/activo`
+  GET: `/parser/activo`
 }
 
 const columns: GridColDef<(typeof activos)[number]>[] = [

@@ -42,7 +42,7 @@ export default function ActivoDetailClient({ id }: { id: string}) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await gs.get(`/lectura/${id}/datos`);
+        const response = await gs.get(`parser/lectura/${id}/datos`);
         console.log("response", response)
 
         // Aqui deberian de cargarse la data de los activos (Ojala desde una llamada a API)
@@ -61,6 +61,7 @@ export default function ActivoDetailClient({ id }: { id: string}) {
         
         // Aqui hago llamado a API para obtener id de documento del activo
         const docResponse = await gs.get(`/documentos/activo/${id}`);
+        console.log("doc Response: ", docResponse)
         setDocumentId(docResponse.documento_id ?? 'none00'); //none00 como id vacia
       } catch (err) {
         console.error('Error al obtener el activo', err);

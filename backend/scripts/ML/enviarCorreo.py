@@ -1,29 +1,27 @@
-from email.mime.text import MIMEText
-import smtplib
-import datetime
+import requests
+
+API_URL = 'http://localhost:3500/api/notificacion/notification'
 
 def enviar_correo(activo):
-#Configuracion del correo
-    remitente = "inspectar2000@gmail.com"
-    contraseña = "kdgz xadt ebwt dsgv"
-    destinatario = "diego.morella20@gmail.com"
+    # JSON que espera la API
+    payload = {
+        "activo_id": 1
+    }
 
-    hora = datetime.datetime.now()
-
-    #Crear cuerpo del mensaje
-    cuerpo = f"Se ha detectado una anomalia critica en los sensores!.\nActivo afectado: {activo}\nHora alerta: {hora}\n "
-
-    mensaje = MIMEText(cuerpo)
-    mensaje["Subject"] = "🚨 Alerta de Anomalía Detectada - InspectAR"
-    mensaje["From"] = remitente
-    mensaje["To"] = destinatario
-
+    headers = {
+        "Content-Type": "application/json"
+    }
     #Enviar correo
+
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.starttls()
-            server.login(remitente, contraseña)
-            server.send_message(mensaje)
-            print("✅ Correo enviado con éxito a", destinatario)
-    except Exception as e:
-        print("❌ Error al enviar correo:", e)
+        response = requests.post(API_URL, json=payload, headers=headers)
+
+        if response.status_code == 200 or response.status_code == 201:
+            data = response.json()
+            print("✅ Notificación creada exitosamente")
+            print(data)
+        else:
+            print(f"❌ Error {response.status_code}: {response.text}")
+
+    except requests.exceptions.RequestException as e:
+        print("⚠️ Error en la conexión:", e)

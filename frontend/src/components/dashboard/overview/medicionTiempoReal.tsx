@@ -90,6 +90,7 @@ export function ScatterWithArgs({ sx, dataCaudal, dataPresion, dataTemp }: Props
               label="Rango de tiempo"
               onChange={(e) => setrangoMinutos(Number(e.target.value))}
             >
+              <MenuItem value={3}>Últimos 3 minutos</MenuItem>
               <MenuItem value={30}>Últimos 30 minutos</MenuItem>
               <MenuItem value={60}>Última hora</MenuItem>
               <MenuItem value={240}>Últimas 4 horas</MenuItem>

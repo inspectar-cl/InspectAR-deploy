@@ -37,6 +37,7 @@ def run_model(queue: Queue):
                     pred = modelo_sup.predict_one(x)
                     probas = modelo_sup.predict_proba_one(x)
                     print(f"🤖 Predicción sin etiqueta: {'Anómalo' if pred == 1 else 'Normal'} - Probabilidad: {probas.get(1, 0.0):.2f} | Datos: {x}")
+                    enviar_correo(activo_id)
                 else:
                     # Aprendizaje supervisado
                     y = 1 if etiqueta == "Anormal" else 0

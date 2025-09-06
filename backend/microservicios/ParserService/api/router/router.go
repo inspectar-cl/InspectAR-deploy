@@ -8,6 +8,10 @@ import (
 
 func SetupRouter(dataHandler *handlers.DataHandler, statusHandler *handlers.SensorStatusHandler) *gin.Engine {
 	r := gin.Default()
+	// Healthcheck simple
+	r.GET("/healthz", func(c *gin.Context) {
+		c.JSON(200, gin.H{"ok": true})
+	})
 
 	// r.Use(cors.New(cors.Config{
 	// 	AllowOrigins:     []string{"*"},

@@ -4,6 +4,17 @@ services:
     container_name: apigateway
     ports:
       - "3500:3500"
+    environment:
+      - GATEWAY_PORT=3500
+      - GESTION_URL=http://gestion-service:8092
+      - NOTIFICATION_URL=http://notification-service:8091
+      - PARSER_URL=http://iot-service:8090
+      - DOCUMENTATION_URL=http://documentacion-service:8093
+    depends_on:
+      - gestion-service
+      - notification-service
+      - documentacion-service
+      - iot-service
     # volumes:
     #   - ./apigateway:/app
   # Microservicio
@@ -18,7 +29,7 @@ services:
       - mongu
       - influxdb
     healthcheck:
-      test: ["CMD-SHELL", "netstat -an | grep :8090 | grep LISTEN || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:8090/healthz"]
       interval: 10s
       timeout: 5s
       retries: 3

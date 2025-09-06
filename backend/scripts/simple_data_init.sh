@@ -58,66 +58,58 @@ db.sensor_status.deleteMany({});
 print('📦 Insertando activos sincronizados...');
 db.activos.insertMany([
   {
-    activo_id: 'AC-1001',
+  activo_id: 1,
     nombre: 'Caldera Principal',
     estado: 'operativo',
-    ubicacion: 'Av. Providencia 123, Santiago',
     edificio_id: 1,
     tipo: 'caldera'
   },
   {
-    activo_id: 'AC-1002',
+  activo_id: 2,
     nombre: 'Bomba Centrífuga A',
     estado: 'operativo',
-    ubicacion: 'Av. Providencia 123, Santiago',
     edificio_id: 1,
     tipo: 'bomba'
   },
   {
-    activo_id: 'AC-1003',
+  activo_id: 3,
     nombre: 'Bomba Hidráulica 1',
     estado: 'operativo',
-    ubicacion: 'Av. Las Condes 456, Las Condes',
     edificio_id: 2,
     tipo: 'bomba'
   },
   {
-    activo_id: 'AC-1004',
+  activo_id: 4,
     nombre: 'Ascensor Norte',
     estado: 'operativo',
-    ubicacion: 'Av. Las Condes 456, Las Condes',
     edificio_id: 2,
     tipo: 'ascensor'
   },
   {
-    activo_id: 'AC-1005',
+  activo_id: 5,
     nombre: 'Transformador Secundario',
     estado: 'mantenimiento',
-    ubicacion: 'Av. Vicuña Mackenna 789, La Florida',
     edificio_id: 3,
     tipo: 'transformador'
   },
   {
-    activo_id: 'AC-1006',
+  activo_id: 6,
     nombre: 'Transformador Principal',
     estado: 'operativo',
-    ubicacion: 'Av. Vicuña Mackenna 789, La Florida',
     edificio_id: 3,
     tipo: 'transformador'
   },
   {
-    activo_id: 'AC-1007',
+  activo_id: 7,
     nombre: 'Ascensor Central',
     estado: 'operativo',
-    ubicacion: 'Av. Providencia 123, Santiago',
     edificio_id: 1,
     tipo: 'ascensor'
   },
   {
-    activo_id: 'AC-1008',
+  activo_id: 8,
     nombre: 'Bomba de Emergencia',
     estado: 'mantenimiento',
-    ubicacion: 'Ruta 68 Km 15, Melipilla',
     edificio_id: 4,
     tipo: 'bomba'
   }
@@ -125,43 +117,43 @@ db.activos.insertMany([
 
 print('🔧 Insertando sensores...');
 db.sensores.insertMany([
-  {sensor_id: 'SENSOR_AC1001_01', activo_id: 'AC-1001', tipo: 'temperatura', unidad: '°C'},
-  {sensor_id: 'SENSOR_AC1001_02', activo_id: 'AC-1001', tipo: 'presion', unidad: 'bar'},
-  {sensor_id: 'SENSOR_AC1002_01', activo_id: 'AC-1002', tipo: 'vibracion', unidad: 'mm/s'},
-  {sensor_id: 'SENSOR_AC1002_02', activo_id: 'AC-1002', tipo: 'caudal', unidad: 'L/min'},
-  {sensor_id: 'SENSOR_AC1003_01', activo_id: 'AC-1003', tipo: 'caudal', unidad: 'L/min'},
-  {sensor_id: 'SENSOR_AC1003_02', activo_id: 'AC-1003', tipo: 'presion', unidad: 'bar'},
-  {sensor_id: 'SENSOR_AC1004_01', activo_id: 'AC-1004', tipo: 'vibracion', unidad: 'mm/s'},
-  {sensor_id: 'SENSOR_AC1004_02', activo_id: 'AC-1004', tipo: 'voltaje', unidad: 'V'},
-  {sensor_id: 'SENSOR_AC1005_01', activo_id: 'AC-1005', tipo: 'voltaje', unidad: 'V'},
-  {sensor_id: 'SENSOR_AC1005_02', activo_id: 'AC-1005', tipo: 'temperatura', unidad: '°C'},
-  {sensor_id: 'SENSOR_AC1006_01', activo_id: 'AC-1006', tipo: 'voltaje', unidad: 'V'},
-  {sensor_id: 'SENSOR_AC1006_02', activo_id: 'AC-1006', tipo: 'temperatura', unidad: '°C'},
-  {sensor_id: 'SENSOR_AC1007_01', activo_id: 'AC-1007', tipo: 'vibracion', unidad: 'mm/s'},
-  {sensor_id: 'SENSOR_AC1007_02', activo_id: 'AC-1007', tipo: 'voltaje', unidad: 'V'},
-  {sensor_id: 'SENSOR_AC1008_01', activo_id: 'AC-1008', tipo: 'presion', unidad: 'bar'},
-  {sensor_id: 'SENSOR_AC1008_02', activo_id: 'AC-1008', tipo: 'caudal', unidad: 'L/min'}
+  {sensor_id: 'SENSOR_AC1001_01', activo_id: 1, tipo: 'temperatura', unidad: '°C'},
+  {sensor_id: 'SENSOR_AC1001_02', activo_id: 1, tipo: 'presion', unidad: 'bar'},
+  {sensor_id: 'SENSOR_AC1002_01', activo_id: 2, tipo: 'vibracion', unidad: 'mm/s'},
+  {sensor_id: 'SENSOR_AC1002_02', activo_id: 2, tipo: 'caudal', unidad: 'L/min'},
+  {sensor_id: 'SENSOR_AC1003_01', activo_id: 3, tipo: 'caudal', unidad: 'L/min'},
+  {sensor_id: 'SENSOR_AC1003_02', activo_id: 3, tipo: 'presion', unidad: 'bar'},
+  {sensor_id: 'SENSOR_AC1004_01', activo_id: 4, tipo: 'vibracion', unidad: 'mm/s'},
+  {sensor_id: 'SENSOR_AC1004_02', activo_id: 4, tipo: 'voltaje', unidad: 'V'},
+  {sensor_id: 'SENSOR_AC1005_01', activo_id: 5, tipo: 'voltaje', unidad: 'V'},
+  {sensor_id: 'SENSOR_AC1005_02', activo_id: 5, tipo: 'temperatura', unidad: '°C'},
+  {sensor_id: 'SENSOR_AC1006_01', activo_id: 6, tipo: 'voltaje', unidad: 'V'},
+  {sensor_id: 'SENSOR_AC1006_02', activo_id: 6, tipo: 'temperatura', unidad: '°C'},
+  {sensor_id: 'SENSOR_AC1007_01', activo_id: 7, tipo: 'vibracion', unidad: 'mm/s'},
+  {sensor_id: 'SENSOR_AC1007_02', activo_id: 7, tipo: 'voltaje', unidad: 'V'},
+  {sensor_id: 'SENSOR_AC1008_01', activo_id: 8, tipo: 'presion', unidad: 'bar'},
+  {sensor_id: 'SENSOR_AC1008_02', activo_id: 8, tipo: 'caudal', unidad: 'L/min'}
 ]);
 
 print('📊 Insertando estados de sensores...');
 var now = new Date();
 db.sensor_status.insertMany([
-  {sensor_id: 'SENSOR_AC1001_01', activo_id: 'AC-1001', estado: 'conectado', ultima_lectura: now, valor_actual: 65.5},
-  {sensor_id: 'SENSOR_AC1001_02', activo_id: 'AC-1001', estado: 'conectado', ultima_lectura: now, valor_actual: 6.2},
-  {sensor_id: 'SENSOR_AC1002_01', activo_id: 'AC-1002', estado: 'conectado', ultima_lectura: now, valor_actual: 12.8},
-  {sensor_id: 'SENSOR_AC1002_02', activo_id: 'AC-1002', estado: 'conectado', ultima_lectura: now, valor_actual: 425.0},
-  {sensor_id: 'SENSOR_AC1003_01', activo_id: 'AC-1003', estado: 'conectado', ultima_lectura: now, valor_actual: 280.5},
-  {sensor_id: 'SENSOR_AC1003_02', activo_id: 'AC-1003', estado: 'conectado', ultima_lectura: now, valor_actual: 7.8},
-  {sensor_id: 'SENSOR_AC1004_01', activo_id: 'AC-1004', estado: 'conectado', ultima_lectura: now, valor_actual: 9.1},
-  {sensor_id: 'SENSOR_AC1004_02', activo_id: 'AC-1004', estado: 'conectado', ultima_lectura: now, valor_actual: 400.0},
-  {sensor_id: 'SENSOR_AC1005_01', activo_id: 'AC-1005', estado: 'desconectado', ultima_lectura: now, valor_actual: 0},
-  {sensor_id: 'SENSOR_AC1005_02', activo_id: 'AC-1005', estado: 'desconectado', ultima_lectura: now, valor_actual: 0},
-  {sensor_id: 'SENSOR_AC1006_01', activo_id: 'AC-1006', estado: 'conectado', ultima_lectura: now, valor_actual: 220.8},
-  {sensor_id: 'SENSOR_AC1006_02', activo_id: 'AC-1006', estado: 'conectado', ultima_lectura: now, valor_actual: 42.3},
-  {sensor_id: 'SENSOR_AC1007_01', activo_id: 'AC-1007', estado: 'conectado', ultima_lectura: now, valor_actual: 8.2},
-  {sensor_id: 'SENSOR_AC1007_02', activo_id: 'AC-1007', estado: 'conectado', ultima_lectura: now, valor_actual: 395.0},
-  {sensor_id: 'SENSOR_AC1008_01', activo_id: 'AC-1008', estado: 'desconectado', ultima_lectura: now, valor_actual: 0},
-  {sensor_id: 'SENSOR_AC1008_02', activo_id: 'AC-1008', estado: 'desconectado', ultima_lectura: now, valor_actual: 0}
+  {sensor_id: 'SENSOR_AC1001_01', activo_id: 1, estado: 'conectado', ultima_lectura: now, valor_actual: 65.5},
+  {sensor_id: 'SENSOR_AC1001_02', activo_id: 1, estado: 'conectado', ultima_lectura: now, valor_actual: 6.2},
+  {sensor_id: 'SENSOR_AC1002_01', activo_id: 2, estado: 'conectado', ultima_lectura: now, valor_actual: 12.8},
+  {sensor_id: 'SENSOR_AC1002_02', activo_id: 2, estado: 'conectado', ultima_lectura: now, valor_actual: 425.0},
+  {sensor_id: 'SENSOR_AC1003_01', activo_id: 3, estado: 'conectado', ultima_lectura: now, valor_actual: 280.5},
+  {sensor_id: 'SENSOR_AC1003_02', activo_id: 3, estado: 'conectado', ultima_lectura: now, valor_actual: 7.8},
+  {sensor_id: 'SENSOR_AC1004_01', activo_id: 4, estado: 'conectado', ultima_lectura: now, valor_actual: 9.1},
+  {sensor_id: 'SENSOR_AC1004_02', activo_id: 4, estado: 'conectado', ultima_lectura: now, valor_actual: 400.0},
+  {sensor_id: 'SENSOR_AC1005_01', activo_id: 5, estado: 'desconectado', ultima_lectura: now, valor_actual: 0},
+  {sensor_id: 'SENSOR_AC1005_02', activo_id: 5, estado: 'desconectado', ultima_lectura: now, valor_actual: 0},
+  {sensor_id: 'SENSOR_AC1006_01', activo_id: 6, estado: 'conectado', ultima_lectura: now, valor_actual: 220.8},
+  {sensor_id: 'SENSOR_AC1006_02', activo_id: 6, estado: 'conectado', ultima_lectura: now, valor_actual: 42.3},
+  {sensor_id: 'SENSOR_AC1007_01', activo_id: 7, estado: 'conectado', ultima_lectura: now, valor_actual: 8.2},
+  {sensor_id: 'SENSOR_AC1007_02', activo_id: 7, estado: 'conectado', ultima_lectura: now, valor_actual: 395.0},
+  {sensor_id: 'SENSOR_AC1008_01', activo_id: 8, estado: 'desconectado', ultima_lectura: now, valor_actual: 0},
+  {sensor_id: 'SENSOR_AC1008_02', activo_id: 8, estado: 'desconectado', ultima_lectura: now, valor_actual: 0}
 ]);
 
 print('✅ Datos cargados exitosamente');
@@ -170,7 +162,7 @@ print('   • Activos: ' + db.activos.countDocuments());
 print('   • Sensores: ' + db.sensores.countDocuments());
 print('   • Estados: ' + db.sensor_status.countDocuments());
 print('🔗 Mapeo PostgreSQL ↔ MongoDB:');
-print('   ID 1-8 ↔ AC-1001 a AC-1008');
+print('   ID 1-8 ↔ 1001 a 1008');
 " --quiet
 
 if [ $? -eq 0 ]; then
@@ -185,4 +177,4 @@ echo -e "${BLUE}📋 Las bases de datos están sincronizadas:${NC}"
 echo -e "   • Gestión DB: IDs 1-8"
 echo -e "   • Notification DB: IDs 1-8"
 echo -e "   • Documentación DB: IDs 1-8"
-echo -e "   • MongoDB IoT: AC-1001 a AC-1008"
+echo -e "   • MongoDB IoT: 1 a 8"

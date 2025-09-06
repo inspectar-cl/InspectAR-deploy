@@ -7,6 +7,8 @@ import (
 	"ParserService/internal/models"
 	"ParserService/internal/services"
 
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -78,7 +80,12 @@ func (h *DataHandler) CreateLectura(c *gin.Context) {
 
 // GET /activo/:activo_id
 func (h *DataHandler) GetActivo(c *gin.Context) {
-	activoID := c.Param("activo_id")
+	idStr := c.Param("activo_id")
+	activoID, errConv := strconv.Atoi(idStr)
+	if errConv != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "activo_id debe ser entero"})
+		return
+	}
 
 	activo, err := h.activoService.ObtenerActivo(c.Request.Context(), activoID)
 	if err != nil {
@@ -91,7 +98,12 @@ func (h *DataHandler) GetActivo(c *gin.Context) {
 
 // GET /activo/:activo_id/datos
 func (h *DataHandler) GetSensorByActivo(c *gin.Context) {
-	activoID := c.Param("activo_id")
+	idStr := c.Param("activo_id")
+	activoID, errConv := strconv.Atoi(idStr)
+	if errConv != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "activo_id debe ser entero"})
+		return
+	}
 
 	activo, err := h.activoService.ObtenerActivo(c.Request.Context(), activoID)
 	if err != nil {
@@ -116,7 +128,6 @@ func (h *DataHandler) GetSensorByActivo(c *gin.Context) {
 		"id":        activo.ID,
 		"activo_id": activo.ActivoID,
 		"nombre":    activo.Nombre,
-		"ubicacion": activo.Ubicacion,
 		"estado":    activo.Estado,
 		"sensores":  allLecturas,
 	}
@@ -136,7 +147,12 @@ func (h *DataHandler) GetAllActivos(c *gin.Context) {
 
 // GET /sensor/:sensor_id/last
 func (h *DataHandler) GetSensorLastData(c *gin.Context) {
-	activoID := c.Param("activo_id")
+	idStr := c.Param("activo_id")
+	activoID, errConv := strconv.Atoi(idStr)
+	if errConv != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "activo_id debe ser entero"})
+		return
+	}
 	activo, err := h.activoService.ObtenerActivo(c.Request.Context(), activoID)
 	if err != nil || activo == nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Activo no encontrado"})
@@ -158,7 +174,12 @@ func (h *DataHandler) GetSensorLastData(c *gin.Context) {
 
 // PUT /activo/:activo_id/estado
 func (h *DataHandler) UpdActivoEstado(c *gin.Context) {
-	activoID := c.Param("activo_id")
+	idStr := c.Param("activo_id")
+	activoID, errConv := strconv.Atoi(idStr)
+	if errConv != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "activo_id debe ser entero"})
+		return
+	}
 
 	// Leer el nuevo estado desde el cuerpo del request
 	var body struct {
@@ -181,7 +202,12 @@ func (h *DataHandler) UpdActivoEstado(c *gin.Context) {
 
 // GET /activo/:activo_id/sensores/estado - Obtiene un activo con el estado de sus sensores
 func (h *DataHandler) GetActivoWithSensorStatus(c *gin.Context) {
-	activoID := c.Param("activo_id")
+	idStr := c.Param("activo_id")
+	activoID, errConv := strconv.Atoi(idStr)
+	if errConv != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "activo_id debe ser entero"})
+		return
+	}
 
 	// Obtener el activo
 	activo, err := h.activoService.ObtenerActivo(c.Request.Context(), activoID)
@@ -195,7 +221,6 @@ func (h *DataHandler) GetActivoWithSensorStatus(c *gin.Context) {
 		"id":          activo.ID,
 		"activo_id":   activo.ActivoID,
 		"nombre":      activo.Nombre,
-		"ubicacion":   activo.Ubicacion,
 		"estado":      activo.Estado,
 		"id_edificio": activo.Id_edificio,
 		"sensores":    []gin.H{},
@@ -270,10 +295,17 @@ func (h *DataHandler) GetActivoWithSensorStatus(c *gin.Context) {
 
 // POST /activo/:activo_id/sensores - Agregar sensor a un activo existente
 func (h *DataHandler) AddSensorToActivo(c *gin.Context) {
-	activoID := c.Param("activo_id")
+	idStr := c.Param("activo_id")
+	activoID, errConv := strconv.Atoi(idStr)
+	if errConv != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "activo_id debe ser entero"})
+		return
+	}
 
 	var sensor models.Sensor
 	if err := c.ShouldBindJSON(&sensor); err != nil {
+		// Log para diagnóstico
+		c.Error(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos del sensor inválidos"})
 		return
 	}

@@ -101,7 +101,7 @@ fi
 
 # Preparar identificadores únicos para esta prueba
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-ACTIVO_ID="DISCONNECT_TEST_${TIMESTAMP}"
+ACTIVO_ID=$((100000 + (RANDOM % 899999)))
 SENSOR_TEMP="TEMP_DISC_${TIMESTAMP}"
 SENSOR_PRESS="PRESS_DISC_${TIMESTAMP}"
 
@@ -109,25 +109,19 @@ echo -e "${BLUE}🏗️  FASE 1: PREPARACIÓN DEL ENTORNO DE PRUEBA${NC}"
 echo "================================================"
 
 # Test 1: Crear activo de prueba
-ACTIVO_TEST='{
-    "activo_id": "'$ACTIVO_ID'",
-    "nombre": "Equipo Test Desconexión - '$TIMESTAMP'",
-    "ubicacion": "Laboratorio Test",
+ACTIVO_TEST=$(cat <<JSON
+{
+    "activo_id": $ACTIVO_ID,
+    "nombre": "Equipo Test Desconexión - $TIMESTAMP",
     "estado": "activo",
     "id_edificio": "test_building",
     "sensores": [
-        {
-            "sensor_id": "'$SENSOR_TEMP'",
-            "tipo": "temperatura",
-            "unidad": "°C"
-        },
-        {
-            "sensor_id": "'$SENSOR_PRESS'",
-            "tipo": "presion", 
-            "unidad": "bar"
-        }
+        { "sensor_id": "$SENSOR_TEMP", "tipo": "temperatura", "unidad": "°C" },
+        { "sensor_id": "$SENSOR_PRESS", "tipo": "presion", "unidad": "bar" }
     ]
-}'
+}
+JSON
+)
 
 test_endpoint "POST" "$API_URL/activo" "Crear activo de prueba para desconexión" "$ACTIVO_TEST" "200"
 

@@ -1,13 +1,14 @@
 import axios from 'axios'
 
-console.log(process.env.NEXT_PUBLIC_API_GATEWAY_URL)
+// Preferimos rutas relativas para aprovechar el reverse proxy de Next (/api -> localhost:3500)
+const BASE_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL || '/api'
 
-const apiClient = axios.create ({
-    baseURL: process.env.NEXT_PUBLIC_API_GATEWAY_URL,
-    timeout: 5000,
+const apiClient = axios.create({
+    baseURL: BASE_URL,
+    timeout: 30000,
     headers: {
-        'Content-Type' : 'application/json'
-    }
+        'Content-Type': 'application/json',
+    },
 })
 
 // TODO: Agregar los demás métodos (-Vixo 14/06).

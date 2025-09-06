@@ -1,7 +1,7 @@
 package models
 
 type LecturaRequest struct {
-	ActivoID string `json:"activo_id"`
+	ActivoID int    `json:"activo_id"`
 	SensorID string `json:"sensor_id"`
 	Tipo     string `json:"tipo"`
 	Unidad   string `json:"unidad"`

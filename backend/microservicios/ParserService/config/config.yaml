@@ -29,3 +29,20 @@ sensor:
 # Configuración de notificaciones (opcional)
 notification:
   url: "http://notification-service:8091/sensor/alert"  # URL del servicio de notificaciones
+
+# Configuración de colecciones de activos (multi-fuente)
+activos:
+  primary_collection: "activos"
+  sensors_collection: "sensores"
+  # Puedes definir fuentes con mapeo de campos si hay esquemas distintos
+  # sources:
+  #   - name: "activos"
+  #     fields:
+  #       activo_id: "activo_id"
+  #       nombre: "nombre"
+  #       estado: "estado"
+  #       ubicacion: "ubicacion"
+  #       sensores: "sensores"
+  #       id_edificio: "id_edificio"   # o "edificio_id"
+  # O una lista simple de colecciones
+  source_names: ["activos"]

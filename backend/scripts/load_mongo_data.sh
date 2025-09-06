@@ -52,7 +52,7 @@ db.activos.insertMany([
     activo_id: 'AC-1001',
     nombre: 'Caldera Principal',
     estado: 'operativo',
-    ubicacion: 'Av. Providencia 123, Santiago',
+    
     edificio_id: 1,
     tipo: 'caldera',
     marca: 'Bosch',
@@ -67,7 +67,7 @@ db.activos.insertMany([
     activo_id: 'AC-1002',
     nombre: 'Bomba Centrífuga A',
     estado: 'operativo',
-    ubicacion: 'Av. Providencia 123, Santiago',
+    
     edificio_id: 1,
     tipo: 'bomba',
     marca: 'Grundfos',
@@ -82,7 +82,7 @@ db.activos.insertMany([
     activo_id: 'AC-1004',
     nombre: 'Bomba Hidráulica 1',
     estado: 'operativo',
-    ubicacion: 'Av. Las Condes 456, Las Condes',
+    
     edificio_id: 2,
     tipo: 'bomba',
     marca: 'Wilo',
@@ -97,7 +97,7 @@ db.activos.insertMany([
     activo_id: 'AC-1006',
     nombre: 'Transformador Principal',
     estado: 'operativo',
-    ubicacion: 'Av. Vicuña Mackenna 789, La Florida',
+    
     edificio_id: 3,
     tipo: 'transformador',
     marca: 'ABB',
@@ -112,7 +112,7 @@ db.activos.insertMany([
     activo_id: 'AC-1007',
     nombre: 'Ascensor Central',
     estado: 'operativo',
-    ubicacion: 'Av. Providencia 123, Santiago',
+    
     edificio_id: 1,
     tipo: 'ascensor',
     marca: 'Otis',
@@ -127,7 +127,7 @@ db.activos.insertMany([
     activo_id: 'AC-1008',
     nombre: 'Bomba de Emergencia',
     estado: 'mantenimiento',
-    ubicacion: 'Ruta 68 Km 15, Melipilla',
+    
     edificio_id: 4,
     tipo: 'bomba',
     marca: 'Pedrollo',

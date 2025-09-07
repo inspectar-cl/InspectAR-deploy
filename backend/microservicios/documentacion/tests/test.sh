@@ -32,6 +32,9 @@ echo "🔗 URL Base: $BASE_URL"
 echo "📅 Fecha: $(date)"
 echo ""
 
+# Directorio del script (para construir rutas absolutas a archivos de ejemplo)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 # Función para hacer peticiones HTTP con timeout
 make_request() {
     local method="$1"
@@ -128,6 +131,74 @@ test_endpoint "GET" "$API_URL/documentos?activo_id=1" "Filtrar documentos por ac
 
 # Test 5: Filtrar solo fichas técnicas
 test_endpoint "GET" "$API_URL/documentos?solo_fichas_tecnicas=true" "Filtrar solo fichas técnicas" "" "200"
+
+# Test 5.1: Obtener ficha técnica por activo (nuevo endpoint)
+test_endpoint "GET" "$API_URL/documentos/activo/1/ficha-tecnica" "Obtener ficha técnica por activo (existente)" "" "200"
+
+# Test 5.2: Ficha técnica para activo inexistente
+test_endpoint "GET" "$API_URL/documentos/activo/999/ficha-tecnica" "Obtener ficha técnica por activo inexistente" "" "404"
+
+echo -e "\n${BLUE}⬆️  TESTS DE SUBIDA Y DESCARGA DE ARCHIVOS${NC}"
+echo "----------------------------------------"
+
+# Helper: test de subida multipart/form-data
+test_upload_file() {
+    local url="$1"
+    local file_path="$2"
+    local nombre="$3"
+    local categoria="$4"
+    local esperado="$5" # 201 para éxito, 4xx para fallo
+
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    echo -e "\n${CYAN}📍 Test #$TOTAL_TESTS:${NC} Subir archivo '$file_path' (categoria=$categoria)"
+    echo -e "${PURPLE}POST${NC} $url"
+
+    if [ ! -f "$file_path" ]; then
+        echo -e "${YELLOW}⚠️  Archivo no encontrado: $file_path${NC}"
+    fi
+
+    response=$(curl -s -X POST -w "HTTP_CODE:%{http_code}" \
+        -F "archivo=@${file_path}" \
+        -F "activo_id=1" \
+        -F "nombre=${nombre}" \
+        -F "categoria=${categoria}" \
+        -F "descripcion=Documento de prueba subido por test.sh" \
+        -F "subido_por=tests" \
+        "$url")
+
+    http_code=$(echo "$response" | grep -o 'HTTP_CODE:[0-9]*' | cut -d: -f2)
+    body=$(echo "$response" | sed 's/HTTP_CODE:[0-9]*$//')
+
+    if [[ $http_code == $esperado* ]]; then
+        echo -e "${GREEN}✅ PASS - Status: $http_code${NC}"
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        echo -e "${RED}❌ FAIL - Status: $http_code (esperado: ${esperado}xx)${NC}"
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+
+    # Guardar body y posible ID
+    LAST_RESPONSE="$body"
+    LAST_UPLOAD_ID=$(echo "$body" | grep -o '"id":[0-9]*' | head -1 | cut -d: -f2)
+    if [ -n "$LAST_UPLOAD_ID" ]; then
+        echo "ID subido: $LAST_UPLOAD_ID"
+    fi
+}
+
+# Test 6: Subir PDF válido (usa archivo de ejemplo del repo)
+# Construir ruta absoluta al archivo de ejemplo
+PDF_SAMPLE="$SCRIPT_DIR/../storage/initial-files/1_manual_operacion_caldera.pdf"
+test_upload_file "$API_URL/documentos" "$PDF_SAMPLE" "Documento prueba PDF" "manual_fabricante" "201"
+
+# Si se obtuvo ID, probar descarga
+if [ -n "$LAST_UPLOAD_ID" ]; then
+  test_endpoint "GET" "$API_URL/documentos/$LAST_UPLOAD_ID/download" "Descargar archivo recién subido" "" "200"
+fi
+
+# Test 7: Subir archivo con extensión no permitida
+TMP_TXT="/tmp/test_documento_invalido.txt"
+echo "archivo de prueba" > "$TMP_TXT"
+test_upload_file "$API_URL/documentos" "$TMP_TXT" "Documento no permitido" "manual_fabricante" "4"
 
 # Test 6: Obtener documento específico
 test_endpoint "GET" "$API_URL/documentos/1" "Obtener documento por ID (existente)" "" "200"

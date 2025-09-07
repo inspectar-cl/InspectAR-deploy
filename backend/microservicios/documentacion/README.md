@@ -25,7 +25,7 @@ Microservicio especializado en la gestión de documentos técnicos asociados a a
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   Cliente Web   │────│   API Gateway    │────│  Documentación  │
-│                 │    │   (Puerto 3500)  │    │  (Puerto 8092)  │
+│                 │    │   (Puerto 3500)  │    │  (Puerto 8093)  │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
                                                         │
                                             ┌───────────┼───────────┐
@@ -114,7 +114,7 @@ docker-compose up documentacion-service documentacion-db minio
 3. **Verificar servicios**:
 ```bash
 # API Health Check
-curl http://localhost:8092/health
+curl http://localhost:8093/health
 
 # Dashboard MinIO
 open http://localhost:9001
@@ -139,14 +139,17 @@ open http://localhost:9001
 |--------|----------|-------------|
 | `GET` | `/api/v1/documentos/buscar` | Búsqueda por texto |
 | `GET` | `/api/v1/documentos/activo/{activo_id}` | Documentos por activo |
-| `GET` | `/api/v1/documentos/fichas-tecnicas` | Solo fichas técnicas |
+| `GET` | `/api/v1/documentos/activo/{activo_id}/ficha-tecnica` | Ficha técnica del activo |
+| `GET` | `/api/v1/documentos?solo_fichas_tecnicas=true` | Solo fichas técnicas |
 
 ### Análisis IA
 
+Nota: Los endpoints de análisis IA están temporalmente deshabilitados por requerimiento.
+
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| `POST` | `/api/v1/documentos/{id}/analizar` | Analizar con IA |
-| `GET` | `/api/v1/documentos/{id}/analisis` | Obtener análisis |
+| `POST` | `/api/v1/documentos/{id}/analizar` | Analizar con IA (deshabilitado) |
+| `GET` | `/api/v1/documentos/{id}/analisis` | Obtener análisis (deshabilitado) |
 | `POST` | `/api/v1/documentos/{id}/consultar` | Hacer pregunta específica sobre el documento |
 
 ## 🔧 Ejemplos de Uso
@@ -154,7 +157,7 @@ open http://localhost:9001
 ### Subir Documento
 
 ```bash
-curl -X POST http://localhost:8092/api/v1/documentos \
+curl -X POST http://localhost:8093/api/v1/documentos \
   -F "archivo=@ficha_tecnica.pdf" \
   -F "activo_id=1" \
   -F "nombre=Ficha Técnica Caldera Principal" \
@@ -167,44 +170,44 @@ curl -X POST http://localhost:8092/api/v1/documentos \
 
 ```bash
 # Búsqueda por texto
-curl "http://localhost:8092/api/v1/documentos/buscar?q=caldera mantenimiento"
+curl "http://localhost:8093/api/v1/documentos/buscar?q=caldera mantenimiento"
 
 # Documentos de un activo específico
-curl "http://localhost:8092/api/v1/documentos/activo/1"
+curl "http://localhost:8093/api/v1/documentos/activo/1"
 
 # Solo fichas técnicas
-curl "http://localhost:8092/api/v1/documentos/fichas-tecnicas"
+curl "http://localhost:8093/api/v1/documentos/activo/1/ficha-tecnica"
 ```
 
 ### Analizar con IA
 
 ```bash
 # Solicitar análisis
-curl -X POST http://localhost:8092/api/v1/documentos/1/analizar
+curl -X POST http://localhost:8093/api/v1/documentos/1/analizar
 
 # Obtener resultados
-curl http://localhost:8092/api/v1/documentos/1/analisis
+curl http://localhost:8093/api/v1/documentos/1/analisis
 ```
 
 ### Consulta Interactiva con IA
 
 ```bash
 # Hacer pregunta específica sobre el documento
-curl -X POST http://localhost:8092/api/v1/documentos/1/consultar \
+curl -X POST http://localhost:8093/api/v1/documentos/1/consultar \
   -H "Content-Type: application/json" \
   -d '{
     "pregunta": "¿Cuál es la presión de agua de esta bomba?"
   }'
 
 # Pregunta sobre mantenimiento
-curl -X POST http://localhost:8092/api/v1/documentos/2/consultar \
+curl -X POST http://localhost:8093/api/v1/documentos/2/consultar \
   -H "Content-Type: application/json" \
   -d '{
     "pregunta": "¿Cuándo fue la última mantención registrada?"
   }'
 
 # Pregunta sobre especificaciones técnicas
-curl -X POST http://localhost:8092/api/v1/documentos/1/consultar \
+curl -X POST http://localhost:8093/api/v1/documentos/1/consultar \
   -H "Content-Type: application/json" \
   -d '{
     "pregunta": "¿Qué capacidad térmica tiene esta caldera y cuál es su eficiencia?"
@@ -276,7 +279,7 @@ El endpoint `/api/v1/documentos/{id}/consultar` permite hacer preguntas específ
 
 #### 1. Consultas sobre Especificaciones Técnicas
 ```bash
-curl -X POST http://localhost:8092/api/v1/documentos/1/consultar \
+curl -X POST http://localhost:8093/api/v1/documentos/1/consultar \
   -H "Content-Type: application/json" \
   -d '{
     "pregunta": "¿Cuál es la capacidad térmica y eficiencia de esta caldera?"
@@ -295,7 +298,7 @@ curl -X POST http://localhost:8092/api/v1/documentos/1/consultar \
 
 #### 2. Consultas sobre Mantenimiento
 ```bash
-curl -X POST http://localhost:8092/api/v1/documentos/3/consultar \
+curl -X POST http://localhost:8093/api/v1/documentos/3/consultar \
   -H "Content-Type: application/json" \
   -d '{
     "pregunta": "¿Cuándo fue la última mantención y qué se hizo?"
@@ -314,7 +317,7 @@ curl -X POST http://localhost:8092/api/v1/documentos/3/consultar \
 
 #### 3. Consultas sobre Presiones y Parámetros
 ```bash
-curl -X POST http://localhost:8092/api/v1/documentos/5/consultar \
+curl -X POST http://localhost:8093/api/v1/documentos/5/consultar \
   -H "Content-Type: application/json" \
   -d '{
     "pregunta": "¿Cuánta presión de agua maneja esta bomba hidráulica?"
@@ -413,15 +416,15 @@ curl -X POST http://localhost:8092/api/v1/documentos/1/consultar \
 #### Historial de Consultas
 ```bash
 # Obtener últimas 10 consultas de un documento
-curl "http://localhost:8092/api/v1/documentos/1/consultas?limit=10"
+curl "http://localhost:8093/api/v1/documentos/1/consultas?limit=10"
 
 # Paginación
-curl "http://localhost:8092/api/v1/documentos/1/consultas?limit=5&offset=10"
+curl "http://localhost:8093/api/v1/documentos/1/consultas?limit=5&offset=10"
 ```
 
 #### Estadísticas Globales
 ```bash
-curl "http://localhost:8092/api/v1/consultas/estadisticas"
+curl "http://localhost:8093/api/v1/consultas/estadisticas"
 ```
 
 **Respuesta de estadísticas:**
@@ -467,10 +470,10 @@ curl "http://localhost:8092/api/v1/consultas/estadisticas"
 
 ```bash
 # Health check básico
-curl http://localhost:8092/health
+curl http://localhost:8093/health
 
 # Health check con detalles
-curl http://localhost:8092/health/detailed
+curl http://localhost:8093/health/detailed
 ```
 
 ### Métricas Disponibles
@@ -542,7 +545,7 @@ docker-compose logs -f documentacion-db
 
 ## 📈 Roadmap
 
-### Próximas Características
+<!-- ### Próximas Características
 
 - [ ] Versioning de documentos
 - [ ] Comentarios y anotaciones
@@ -556,7 +559,7 @@ docker-compose logs -f documentacion-db
 - [ ] Cache Redis para búsquedas frecuentes
 - [ ] Compresión automática de archivos
 - [ ] CDN para distribución de contenido
-- [ ] Paginación optimizada
+- [ ] Paginación optimizada -->
 
 ## 🤝 Contribución
 
@@ -574,6 +577,6 @@ Este proyecto es parte del sistema InspectAR y está sujeto a las políticas de 
 
 **Contacto**: Equipo de Desarrollo InspectAR
 **Versión**: 1.0.0
-**Puerto del Microservicio**: 8092
+**Puerto del Microservicio**: 8093
 **Puerto de Base de Datos**: 5434
 **Última actualización**: Agosto 2025

@@ -5,6 +5,7 @@ import (
 	"documentacion/internal/services"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -90,7 +91,17 @@ func (h *DocumentoHandler) SubirDocumento(c *gin.Context) {
 	// Subir documento
 	documento, err := h.documentoService.SubirDocumento(&req, file, header)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error subiendo documento", "details": err.Error()})
+		msg := err.Error()
+		// Mapear errores de validación a 4xx
+		if strings.Contains(msg, "tipo de archivo no permitido") {
+			c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Tipo de archivo no permitido", "details": msg})
+			return
+		}
+		if strings.Contains(msg, "archivo demasiado grande") {
+			c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "Archivo demasiado grande", "details": msg})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error subiendo documento", "details": msg})
 		return
 	}
 

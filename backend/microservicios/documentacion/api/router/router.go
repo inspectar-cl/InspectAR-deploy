@@ -43,11 +43,13 @@ func SetupRouter(documentoHandler *handlers.DocumentoHandler, consultaHandler *h
 
 		// Rutas por activo
 		v1.GET("/documentos/activo/:activo_id", documentoHandler.ObtenerDocumentosPorActivo) // Documentos de un activo
-		v1.GET("/documentos/fichas-tecnicas", documentoHandler.ObtenerFichaTecnica)          // Solo fichas técnicas
+		// Nueva ruta: ficha técnica por activo
+		v1.GET("/documentos/activo/:activo_id/ficha-tecnica", documentoHandler.ObtenerFichaTecnica) // Solo ficha técnica del activo
 
 		// Rutas de análisis IA (HdU19 - Lectura y análisis con Gemini)
-		v1.POST("/documentos/:id/analizar", documentoHandler.AnalizarDocumentoIA) // Solicitar análisis IA
-		v1.GET("/documentos/:id/analisis", documentoHandler.ObtenerAnalisisIA)    // Obtener análisis IA
+		// Deshabilitadas por requerimiento
+		// v1.POST("/documentos/:id/analizar", documentoHandler.AnalizarDocumentoIA)
+		// v1.GET("/documentos/:id/analisis", documentoHandler.ObtenerAnalisisIA)
 
 		// Rutas de consultas interactivas (NUEVA FUNCIONALIDAD)
 		v1.POST("/documentos/:id/consultar", consultaHandler.ConsultarDocumento)        // Hacer pregunta específica

@@ -19,7 +19,10 @@ interface Accion {
   fecha_inicio: string
   creado_en: string
   activo?: string
-  tecnico?: string
+  tecnico?: {
+    id: number
+    nombre: string
+  }
 }
 
 interface Activo {
@@ -44,8 +47,11 @@ export default function ListasAccionesView() {
   useEffect(() => {
     const fetchActivos = async () => {
       try {
-        const data = await gs.get("/parser/activo")
-        setActivos(Array.isArray(data) ? data : [])
+        const data = await gs.get("/obtener-activos")
+        console.log("Activos cargados:", data)
+        const activosArray = data.activos
+        setActivos(Array.isArray(activosArray) ? activosArray : [])
+        console.log("Valor de setActivos (activos):", Array.isArray(activosArray) ? activosArray : [])
       } catch (error) {
         console.error('Error al cargar activos:', error)
       }
@@ -56,9 +62,15 @@ export default function ListasAccionesView() {
   // --- API Acciones ---
   const fetchAcciones = async () => {
     try {
-      const res = await fetch(`http://localhost:8092/acciones/tecnico/${tecnicoActualId}`)
-      const data = await res.json()
-      setAcciones(data)
+      const res = await await gs.get(`/gestion/acciones/tecnico/${tecnicoActualId}`)
+      console.log("Acciones cargadas:", res)
+      const accionesProcesadas = res.map((accion: any) => ({
+        ...accion,
+        tecnico_nombre: accion.tecnico?.nombre || 'Sin técnico',
+        activo_nombre: accion.activo?.nombre || 'Sin activo'
+      }))
+      // const data = await res.json()
+      setAcciones(accionesProcesadas)
     } catch (err) {
       console.error('Error cargando acciones:', err)
     }
@@ -67,8 +79,7 @@ export default function ListasAccionesView() {
   const crearAccion = async () => {
     if (!activoSeleccionado || !descripcion) return alert('Completa todos los campos.')
     try {
-      const res = await fetch('http://localhost:8092/acciones', {
-        method: 'POST',
+      const res = await gs.post('/gestion/acciones', {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           activo_id: Number(activoSeleccionado), // usamos el id del activo
@@ -92,8 +103,7 @@ export default function ListasAccionesView() {
 
   const actualizarEstado = async (id: number, nuevoEstado: string) => {
     try {
-      await fetch(`http://localhost:8092/acciones/${id}/estado`, {
-        method: 'PUT',
+      await gs.put(`/gestion/acciones/${id}/estado`, {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ estado: nuevoEstado }),
       })
@@ -110,10 +120,10 @@ export default function ListasAccionesView() {
   // --- Columnas ---
   const columns: GridColDef[] = [
     { field: 'id', headerName: 'ID', width: 70 },
-    //{ field: 'tecnico', headerName: 'Técnico', flex: 1 },
+    { field: 'tecnico_nombre', headerName: 'Técnico', width: 100},
     { field: 'descripcion', headerName: 'Descripción', flex: 2 },
     { field: 'estado', headerName: 'Estado', flex: 1 },
-    { field: 'prioridad', headerName: 'Prioridad', flex: 1 },
+    { field: 'prioridad', headerName: 'Prioridad', width: 100 },
     {
       field: 'acciones',
       headerName: 'Acciones',
@@ -165,7 +175,7 @@ export default function ListasAccionesView() {
         <Collapse key={a.id} in={expandedId === a.id}>
           <Box sx={{ p: 2, mt: 1, border: '1px solid #ddd', borderRadius: 2 }}>
             <Typography variant="subtitle2">Detalle de Acción</Typography>
-            //<Typography>Técnico: {a.tecnico.nombre}</Typography>
+            <Typography>Técnico: {a.tecnico.nombre}</Typography>
             <Typography>Descripción: {a.descripcion}</Typography>
             <Typography>Estado: {a.estado}</Typography>
             <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>

@@ -25,12 +25,22 @@ func getSpecialHandlers() []SpecialHandler {
             Pattern: "/api/sensores",
             Handler: ActivosYSensores,
         },
+        {
+            Method: "GET",
+            Pattern: "/api/obtener-activos",
+            Handler: ObtenerActivos,
+        },
+        {
+            Method: "GET",
+            Pattern: "/api/generar-reporte/:id",
+            Handler: GenerarReporte,
+        },
         // Aquí puedes agregar más handlers especiales fácilmente
         // {
         //     Method:  "POST",
         //     Pattern: "/api/otra-ruta",
         //     Handler: OtroHandler,
-        // },
+        // }, // Importante la coma al final
     }
 }
 

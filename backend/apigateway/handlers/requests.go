@@ -238,12 +238,14 @@ func ActivosYSensores(c *gin.Context) {
 
                 if sensores, exists := body["sensores"]; exists {
                     mu.Lock()
-                    aMap["sensores"] = sensores
+                    // Añadir sensores al mapa del activo
+                    // como se pasó como referencia, se modifica el original en el slice.
+                    aMap["sensores"] = sensores 
                     mu.Unlock()
                     fmt.Printf("DEBUG: Sensores agregados para activo ID %s\n", activoID)
                 }
 
-            }(activoMap)
+            }(activoMap) // Pasar el mapa del activo a la goroutine
         }
     }
 
@@ -256,4 +258,59 @@ func ActivosYSensores(c *gin.Context) {
     }
 
 	c.JSON(http.StatusOK, result)
+}
+
+func ObtenerActivos(c *gin.Context) {
+    var wg sync.WaitGroup
+    var mu sync.Mutex
+    activos := []interface{}{}
+    
+    wg.Add(1)
+    // Goroutine para obtener activos
+    go func() {
+        defer wg.Done()
+        url := fmt.Sprintf("%s/activos", gestionURL)
+        resp, err := httpClient.Get(url)
+        if err != nil {
+            fmt.Println("Error obteniendo activos: ", err)
+            return
+        }
+        defer resp.Body.Close()
+        
+        var data map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+            fmt.Println("Error decodificando activos: ", err)
+            return
+        }
+        
+        if activosData, exists := data["activos"]; exists {
+            if activosArray, ok := activosData.([]interface{}); ok {
+                mu.Lock()
+                activos = activosArray
+                mu.Unlock()
+            }
+        }
+    }()
+
+    wg.Wait() // Esperar a que termine la goroutine de activos
+
+    result := map[string]interface{}{
+        "activos": activos,
+    }
+
+    c.JSON(http.StatusOK, result)
+}
+
+func GenerarReporte(c *gin.Context) {
+    // NO terminado
+    id := c.Param("id")
+    if id == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID del activo es requerido"})
+        return
+    }
+
+    result := map[string]interface{}{
+        "reporte": fmt.Sprintf("Reporte generado para activo ID %s", id),
+    }
+    c.JSON(http.StatusOK, result)
 }

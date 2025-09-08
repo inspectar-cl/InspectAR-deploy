@@ -10,13 +10,6 @@ services:
       - NOTIFICATION_URL=http://notification-service:8091
       - PARSER_URL=http://iot-service:8090
       - DOCUMENTATION_URL=http://documentacion-service:8093
-    depends_on:
-      - gestion-service
-      - notification-service
-      - documentacion-service
-      - iot-service
-    # volumes:
-    #   - ./apigateway:/app
   # Microservicio
   iot-service:
     build:

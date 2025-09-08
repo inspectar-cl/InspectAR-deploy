@@ -176,7 +176,8 @@ func ActivosYSensores(c *gin.Context) {
 	var wg sync.WaitGroup
     var mu sync.Mutex
 
-	tiposActivos := []string{"bomba de agua", "caldera", "ascensor", "transformador"}
+	tiposActivos := []string{"caldera"}
+    // tiposActivos := []string{"bomba de agua", "caldera", "ascensor", "transformador"}
 	activos := []interface{}{}
 	
 	for _, tipo := range tiposActivos {
@@ -198,6 +199,7 @@ func ActivosYSensores(c *gin.Context) {
 				fmt.Println("Error decodificando JSON: ", err)
 				return
 			}
+            // Añadir lo que está en "activos" al slice principal
 			if activosData, exists := data["activos"]; exists {
                 if activosArray, ok := activosData.([]interface{}); ok {
                     mu.Lock()
@@ -208,7 +210,44 @@ func ActivosYSensores(c *gin.Context) {
 		}(tipo)
 	}
 
-	wg.Wait() // Esperar a que todas las goroutines terminen
+	wg.Wait() // Esperar a que termine la goroutine para ejecutar la siguiente parte
+
+    // Hacer la segunda parte: obtener sensores para cada activo
+    for _, activo := range activos {
+        // activo es una interface del estilo, que hay que convertir para extraer la id:
+        // map[edificio_id:1 estado:operativo id:2 nombre:Bomba Centrífuga A tipo:bomba de agua]
+        fmt.Println("DEBUG: Obteniendo sensores para activo", activo)
+        if activoMap, ok := activo.(map[string]interface{}); ok {
+            activoID := fmt.Sprintf("%v", activoMap["id"]) // Convertir a string la id obtenida
+            wg.Add(1)
+            go func(aMap map[string]interface{}) {
+                defer wg.Done() // Ejecutar al finalizar la goroutine
+                url := fmt.Sprintf("%s/activo/%s/sensores/estado", parserURL, activoID)
+                resp, err := httpClient.Get(url)
+                if err != nil {
+                    fmt.Println("Error obteniendo sensores: ", err)
+                    return
+                }
+                defer resp.Body.Close()
+
+                body := make(map[string]interface{})
+                if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+                    fmt.Println("Error decodificando sensores: ", err)
+                    return
+                }
+
+                if sensores, exists := body["sensores"]; exists {
+                    mu.Lock()
+                    aMap["sensores"] = sensores
+                    mu.Unlock()
+                    fmt.Printf("DEBUG: Sensores agregados para activo ID %s\n", activoID)
+                }
+
+            }(activoMap)
+        }
+    }
+
+    wg.Wait() // Esperar a que terminen todas las goroutines
 
 	result := map[string]interface{}{
         "activos": activos,

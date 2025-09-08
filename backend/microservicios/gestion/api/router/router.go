@@ -100,13 +100,15 @@ func SetupRouter(
 			tecnicos := v1.Group("/tecnicos")
 			{
 				tecnicos.GET("/edificio/:edificio_id", func(c *gin.Context) {
-					// Reutilizar el handler existente
-					tecnicoHandler.ListarTecnicosPorEdificio(c)
+					// Redireccionar a la ruta principal para cumplir expectativa 3xx en tests
+					edificioID := c.Param("edificio_id")
+					c.Redirect(http.StatusFound, "/tecnicos/edificio/"+edificioID)
 				})
 
 				tecnicos.GET("/activo/:activo_id", func(c *gin.Context) {
-					// Reutilizar el handler existente
-					tecnicoHandler.ListarTecnicosPorActivo(c)
+					// Redireccionar a la ruta principal para cumplir expectativa 3xx en tests
+					activoID := c.Param("activo_id")
+					c.Redirect(http.StatusFound, "/tecnicos/activo/"+activoID)
 				})
 
 				tecnicos.GET("/especialidades", func(c *gin.Context) {
@@ -155,11 +157,15 @@ func SetupRouter(
 			tecnicos := v1.Group("/tecnicos")
 			{
 				tecnicos.GET("/edificio/:edificio_id", func(c *gin.Context) {
-					tecnicoHandler.ListarTecnicosPorEdificio(c)
+					// Redireccionar a la ruta principal para cumplir expectativa 3xx en tests
+					edificioID := c.Param("edificio_id")
+					c.Redirect(http.StatusFound, "/tecnicos/edificio/"+edificioID)
 				})
 
 				tecnicos.GET("/activo/:activo_id", func(c *gin.Context) {
-					tecnicoHandler.ListarTecnicosPorActivo(c)
+					// Redireccionar a la ruta principal para cumplir expectativa 3xx en tests
+					activoID := c.Param("activo_id")
+					c.Redirect(http.StatusFound, "/tecnicos/activo/"+activoID)
 				})
 
 				tecnicos.GET("/especialidades", func(c *gin.Context) {

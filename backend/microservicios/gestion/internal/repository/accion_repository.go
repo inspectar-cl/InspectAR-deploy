@@ -36,7 +36,7 @@ func (r *AccionMantenimientoRepository) GetByTecnico(tecnicoID int) ([]models.Ac
 		SELECT 
 			am.id, am.activo_id, am.tecnico_id, am.tipo, am.descripcion, am.estado, am.prioridad, 
 			am.fecha_inicio, am.fecha_fin, am.creado_en,
-			a.id, a.activo_id, a.nombre, a.tipo, a.estado, a.ubicacion, a.edificio_id, a.creado_en,
+			a.id, a.nombre, a.tipo, a.estado, a.ubicacion, a.edificio_id, a.creado_en,
 			t.id, t.nombre, t.email, t.telefono, t.especialidad, t.autorizado, t.fecha_registro
 		FROM acciones_mantenimiento am
 		JOIN activos a ON am.activo_id = a.id
@@ -57,7 +57,7 @@ func (r *AccionMantenimientoRepository) GetByTecnico(tecnicoID int) ([]models.Ac
 			&accion.ID, &accion.ActivoID, &accion.TecnicoID, &accion.Tipo,
 			&accion.Descripcion, &accion.Estado, &accion.Prioridad, &accion.FechaInicio,
 			&accion.FechaFin, &accion.CreadoEn,
-			&accion.Activo.ID, &accion.Activo.ActivoID, &accion.Activo.Nombre, &accion.Activo.Tipo,
+			&accion.Activo.ID, &accion.Activo.Nombre, &accion.Activo.Tipo,
 			&accion.Activo.Estado, &accion.Activo.Ubicacion, &accion.Activo.EdificioID, &accion.Activo.CreadoEn,
 			&accion.Tecnico.ID, &accion.Tecnico.Nombre, &accion.Tecnico.Email, &accion.Tecnico.Telefono,
 			&accion.Tecnico.Especialidad, &accion.Tecnico.Autorizado, &accion.Tecnico.CreadoEn,
@@ -76,7 +76,7 @@ func (r *AccionMantenimientoRepository) GetByActivo(activoID int) ([]models.Acci
 		SELECT 
 			am.id, am.activo_id, am.tecnico_id, am.tipo, am.descripcion, am.estado, am.prioridad, 
 			am.fecha_inicio, am.fecha_fin, am.creado_en,
-			a.id, a.activo_id, a.nombre, a.tipo, a.estado, a.ubicacion, a.edificio_id, a.creado_en,
+			a.id, a.nombre, a.tipo, a.estado, a.ubicacion, a.edificio_id, a.creado_en,
 			t.id, t.nombre, t.email, t.telefono, t.especialidad, t.autorizado, t.fecha_registro
 		FROM acciones_mantenimiento am
 		JOIN activos a ON am.activo_id = a.id
@@ -97,7 +97,7 @@ func (r *AccionMantenimientoRepository) GetByActivo(activoID int) ([]models.Acci
 			&accion.ID, &accion.ActivoID, &accion.TecnicoID, &accion.Tipo,
 			&accion.Descripcion, &accion.Estado, &accion.Prioridad, &accion.FechaInicio,
 			&accion.FechaFin, &accion.CreadoEn,
-			&accion.Activo.ID, &accion.Activo.ActivoID, &accion.Activo.Nombre, &accion.Activo.Tipo,
+			&accion.Activo.ID, &accion.Activo.Nombre, &accion.Activo.Tipo,
 			&accion.Activo.Estado, &accion.Activo.Ubicacion, &accion.Activo.EdificioID, &accion.Activo.CreadoEn,
 			&accion.Tecnico.ID, &accion.Tecnico.Nombre, &accion.Tecnico.Email, &accion.Tecnico.Telefono,
 			&accion.Tecnico.Especialidad, &accion.Tecnico.Autorizado, &accion.Tecnico.CreadoEn,
@@ -117,8 +117,15 @@ func (r *AccionMantenimientoRepository) UpdateEstado(id int, estado string) erro
 		query = `UPDATE acciones_mantenimiento SET estado = $1, fecha_fin = CURRENT_TIMESTAMP WHERE id = $2`
 	}
 
-	_, err := r.db.Exec(query, estado, id)
-	return err
+	res, err := r.db.Exec(query, estado, id)
+	if err != nil {
+		return err
+	}
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 // Obtener acciones pendientes con prioridad y detalles
@@ -127,7 +134,7 @@ func (r *AccionMantenimientoRepository) GetPendientesConPrioridad() ([]models.Ac
 		SELECT 
 			am.id, am.activo_id, am.tecnico_id, am.tipo, am.descripcion, am.estado, am.prioridad, 
 			am.fecha_inicio, am.fecha_fin, am.creado_en,
-			a.id, a.activo_id, a.nombre, a.tipo, a.estado, a.ubicacion, a.edificio_id, a.creado_en,
+			a.id, a.nombre, a.tipo, a.estado, a.ubicacion, a.edificio_id, a.creado_en,
 			t.id, t.nombre, t.email, t.telefono, t.especialidad, t.autorizado, t.fecha_registro
 		FROM acciones_mantenimiento am
 		JOIN activos a ON am.activo_id = a.id
@@ -155,7 +162,7 @@ func (r *AccionMantenimientoRepository) GetPendientesConPrioridad() ([]models.Ac
 			&accion.ID, &accion.ActivoID, &accion.TecnicoID, &accion.Tipo,
 			&accion.Descripcion, &accion.Estado, &accion.Prioridad, &accion.FechaInicio,
 			&accion.FechaFin, &accion.CreadoEn,
-			&accion.Activo.ID, &accion.Activo.ActivoID, &accion.Activo.Nombre, &accion.Activo.Tipo,
+			&accion.Activo.ID, &accion.Activo.Nombre, &accion.Activo.Tipo,
 			&accion.Activo.Estado, &accion.Activo.Ubicacion, &accion.Activo.EdificioID, &accion.Activo.CreadoEn,
 			&accion.Tecnico.ID, &accion.Tecnico.Nombre, &accion.Tecnico.Email, &accion.Tecnico.Telefono,
 			&accion.Tecnico.Especialidad, &accion.Tecnico.Autorizado, &accion.Tecnico.CreadoEn,

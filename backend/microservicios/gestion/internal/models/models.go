@@ -64,7 +64,6 @@ type Edificio struct {
 // Activo gestionado
 type Activo struct {
 	ID         int       `json:"id" db:"id"`
-	ActivoID   string    `json:"activo_id" db:"activo_id"`
 	Nombre     string    `json:"nombre" db:"nombre"`
 	Tipo       string    `json:"tipo" db:"tipo"`
 	Estado     string    `json:"estado" db:"estado"`
@@ -157,7 +156,6 @@ type CreateTecnicoRequest struct {
 }
 
 type CreateActivoRequest struct {
-	ActivoID   string `json:"activo_id" binding:"required"`
 	Nombre     string `json:"nombre" binding:"required"`
 	Tipo       string `json:"tipo" binding:"required"`
 	Ubicacion  string `json:"ubicacion" binding:"required"`

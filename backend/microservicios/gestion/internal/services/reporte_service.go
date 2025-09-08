@@ -54,8 +54,8 @@ func (s *ReporteService) GenerarReportePDFPorActivo(activoID int) ([]byte, strin
 	if err != nil {
 		return nil, "", fmt.Errorf("no se pudo obtener el activo: %v", err)
 	}
-	fmt.Printf("ACTIVO ENCONTRADO: ID=%d, ActivoID=%s, Nombre=%s, Tipo=%s, Estado=%s\n",
-		activo.ID, activo.ActivoID, activo.Nombre, activo.Tipo, activo.Estado)
+	fmt.Printf("ACTIVO ENCONTRADO: ID=%d, Nombre=%s, Tipo=%s, Estado=%s\n",
+		activo.ID, activo.Nombre, activo.Tipo, activo.Estado)
 
 	// Obtener datos del edificio si existe
 	var edificio *models.Edificio
@@ -146,7 +146,7 @@ func (s *ReporteService) GenerarReportePDFPorActivo(activoID int) ([]byte, strin
 		fmt.Printf("Advertencia: no se pudo crear el registro del reporte: %v\n", err)
 	}
 
-	filename := fmt.Sprintf("reporte_activo_%s_%s.pdf", activo.ActivoID, time.Now().Format("20060102_150405"))
+	filename := fmt.Sprintf("reporte_activo_%d_%s.pdf", activo.ID, time.Now().Format("20060102_150405"))
 	return pdfBytes, filename, nil
 }
 
@@ -161,7 +161,7 @@ func (s *ReporteService) generarContenidoReporte(activo *models.Activo, edificio
 REPORTE DE ACTIVO
 
 Información del Activo:
-- ID: %s
+- ID: %d
 - Nombre: %s
 - Tipo: %s
 - Estado: %s
@@ -171,7 +171,7 @@ Información del Edificio:
 - Nombre: %s
 - Dirección: %s
 
-`, activo.ActivoID, activo.Nombre, activo.Tipo, activo.Estado, activo.Ubicacion,
+`, activo.ID, activo.Nombre, activo.Tipo, activo.Estado, activo.Ubicacion,
 		edificio.Nombre, edificio.Direccion)
 
 	if ultimaAccion != nil {

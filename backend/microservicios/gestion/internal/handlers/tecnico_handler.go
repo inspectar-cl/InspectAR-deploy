@@ -141,7 +141,7 @@ func (h *TecnicoHandler) AsignarTecnicoAActivo(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"mensaje": "Técnico asignado al activo correctamente"})
+	c.JSON(http.StatusCreated, gin.H{"mensaje": "Técnico asignado al activo correctamente"})
 }
 
 // GET /tecnicos/:tecnico_id/activos - Obtener activos asociados a un técnico (RUTA PRINCIPAL)

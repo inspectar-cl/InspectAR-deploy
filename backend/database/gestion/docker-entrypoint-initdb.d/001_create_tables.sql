@@ -23,7 +23,6 @@ CREATE TABLE IF NOT EXISTS edificios (
 -- Tabla de activos (espejo del ParserService para gestión)
 CREATE TABLE IF NOT EXISTS activos (
     id SERIAL PRIMARY KEY,
-    activo_id VARCHAR(100) UNIQUE NOT NULL,
     nombre VARCHAR(255) NOT NULL,
     tipo VARCHAR(100) NOT NULL CHECK (tipo IN ('caldera', 'bomba de agua', 'ascensor', 'transformador')),
     estado VARCHAR(50) DEFAULT 'operativo',

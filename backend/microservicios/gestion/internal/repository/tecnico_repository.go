@@ -150,7 +150,7 @@ func (r *TecnicoRepository) AsignarTecnicoAActivo(activoID, tecnicoID int) error
 // ObtenerActivosPorTecnico - Obtener activos asociados a un técnico (RUTA PRINCIPAL)
 func (r *TecnicoRepository) ObtenerActivosPorTecnico(tecnicoID int) ([]models.Activo, error) {
 	query := `
-		SELECT DISTINCT a.id, a.activo_id, a.nombre, a.tipo, a.estado, a.ubicacion, a.edificio_id, a.creado_en
+		SELECT DISTINCT a.id, a.nombre, a.tipo, a.estado, a.ubicacion, a.edificio_id, a.creado_en
 		FROM activos a
 		JOIN activos_tecnicos at ON a.id = at.activo_id
 		WHERE at.tecnico_id = $1
@@ -167,7 +167,7 @@ func (r *TecnicoRepository) ObtenerActivosPorTecnico(tecnicoID int) ([]models.Ac
 		var activo models.Activo
 
 		err := rows.Scan(
-			&activo.ID, &activo.ActivoID, &activo.Nombre, &activo.Tipo,
+			&activo.ID, &activo.Nombre, &activo.Tipo,
 			&activo.Estado, &activo.Ubicacion, &activo.EdificioID, &activo.CreadoEn,
 		)
 		if err != nil {

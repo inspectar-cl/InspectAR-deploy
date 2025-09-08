@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"gestion/internal/models"
 	"gestion/internal/services"
 	"net/http"
@@ -83,6 +84,10 @@ func (h *AccionMantenimientoHandler) ActualizarEstado(c *gin.Context) {
 	}
 
 	if err := h.service.ActualizarEstado(id, req.Estado); err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Acción no encontrada"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo actualizar el estado"})
 		return
 	}

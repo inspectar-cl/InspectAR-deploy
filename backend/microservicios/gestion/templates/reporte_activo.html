@@ -207,8 +207,8 @@
             <h2>Información del Activo</h2>
             <div class="info-grid">
                 <div class="info-item">
-                    <div class="info-label">Código del Activo</div>
-                    <div class="info-value">{{.Activo.ActivoID}}</div>
+                    <div class="info-label">ID del Activo</div>
+                    <div class="info-value">{{.Activo.ID}}</div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">Nombre</div>
@@ -331,7 +331,7 @@
         <div class="section">
             <h2>Código QR del Activo</h2>
             <div class="qr-placeholder">
-                QR: {{.Activo.ActivoID}}
+                QR: ACTIVO-{{.Activo.ID}}
             </div>
             <p style="text-align: center; margin-top: 10px; color: #6c757d; font-size: 12px;">
                 Escanee este código para acceder rápidamente a la información del activo

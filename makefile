@@ -12,3 +12,31 @@ run-doc:
 
 run-front:
 	cd frontend && npm run dev
+
+SERVICES := \
+	documentacion-db \
+	gestion-db \
+	notification-db \
+	mongu \
+	influxdb \
+	emqx \
+	iot-service \
+	notification-service \
+	gestion-service \
+	documentacion-service \
+	middleware_mqtt \
+	data-sync-init
+
+# Levanta todo menos apigateway
+run-b-wa:
+	cd backend && docker compose up --build $(SERVICES)
+# Baja todo menos apigateway
+stop-b-wa:
+	cd backend && docker compose down -v $(SERVICES)
+
+run-b-ag:
+	cd backend && docker compose up --build apigateway
+	
+stop-b-ag:
+	cd backend && docker compose stop apigateway || true
+	cd backend && docker compose rm -f -s apigateway || true

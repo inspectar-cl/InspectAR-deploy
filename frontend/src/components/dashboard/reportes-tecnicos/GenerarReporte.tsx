@@ -14,7 +14,7 @@ const GenerarReporte = () => {
   useEffect(() => {
     const fetchActivos = async () => {
       try {
-        const data = await gs.get("/parser/activo");
+        const data = await gs.get("/obtener-activos");
 
         // Si la API devuelve directamente un array de activos
         if (Array.isArray(data)) {
@@ -43,7 +43,8 @@ const GenerarReporte = () => {
     if (!activo) return;
     // ======= LLAMADA API PARA GENERAR REPORTE =======
     try {
-      const data = await gs.get(`/gestion/reportes/activo/1`, { // await gs.get(`/reportes/activo/${activo}`
+      console.log("Generando reporte para activo ID:", activo);
+      const data = await gs.get(`/gestion/reportes/activo/${activo}`, { // await gs.get(`/reportes/activo/${activo}`
       });
       if (Array.isArray(data) && data.length > 0) {
         setReporte(data[0]); // Tomar el primer reporte
@@ -84,7 +85,7 @@ const GenerarReporte = () => {
           <MenuItem value="">Seleccionar Activo</MenuItem>
           {Array.isArray(activos) &&
             activos.map((a) => (
-              <MenuItem key={a.id} value={a.activo_id}>
+              <MenuItem key={a.id} value={a.id}>
                 {a.nombre}
               </MenuItem>
             ))}

@@ -8,6 +8,7 @@ import (
 	"apigateway/config"
 	"apigateway/middleware"
 	"apigateway/proxy"
+	"apigateway/handlers"
 )
 
 func main() {
@@ -19,6 +20,9 @@ func main() {
 
 	// Rutas de proxy
 	proxy.RegisterRoutes(r)
+
+	// Registrar handlers
+	handlers.RegisterSpecialRoutes(r)
 
 	log.Printf("API Gateway escuchando en :%s", cfg.Port)
 	if err := r.Run(":" + cfg.Port); err != nil {

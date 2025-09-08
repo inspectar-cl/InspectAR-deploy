@@ -29,16 +29,16 @@ INSERT INTO tecnicos (nombre, apellido, email, telefono, especialidad, empresa_i
 ON CONFLICT (email) DO NOTHING;
 
 -- Insertar activos industriales (solo tipos permitidos: caldera, bomba de agua, ascensor, transformador)
-INSERT INTO activos (activo_id, nombre, tipo, estado, ubicacion, edificio_id) VALUES
-('AC-1001', 'Caldera Principal', 'caldera', 'operativo', 'Sala de Calderas 1', 1),
-('AC-1002', 'Bomba Centrífuga A', 'bomba de agua', 'operativo', 'Sala de Bombas', 1),
-('AC-1003', 'Bomba Hidráulica 1', 'bomba de agua', 'operativo', 'Sala de Bombas', 2),
-('AC-1004', 'Ascensor Norte', 'ascensor', 'operativo', 'Torre Norte - Piso 1', 2),
-('AC-1005', 'Transformador Secundario', 'transformador', 'mantenimiento', 'Subestación Secundaria', 3),
-('AC-1006', 'Transformador Principal', 'transformador', 'operativo', 'Subestación Eléctrica', 3),
-('AC-1007', 'Ascensor Central', 'ascensor', 'operativo', 'Edificio Central - Hall', 1),
-('AC-1008', 'Bomba de Emergencia', 'bomba de agua', 'stand_by', 'Planta de Emergencia', 4)
-ON CONFLICT (activo_id) DO NOTHING;
+INSERT INTO activos (nombre, tipo, estado, ubicacion, edificio_id) VALUES
+('Caldera Principal', 'caldera', 'operativo', 'Sala de Calderas 1', 1),
+('Bomba Centrífuga A', 'bomba de agua', 'operativo', 'Sala de Bombas', 1),
+('Bomba Hidráulica 1', 'bomba de agua', 'operativo', 'Sala de Bombas', 2),
+('Ascensor Norte', 'ascensor', 'operativo', 'Torre Norte - Piso 1', 2),
+('Transformador Secundario', 'transformador', 'mantenimiento', 'Subestación Secundaria', 3),
+('Transformador Principal', 'transformador', 'operativo', 'Subestación Eléctrica', 3),
+('Ascensor Central', 'ascensor', 'operativo', 'Edificio Central - Hall', 1),
+('Bomba de Emergencia', 'bomba de agua', 'stand_by', 'Planta de Emergencia', 4)
+ON CONFLICT (id) DO NOTHING;
 
 -- Autorizar técnicos para activos específicos
 INSERT INTO activos_tecnicos_autorizados (tecnico_id, activo_id, edificio_id) VALUES

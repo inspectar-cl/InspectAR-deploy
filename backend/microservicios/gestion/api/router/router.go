@@ -78,7 +78,16 @@ func SetupRouter(
 	r.PUT("/acciones/:id/estado", accionHandler.ActualizarEstado)
 	r.GET("/acciones/pendientes", accionHandler.ObtenerAccionesPendientes) // Acciones pendientes con prioridad
 
-	// Rutas de reportes (HdU04 - Reportes automáticos)
+	// Rutas de reportes (HdU04 - Reportes automáticos con observaciones editables)
+	// Nuevas rutas para gestión completa de reportes con observaciones
+	r.POST("/reportes", reporteHandler.CrearReporte)                                                            // Crear reporte con observaciones
+	r.GET("/reportes", reporteHandler.ObtenerTodosLosReportes)                                                  // Obtener todos los reportes
+	r.GET("/reportes/:id", reporteHandler.ObtenerReporte)                                                       // Obtener reporte por ID
+	r.PUT("/reportes/:id/observaciones", reporteHandler.ActualizarObservaciones)                                // Actualizar observaciones
+	r.PUT("/reportes/:id/revision", reporteHandler.ActualizarEstadoRevision)                                    // Actualizar estado de revisión
+	r.GET("/reportes/activo/:activo_id/observaciones", reporteHandler.ObtenerReportesConObservacionesPorActivo) // Reportes con observaciones por activo
+
+	// Rutas originales mantenidas para compatibilidad
 	r.POST("/reportes/activo/:activo_id", reporteHandler.GenerarReportePorActivo) // Generar reporte PDF por activo
 	r.GET("/reportes/activo/:activo_id", reporteHandler.ObtenerReportesPorActivo) // Obtener reportes de un activo
 

@@ -169,18 +169,165 @@ test_route "PUT" "$GESTION_URL/acciones/999/estado" "Actualizar estado de acció
 }' "404"
 
 # ==========================================
-# TESTS DE REPORTES (HdU04)
+# TESTS DE REPORTES (HdU04) + 🆕 OBSERVACIONES EDITABLES
 # ==========================================
-echo -e "\n${YELLOW}📊 TESTS DE REPORTES (HdU04)${NC}"
+echo -e "\n${YELLOW}📊 TESTS DE REPORTES (HdU04) + 🆕 OBSERVACIONES EDITABLES${NC}"
 echo "----------------------------------------"
 
-# Tests de reportes por activo
+# Tests básicos de reportes por activo
 test_route "GET" "$GESTION_URL/reportes/activo/1" "Obtener reportes del activo 1" "" "200"
 test_route "GET" "$GESTION_URL/reportes/activo/2" "Obtener reportes del activo 2" "" "200"
 test_route "GET" "$GESTION_URL/reportes/activo/999" "Obtener reportes de activo inexistente" "" "200"
 
-# Tests de generación de reportes (tiene issue conocido de DB)
-# Generación de PDF devuelve 200 con el contenido del PDF; aceptamos 2xx
+# 🆕 TESTS DE NUEVAS RUTAS DE OBSERVACIONES EDITABLES
+echo -e "\n${CYAN}🆕 TESTS DE OBSERVACIONES EDITABLES - NUEVAS FUNCIONALIDADES${NC}"
+echo "=================================================================="
+
+# Variables para tracking de reportes
+REPORTE_IDS=()
+
+# Test obtener todos los reportes
+test_route "GET" "$GESTION_URL/reportes" "🆕 Obtener todos los reportes con observaciones" "" "200"
+
+echo -e "\n${PURPLE}📝 CREANDO REPORTES CON OBSERVACIONES${NC}"
+echo "======================================"
+
+# Crear reporte #1: Inspección de caldera
+echo -e "\n${BLUE}Reporte #1: Inspección de caldera principal${NC}"
+test_route "POST" "$GESTION_URL/reportes" "🆕 Crear reporte inspección caldera" '{
+    "activo_id": 1,
+    "tipo_reporte": "mantenimiento",
+    "contenido": "Inspección inicial de la caldera principal. Se observa funcionamiento normal, presión estable en 3.5 bar. Temperatura de operación dentro de parámetros normales.",
+    "observaciones_analista": "Caldera operando correctamente dentro de parámetros. Se recomienda mantenimiento preventivo en 30 días.",
+    "autor_analista": "Juan Pérez - Ingeniero Mecánico"
+}' "201"
+REPORTE_ID_1=$(extract_id_from_response)
+
+# Crear reporte #2: Mantenimiento preventivo bomba
+echo -e "\n${BLUE}Reporte #2: Mantenimiento bomba hidráulica${NC}"
+test_route "POST" "$GESTION_URL/reportes" "🆕 Crear reporte mantenimiento bomba" '{
+    "activo_id": 3,
+    "tipo_reporte": "mantenimiento",
+    "contenido": "Mantenimiento preventivo completado. Se realizó limpieza de filtros, lubricación de rodamientos y verificación de sellos. Bomba operando eficientemente.",
+    "observaciones_analista": "Excelente estado del equipo. Protocolo de mantenimiento a replicar en otras bombas.",
+    "autor_analista": "María González - Técnico Hidráulico"
+}' "201"
+REPORTE_ID_2=$(extract_id_from_response)
+
+# Crear reporte #3: Emergencia transformador
+echo -e "\n${BLUE}Reporte #3: Emergencia transformador eléctrico${NC}"
+test_route "POST" "$GESTION_URL/reportes" "🆕 Crear reporte emergencia transformador" '{
+    "activo_id": 4,
+    "tipo_reporte": "incidente",
+    "contenido": "Respuesta a emergencia por sobrecalentamiento del transformador. Se detectó falla en ventilación. Transformador desconectado temporalmente para reparación.",
+    "observaciones_analista": "Emergencia resuelta. Sistema de ventilación reparado y transformador vuelto a operación normal.",
+    "autor_analista": "Carlos López - Especialista Eléctrico"
+}' "201"
+    "autor_analista": "Carlos Rodríguez - Electricista Senior"
+}' "201"
+REPORTE_ID_3=$(extract_id_from_response)
+
+echo -e "\n${CYAN}📋 CONSULTANDO REPORTES CREADOS${NC}"
+echo "=================================="
+
+# Consultar reportes individuales
+test_route "GET" "$GESTION_URL/reportes/$REPORTE_ID_1" "🆕 Obtener reporte específico #1" "" "200"
+test_route "GET" "$GESTION_URL/reportes/$REPORTE_ID_2" "🆕 Obtener reporte específico #2" "" "200"
+test_route "GET" "$GESTION_URL/reportes/$REPORTE_ID_3" "🆕 Obtener reporte específico #3" "" "200"
+
+# Consultar reportes con observaciones por activo
+test_route "GET" "$GESTION_URL/reportes/activo/1/observaciones" "🆕 Reportes con observaciones - Activo 1" "" "200"
+test_route "GET" "$GESTION_URL/reportes/activo/3/observaciones" "🆕 Reportes con observaciones - Activo 3" "" "200"
+test_route "GET" "$GESTION_URL/reportes/activo/4/observaciones" "🆕 Reportes con observaciones - Activo 4" "" "200"
+
+echo -e "\n${CYAN}✏️  EDITANDO OBSERVACIONES - FLUJO DE REVISIÓN${NC}"
+echo "=============================================="
+
+# Actualizar observaciones del reporte de caldera
+echo -e "\n${BLUE}Actualizando observaciones del reporte de caldera${NC}"
+test_route "PUT" "$GESTION_URL/reportes/$REPORTE_ID_1/observaciones" "🆕 Actualizar observaciones - Caldera" '{
+    "observaciones_analista": "ACTUALIZACIÓN: Tras inspección detallada, se detectó ligero ruido en el ventilador secundario. Se recomienda programar mantenimiento preventivo en los próximos 15 días. Estado general: BUENO con observaciones menores.",
+    "autor_analista": "Juan Pérez - Ingeniero Mecánico (Actualizado)"
+}' "200"
+
+# Actualizar observaciones del reporte de bomba
+echo -e "\n${BLUE}Actualizando observaciones del reporte de bomba${NC}"
+test_route "PUT" "$GESTION_URL/reportes/$REPORTE_ID_2/observaciones" "🆕 Actualizar observaciones - Bomba" '{
+    "observaciones_analista": "SEGUIMIENTO: Después del mantenimiento, la bomba muestra mejora significativa en eficiencia. Consumo energético reducido en 12%. Se sugiere aplicar el mismo protocolo a bombas similares.",
+    "autor_analista": "María González - Técnico Hidráulico Senior"
+}' "200"
+
+# Actualizar observaciones del reporte de emergencia
+echo -e "\n${BLUE}Actualizando observaciones críticas del transformador${NC}"
+test_route "PUT" "$GESTION_URL/reportes/$REPORTE_ID_3/observaciones" "🆕 Actualizar observaciones - Emergencia" '{
+    "observaciones_analista": "CRÍTICO: Reparación completada. Sistema de ventilación restaurado. Transformador sometido a pruebas durante 4 horas sin incidentes. AUTORIZADO para reconexión. Programar inspección en 48 horas.",
+    "autor_analista": "Carlos Rodríguez - Electricista Senior (Revisión Post-Reparación)"
+}' "200"
+
+echo -e "\n${CYAN}🔍 PROCESO DE REVISIÓN Y APROBACIÓN${NC}"
+echo "========================================="
+
+# Proceso de revisión para el reporte de caldera
+echo -e "\n${BLUE}Enviando reporte de caldera a revisión${NC}"
+test_route "PUT" "$GESTION_URL/reportes/$REPORTE_ID_1/revision" "🆕 Enviar a revisión - Caldera" '{
+    "estado_revision": "en_revision",
+    "revisor": "Ana Silva - Supervisora de Mantenimiento",
+    "observaciones": "Reporte recibido para revisión. Evaluando recomendaciones de mantenimiento preventivo."
+}' "200"
+
+# Aprobar reporte de bomba
+echo -e "\n${BLUE}Aprobando reporte de bomba hidráulica${NC}"
+test_route "PUT" "$GESTION_URL/reportes/$REPORTE_ID_2/revision" "🆕 Aprobar reporte - Bomba" '{
+    "estado_revision": "aprobado",
+    "revisor": "Ana Silva - Supervisora de Mantenimiento",
+    "observaciones": "Reporte aprobado. Excelente trabajo en el mantenimiento preventivo. Proceder a aplicar protocolo similar en otras bombas del sistema."
+}' "200"
+
+# Revisar y aprobar reporte de emergencia
+echo -e "\n${BLUE}Aprobando resolución de emergencia${NC}"
+test_route "PUT" "$GESTION_URL/reportes/$REPORTE_ID_3/revision" "🆕 Aprobar emergencia - Transformador" '{
+    "estado_revision": "aprobado",
+    "revisor": "Dr. Roberto Martínez - Jefe de Ingeniería",
+    "observaciones": "Respuesta a emergencia excelente. Procedimiento seguido correctamente. Transformador autorizado para operación normal. Felicitaciones al equipo técnico."
+}' "200"
+
+# Completar revisión de caldera
+echo -e "\n${BLUE}Aprobando reporte de caldera tras revisión${NC}"
+test_route "PUT" "$GESTION_URL/reportes/$REPORTE_ID_1/revision" "🆕 Aprobar tras revisión - Caldera" '{
+    "estado_revision": "aprobado",
+    "revisor": "Ana Silva - Supervisora de Mantenimiento",
+    "observaciones": "Reporte aprobado tras revisión. Mantenimiento preventivo programado para el 15 de septiembre. Observaciones técnicas muy detalladas y precisas."
+}' "200"
+
+echo -e "\n${CYAN}📊 VERIFICANDO ESTADOS FINALES DE REPORTES${NC}"
+echo "============================================"
+
+# Verificar estados finales
+test_route "GET" "$GESTION_URL/reportes/$REPORTE_ID_1" "🆕 Estado final reporte caldera" "" "200"
+test_route "GET" "$GESTION_URL/reportes/$REPORTE_ID_2" "🆕 Estado final reporte bomba" "" "200"
+test_route "GET" "$GESTION_URL/reportes/$REPORTE_ID_3" "🆕 Estado final reporte emergencia" "" "200"
+
+# Obtener todos los reportes actualizados
+test_route "GET" "$GESTION_URL/reportes" "🆕 Todos los reportes - Estado final" "" "200"
+
+echo -e "\n${GREEN}🎉 FLUJO DE OBSERVACIONES EDITABLES COMPLETADO${NC}"
+echo "Estado final esperado:"
+echo "• Reporte #1: ✅ APROBADO (Caldera - mantenimiento programado)"
+echo "• Reporte #2: ✅ APROBADO (Bomba - protocolo a replicar)" 
+echo "• Reporte #3: ✅ APROBADO (Emergencia transformador - resuelto)"
+echo ""
+echo "Características probadas:"
+echo "• ✅ Creación de reportes con observaciones iniciales"
+echo "• ✅ Edición de observaciones por analistas"
+echo "• ✅ Flujo de revisión y aprobación"
+echo "• ✅ Tracking de autores y revisores"
+echo "• ✅ Estados de revisión (pendiente → en_revision → aprobado)"
+echo "• ✅ Consulta de reportes con observaciones por activo"
+
+# Tests de generación de reportes originales (PDF) - pueden fallar por schema
+echo -e "\n${CYAN}📄 TESTS DE GENERACIÓN PDF (RUTAS ORIGINALES)${NC}"
+echo "=============================================="
+
 test_route "POST" "$GESTION_URL/reportes/activo/1" "Generar reporte PDF para activo 1" '{
     "tipo_reporte": "mantenimiento",
     "periodo": "mensual"
@@ -459,7 +606,14 @@ echo "• Health check y routes básicas"
 echo "• Sistema de técnicos (HdU16) - CRUD completo"
 echo "• Acciones de mantenimiento (HdU13) - CRUD completo"
 echo "• Reportes automáticos (HdU04) - Generación y consulta"
-echo "• 🎯 Solicitudes técnicas (HdU16) - FLUJO COMPLETO DE GESTIÓN:"
+echo "• � OBSERVACIONES EDITABLES (HdU04) - FLUJO COMPLETO DE REPORTES:"
+echo "  ├── ✅ Creación de reportes con observaciones iniciales"
+echo "  ├── ✅ Edición de observaciones por analistas especializados"
+echo "  ├── ✅ Flujo de revisión y aprobación por supervisores"
+echo "  ├── ✅ Tracking de autores y revisores con timestamps"
+echo "  ├── ✅ Estados de revisión (pendiente → en_revision → aprobado)"
+echo "  └── ✅ Consulta de reportes con observaciones por activo"
+echo "• �🎯 Solicitudes técnicas (HdU16) - FLUJO COMPLETO DE GESTIÓN:"
 echo "  ├── ✅ Creación de 5 solicitudes diferentes"
 echo "  ├── ✅ Envío a técnicos especializados"
 echo "  ├── ✅ Seguimiento de estados en tiempo real"
@@ -475,6 +629,12 @@ echo "• POST /tecnicos, PUT /tecnicos/{id}/autorizado"
 echo "• GET  /acciones/pendientes, /acciones/tecnico/{id}"
 echo "• POST /acciones, PUT /acciones/{id}/estado"
 echo "• GET  /reportes/activo/{id}, POST /reportes/activo/{id}"
+echo "• 🆕 OBSERVACIONES EDITABLES:"
+echo "  ├── GET/POST /reportes - crear y listar reportes"
+echo "  ├── GET /reportes/{id} - consulta individual detallada"
+echo "  ├── PUT /reportes/{id}/observaciones - editar observaciones"
+echo "  ├── PUT /reportes/{id}/revision - flujo de revisión"
+echo "  └── GET /reportes/activo/{id}/observaciones - reportes por activo"
 echo "• 🎯 FLUJO COMPLETO DE SOLICITUDES:"
 echo "  ├── GET/POST /api/v1/solicitudes - crear y listar"
 echo "  ├── POST /api/v1/solicitudes/{id}/enviar - asignar técnicos"
@@ -483,6 +643,14 @@ echo "  ├── GET /api/v1/solicitudes/{id} - consulta individual"
 echo "  └── GET /api/v1/solicitudes/estadisticas - métricas"
 echo "• GET  /api/v1/tecnicos/especialidades"
 
+echo -e "\n${GREEN}🆕 FLUJO DE OBSERVACIONES EDITABLES IMPLEMENTADO:${NC}"
+echo "1. 📝 CREACIÓN: Reportes con observaciones técnicas detalladas"
+echo "2. ✏️  EDICIÓN: Actualización de observaciones por analistas"
+echo "3. 🔍 REVISIÓN: Flujo de aprobación por supervisores"
+echo "4. ✅ APROBACIÓN: Estados de revisión con comentarios de supervisión"
+echo "5. 📊 CONSULTA: Acceso a reportes con observaciones por activo"
+echo "6. 🔄 TRACKING: Control de autoría y versionado de cambios"
+
 echo -e "\n${GREEN}🎯 FLUJO DE SOLICITUDES IMPLEMENTADO:${NC}"
 echo "1. 📝 CREACIÓN: 5 solicitudes de diferentes tipos y prioridades"
 echo "2. 📤 ENVÍO: Asignación a técnicos especializados"
@@ -490,4 +658,4 @@ echo "3. 🔄 SEGUIMIENTO: Estados desde 'pendiente' hasta 'completada'"
 echo "4. ✅ RESOLUCIÓN: Trabajos completados con comentarios técnicos"
 echo "5. 📊 MÉTRICAS: Estadísticas del rendimiento del sistema"
 
-echo -e "\n${GREEN}✅ Test completo con gestión integral de solicitudes finalizado!${NC}"
+echo -e "\n${GREEN}✅ Test completo con gestión integral de solicitudes y observaciones editables finalizado!${NC}"

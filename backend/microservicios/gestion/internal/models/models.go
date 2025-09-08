@@ -95,12 +95,22 @@ type ActivoTecnico struct {
 
 // Reporte automático
 type Reporte struct {
-	ID          int       `json:"id" db:"id"`
-	ActivoID    int       `json:"activo_id" db:"activo_id"`
-	TipoReporte string    `json:"tipo_reporte" db:"tipo_reporte"` // semanal, mensual, incidente, mantenimiento
-	Contenido   string    `json:"contenido" db:"contenido"`
-	GeneradoEn  time.Time `json:"generado_en" db:"generado_en"`
-	Estado      string    `json:"estado" db:"estado"` // generado, enviado, archivado
+	ID          int    `json:"id" db:"id"`
+	ActivoID    int    `json:"activo_id" db:"activo_id"`
+	TipoReporte string `json:"tipo_reporte" db:"tipo_reporte"` // semanal, mensual, incidente, mantenimiento
+	Contenido   string `json:"contenido" db:"contenido"`
+	// Nuevos campos para observaciones y estructura
+	ObservacionesAnalista string                 `json:"observaciones_analista" db:"observaciones_analista"`
+	AutorAnalista         string                 `json:"autor_analista" db:"autor_analista"`
+	EstructuraInforme     map[string]interface{} `json:"estructura_informe" db:"estructura_informe"`
+	MetadataInforme       map[string]interface{} `json:"metadata_informe" db:"metadata_informe"`
+	VersionReporte        int                    `json:"version_reporte" db:"version_reporte"`
+	EstadoRevision        string                 `json:"estado_revision" db:"estado_revision"` // pendiente, en_revision, aprobado, rechazado
+	FechaRevision         *time.Time             `json:"fecha_revision" db:"fecha_revision"`
+	Revisor               *string                `json:"revisor" db:"revisor"`
+	//
+	GeneradoEn time.Time `json:"generado_en" db:"generado_en"`
+	Estado     string    `json:"estado" db:"estado"` // generado, enviado, archivado
 }
 
 // DTOs para responses con relaciones
@@ -176,6 +186,41 @@ type CreateAccionMantenimientoRequest struct {
 	Tipo        string `json:"tipo" binding:"required"`
 	Descripcion string `json:"descripcion" binding:"required"`
 	Prioridad   string `json:"prioridad" binding:"required"`
+}
+
+// DTOs para reportes con observaciones
+type CreateReporteRequest struct {
+	ActivoID              int    `json:"activo_id" binding:"required"`
+	TipoReporte           string `json:"tipo_reporte" binding:"required"`
+	Contenido             string `json:"contenido,omitempty"`
+	ObservacionesAnalista string `json:"observaciones_analista,omitempty"`
+	AutorAnalista         string `json:"autor_analista,omitempty"`
+}
+
+type UpdateObservacionesRequest struct {
+	ObservacionesAnalista string `json:"observaciones_analista" binding:"required"`
+	AutorAnalista         string `json:"autor_analista" binding:"required"`
+}
+
+type UpdateEstadoRevisionRequest struct {
+	EstadoRevision string `json:"estado_revision" binding:"required"`
+	Revisor        string `json:"revisor" binding:"required"`
+	Observaciones  string `json:"observaciones,omitempty"`
+}
+
+type ReporteConObservaciones struct {
+	Reporte
+	NombreActivo string `json:"nombre_activo"`
+	TipoActivo   string `json:"tipo_activo"`
+}
+
+type EstructuraInformeReporte struct {
+	Resumen            string                 `json:"resumen"`
+	Observaciones      string                 `json:"observaciones"`
+	DatosActivo        map[string]interface{} `json:"datos_activo"`
+	AccionesRealizadas []string               `json:"acciones_realizadas"`
+	Recomendaciones    []string               `json:"recomendaciones"`
+	Conclusiones       string                 `json:"conclusiones"`
 }
 
 type UpdateEstadoAccionRequest struct {

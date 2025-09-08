@@ -51,6 +51,16 @@ CREATE TABLE IF NOT EXISTS reportes (
     activo_id INTEGER REFERENCES activos(id) ON DELETE CASCADE,
     tipo_reporte VARCHAR(50) NOT NULL CHECK (tipo_reporte IN ('semanal', 'mensual', 'incidente', 'mantenimiento')),
     contenido TEXT,
+    -- NUEVOS CAMPOS PARA OBSERVACIONES Y ESTRUCTURA
+    observaciones_analista TEXT DEFAULT '', -- Comentarios editables del analista
+    autor_analista VARCHAR(255) DEFAULT '', -- Nombre del analista que hizo el reporte
+    estructura_informe JSONB DEFAULT '{}', -- Estructura completa del informe en JSON
+    metadata_informe JSONB DEFAULT '{}', -- Metadata adicional (versión, secciones, etc.)
+    version_reporte INTEGER DEFAULT 1, -- Versión del reporte (para tracking de cambios)
+    estado_revision VARCHAR(50) DEFAULT 'pendiente' CHECK (estado_revision IN ('pendiente', 'en_revision', 'aprobado', 'rechazado')),
+    fecha_revision TIMESTAMP NULL, -- Fecha de la última revisión
+    revisor VARCHAR(255) DEFAULT '', -- Nombre del revisor
+    --
     generado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     estado VARCHAR(50) DEFAULT 'generado' CHECK (estado IN ('generado', 'enviado', 'archivado'))
 );
@@ -160,6 +170,10 @@ CREATE INDEX IF NOT EXISTS idx_acciones_prioridad ON acciones_mantenimiento(prio
 CREATE INDEX IF NOT EXISTS idx_acciones_activo ON acciones_mantenimiento(activo_id);
 CREATE INDEX IF NOT EXISTS idx_reportes_tipo ON reportes(tipo_reporte);
 CREATE INDEX IF NOT EXISTS idx_reportes_fecha ON reportes(generado_en);
+-- NUEVOS ÍNDICES PARA FUNCIONALIDADES EXTENDIDAS
+CREATE INDEX IF NOT EXISTS idx_reportes_estado_revision ON reportes(estado_revision);
+CREATE INDEX IF NOT EXISTS idx_reportes_autor ON reportes(autor_analista);
+CREATE INDEX IF NOT EXISTS idx_reportes_version ON reportes(version_reporte);
 CREATE INDEX IF NOT EXISTS idx_activos_tecnicos_activo ON activos_tecnicos(activo_id);
 CREATE INDEX IF NOT EXISTS idx_activos_tecnicos_tecnico ON activos_tecnicos(tecnico_id);
 

@@ -135,7 +135,7 @@ const DocumentosAsociados = () => {
       console.log(key, value);
     });
     try {
-      // console.log("formData to send:", formData);
+      console.log("formData to send:", formData);
       await gs.post("/documentacion/documentos", formData);
       // Subido correctamente, puedes recargar documentos
       const data = await gs.get("/documentacion/documentos");

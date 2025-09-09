@@ -58,11 +58,15 @@ db.sensor_status.deleteMany({});
 print('📦 Insertando activos sincronizados...');
 db.activos.insertMany([
   {
-  activo_id: 1,
-    nombre: 'Caldera Principal',
-    estado: 'operativo',
+    activo_id: 1,
+    nombre: 'BombaDeAgua #1 ML',
+    ubicacion: 'Planta B',
+    estado: 'OK',
+    id_edificio: 'EB',
+    tipo: 'bomba de agua',
+    // Campos adicionales para compatibilidad
     edificio_id: 1,
-    tipo: 'caldera'
+    _legacy_id: 1
   },
   {
   activo_id: 2,
@@ -117,8 +121,11 @@ db.activos.insertMany([
 
 print('🔧 Insertando sensores...');
 db.sensores.insertMany([
-  {sensor_id: 'SENSOR_AC1001_01', activo_id: 1, tipo: 'temperatura', unidad: '°C'},
-  {sensor_id: 'SENSOR_AC1001_02', activo_id: 1, tipo: 'presion', unidad: 'bar'},
+  // Sensores para BombaDeAgua1 según especificación
+  {sensor_id: 'temp1', activo_id: 1, tipo: 'Temperatura', unidad: '°C', _legacy_activo_id: 1},
+  {sensor_id: 'pres1', activo_id: 1, tipo: 'Presión', unidad: 'Pa', _legacy_activo_id: 1},
+  {sensor_id: 'caud1', activo_id: 1, tipo: 'Caudal', unidad: 'm^3/s', _legacy_activo_id: 1},
+  // Sensores existentes para otros activos
   {sensor_id: 'SENSOR_AC1002_01', activo_id: 2, tipo: 'vibracion', unidad: 'mm/s'},
   {sensor_id: 'SENSOR_AC1002_02', activo_id: 2, tipo: 'caudal', unidad: 'L/min'},
   {sensor_id: 'SENSOR_AC1003_01', activo_id: 3, tipo: 'caudal', unidad: 'L/min'},
@@ -138,8 +145,11 @@ db.sensores.insertMany([
 print('📊 Insertando estados de sensores...');
 var now = new Date();
 db.sensor_status.insertMany([
-  {sensor_id: 'SENSOR_AC1001_01', activo_id: 1, estado: 'conectado', ultima_lectura: now, valor_actual: 65.5},
-  {sensor_id: 'SENSOR_AC1001_02', activo_id: 1, estado: 'conectado', ultima_lectura: now, valor_actual: 6.2},
+  // Estados para sensores de BombaDeAgua1
+  {sensor_id: 'temp1', activo_id: 1, estado: 'conectado', ultima_lectura: now, valor_actual: 65.5, _legacy_activo_id: 1},
+  {sensor_id: 'pres1', activo_id: 1, estado: 'conectado', ultima_lectura: now, valor_actual: 6200.0, _legacy_activo_id: 1}, // Convertido a Pa
+  {sensor_id: 'caud1', activo_id: 1, estado: 'conectado', ultima_lectura: now, valor_actual: 0.425, _legacy_activo_id: 1}, // Convertido a m³/s
+  // Estados existentes para otros activos
   {sensor_id: 'SENSOR_AC1002_01', activo_id: 2, estado: 'conectado', ultima_lectura: now, valor_actual: 12.8},
   {sensor_id: 'SENSOR_AC1002_02', activo_id: 2, estado: 'conectado', ultima_lectura: now, valor_actual: 425.0},
   {sensor_id: 'SENSOR_AC1003_01', activo_id: 3, estado: 'conectado', ultima_lectura: now, valor_actual: 280.5},

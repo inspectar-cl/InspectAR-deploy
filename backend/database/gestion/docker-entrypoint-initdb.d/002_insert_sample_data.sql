@@ -30,7 +30,7 @@ ON CONFLICT (email) DO NOTHING;
 
 -- Insertar activos industriales (solo tipos permitidos: caldera, bomba de agua, ascensor, transformador)
 INSERT INTO activos (nombre, tipo, estado, ubicacion, edificio_id) VALUES
-('Caldera Principal', 'caldera', 'operativo', 'Sala de Calderas 1', 1),
+('BombaDeAgua #1 ML', 'bomba de agua', 'operativo', 'Planta B', 1),
 ('Bomba Centrífuga A', 'bomba de agua', 'operativo', 'Sala de Bombas', 1),
 ('Bomba Hidráulica 1', 'bomba de agua', 'operativo', 'Sala de Bombas', 2),
 ('Ascensor Norte', 'ascensor', 'operativo', 'Torre Norte - Piso 1', 2),

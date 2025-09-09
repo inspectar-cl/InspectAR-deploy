@@ -16,7 +16,7 @@ INSERT INTO usuarios (scope, usuario, correo, numero, edificio_id) VALUES
 
 -- Insertar activos sincronizados con Gestión DB (mismo orden, nombres y edificios)
 INSERT INTO activos (nombre, edificio_id) VALUES
-('Caldera Principal', 1),              -- ID 1 -> AC-1001
+('BombaDeAgua #1 ML', 1),              -- ID 1 -> AC-1001
 ('Bomba Centrífuga A', 1),             -- ID 2 -> AC-1002
 ('Bomba Hidráulica 1', 2),             -- ID 3 -> AC-1003
 ('Ascensor Norte', 2),                 -- ID 4 -> AC-1004

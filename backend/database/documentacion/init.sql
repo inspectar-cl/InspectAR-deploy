@@ -95,10 +95,10 @@ INSERT INTO documentos (
     tipo_archivo, ruta_archivo, tamano_bytes, fecha_emision, 
     subido_por, palabras_clave, es_ficha_tecnica
 ) VALUES 
--- Documentos para activo 1 (AC-1001 - Caldera Principal)
-(1, NULL, 'Ficha Técnica Caldera Principal Bosch', 'Especificaciones técnicas oficiales del fabricante para caldera industrial', 'ficha_tecnica', 'pdf', '1_ficha_tecnica_caldera_bosch.pdf', 2048576, '2024-01-15', 'admin_sistema', 'caldera,bosch,ficha tecnica,especificaciones,fabricante', true),
-(1, 1, 'Manual de Operación Caldera Bosch', 'Manual completo de operación, mantenimiento preventivo y correctivo', 'manual_fabricante', 'pdf', '1_manual_operacion_caldera.pdf', 5242880, '2024-01-15', 'tecnico_juan', 'manual,operacion,mantenimiento,caldera,procedimientos', false),
-(1, NULL, 'Certificación de Seguridad Caldera Principal', 'Documento de certificación de seguridad emitido por organismo competente', 'certificacion', 'pdf', '1_certificacion_seguridad.pdf', 1528617, '2024-01-10', 'admin_sistema', 'certificacion,seguridad,caldera,normativas,cumplimiento', false),
+-- Documentos para activo 1 (AC-1001 - BombaDeAgua #1 ML)
+(1, NULL, 'Ficha Técnica BombaDeAgua #1 ML Grundfos', 'Especificaciones técnicas oficiales del fabricante para bomba de agua industrial', 'ficha_tecnica', 'pdf', '1_ficha_tecnica_bomba_ml_grundfos.pdf', 2048576, '2024-01-15', 'admin_sistema', 'bomba,grundfos,ficha tecnica,especificaciones,fabricante,ML', true),
+(1, 1, 'Manual de Operación BombaDeAgua #1 ML', 'Manual completo de operación, mantenimiento preventivo y correctivo para bomba de agua ML', 'manual_fabricante', 'pdf', '1_manual_operacion_bomba_ml.pdf', 5242880, '2024-01-15', 'tecnico_juan', 'manual,operacion,mantenimiento,bomba,procedimientos,ML', false),
+(1, NULL, 'Certificación de Seguridad BombaDeAgua #1 ML', 'Documento de certificación de seguridad emitido por organismo competente para bomba ML', 'certificacion', 'pdf', '1_certificacion_seguridad_bomba_ml.pdf', 1528617, '2024-01-10', 'admin_sistema', 'certificacion,seguridad,bomba,normativas,cumplimiento,ML', false),
 
 -- Documentos para activo 2 (AC-1002 - Bomba Centrífuga A)
 (2, NULL, 'Ficha Técnica Bomba Centrífuga Grundfos', 'Especificaciones técnicas bomba centrífuga', 'ficha_tecnica', 'pdf', '2_ficha_tecnica_bomba_grundfos.pdf', 1524288, '2023-12-10', 'admin_sistema', 'bomba,grundfos,ficha tecnica,centrifuga', true),
@@ -125,13 +125,13 @@ INSERT INTO documentos (
 -- Insertar algunos análisis de IA de ejemplo
 INSERT INTO analisis_ia (documento_id, resumen, puntos_claves, graficos_detectados, estado) VALUES 
 (1, 
- 'Ficha técnica de caldera industrial Bosch de 500kW con especificaciones completas de operación, mantenimiento y seguridad. Incluye parámetros críticos de funcionamiento y requisitos de instalación.',
- '["Capacidad térmica: 500kW", "Presión máxima operación: 150 PSI", "Temperatura máxima: 180°C", "Combustible: Gas natural/GLP", "Eficiencia energética: 92%", "Mantenimiento preventivo cada 90 días", "Certificación ISO 9001 y CE"]',
- '["Diagrama esquemático del sistema de combustión", "Tabla de especificaciones técnicas principales", "Gráfico de curva de eficiencia vs carga", "Plano de dimensiones y conexiones"]',
+ 'Ficha técnica de bomba de agua industrial Grundfos ML de 50HP con especificaciones completas de operación, mantenimiento y seguridad. Incluye parámetros críticos de funcionamiento y requisitos de instalación.',
+ '["Potencia: 50HP", "Presión máxima operación: 150 PSI", "Caudal máximo: 425 L/min", "Temperatura máxima: 80°C", "Eficiencia energética: 89%", "Mantenimiento preventivo cada 60 días", "Certificación ISO 9001 y CE"]',
+ '["Diagrama esquemático del sistema hidráulico", "Tabla de especificaciones técnicas principales", "Gráfico de curva de eficiencia vs caudal", "Plano de dimensiones y conexiones"]',
  'completado'),
 
 (3,
- 'Certificación de seguridad para caldera industrial que valida el cumplimiento de normativas nacionales e internacionales. Documento oficial emitido por organismo certificador autorizado.',
+ 'Certificación de seguridad para bomba de agua industrial que valida el cumplimiento de normativas nacionales e internacionales. Documento oficial emitido por organismo certificador autorizado.',
  '["Certificación vigente hasta: Enero 2025", "Normas cumplidas: ISO 14001, OHSAS 18001", "Inspección realizada: Diciembre 2023", "Estado de seguridad: CONFORME", "Sistemas de protección verificados", "Válvulas de seguridad calibradas", "Sistema de monitoreo operativo"]',
  '["Tabla de normativas aplicables", "Checklist de verificación de seguridad", "Diagrama de sistemas de protección", "Certificados de calibración de instrumentos"]',
  'completado'),
@@ -145,15 +145,15 @@ INSERT INTO analisis_ia (documento_id, resumen, puntos_claves, graficos_detectad
 -- Insertar consultas de ejemplo para demostrar funcionalidad
 INSERT INTO consultas_ia (documento_id, pregunta, respuesta, confianza, fuentes, tiempo_respuesta_ms) VALUES
 (1,
- '¿Cuál es la capacidad térmica de esta caldera?',
- 'La caldera Bosch tiene una capacidad térmica de 500kW. Esta información se encuentra especificada en la tabla de características técnicas principales del documento.',
+ '¿Cuál es la potencia de esta bomba?',
+ 'La bomba Grundfos ML tiene una potencia de 50HP. Esta información se encuentra especificada en la tabla de características técnicas principales del documento.',
  0.98,
  '["Tabla de especificaciones técnicas principales", "Sección 2.1 - Características técnicas"]',
  1250),
 
 (1,
  '¿Qué eficiencia energética tiene este equipo?',
- 'La caldera tiene una eficiencia energética del 92%, lo que la clasifica como un equipo de alta eficiencia. Está certificada bajo normas ISO 9001 y CE.',
+ 'La bomba tiene una eficiencia energética del 89%, lo que la clasifica como un equipo de alta eficiencia. Está certificada bajo normas ISO 9001 y CE.',
  0.96,
  '["Sección de eficiencia energética", "Certificaciones"]',
  980),
@@ -166,8 +166,8 @@ INSERT INTO consultas_ia (documento_id, pregunta, respuesta, confianza, fuentes,
  890),
 
 (3,
- '¿Qué normativas cumple la caldera?',
- 'La caldera cumple con las normativas ISO 14001 (gestión ambiental) y OHSAS 18001 (seguridad y salud ocupacional). También cuenta con verificación de sistemas de protección y calibración de válvulas de seguridad.',
+ '¿Qué normativas cumple la bomba?',
+ 'La bomba cumple con las normativas ISO 14001 (gestión ambiental) y OHSAS 18001 (seguridad y salud ocupacional). También cuenta con verificación de sistemas de protección y calibración de válvulas de seguridad.',
  0.97,
  '["Tabla de normativas aplicables", "Sistemas de protección verificados", "Certificados de calibración"]',
  1100),

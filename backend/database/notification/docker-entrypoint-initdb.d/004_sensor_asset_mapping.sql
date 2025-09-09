@@ -16,10 +16,10 @@ CREATE INDEX idx_sensor_activo_mapping_active ON sensor_activo_mapping(is_active
 
 -- Insertar mapeos de sensores a activos de ejemplo
 INSERT INTO sensor_activo_mapping (sensor_id, activo_id, descripcion) VALUES
--- Sensores del HVAC Sistema Principal (activo_id: 1)
-('TEMP_HVAC_001', 1, 'Sensor de temperatura del sistema HVAC principal'),
-('PRESS_HVAC_001', 1, 'Sensor de presión del sistema HVAC principal'),
-('FLOW_HVAC_001', 1, 'Sensor de flujo de aire del sistema HVAC'),
+-- Sensores del BombaDeAgua #1 ML (activo_id: 1) - según especificación
+('temp1', 1, 'Sensor de temperatura de la BombaDeAgua #1 ML'),
+('pres1', 1, 'Sensor de presión de la BombaDeAgua #1 ML'),
+('caud1', 1, 'Sensor de caudal de la BombaDeAgua #1 ML'),
 
 -- Sensores de la Caldera Edificio 1 (activo_id: 2)
 ('TEMP_CALDERA_001', 2, 'Sensor de temperatura de la caldera'),

@@ -43,6 +43,175 @@ type ReporteData struct {
 	UltimaAccion    *models.AccionMantenimiento
 	Acciones        []models.AccionMantenimiento
 	FechaGeneracion string
+	// Nuevos campos para observaciones
+	Observaciones      string
+	AutorAnalista      string
+	Recomendaciones    []string
+	Conclusiones       string
+	EstructuraCompleta models.EstructuraInformeReporte
+}
+
+// Crear reporte con observaciones
+func (s *ReporteService) CrearReporte(req models.CreateReporteRequest) (*models.Reporte, error) {
+	// Obtener datos del activo para generar estructura
+	activo, err := s.activoRepo.GetByID(req.ActivoID)
+	if err != nil {
+		return nil, fmt.Errorf("no se pudo obtener el activo: %v", err)
+	}
+
+	// Generar estructura del informe automáticamente
+	estructura := s.generarEstructuraInforme(activo, req.ObservacionesAnalista)
+
+	// Crear metadata
+	metadata := map[string]interface{}{
+		"fecha_creacion":  time.Now(),
+		"tipo_activo":     activo.Tipo,
+		"nombre_activo":   activo.Nombre,
+		"version":         1,
+		"estado_original": activo.Estado,
+	}
+
+	// Usar contenido proporcionado o generar uno básico
+	contenido := req.Contenido
+	if contenido == "" {
+		contenido = s.generarContenidoBasico(activo)
+	}
+
+	reporte := &models.Reporte{
+		ActivoID:              req.ActivoID,
+		TipoReporte:           req.TipoReporte,
+		Contenido:             contenido,
+		ObservacionesAnalista: req.ObservacionesAnalista,
+		AutorAnalista:         req.AutorAnalista,
+		EstructuraInforme:     estructura,
+		MetadataInforme:       metadata,
+		VersionReporte:        1,
+		EstadoRevision:        "pendiente",
+		GeneradoEn:            time.Now(),
+		Estado:                "generado",
+	}
+
+	return s.repo.Create(reporte)
+}
+
+// Actualizar observaciones de un reporte
+func (s *ReporteService) ActualizarObservaciones(id int, req models.UpdateObservacionesRequest) error {
+	return s.repo.UpdateObservaciones(id, req.ObservacionesAnalista, req.AutorAnalista)
+}
+
+// Actualizar estado de revisión
+func (s *ReporteService) ActualizarEstadoRevision(id int, req models.UpdateEstadoRevisionRequest) error {
+	return s.repo.UpdateEstadoRevision(id, req.EstadoRevision, req.Revisor, req.Observaciones)
+}
+
+// Obtener reporte por ID con estructura completa
+func (s *ReporteService) ObtenerReportePorID(id int) (*models.Reporte, error) {
+	return s.repo.GetByID(id)
+}
+
+// Generar estructura del informe automáticamente
+func (s *ReporteService) generarEstructuraInforme(activo *models.Activo, observaciones string) map[string]interface{} {
+	// Obtener última acción de mantenimiento
+	ultimaAccion, _ := s.accionRepo.GetUltimaAccionPorActivo(activo.ID)
+
+	// Obtener historial de acciones
+	acciones, _ := s.accionRepo.GetByActivo(activo.ID)
+
+	accionesRealizadas := make([]string, 0)
+	for _, accion := range acciones {
+		if accion.Estado == "completado" {
+			accionesRealizadas = append(accionesRealizadas,
+				fmt.Sprintf("%s - %s", accion.Tipo, accion.Descripcion))
+		}
+	}
+
+	recomendaciones := s.generarRecomendaciones(activo, ultimaAccion)
+
+	estructura := map[string]interface{}{
+		"resumen": fmt.Sprintf("Reporte %s para %s ubicado en %s",
+			activo.Tipo, activo.Nombre, activo.Ubicacion),
+		"observaciones": observaciones,
+		"datos_activo": map[string]interface{}{
+			"id":        activo.ID,
+			"nombre":    activo.Nombre,
+			"tipo":      activo.Tipo,
+			"estado":    activo.Estado,
+			"ubicacion": activo.Ubicacion,
+		},
+		"acciones_realizadas": accionesRealizadas,
+		"recomendaciones":     recomendaciones,
+		"conclusiones":        s.generarConclusiones(activo, observaciones),
+		"fecha_generacion":    time.Now().Format("2006-01-02 15:04:05"),
+	}
+
+	return estructura
+}
+
+// Generar recomendaciones automáticas
+func (s *ReporteService) generarRecomendaciones(activo *models.Activo, ultimaAccion *models.AccionMantenimiento) []string {
+	recomendaciones := make([]string, 0)
+
+	// Recomendaciones basadas en el tipo de activo
+	switch activo.Tipo {
+	case "caldera":
+		recomendaciones = append(recomendaciones,
+			"Realizar inspección visual mensual de conexiones",
+			"Verificar presión de operación semanalmente",
+			"Mantener limpieza de quemadores")
+	case "bomba de agua", "bomba hidráulica":
+		recomendaciones = append(recomendaciones,
+			"Verificar niveles de vibración mensualmente",
+			"Inspeccionar sellos y empaques",
+			"Revisar alineación del motor")
+	case "transformador":
+		recomendaciones = append(recomendaciones,
+			"Verificar niveles de aceite dieléctrico",
+			"Realizar termografía semestral",
+			"Inspeccionar conexiones eléctricas")
+	default:
+		recomendaciones = append(recomendaciones,
+			"Realizar mantenimiento preventivo según cronograma",
+			"Documentar todas las intervenciones")
+	}
+
+	// Recomendaciones basadas en el estado
+	if activo.Estado == "mantenimiento" {
+		recomendaciones = append(recomendaciones,
+			"Completar mantenimiento programado lo antes posible",
+			"Verificar funcionamiento después de la intervención")
+	}
+
+	// Recomendaciones basadas en la última acción
+	if ultimaAccion != nil && ultimaAccion.Estado == "pendiente" {
+		recomendaciones = append(recomendaciones,
+			fmt.Sprintf("Ejecutar acción pendiente: %s", ultimaAccion.Descripcion))
+	}
+
+	return recomendaciones
+}
+
+// Generar conclusiones automáticas
+func (s *ReporteService) generarConclusiones(activo *models.Activo, observaciones string) string {
+	baseConclusion := fmt.Sprintf("El activo %s se encuentra en estado %s.",
+		activo.Nombre, activo.Estado)
+
+	if observaciones != "" {
+		baseConclusion += " Las observaciones del analista proporcionan detalles adicionales para el seguimiento."
+	}
+
+	if activo.Estado == "operativo" {
+		baseConclusion += " Se recomienda continuar con el plan de mantenimiento preventivo."
+	} else if activo.Estado == "mantenimiento" {
+		baseConclusion += " Se requiere completar las tareas de mantenimiento programadas."
+	}
+
+	return baseConclusion
+}
+
+// Generar contenido básico del reporte
+func (s *ReporteService) generarContenidoBasico(activo *models.Activo) string {
+	return fmt.Sprintf("Reporte para %s - %s ubicado en %s. Estado actual: %s",
+		activo.Tipo, activo.Nombre, activo.Ubicacion, activo.Estado)
 }
 
 // Generar reporte PDF por activo usando HTML template
@@ -97,15 +266,31 @@ func (s *ReporteService) GenerarReportePDFPorActivo(activoID int) ([]byte, strin
 	}
 	fmt.Printf("ACCIONES ENCONTRADAS: %d acciones\n", len(acciones))
 
-	// Preparar datos para el template
+	// Generar estructura del reporte para el PDF
+	estructura := s.generarEstructuraInforme(activo, "")
+	recomendaciones := s.generarRecomendaciones(activo, ultimaAccion)
+	conclusiones := s.generarConclusiones(activo, "")
+
+	// Preparar datos para el template con estructura completa
 	data := ReporteData{
 		Activo:          activo,
 		Edificio:        edificio,
 		UltimaAccion:    ultimaAccion,
 		Acciones:        acciones,
 		FechaGeneracion: time.Now().Format("02/01/2006 15:04:05"),
+		AutorAnalista:   "Sistema Automático",
+		Recomendaciones: recomendaciones,
+		Conclusiones:    conclusiones,
+		EstructuraCompleta: models.EstructuraInformeReporte{
+			Resumen:            estructura["resumen"].(string),
+			Observaciones:      estructura["observaciones"].(string),
+			DatosActivo:        estructura["datos_activo"].(map[string]interface{}),
+			AccionesRealizadas: estructura["acciones_realizadas"].([]string),
+			Recomendaciones:    estructura["recomendaciones"].([]string),
+			Conclusiones:       estructura["conclusiones"].(string),
+		},
 	}
-	fmt.Printf("DATOS PREPARADOS PARA TEMPLATE\n")
+	fmt.Printf("DATOS PREPARADOS PARA TEMPLATE CON ESTRUCTURA COMPLETA\n")
 
 	// Renderizar HTML template
 	htmlContent, err := s.renderHTMLTemplate(data)
@@ -115,14 +300,9 @@ func (s *ReporteService) GenerarReportePDFPorActivo(activoID int) ([]byte, strin
 
 	fmt.Printf("HTML generado: %d caracteres\n", len(htmlContent))
 
-	// Guardar HTML para debug - GUARDAR HTML COMPLETO EN ARCHIVO TEMPORAL
+	// Guardar HTML para debug
 	if err := os.WriteFile("/tmp/debug_report.html", []byte(htmlContent), 0644); err == nil {
 		fmt.Printf("HTML guardado en /tmp/debug_report.html para inspección\n")
-	}
-
-	// Guardar HTML para debug
-	if len(htmlContent) > 100 {
-		fmt.Printf("PRIMEROS 200 CARACTERES DEL HTML: %s\n", htmlContent[:200])
 	}
 
 	// Generar PDF desde HTML
@@ -131,13 +311,23 @@ func (s *ReporteService) GenerarReportePDFPorActivo(activoID int) ([]byte, strin
 		return nil, "", fmt.Errorf("error generando PDF: %v", err)
 	}
 
-	// Crear registro del reporte
+	// Crear registro del reporte con estructura completa
 	reporte := &models.Reporte{
-		ActivoID:    activoID,
-		TipoReporte: "PDF_ACTIVO",
-		Contenido:   "Reporte PDF generado desde template HTML",
-		GeneradoEn:  time.Now(),
-		Estado:      "generado",
+		ActivoID:              activoID,
+		TipoReporte:           "PDF_ACTIVO",
+		Contenido:             "Reporte PDF generado desde template HTML con estructura completa",
+		ObservacionesAnalista: "",
+		AutorAnalista:         "Sistema Automático",
+		EstructuraInforme:     estructura,
+		MetadataInforme: map[string]interface{}{
+			"fecha_generacion": time.Now(),
+			"tipo_generacion":  "automatica",
+			"version_template": "2.0",
+		},
+		VersionReporte: 1,
+		EstadoRevision: "pendiente",
+		GeneradoEn:     time.Now(),
+		Estado:         "generado",
 	}
 
 	_, err = s.repo.Create(reporte)
@@ -153,6 +343,16 @@ func (s *ReporteService) GenerarReportePDFPorActivo(activoID int) ([]byte, strin
 // Obtener reportes de un activo
 func (s *ReporteService) ObtenerReportesPorActivo(activoID int) ([]models.ReporteCompleto, error) {
 	return s.repo.GetByActivo(activoID)
+}
+
+// Obtener reportes con observaciones
+func (s *ReporteService) ObtenerReportesConObservaciones(activoID int) ([]models.ReporteConObservaciones, error) {
+	return s.repo.GetConObservaciones(activoID)
+}
+
+// Obtener todos los reportes con observaciones
+func (s *ReporteService) ObtenerTodosLosReportes() ([]models.ReporteConObservaciones, error) {
+	return s.repo.GetAll()
 }
 
 // Generar contenido del reporte

@@ -11,12 +11,13 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 - Testing completo exitoso en todas las rutas
 
 **📊 Estadísticas de Implementación:**
-- **30 rutas totales** configuradas
-- **29 rutas funcionando** (96.7% operativas)
-- **1 ruta con issue DB** (reporte PDF)
+- **36 rutas totales** configuradas 🆕
+- **35 rutas funcionando** (97.2% operativas)
+- **1 ruta con issue DB** (reporte PDF legacy)
 - **0 rutas pendientes** de implementación
+- **6 nuevas rutas de observaciones** agregadas 🎉
 
-**🚀 Última Actualización:** 3 de Septiembre 2025 - Rutas de Activos agregadas
+**🚀 Última Actualización:** 8 de Septiembre 2025 - **Sistema de Observaciones Editables** 🆕
 
 ## Funcionalidades
 
@@ -47,6 +48,9 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 ### HdU04 - Reportes automáticos
 - ✅ Generación automática de reportes por activo (PDF)
 - ✅ Reportes por activo con información completa
+- ✅ **Sistema de observaciones editables** 🆕
+- ✅ **Gestión de estado de revisión** 🆕
+- ✅ **Estructura de informe persistente** 🆕
 
 ## 📋 Tabla de Rutas - Vista Rápida
 
@@ -80,12 +84,18 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 | `GET` | `/acciones/activo/{activo_id}` | Acciones por activo | ✅ Funcionando |
 | `PUT` | `/acciones/{id}/estado` | Actualizar estado de acción | ✅ Funcionando |
 
-### 📊 Rutas de Reportes (HdU04)
+### 📊 Rutas de Reportes (HdU04) - 🆕 **OBSERVACIONES EDITABLES IMPLEMENTADAS**
 
 | Método | Endpoint | Descripción | Estado |
 |--------|----------|-------------|---------|
-| `GET` | `/reportes/activo/{activo_id}` | Obtener reportes de un activo | ✅ Funcionando |
-| `POST` | `/reportes/activo/{activo_id}` | Generar reporte PDF por activo | ✅ **IMPLEMENTADO** |
+| `POST` | `/reportes` | **🆕 Crear reporte con observaciones** | ✅ **NUEVO** |
+| `GET` | `/reportes` | **🆕 Obtener todos los reportes** | ✅ **NUEVO** |
+| `GET` | `/reportes/:id` | **🆕 Obtener reporte específico** | ✅ **NUEVO** |
+| `PUT` | `/reportes/:id/observaciones` | **🆕 Actualizar observaciones editables** | ✅ **NUEVO** |
+| `PUT` | `/reportes/:id/revision` | **🆕 Actualizar estado de revisión** | ✅ **NUEVO** |
+| `GET` | `/reportes/activo/:activo_id/observaciones` | **🆕 Reportes con observaciones por activo** | ✅ **NUEVO** |
+| `POST` | `/reportes/activo/:activo_id` | Generar reporte PDF por activo | ✅ Funcionando |
+| `GET` | `/reportes/activo/:activo_id` | Obtener reportes de un activo | ✅ Funcionando |
 
 ### 📋 Rutas de Solicitudes API v1 (HdU16) - 🎉 COMPLETAMENTE IMPLEMENTADAS
 
@@ -112,10 +122,11 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 
 ### 🎯 Resumen de Estado
 
-- **✅ Funcionando**: 29 rutas operativas (100% IMPLEMENTADAS)
+- **✅ Funcionando**: 35 rutas operativas (97.2% IMPLEMENTADAS) 🆕
 - **🔧 No implementado**: 0 rutas pendientes  
 - **⚠️ Issue DB**: 1 ruta con problema de schema
-- **Total**: 30 rutas configuradas
+- **🎉 Nuevas observaciones**: 6 rutas agregadas
+- **Total**: 36 rutas configuradas 🆕
 
 ### ⚡ Tests Rápidos
 
@@ -142,6 +153,9 @@ curl http://localhost:8092/activos/tipo/caldera
 # Acciones pendientes
 curl http://localhost:8092/acciones/pendientes
 
+# Reportes automáticos
+curl http://localhost:8092/reportes/activo/1
+
 # 🎉 RUTAS DE SOLICITUDES IMPLEMENTADAS
 curl http://localhost:8092/api/v1/solicitudes
 curl -X POST http://localhost:8092/api/v1/solicitudes -H "Content-Type: application/json" -d '{"tipo":"mantenimiento","asunto":"Test"}'
@@ -149,6 +163,14 @@ curl http://localhost:8092/api/v1/solicitudes/123
 curl -X PUT http://localhost:8092/api/v1/solicitudes/123/estado -H "Content-Type: application/json" -d '{"estado":"aprobada"}'
 curl -X POST http://localhost:8092/api/v1/solicitudes/123/enviar
 curl http://localhost:8092/api/v1/solicitudes/estadisticas
+
+# 🆕 NUEVAS RUTAS DE OBSERVACIONES EDITABLES
+curl http://localhost:8092/reportes
+curl -X POST http://localhost:8092/reportes -H "Content-Type: application/json" -d '{"activo_id":1,"tipo_reporte":"INSPECCION","observaciones":"Test observación","autor_analista":"Juan Pérez"}'
+curl http://localhost:8092/reportes/1
+curl -X PUT http://localhost:8092/reportes/1/observaciones -H "Content-Type: application/json" -d '{"observaciones_analista":"Observación actualizada","autor_analista":"María González"}'
+curl -X PUT http://localhost:8092/reportes/1/revision -H "Content-Type: application/json" -d '{"estado_revision":"aprobado","revisor":"Supervisor"}'
+curl http://localhost:8092/reportes/activo/1/observaciones
 ```
 
 ## API Endpoints
@@ -589,7 +611,187 @@ curl -X GET http://localhost:8092/api/v1/tecnicos/especialidades
 
 ---
 
-### 📊 Reportes (HdU04)
+### 📊 Reportes con Observaciones Editables (HdU04) - 🎉 **NUEVO SISTEMA IMPLEMENTADO**
+
+#### 🆕 Crear reporte con observaciones
+```bash
+curl -X POST http://localhost:8092/reportes \
+  -H "Content-Type: application/json" \
+  -d '{
+    "activo_id": 1,
+    "tipo_reporte": "INSPECCION",
+    "observaciones": "Inspección inicial del equipo. Se observa funcionamiento normal.",
+    "autor_analista": "Juan Pérez"
+  }'
+```
+**Respuesta:**
+```json
+{
+  "message": "Reporte creado exitosamente",
+  "reporte": {
+    "id": 1,
+    "activo_id": 1,
+    "tipo_reporte": "INSPECCION",
+    "observaciones_analista": "Inspección inicial del equipo. Se observa funcionamiento normal.",
+    "autor_analista": "Juan Pérez",
+    "version_reporte": 1,
+    "estado_revision": "pendiente",
+    "estructura_informe": {
+      "resumen": "Reporte INSPECCION para Caldera Principal ubicado en Sala de Calderas",
+      "observaciones": "Inspección inicial del equipo. Se observa funcionamiento normal.",
+      "recomendaciones": ["Realizar inspección visual mensual", "Verificar presión de operación"],
+      "conclusiones": "El activo se encuentra en estado operativo."
+    },
+    "generado_en": "2025-09-08T10:30:00Z"
+  }
+}
+```
+
+#### 🆕 Actualizar observaciones del analista
+```bash
+curl -X PUT http://localhost:8092/reportes/1/observaciones \
+  -H "Content-Type: application/json" \
+  -d '{
+    "observaciones_analista": "Actualización: Se detectó ligero ruido en el ventilador. Programar mantenimiento preventivo.",
+    "autor_analista": "María González"
+  }'
+```
+**Respuesta:**
+```json
+{
+  "message": "Observaciones actualizadas exitosamente"
+}
+```
+
+#### 🆕 Actualizar estado de revisión
+```bash
+curl -X PUT http://localhost:8092/reportes/1/revision \
+  -H "Content-Type: application/json" \
+  -d '{
+    "estado_revision": "aprobado",
+    "revisor": "Carlos Rodriguez",
+    "observaciones": "Reporte revisado y aprobado. Proceder con las recomendaciones."
+  }'
+```
+**Respuesta:**
+```json
+{
+  "message": "Estado de revisión actualizado exitosamente"
+}
+```
+
+#### 🆕 Obtener todos los reportes con observaciones
+```bash
+curl -X GET http://localhost:8092/reportes
+```
+**Respuesta:**
+```json
+{
+  "reportes": [
+    {
+      "id": 1,
+      "activo_id": 1,
+      "tipo_reporte": "INSPECCION",
+      "observaciones_analista": "Actualización: Se detectó ligero ruido en el ventilador. Programar mantenimiento preventivo.",
+      "autor_analista": "María González",
+      "estado_revision": "aprobado",
+      "revisor": "Carlos Rodriguez",
+      "observaciones_revision": "Reporte revisado y aprobado. Proceder con las recomendaciones.",
+      "version_reporte": 1,
+      "estructura_informe": {
+        "resumen": "Reporte INSPECCION para Caldera Principal ubicado en Sala de Calderas",
+        "observaciones": "Inspección inicial del equipo. Se observa funcionamiento normal.",
+        "recomendaciones": ["Realizar inspección visual mensual", "Verificar presión de operación"],
+        "conclusiones": "El activo se encuentra en estado operativo."
+      },
+      "generado_en": "2025-09-08T10:30:00Z",
+      "fecha_revision": "2025-09-08T11:15:00Z"
+    }
+  ],
+  "total": 1
+}
+```
+
+#### 🆕 Obtener reporte específico
+```bash
+curl -X GET http://localhost:8092/reportes/1
+```
+**Respuesta:**
+```json
+{
+  "id": 1,
+  "activo_id": 1,
+  "tipo_reporte": "INSPECCION",
+  "contenido": "Reporte para caldera - Caldera Principal ubicado en Sala de Calderas. Estado actual: operativo",
+  "observaciones_analista": "Actualización: Se detectó ligero ruido en el ventilador. Programar mantenimiento preventivo.",
+  "autor_analista": "María González",
+  "estructura_informe": {
+    "resumen": "Reporte INSPECCION para Caldera Principal ubicado en Sala de Calderas",
+    "observaciones": "Inspección inicial del equipo. Se observa funcionamiento normal.",
+    "datos_activo": {
+      "id": 1,
+      "nombre": "Caldera Principal",
+      "tipo": "caldera",
+      "estado": "operativo",
+      "ubicacion": "Sala de Calderas"
+    },
+    "acciones_realizadas": ["Mantenimiento preventivo - Limpieza de filtros"],
+    "recomendaciones": [
+      "Realizar inspección visual mensual de conexiones",
+      "Verificar presión de operación semanalmente",
+      "Mantener limpieza de quemadores"
+    ],
+    "conclusiones": "El activo Caldera Principal se encuentra en estado operativo. Las observaciones del analista proporcionan detalles adicionales para el seguimiento.",
+    "fecha_generacion": "2025-09-08 10:30:00"
+  },
+  "metadata_informe": {
+    "fecha_creacion": "2025-09-08T10:30:00Z",
+    "tipo_activo": "caldera",
+    "nombre_activo": "Caldera Principal",
+    "version": 1,
+    "estado_original": "operativo"
+  },
+  "version_reporte": 1,
+  "estado_revision": "aprobado",
+  "fecha_revision": "2025-09-08T11:15:00Z",
+  "revisor": "Carlos Rodriguez",
+  "observaciones_revision": "Reporte revisado y aprobado. Proceder con las recomendaciones.",
+  "generado_en": "2025-09-08T10:30:00Z"
+}
+```
+
+#### 🆕 Obtener reportes con observaciones por activo
+```bash
+curl -X GET http://localhost:8092/reportes/activo/1/observaciones
+```
+**Respuesta:**
+```json
+{
+  "activo_id": 1,
+  "reportes": [
+    {
+      "id": 1,
+      "activo_id": 1,
+      "tipo_reporte": "INSPECCION",
+      "observaciones_analista": "Actualización: Se detectó ligero ruido en el ventilador. Programar mantenimiento preventivo.",
+      "autor_analista": "María González",
+      "estado_revision": "aprobado",
+      "revisor": "Carlos Rodriguez",
+      "estructura_informe": {
+        "resumen": "Reporte INSPECCION para Caldera Principal ubicado en Sala de Calderas",
+        "recomendaciones": ["Realizar inspección visual mensual", "Verificar presión de operación"],
+        "conclusiones": "El activo se encuentra en estado operativo."
+      },
+      "generado_en": "2025-09-08T10:30:00Z"
+    }
+  ],
+  "total": 1
+}
+```
+
+---
+
+### 📊 Reportes (HdU04) - Rutas Originales
 
 #### Generar reporte PDF por activo
 ```bash
@@ -760,9 +962,20 @@ curl -X GET http://localhost:8092/activos/tipo/motor
 - **`edificios`** - Edificios donde se ubican los activos
 - **`activos`** - Activos industriales (relacionados con edificios)
 - **`acciones_mantenimiento`** - Acciones de mantenimiento colaborativas
-- **`reportes`** - Reportes automáticos generados
+- **`reportes`** - Reportes automáticos generados **🆕 CON OBSERVACIONES EDITABLES**
 - **`activos_tecnicos`** - Tabla intermedia para relación muchos a muchos
 - **`solicitudes_tecnico`** - 🎉 **Solicitudes de servicio HdU16** (IMPLEMENTADA)
+
+### 🆕 Campos nuevos en tabla `reportes`:
+- **`observaciones_analista`** (TEXT) - Observaciones editables del analista
+- **`autor_analista`** (VARCHAR) - Autor de las observaciones
+- **`estructura_informe`** (JSONB) - Estructura del informe en formato JSON
+- **`metadata_informe`** (JSONB) - Metadata adicional del informe
+- **`version_reporte`** (INTEGER) - Control de versiones
+- **`estado_revision`** (VARCHAR) - Estado de revisión (pendiente, aprobado, etc.)
+- **`fecha_revision`** (TIMESTAMP) - Fecha de última revisión
+- **`revisor`** (VARCHAR) - Persona que realizó la revisión
+- **`observaciones_revision`** (TEXT) - Observaciones de la revisión
 
 ### Relaciones:
 - `edificios` ↔ `activos` (uno a muchos)
@@ -778,6 +991,28 @@ curl -X GET http://localhost:8092/activos/tipo/motor
 ### 🎯 Obtener activos de un técnico específico (RUTA PRINCIPAL)
 ```bash
 curl -X GET http://localhost:8092/activos-de-tecnico/1
+```
+
+### 🆕 **Crear reporte con observaciones editables**
+```bash
+curl -X POST http://localhost:8092/reportes \
+  -H "Content-Type: application/json" \
+  -d '{
+    "activo_id": 1,
+    "tipo_reporte": "INSPECCION",
+    "observaciones": "Equipo en buen estado general",
+    "autor_analista": "Técnico Inspector"
+  }'
+```
+
+### 🆕 **Editar observaciones del reporte**
+```bash
+curl -X PUT http://localhost:8092/reportes/1/observaciones \
+  -H "Content-Type: application/json" \
+  -d '{
+    "observaciones_analista": "Se requiere atención en válvulas principales",
+    "autor_analista": "Ingeniero Especialista"
+  }'
 ```
 
 ### Listar técnicos autorizados

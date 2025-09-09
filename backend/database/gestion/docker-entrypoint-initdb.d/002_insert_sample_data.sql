@@ -129,6 +129,53 @@ INSERT INTO reportes (activo_id, tipo_reporte, contenido, estado) VALUES
 (7, 'mantenimiento', 'Mantenimiento programado: Chiller industrial requiere limpieza de serpentines la próxima semana.', 'generado'),
 (8, 'semanal', 'Reporte semanal: Generador de emergencia probado exitosamente. Tiempo de arranque: 12 segundos.', 'enviado');
 
+-- 🆕 INSERTAR REPORTES CON OBSERVACIONES EDITABLES (DATOS DE MUESTRA)
+INSERT INTO reportes (
+    activo_id, tipo_reporte, contenido, 
+    observaciones_analista, autor_analista, 
+    estructura_informe, metadata_informe, 
+    version_reporte, estado_revision, 
+    fecha_revision, revisor, 
+    estado
+) VALUES
+(1, 'mantenimiento', 'Reporte detallado de mantenimiento preventivo de caldera principal',
+ 'Se observó un ligero incremento en la temperatura de funcionamiento. Se recomienda revisar el sistema de refrigeración en la próxima mantención.',
+ 'Juan Pérez',
+ '{"resumen": "Mantenimiento preventivo caldera principal", "observaciones": "Ligero incremento de temperatura", "recomendaciones": ["Revisar sistema refrigeración", "Verificar sensores temperatura"], "conclusiones": "Equipo operativo con observaciones menores"}',
+ '{"fecha_creacion": "2025-09-08T10:00:00Z", "tipo_activo": "caldera", "nombre_activo": "Caldera Principal", "version": 1}',
+ 1, 'aprobado', CURRENT_TIMESTAMP - INTERVAL '2 hours', 'María González', 'enviado'),
+
+(3, 'incidente', 'Reporte de incidente menor en bomba hidráulica',
+ 'Durante la inspección rutinaria se detectó una pequeña fuga en el sello mecánico. Se programó reemplazo para el próximo mantenimiento programado.',
+ 'Carlos López',
+ '{"resumen": "Incidente menor bomba hidráulica", "observaciones": "Fuga pequeña en sello mecánico", "recomendaciones": ["Reemplazar sello mecánico", "Verificar torque de conexiones"], "conclusiones": "Incidente menor, equipo puede continuar operando"}',
+ '{"fecha_creacion": "2025-09-07T14:30:00Z", "tipo_activo": "bomba de agua", "nombre_activo": "Bomba Hidráulica 1", "version": 1}',
+ 1, 'en_revision', NULL, NULL, 'generado'),
+
+(6, 'semanal', 'Reporte semanal de monitoreo transformador',
+ 'Transformador funcionando dentro de parámetros normales. Se registró una ligera variación en los niveles de aceite dieléctrico que requiere seguimiento.',
+ 'Ana Martínez',
+ '{"resumen": "Monitoreo semanal transformador", "observaciones": "Variación en niveles aceite dieléctrico", "recomendaciones": ["Monitorear niveles aceite", "Programar análisis de aceite"], "conclusiones": "Funcionamiento normal con observación preventiva"}',
+ '{"fecha_creacion": "2025-09-06T09:15:00Z", "tipo_activo": "transformador", "nombre_activo": "Transformador Principal", "version": 1}',
+ 1, 'pendiente', NULL, NULL, 'generado');
+
+-- 🆕 INSERTAR REPORTES ADICIONALES PARA TESTING COMPLETO
+INSERT INTO reportes (
+    activo_id, tipo_reporte, contenido,
+    observaciones_analista, autor_analista,
+    version_reporte, estado_revision,
+    estado
+) VALUES
+(4, 'mantenimiento', 'Reporte de mantenimiento de ascensor',
+ 'Ascensor operando correctamente. Se realizó lubricación de guías y ajuste de puertas.',
+ 'Pedro Silva',
+ 1, 'aprobado', 'enviado'),
+
+(2, 'semanal', 'Reporte semanal bomba centrífuga',
+ 'Bomba presentando vibración ligeramente superior a lo normal. Requiere balanceado.',
+ 'Laura Fernández',
+ 1, 'pendiente', 'generado');
+
 -- -- Insertar relaciones entre activos y técnicos
 -- INSERT INTO activos_tecnicos (activo_id, tecnico_id) VALUES
 -- (1, 1), -- Juan Pérez asignado a Caldera Principal

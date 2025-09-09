@@ -115,7 +115,14 @@ const DocumentosAsociados = () => {
     if (!nombreDocumento || !descripcionDocumento || !palabrasClave) {
       return alert("Debe completar todos los campos");
     }
-
+    // const formData = {
+    //   archivo: archivo,
+    //   activo_id: activo,
+    //   categoria: categoriaSeleccionada,
+    //   nombre: nombreDocumento,
+    //   descripcion: descripcionDocumento,
+    //   palabras_clave: palabrasClave,
+    // }
     const formData = new FormData();
     formData.append("archivo", archivo);
     formData.append("activo_id", activo);
@@ -123,11 +130,12 @@ const DocumentosAsociados = () => {
     formData.append("nombre", nombreDocumento);
     formData.append("descripcion", descripcionDocumento);
     formData.append("palabras_clave", palabrasClave);
-console.log("Datos a enviar:");
-  formData.forEach((value, key) => {
-    console.log(key, value);
-  });
+    console.log("Datos a enviar:");
+    formData.forEach((value, key) => {
+      console.log(key, value);
+    });
     try {
+      // console.log("formData to send:", formData);
       await gs.post("/documentacion/documentos", formData);
       // Subido correctamente, puedes recargar documentos
       const data = await gs.get("/documentacion/documentos");

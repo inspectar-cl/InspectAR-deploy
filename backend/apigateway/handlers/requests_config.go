@@ -22,7 +22,7 @@ func getSpecialHandlers() []SpecialHandler {
         },
         {
             Method:  "GET",
-            Pattern: "/api/sensores",
+            Pattern: "/api/activos-y-sensores",
             Handler: ActivosYSensores,
         },
         {

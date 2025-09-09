@@ -57,18 +57,31 @@ export default function ActivoDetailClient({ id }: { id: Number}) {
         };
 
         setActivo(activoTransformado);
-        setSensores(response.sensores ?? []);
+        // setSensores(response.sensores ?? []);
       } catch (err) {
         console.error('Error al obtener el activo', err);
       }
     };
+    
+    // Nueva función para obtener datos de sensores
+    const fetchDatos = async () => {
+      try {
+        const datos = await gs.get('/parser/lectura/1/datos');
+        console.log("Datos de sensores", datos);
+        setSensores(datos.sensores ?? []);
+      } catch (err) {
+        console.error('Error al obtener los datos de sensores', err);
+      } 
+    };
 
     // Llamado inicial inmediato
     fetchData();
+    fetchDatos();
 
     // Intervalo de actualización cada 5 segundos
     const interval = setInterval(() => {
       fetchData();
+      fetchDatos();
     }, 5000);
 
     // Limpieza del intervalo al desmontar componente

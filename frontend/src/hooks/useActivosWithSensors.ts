@@ -142,8 +142,8 @@ export function useActivosWithSensors() {
         todosLosActivos.map(async (activo) => {
           try {
             // Obtener estado de sensores desde el parser service
-            const sensoresResponse = await gs.get(`/parser/activo/${activo.activo_id}/sensores/estado`);
-            console.log(`🔍 Respuesta sensores para ${activo.activo_id}:`, sensoresResponse);
+            const sensoresResponse = await gs.get(`/parser/activo/${activo.id}/sensores/estado`);
+            console.log(`🔍 Respuesta sensores para ${activo.id}:`, sensoresResponse);
             
             // gs.get() ya parsea el JSON, no necesitas .json()
             const activoConSensores = sensoresResponse as ActivoWithSensorsBackend;
@@ -152,22 +152,22 @@ export function useActivosWithSensors() {
             let ultimosValores: UltimosValores = {};
             console.log("activo_id" , activo.activo_id);
             try {
-              const valoresResponse = await gs.get(`/parser/lectura/${activo.activo_id}/datos/ultimo`);
-              console.log(`📈 Respuesta últimos valores para ${activo.activo_id}:`, valoresResponse);
+              const valoresResponse = await gs.get(`/parser/lectura/${activo.id}/datos/ultimo`);
+              console.log(`📈 Respuesta últimos valores para ${activo.id}:`, valoresResponse);
               // gs.get() ya parsea el JSON, usar directamente
               ultimosValores = valoresResponse || {};
             } catch (error) {
-              console.warn(`No se pudieron obtener últimos valores para ${activo.activo_id}:`, error);
+              console.warn(`No se pudieron obtener últimos valores para ${activo.id}:`, error);
             }
 
             // Obtener datos históricos (todos los datos del activo)
             let datosHistoricos: any = {};
             try {
-              const historicosResponse = await gs.get(`/parser/lectura/${activo.activo_id}/datos`);
-              console.log(`📊 Respuesta datos históricos para ${activo.activo_id}:`, historicosResponse);
+              const historicosResponse = await gs.get(`/parser/lectura/${activo.id}/datos`);
+              console.log(`📊 Respuesta datos históricos para ${activo.id}:`, historicosResponse);
               datosHistoricos = historicosResponse || {};
             } catch (error) {
-              console.warn(`No se pudieron obtener datos históricos para ${activo.activo_id}:`, error);
+              console.warn(`No se pudieron obtener datos históricos para ${activo.id}:`, error);
             }
 
             // Transformar sensores al formato del frontend
@@ -220,7 +220,7 @@ export function useActivosWithSensors() {
             } as ActivoWithSensors;
 
           } catch (error) {
-            console.error(`❌ Error procesando activo ${activo.activo_id}:`, error);
+            console.error(`❌ Error procesando activo ${activo.id}:`, error);
             return null;
           }
         })

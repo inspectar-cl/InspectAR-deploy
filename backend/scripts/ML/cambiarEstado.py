@@ -1,8 +1,8 @@
 import requests
 
-activo_id = "BombaDeAgua1"
+activo_id = 1
 # Endpoint correcto
-url = f'http://localhost:8090/activo/{activo_id}/estado'
+url = f'http://localhost:3500/api/parser/activo/{activo_id}/estado'
 
 def put_estado(estado):
     payload = {

@@ -31,6 +31,7 @@ export function ChatBotCard ({ id }: { id: string | Number | null}) {
 
     try {
       const response = await gs.post(API_URL, { pregunta: inputR });
+      console.log('response from API, chatbot:', response);
 
       const newMessage = {
         pregunta: inputR,
@@ -118,7 +119,7 @@ export function ChatBotCard ({ id }: { id: string | Number | null}) {
 
                       return (
                         <Box key={index} sx={{ mb: 2 }}>
-                          <Typography variant="subtitle2" color="primary">
+                          <Typography variant="subtitle2" color="primary" marginBottom={'5px'}>
                             Tu pregunta: {msg.pregunta}
                           </Typography>
                           <Typography variant="body2">

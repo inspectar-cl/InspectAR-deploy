@@ -6,9 +6,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL || '/api'
 const apiClient = axios.create({
     baseURL: BASE_URL,
     timeout: 30000,
-    headers: {
-        'Content-Type': 'application/json',
-    },
+    // No seteamos Content-Type globalmente, lo hace axios según el body
 })
 
 // TODO: Agregar los demás métodos (-Vixo 14/06).
@@ -24,7 +22,10 @@ export default class Services {
     }
 
     async post(uri, data) {
-        return await apiClient.post(uri, data)
+        // Si es FormData, no seteamos Content-Type, axios lo hace solo
+        const isFormData = (typeof FormData !== 'undefined') && data instanceof FormData;
+        const config = isFormData ? {} : { headers: { 'Content-Type': 'application/json' } };
+        return await apiClient.post(uri, data, config)
             .then(res => res.data)
             .catch(error => ({
                 mensaje: "error inesperado",

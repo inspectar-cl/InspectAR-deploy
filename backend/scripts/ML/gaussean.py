@@ -8,7 +8,7 @@ from escribirJson import escribir_alerta
 from cambiarEstado import put_estado
 from enviarCorreo import enviar_correo
 
-activo_id = "BombaDeAgua1"
+activo_id = 1
 
 def run_model(queue: Queue):
     modelo_path = "modelo_gaussian_nb.pkl"

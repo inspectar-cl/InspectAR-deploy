@@ -78,38 +78,54 @@ export default function ListasAccionesView() {
 
   const crearAccion = async () => {
     if (!activoSeleccionado || !descripcion) return alert('Completa todos los campos.')
+
     try {
-      const res = await gs.post('/gestion/acciones', {
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          activo_id: Number(activoSeleccionado), // usamos el id del activo
-          tecnico_id: tecnicoActualId,
-          tipo,
-          descripcion,
-          prioridad,
-        }),
-      })
-      if (res.ok) {
+      const data = {
+        titulo: "prueba",
+        activo_id: Number(activoSeleccionado),
+        tecnico_id: tecnicoActualId,
+        tipo,
+        descripcion,
+        prioridad,
+      }
+
+      console.log("Datos para crear acción:", data)
+      
+      const res = await gs.post('/gestion/acciones', data)
+
+      if (!res.error) {
+        // Acción creada correctamente
         await fetchAcciones()
         setActivoSeleccionado('')
         setDescripcion('')
         setPrioridad('')
         setTipo('')
+      } else {
+        // Manejo de error
+        console.error('Error en creación:', res.error)
+        alert('Error al crear la acción: ' + (res.mensaje || 'Error desconocido'))
       }
     } catch (err) {
       console.error('Error creando acción:', err)
+      alert('Error inesperado al crear la acción')
     }
   }
 
+
   const actualizarEstado = async (id: number, nuevoEstado: string) => {
     try {
-      await gs.put(`/gestion/acciones/${id}/estado`, {
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ estado: nuevoEstado }),
-      })
-      await fetchAcciones()
+      const res = await gs.put(`/gestion/acciones/${id}/estado`, { estado: nuevoEstado })
+
+      if (!res.error) {
+        // éxito
+        await fetchAcciones()
+      } else {
+        console.error('Error actualizando estado:', res.error)
+        alert('Error al actualizar el estado: ' + (res.mensaje || 'Error desconocido'))
+      }
     } catch (err) {
       console.error('Error actualizando estado:', err)
+      alert('Error inesperado al actualizar el estado')
     }
   }
 
@@ -119,11 +135,12 @@ export default function ListasAccionesView() {
 
   // --- Columnas ---
   const columns: GridColDef[] = [
-    { field: 'id', headerName: 'ID', width: 70 },
-    { field: 'tecnico_nombre', headerName: 'Técnico', width: 100},
+    { field: 'id', headerName: 'ID', width: 70, flex:0.3, hide: true },
+    { field: 'tecnico_nombre', headerName: 'Técnico', width: 100, flex:0.5},
     { field: 'descripcion', headerName: 'Descripción', flex: 2 },
-    { field: 'estado', headerName: 'Estado', flex: 1 },
-    { field: 'prioridad', headerName: 'Prioridad', width: 100 },
+    { field: 'tipo', headerName: 'Tipo', flex: 0.7 , minWidth: 70},
+    { field: 'estado', headerName: 'Estado', flex: 0.7, minWidth: 70},
+    { field: 'prioridad', headerName: 'Prioridad', minWidth: 50 , flex:0.5},
     {
       field: 'acciones',
       headerName: 'Acciones',
@@ -133,7 +150,7 @@ export default function ListasAccionesView() {
           size="small"
           onClick={() => setExpandedId(expandedId === params.row.id ? null : params.row.id)}
         >
-          {expandedId === params.row.id ? 'Ocultar' : 'Ver / Cambiar Estado'}
+          {expandedId === params.row.id ? 'Ocultar' : 'Cambiar Estado'}
         </Button>
       ),
     },
@@ -142,13 +159,14 @@ export default function ListasAccionesView() {
   return (
     <Box>
       <Typography variant="h6" gutterBottom>Crear Nueva Acción</Typography>
+
       <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
         <TextField
           label="Activo"
           select
           value={activoSeleccionado}
           onChange={(e) => setActivoSeleccionado(e.target.value)}
-          size="small"
+          fullWidth
           sx={{ minWidth: 200 }}
         >
           {activos.map((a) => (
@@ -156,27 +174,48 @@ export default function ListasAccionesView() {
           ))}
         </TextField>
         <TextField label="Descripción" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} fullWidth />
-        <TextField label="Tipo" value={tipo} onChange={(e) => setTipo(e.target.value)} size="small" />
-        <TextField label="Prioridad" value={prioridad} onChange={(e) => setPrioridad(e.target.value)} size="small" />
+
+        {/* Tipo como dropdown */}
+        <TextField
+          label="Tipo"
+          select
+          value={tipo}
+          onChange={(e) => setTipo(e.target.value)}
+          fullWidth
+          sx={{ minWidth: 150 }}
+        >
+          <MenuItem value="">Seleccione tipo</MenuItem>
+          <MenuItem value="preventivo">Preventivo</MenuItem>
+          <MenuItem value="correctivo">Correctivo</MenuItem>
+        </TextField>
+
+        {/* Prioridad como dropdown */}
+        <TextField
+          label="Prioridad"
+          select
+          value={prioridad}
+          onChange={(e) => setPrioridad(e.target.value)}
+          fullWidth
+          sx={{ minWidth: 100 }}
+        >
+          <MenuItem value="">Seleccione prioridad</MenuItem>
+          <MenuItem value="alta">Alta</MenuItem>
+          <MenuItem value="media">Media</MenuItem>
+          <MenuItem value="baja">Baja</MenuItem>
+        </TextField>
+
         <Button variant="contained" onClick={crearAccion}>Guardar</Button>
       </Box>
 
       <Typography variant="subtitle1" gutterBottom>Acciones Asignadas</Typography>
-      <DataGrid
-        autoHeight
-        rows={acciones}
-        columns={columns}
-        pageSizeOptions={[5]}
-        disableRowSelectionOnClick
-        localeText={esES.components.MuiDataGrid.defaultProps.localeText}
-      />
 
       {acciones.map((a) => (
         <Collapse key={a.id} in={expandedId === a.id}>
-          <Box sx={{ p: 2, mt: 1, border: '1px solid #ddd', borderRadius: 2 }}>
+          <Box sx={{ p: 2, mt: 2, mb: 2, border: '1px solid #ddd', borderRadius: 2 }}>
             <Typography variant="subtitle2">Detalle de Acción</Typography>
             <Typography>Técnico: {a.tecnico.nombre}</Typography>
             <Typography>Descripción: {a.descripcion}</Typography>
+            <Typography>Tipo: {a.tipo}</Typography>
             <Typography>Estado: {a.estado}</Typography>
             <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
               <Button size="small" variant="outlined" onClick={() => actualizarEstado(a.id, 'en_progreso')}>En progreso</Button>
@@ -185,6 +224,38 @@ export default function ListasAccionesView() {
           </Box>
         </Collapse>
       ))}
+
+      <DataGrid
+        rows={acciones}
+        columns={columns}
+        pageSizeOptions={[5]}
+        disableRowSelectionOnClick
+        localeText={{
+                ...esES.components.MuiDataGrid.defaultProps.localeText,
+                  filterPanelInputLabel: 'Valor a filtrar',
+                  filterPanelOperator: 'Operador',
+                  filterPanelColumns: 'Filtrar por columna',
+                  toolbarColumns: 'Columnas visibles',
+                  toolbarFilters: 'Filtros',
+                  toolbarExport: 'Exportar',
+                  // Traducción de paginación
+                  paginationRowsPerPage: 'Acciones por página',
+                  noRowsLabel: 'No hay acciones asociados',
+                  footerTotalRows: 'Total de acciones:',
+                  footerTotalVisibleRows: (visibleCount, totalCount) =>
+                  `${visibleCount.toLocaleString()} de ${totalCount.toLocaleString()}`,
+                  footerRowSelected: (count) =>                          count > 1
+                    ? `${count.toLocaleString()} acciones seleccionadas`
+                    : `${count.toLocaleString()} acción seleccionada`,
+                  paginationDisplayedRows: ({ from, to, count, estimated }) => {
+                    if (!estimated) {                            
+                      return `${from}–${to} de ${count !== -1 ? count : `más de ${to}`}`;
+                    }
+                    const estimatedLabel = estimated && estimated > to ? `alrededor de ${estimated}` : `más de ${to}`;
+                    return `${from}–${to} de ${count !== -1 ? count : estimatedLabel}`;
+                    },
+            }}
+      />
     </Box>
   )
 }

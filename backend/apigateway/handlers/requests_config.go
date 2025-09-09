@@ -35,6 +35,11 @@ func getSpecialHandlers() []SpecialHandler {
             Pattern: "/api/generar-reporte/:id",
             Handler: GenerarReporte,
         },
+        {
+            Method: "GET",
+            Pattern: "/api/obtener-activo-id/:id",
+            Handler: ObtenerActivoPorID,
+        },
         // Aquí puedes agregar más handlers especiales fácilmente
         // {
         //     Method:  "POST",

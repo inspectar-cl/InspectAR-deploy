@@ -12,14 +12,16 @@ import (
 )
 
 var (
-    gestionURL string
-    parserURL  string
-	httpClient *http.Client
+    gestionURL          string
+    parserURL           string
+    documentacionURL    string
+	httpClient          *http.Client
 )
 
 func init() {
 	gestionURL = os.Getenv("GESTION_URL")
     parserURL = os.Getenv("PARSER_URL")
+    documentacionURL = os.Getenv("DOCUMENTATION_URL")
     httpClient = &http.Client{
         Timeout: 15 * time.Second,
     }
@@ -313,4 +315,108 @@ func GenerarReporte(c *gin.Context) {
         "reporte": fmt.Sprintf("Reporte generado para activo ID %s", id),
     }
     c.JSON(http.StatusOK, result)
+}
+
+func ObtenerActivoPorID(c *gin.Context) {
+    var wg sync.WaitGroup
+    var mu sync.Mutex
+    id := c.Param("id")
+    if id == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID del activo es requerido"})
+        return
+    }
+    
+    var activo map[string]interface{}
+    wg.Add(1)
+    go func() {
+        defer wg.Done()
+        url := fmt.Sprintf("%s/activo/%s", parserURL, id)
+        resp, err := httpClient.Get(url)
+        if err != nil {
+            fmt.Println("Error obteniendo activo: ", err)
+            return
+        }
+        defer resp.Body.Close()
+
+        var data map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+            fmt.Println("Error decodificando activo: ", err)
+            return
+        }
+        mu.Lock()
+        activo = data
+        mu.Unlock()
+    }()
+
+    wg.Wait()
+
+    // Obtener los datos restantes del activo desde el servicio de gestión
+    wg.Add(1)
+    go func() {
+        defer wg.Done()
+        url := fmt.Sprintf("%s/activos/%s", gestionURL, id)
+        resp, err := httpClient.Get(url)
+        if err != nil {
+            fmt.Println("Error obteniendo datos de gestión: ", err)
+            return
+        }
+        defer resp.Body.Close()
+
+        var data map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+            fmt.Println("Error decodificando datos de gestión: ", err)
+            return
+        }
+        // Extraer solo la ubicación y agregarla al activo
+        if ubicacion, exists := data["ubicacion"]; exists {
+            mu.Lock()
+            if activo != nil {
+                activo["ubicacion"] = ubicacion
+            }
+            mu.Unlock()
+        }
+    }()
+
+    wg.Wait()
+
+    // Buscar ID ficha técnica
+    wg.Add(1)
+    go func() {
+        defer wg.Done()
+        url := fmt.Sprintf("%s/api/v1/documentos/activo/%s/ficha-tecnica", documentacionURL, id)
+        fmt.Printf("DEBUG: URL ficha técnica: %s\n", url)
+        resp, err := httpClient.Get(url)
+        if err != nil {
+            fmt.Println("Error obteniendo ficha técnica: ", err)
+            return
+        }
+        defer resp.Body.Close()
+
+        // fmt.Printf("DEBUG: Respuesta ficha técnica: %+v\n", resp)
+        
+        var data map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+            fmt.Println("Error decodificando ficha técnica: ", err)
+            return
+        }
+
+        //Extraer ID de la ficha técnica y agregarla al activo
+        if fichaID, exists := data["id"]; exists {
+            mu.Lock()
+            if activo != nil {
+                activo["id_ficha_tecnica"] = fichaID
+            }
+            mu.Unlock()
+        }
+    }()
+
+    wg.Wait()    
+
+    // Verificar si se obtuvo el activo
+    if activo == nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Activo no encontrado"})
+        return
+    }
+
+    c.JSON(http.StatusOK, activo)
 }

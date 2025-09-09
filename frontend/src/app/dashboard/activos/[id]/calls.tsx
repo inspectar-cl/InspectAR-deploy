@@ -30,11 +30,10 @@ import dataAlertas from '@/mocks/alerts.json'
 
 const gs = new Services()
 
-export default function ActivoDetailClient({ id }: { id: string}) {
+export default function ActivoDetailClient({ id }: { id: Number}) {
 
   const [activo, setActivo] = React.useState<Activo | null>(null)
   const [sensores, setSensores] = React.useState<any[]>([])
-  const [documentId, setDocumentId] = React.useState<string | null>(null);
 
   // Actualización del método a penas se recarga la página
   const hasFetchedRef = React.useRef(false)
@@ -42,28 +41,23 @@ export default function ActivoDetailClient({ id }: { id: string}) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await gs.get(`/parser/lectura/${id}/datos`);
+        const response = await gs.get(`/obtener-activo-id/${id}`);
         console.log("response", response)
 
         // Aqui deberian de cargarse la data de los activos (Ojala desde una llamada a API)
         const activoTransformado: Activo = {
-          id: response.activo_id ?? 'NN',
+          id: response.activo_id ?? 0,
           tipoActivo: response.nombre ?? 'NN',
           estado: response.estado ?? 'NN',
-          descripcion: 'NN',
+          descripcion: 'Descripción personalizada :)',
           ubicacion: response.ubicacion ?? 'NN',
           img: 'https://www.sondagua.cl/blog/wp-content/uploads/2021/10/bomba-para-extraccion-de-agua.jpg',
-          id_edificio: 'NN',
+          id_edificio: response.id_edificio ?? 'NN',
+          id_ficha_tecnica: response.id_ficha_tecnica ?? 0,
         };
 
         setActivo(activoTransformado);
         setSensores(response.sensores ?? []);
-        
-        // Aqui hago llamado a API para obtener id de documento del activo
-        //const docResponse = await gs.get(`/documentacion/documentos/activo/${id}`);
-        const docResponse = await gs.get(`/documentacion/documentos/activo/1`);
-        console.log("doc Response: ", docResponse)
-        setDocumentId(docResponse.documento_id ?? 'none00'); //none00 como id vacia
       } catch (err) {
         console.error('Error al obtener el activo', err);
       }
@@ -108,7 +102,7 @@ export default function ActivoDetailClient({ id }: { id: string}) {
   const caudalInfo = getDiffInfo('caud1')
 
   if (!activo) {
-    return <div style={{ padding: '1rem' }}>No se encontró el activo con ID: {id}</div>;
+    return <div style={{ padding: '1rem' }}>No se encontró el activo con ID: {`${id}`}</div>;
   }
   return (
     <Box sx={{ p: 2 }}>
@@ -134,7 +128,7 @@ export default function ActivoDetailClient({ id }: { id: string}) {
                   {activo.tipoActivo}
                 </Typography>
                 <Typography variant="h6" sx={{ color: 'text.secondary', mb: 1 }}>
-                  <strong>ID:</strong> {activo.id}
+                  <strong>ID:</strong> {`${activo.id}`}
                 </Typography>
                 <Typography variant="h6" sx={{ color: 'text.secondary', mb: 1 }}>
                   <strong>Estado:</strong> {activo.estado}
@@ -216,7 +210,7 @@ export default function ActivoDetailClient({ id }: { id: string}) {
           />
         </Grid>
         <Grid size={{md:4, xs:12}}>
-          <ChatBotCard id={/*documentId*/ 1}/>
+          <ChatBotCard id={activo.id_ficha_tecnica}/>
         </Grid>
       </Grid>
     </Box>

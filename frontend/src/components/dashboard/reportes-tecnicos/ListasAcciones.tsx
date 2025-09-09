@@ -79,16 +79,28 @@ export default function ListasAccionesView() {
   const crearAccion = async () => {
     if (!activoSeleccionado || !descripcion) return alert('Completa todos los campos.')
     try {
-      const res = await gs.post('/gestion/acciones', {
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          activo_id: Number(activoSeleccionado), // usamos el id del activo
-          tecnico_id: tecnicoActualId,
-          tipo,
-          descripcion,
-          prioridad,
-        }),
-      })
+      const data = {
+        titulo: "prueba",
+        activo_id: Number(activoSeleccionado),
+        tecnico_id: tecnicoActualId,
+        tipo,
+        descripcion,
+        prioridad,
+      }
+
+      console.log("Datos para crear acción:", data)
+      
+      const res = await gs.post('/gestion/acciones', data)
+      // const res = await gs.post('/gestion/acciones', {
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({
+      //     activo_id: Number(activoSeleccionado), // usamos el id del activo
+      //     tecnico_id: tecnicoActualId,
+      //     tipo,
+      //     descripcion,
+      //     prioridad,
+      //   }),
+      // })
       if (res.ok) {
         await fetchAcciones()
         setActivoSeleccionado('')

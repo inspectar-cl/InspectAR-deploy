@@ -6,11 +6,11 @@ import axios from "axios";
 const gs = new Services();
 
 const GenerarReporte = () => {
-  const [activos, setActivos] = useState([]);
+  const [activos, setActivos] = useState<any[]>([]);
   const [activo, setActivo] = useState("");
   const [observaciones, setObservaciones] = useState("");
   //  CAMBIO: ahora es un array de reportes
-  const [reportes, setReportes] = useState([]);
+  const [reportes, setReportes] = useState<any[]>([]);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null); // <<< CAMBIO: estado para vista previa PDF
 
 

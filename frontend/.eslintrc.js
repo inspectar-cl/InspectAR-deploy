@@ -21,6 +21,18 @@ module.exports = {
       },
     },
   },
+  overrides: [
+    {
+      files: ['*.js'],
+      parser: '@babel/eslint-parser',
+      parserOptions: {
+        requireConfigFile: false,
+      },
+      rules: {
+        '@typescript-eslint/restrict-template-expressions': 'off',
+      },
+    },
+  ],
   rules: {
     '@typescript-eslint/no-unused-vars': [
       'error',

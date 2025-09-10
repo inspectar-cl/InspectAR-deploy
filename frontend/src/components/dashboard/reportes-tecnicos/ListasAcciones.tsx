@@ -135,7 +135,7 @@ export default function ListasAccionesView() {
 
   // --- Columnas ---
   const columns: GridColDef[] = [
-    { field: 'id', headerName: 'ID', width: 70, flex:0.3, hide: true },
+    { field: 'id', headerName: 'ID', width: 70, flex:0.3},
     { field: 'tecnico_nombre', headerName: 'Técnico', width: 100, flex:0.5},
     { field: 'descripcion', headerName: 'Descripción', flex: 2 },
     { field: 'tipo', headerName: 'Tipo', flex: 0.7 , minWidth: 70},
@@ -213,7 +213,7 @@ export default function ListasAccionesView() {
         <Collapse key={a.id} in={expandedId === a.id}>
           <Box sx={{ p: 2, mt: 2, mb: 2, border: '1px solid #ddd', borderRadius: 2 }}>
             <Typography variant="subtitle2">Detalle de Acción</Typography>
-            <Typography>Técnico: {a.tecnico.nombre}</Typography>
+            <Typography>Técnico: {a.tecnico?.nombre ?? 'Sin técnico'}</Typography>
             <Typography>Descripción: {a.descripcion}</Typography>
             <Typography>Tipo: {a.tipo}</Typography>
             <Typography>Estado: {a.estado}</Typography>

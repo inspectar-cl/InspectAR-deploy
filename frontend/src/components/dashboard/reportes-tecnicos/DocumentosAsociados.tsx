@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Box, Button, TextField, Typography, Select, MenuItem } from "@mui/material";
-import { DataGrid, GridToolbar  } from '@mui/x-data-grid'
+import { DataGrid, GridToolbar, GridColDef } from '@mui/x-data-grid'
 import { esES } from '@mui/x-data-grid/locales';
 import Services from '@/modules/Services';
 import { fi } from "zod/dist/types/v4/locales";
@@ -8,7 +8,7 @@ const gs = new Services();
 
 const DocumentosAsociados = () => {
   const [documentos, setDocumentos] = useState<any[]>([]);
-  const [activos, setActivos] = useState([]);
+  const [activos, setActivos] = useState<any[]>([]);
   const [activo, setActivo] = useState("");
   const [categorias, setCategorias] = useState<string[]>([]);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("");
@@ -18,11 +18,11 @@ const DocumentosAsociados = () => {
   const [palabrasClave, setPalabrasClave] = useState("");
 
   const columns: GridColDef[] = [
-    { field: 'id', headerName: 'ID', flex:0.5, hide: true, filterable: false},
+    { field: 'id', headerName: 'ID', flex:0.5, filterable: false},
     { field: 'nombre', headerName: 'Nombre', flex: 1.5, filterable: false},
     { field: 'categoria', headerName: 'Categoría', flex: 1, filterable: true },
     { field: 'activo_nombre', headerName: 'Activo', flex: 1, filterable: false },
-    { field: 'palabras_clave', headerName: 'Palabras clave', flex: 1, hide:true, filterable: true },
+    { field: 'palabras_clave', headerName: 'Palabras clave', flex: 1, filterable: true },
     { field: 'creado_en_formateado', headerName: 'Fecha', flex: 1, filterable: true },
   ];
 
@@ -67,7 +67,7 @@ const DocumentosAsociados = () => {
           new Set(documentos.map((doc: any) => doc.categoria))
         );
 
-        setCategorias(categoriasUnicas);
+        setCategorias(categoriasUnicas.filter(c => typeof c === "string"));
       } catch (error) {
         console.error("Error al conectar con API Gateway:", error);
         setCategorias([]);
@@ -100,7 +100,7 @@ const DocumentosAsociados = () => {
 
         // Extraer categorías únicas
         const cats = Array.from(new Set(docsArray.map((d: any) => d.categoria)));
-        setCategorias(cats);
+        setCategorias(cats.filter(c => typeof c === "string"));
         } catch (error) {
           console.error("Error al cargar documentos:", error);
         }

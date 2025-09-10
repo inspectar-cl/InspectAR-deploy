@@ -5,13 +5,13 @@ import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 import { Paper, Box, Chip, TextField, MenuItem, Stack, Checkbox, Tooltip   } from '@mui/material'
 import { esES } from '@mui/x-data-grid/locales'
 import { Alerta } from '@/types/'
-import { activosMock, alertasMock } from '@/mocks/'
+import { activosMock } from '@/mocks/'
 
 
 const activos = activosMock
 
 export function AlertasTable(): React.JSX.Element {
-  const [alertas, setAlertas] = React.useState<Alerta[]>(alertasMock)
+  const [alertas, setAlertas] = React.useState<Alerta[]>([])
   const [filtroTipo, setFiltroTipo] = React.useState('')
   const [filtroUbicacion, setFiltroUbicacion] = React.useState('')
   const [filtroEstado, setFiltroEstado] = React.useState('')

@@ -13,10 +13,10 @@ const gs = new Services()
 
 interface SensorData {
   sensor_id: string;
-  datos: Array<{
+  datos: {
     tiempo: string;
     valor: number;
-  }>;
+  }[];
 }
 
 export default function Page(): React.JSX.Element {
@@ -26,38 +26,23 @@ export default function Page(): React.JSX.Element {
     const fetchData = async () => {
       try {
         const response = await gs.get("/lectura/Caldera1/datos") as { sensores?: SensorData[] };
-        console.log("response", response);
         setSensores(response.sensores ?? []);
       } catch (err) {
-        console.error("Error al obtener el activo", err);
+        // Error handling for failed sensor data fetch
+        setSensores([]);
       }
     };
 
-    // fetchData();
+    void fetchData(); // Initial fetch
 
     const interval = setInterval (() => {
-      fetchData();
+      void fetchData(); // Periodic fetch
     }, 5000);
 
     return () => { clearInterval(interval); };
   })
 
   const sensorTemp = sensores.find(s => s.sensor_id === 'sensortemp')
-  
-  const getDiffInfo = (sensorId: string) => {
-    const datos = sensores.find(s => s.sensor_id === sensorId)?.datos ?? []
-    const ultimo = datos.at(-1)?.valor ?? 0
-    const penultimo = datos.at(-2)?.valor ?? 0
-    const diff = ultimo - penultimo
-    const trend = (diff >= 0 ? 'up' : 'down')
-    
-    return {
-      valor: ultimo,
-      diff: Math.abs(diff),
-      trend
-    }
-  }
-  
   const temperaturaInfo = sensorTemp?.datos?.at(-1)?.valor ?? 0
 
 
@@ -65,7 +50,7 @@ export default function Page(): React.JSX.Element {
     <Grid container spacing={3}>
 
       <Grid size={{lg:20, md:12, xs:12}}>
-        {sensorTemp && <SensorScatter sx={{ height: 480 }} dataTemp={sensorTemp}/>}
+        {sensorTemp ? <SensorScatter sx={{ height: 480 }} dataTemp={sensorTemp}/> : null}
       </Grid>
 
       <Grid size={{md:2, xs:12}}>

@@ -6,8 +6,17 @@ import axios from "axios";
 
 const gs = new Services();
 
+interface ActivoReporte {
+  id: string;
+  nombre: string;
+}
+
+interface ActivosResponse {
+  activos?: ActivoReporte[];
+}
+
 function GenerarReporte() {
-  const [activos, setActivos] = useState<any[]>([]);
+  const [activos, setActivos] = useState<ActivoReporte[]>([]);
   const [activo, setActivo] = useState("");
   const [observaciones, setObservaciones] = useState("");
   //  CAMBIO: ahora es un array de reportes
@@ -19,7 +28,7 @@ function GenerarReporte() {
   useEffect(() => {
     const fetchActivos = async () => {
       try {
-        const data = await gs.get("/obtener-activos");
+        const data = await gs.get("/obtener-activos") as ActivosResponse | ActivoReporte[];
 
         // Si la API devuelve directamente un array de activos
         if (Array.isArray(data)) {
@@ -39,7 +48,7 @@ function GenerarReporte() {
         setActivos([]);
       }
     };
-    fetchActivos();
+    void fetchActivos();
   }, []);
 
   // Exportar PDF
@@ -97,31 +106,6 @@ function GenerarReporte() {
       setMensaje("No se pudo generar la vista previa");
     }
   };
-
-  // Función para actualizar observaciones
-// Función para actualizar observaciones del analista
-{/*const handleActualizarObservaciones = async () => {
-  if (!reportes || reportes.length === 0) {
-    console.log("No hay reportes para actualizar"); // <<< log agregado
-    return;
-  }
-
-  const reporteId = reportes[0].id;
-  console.log("Intentando actualizar observaciones para reporte ID:", reporteId);
-  console.log("Observaciones actuales:", observaciones);
-
-  try {
-    const data = await gs.put(`/reportes/${reporteId}/observaciones`, {
-      observaciones_analista: observaciones, // ✅ campo correcto
-      autor_analista: "Tu Nombre"            // ✅ remplazar por quien actualiza
-    });
-    console.log("Respuesta API:", data);
-    setMensaje("Observaciones actualizadas correctamente");
-  } catch (error) {
-    console.error("Error al actualizar observaciones:", error);
-    setMensaje("No se pudo actualizar las observaciones");
-  }
-};*/}
 
 
 

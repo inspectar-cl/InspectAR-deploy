@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
+ 
 'use client';
 import * as React from 'react';
 import Grid from '@mui/material/Grid';
@@ -15,18 +15,6 @@ import dayjs from 'dayjs';
 
 export default function Page(): React.JSX.Element {
   const { activos, loading, error, refresh } = useActivosWithSensors();
-
-  // Función para simular caída de sensor (para testing)
-  const simulateDown = (activoIdx: number, sensorId: string) => {
-    //console.log(`Simulando caída del sensor ${sensorId} en activo ${activoIdx}`);
-    // En el futuro se puede implementar una llamada a la API para simular
-  };
-
-  // Función para simular recuperación de sensor (para testing)
-  const simulateUp = (activoIdx: number, sensorId: string) => {
-    //console.log(`Simulando recuperación del sensor ${sensorId} en activo ${activoIdx}`);
-    // En el futuro se puede implementar una llamada a la API para simular
-  };
 
   if (loading) {
     return (
@@ -130,8 +118,8 @@ export default function Page(): React.JSX.Element {
         justifyContent="center"
         alignItems="flex-start"
       >
-        {activos.map((activo, idx) => (
-          <Grid key={`${activo.assetName}-${idx}`} size={{ lg: 8, md: 12, xs: 12 }}>
+        {activos.map((activo) => (
+          <Grid key={activo.assetName} size={{ lg: 8, md: 12, xs: 12 }}>
             
             {/* Botones de simulación (solo para desarrollo) */}
             {/* {process.env.NODE_ENV === 'development' && activo.sensores.length > 0 && (

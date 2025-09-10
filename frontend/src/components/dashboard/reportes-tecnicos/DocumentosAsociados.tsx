@@ -7,9 +7,32 @@ import Services from '@/modules/Services';
 
 const gs = new Services();
 
+interface Documento {
+  id: string;
+  nombre: string;
+  categoria: string;
+  fecha_emision: string;
+  palabras_clave: string;
+  activo_id: string;
+}
+
+interface ActivoDoc {
+  id: string;
+  activo_id: string;
+  nombre: string;
+}
+
+interface DocumentosResponse {
+  documentos?: Documento[];
+}
+
+interface ActivosDocResponse {
+  activos?: ActivoDoc[];
+}
+
 function DocumentosAsociados() {
-  const [documentos, setDocumentos] = useState<any[]>([]);
-  const [activos, setActivos] = useState<any[]>([]);
+  const [documentos, setDocumentos] = useState<Documento[]>([]);
+  const [activos, setActivos] = useState<ActivoDoc[]>([]);
   const [activo, setActivo] = useState("");
   const [categorias, setCategorias] = useState<string[]>([]);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("");
@@ -32,7 +55,7 @@ function DocumentosAsociados() {
   useEffect(() => {
     const fetchActivos = async () => {
       try {
-        const data = await gs.get("/obtener-activos");
+        const data = await gs.get("/obtener-activos") as ActivosDocResponse | ActivoDoc[];
   
         // Si la API devuelve directamente un array de activos
         if (Array.isArray(data)) {
@@ -52,21 +75,21 @@ function DocumentosAsociados() {
         setActivos([]);
       }
     };
-    fetchActivos();
+    void fetchActivos();
   }, []);
 
   // Cargar categorías al montar el componente
   useEffect(() => {
     const fetchCategorias = async () => {
       try {
-        const data = await gs.get("/documentacion/documentos");
+        const data = await gs.get("/documentacion/documentos") as DocumentosResponse;
         //console.log("Respuesta documentos:", data);
 
-        const documentos = data.documentos || [];
+        const docsData = data.documentos || [];
 
         // Extraer categorías únicas
         const categoriasUnicas = Array.from(
-          new Set(documentos.map((doc: any) => doc.categoria))
+          new Set(docsData.map((doc) => doc.categoria))
         );
 
         setCategorias(categoriasUnicas.filter(c => typeof c === "string"));
@@ -76,37 +99,37 @@ function DocumentosAsociados() {
       }
     };
 
-    fetchCategorias();
+    void fetchCategorias();
   }, []);
 
   // Cargar documentos
   useEffect(() => {
     const fetchDocumentos = async () => {
       try {
-        const data = await gs.get("/documentacion/documentos");
+        const data = await gs.get("/documentacion/documentos") as DocumentosResponse;
 
         const docsArray = data?.documentos || [];
-        const documentosConFecha = docsArray.map((doc: any) => {
+        const documentosConFecha = docsArray.map((doc) => {
           const fecha = new Date(doc.fecha_emision); // 🔹 usa tu campo real
           const fechaFormateada = new Intl.DateTimeFormat('es-CL').format(fecha); // dd/mm/aaaa
           return {
             ...doc,
             creado_en_formateado: fechaFormateada,
             palabras_clave: doc.palabras_clave || "-",
-            activo_nombre: activos.find((a: any) => a.id === doc.activo_id)?.nombre || `ID ${doc.activo_id}`,
+            activo_nombre: activos.find((a) => a.id === doc.activo_id)?.nombre || `ID ${doc.activo_id}`,
           };
         });
 
         setDocumentos(documentosConFecha);
 
         // Extraer categorías únicas
-        const cats = Array.from(new Set(docsArray.map((d: any) => d.categoria)));
+        const cats = Array.from(new Set(docsArray.map((d) => d.categoria)));
         setCategorias(cats.filter(c => typeof c === "string"));
         } catch (error) {
           //console.error("Error al cargar documentos:", error);
         }
     };
-    if (activos.length > 0) fetchDocumentos(); // 🔹 Solo corre cuando ya hay activos
+    if (activos.length > 0) void fetchDocumentos(); // 🔹 Solo corre cuando ya hay activos
 }, [activos]); // 🔹 Dependencia en activos
 
   const handleGuardarDocumento = async () => {
@@ -134,16 +157,16 @@ function DocumentosAsociados() {
     try {
       await gs.post("/documentacion/documentos", formData);
       // Subido correctamente, puedes recargar documentos
-      const data = await gs.get("/documentacion/documentos");
+      const data = await gs.get("/documentacion/documentos") as DocumentosResponse;
       const docsArray = data?.documentos || [];
-      const documentosConFecha = docsArray.map((doc: any) => {
+      const documentosConFecha = docsArray.map((doc) => {
         const fecha = new Date(doc.fecha_emision); 
         const fechaFormateada = new Intl.DateTimeFormat('es-CL').format(fecha); // dd/mm/aaaa
         return {
           ...doc,
           creado_en_formateado: fechaFormateada,
           palabras_clave: doc.palabras_clave || "-",
-          activo_nombre: activos.find((a: any) => a.id === doc.activo_id)?.nombre || `ID ${doc.activo_id}`,
+          activo_nombre: activos.find((a) => a.id === doc.activo_id)?.nombre || `ID ${doc.activo_id}`,
         };
       });
       setDocumentos(documentosConFecha);

@@ -3,6 +3,7 @@
 
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import Card from '@mui/material/Card';
+import { type SxProps, type Theme } from '@mui/material/styles';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import Box from '@mui/material/Box';
@@ -17,7 +18,7 @@ export function MapaActivos({
   sx,
   onSeleccionarEdificio,
 }: {
-  sx?: any;
+  sx?: SxProps<Theme>;
   onSeleccionarEdificio?: (id: string) => void;
 }) {
   return (

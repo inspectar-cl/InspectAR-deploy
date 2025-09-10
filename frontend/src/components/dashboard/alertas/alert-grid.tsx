@@ -7,6 +7,7 @@ import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardHeader from '@mui/material/CardHeader';
+import { type SxProps, type Theme } from '@mui/material/styles';
 import { DataGrid, type GridColDef, type GridFilterModel, type GridColumnVisibilityModel} from '@mui/x-data-grid';
 import { type Activo } from '@/types/'
 import { esES } from '@mui/x-data-grid/locales';
@@ -21,6 +22,15 @@ import {
 
 // Configuración rutas de obtención de datos desde db.
 import Services from '@/modules/Services'
+
+interface ActivoResponse {
+  activo_id: string;
+  nombre: string;
+  estado: string;
+  descripcion: string;
+  ubicacion: string;
+  id_edificio: string;
+}
 
 const activos = activosMock;
 
@@ -65,12 +75,12 @@ const columns: GridColDef<(typeof activos)[number]>[] = [
   },
 ];
 
-export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: any; edificioSeleccionado?: string | null;}) {
+export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: SxProps<Theme>; edificioSeleccionado?: string | null;}) {
   const [filterModel, setFilterModel] = React.useState<GridFilterModel>({
     items: [],
   });
 
-  const [activos, setActivos] = React.useState<Activo[]>([])
+  const [activosList, setActivosList] = React.useState<Activo[]>([])
   
   const hasFetchedRef = React.useRef(false)
 
@@ -78,17 +88,15 @@ export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: any; edi
   const getActivos = async () => {
     try {
       const response = await gs.get(uris.GET)
-      console.log("Response:", response)
 
       // Si no hay datos desde backend, usamos mocks
       if (!response || response.length === 0) {
-        console.warn("No se encontraron activos en backend, usando mocks")
-        setActivos(activosMock)
+        setActivosList(activosMock)
         return
       }
 
       // Transformacion de los datos de la db
-      const transformados = response.map((item: any, index: number) => ({
+      const transformados = response.map((item: ActivoResponse, index: number) => ({
         id: item.activo_id || `B${index + 1}`,
         tipoActivo: item.nombre || 'Activo sin nombre',
         estado: item.estado || 'NN',
@@ -97,18 +105,17 @@ export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: any; edi
         id_edificio: item.id_edificio || 'ID no obtenida'
       }))
 
-      console.log("Activos transformados:", transformados)
-      setActivos(transformados)
+      setActivosList(transformados)
     } catch (error) {
-      console.error("Error al obtener los items desde backend, usando mocks", error)
-      setActivos(activosMock) // usar mocks si falla la llamada
+      // Error handling: use mock data when backend fails
+      setActivosList(activosMock)
     }
   }
 
   React.useEffect(() => {
     if (!hasFetchedRef.current) {
       hasFetchedRef.current = true
-      getActivos()
+      void getActivos()
     }
   }, [])
 
@@ -147,7 +154,7 @@ export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: any; edi
                     }
                     onRowClick={(params) => {window.location.href = paths.dashboard.activoDetail(params.row.id);}}
                     showToolbar
-                    rows={activos}
+                    rows={activosList}
                     columns={columns}
                     initialState={{
                       pagination: {

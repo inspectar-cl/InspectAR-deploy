@@ -1,16 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import Services from '@/modules/Services';
 
-// Tipos del backend
+// Tipos del backend (actualizados para el nuevo endpoint)
 interface ActivoBackend {
   id: number;
-  activo_id: string;
   nombre: string;
   tipo: string;
   estado: string;
   ubicacion: string;
   edificio_id: number;
   creado_en: string;
+  sensores: SensorBackend[];
 }
 
 interface SensorBackend {
@@ -24,29 +24,16 @@ interface SensorBackend {
   total_reports: number;
   created_at?: string;
   updated_at?: string;
-}
-
-interface ActivoWithSensorsBackend {
-  id: string;
-  activo_id: string;
-  nombre: string;
-  ubicacion: string;
-  estado: string;
-  id_edificio: string;
-  total_sensores: number;
-  sensores: SensorBackend[];
-  resumen: {
-    sensores_activos: number;
-    sensores_desconectados: number;
-    sensores_nunca_conectados: number;
-  };
-}
-
-interface UltimosValores {
-  [sensor_id: string]: {
+  datos?: Array<{
     tiempo: string;
     valor: number;
-  } | null;
+  }> | null;
+}
+
+interface ApiResponse {
+  activos: ActivoBackend[];
+  total: number;
+  timestamp: string;
 }
 
 // Tipos para el frontend
@@ -113,126 +100,67 @@ export function useActivosWithSensors() {
     setError(null);
     
     try {
-      // 1. Obtener todos los tipos de activos disponibles
-      const tiposActivos = ['bomba de agua', 'caldera', 'ascensor', 'transformador'];
-      const activosPromises = tiposActivos.map(async (tipo) => {
-        try {
-          const response = await gs.get(`/gestion/activos/tipo/${encodeURIComponent(tipo)}`);
-          console.log(`📊 Respuesta activos tipo ${tipo}:`, response);
-          return response.activos || [];
-        } catch (error) {
-          console.warn(`No se pudieron obtener activos de tipo ${tipo}:`, error);
-          return [];
-        }
-      });
-
-      const activosArrays = await Promise.all(activosPromises);
-      const todosLosActivos = activosArrays.flat() as ActivoBackend[];
+      // Una sola petición para obtener todos los activos con sensores y datos
+      const response = await gs.get('/activos-y-sensores') as ApiResponse;
+      console.log('📊 Respuesta completa de activos y sensores:', response);
       
-      console.log(`📋 Total activos encontrados:`, todosLosActivos.length, todosLosActivos);
-
-      if (todosLosActivos.length === 0) {
+      if (!response.activos || response.activos.length === 0) {
         setActivos([]);
         setLoading(false);
         return;
       }
 
-      // 2. Para cada activo, obtener sensores, últimos valores y datos históricos
-      const activosConSensores = await Promise.all(
-        todosLosActivos.map(async (activo) => {
-          try {
-            // Obtener estado de sensores desde el parser service
-            const sensoresResponse = await gs.get(`/parser/activo/${activo.id}/sensores/estado`);
-            console.log(`🔍 Respuesta sensores para ${activo.id}:`, sensoresResponse);
+      // Transformar los datos al formato del frontend
+      const activosTransformados = response.activos.map((activo) => {
+        // Transformar sensores al formato del frontend
+        const sensoresTransformados: SensorRow[] = activo.sensores.map((sensor: SensorBackend) => {
+          // Obtener el último valor de los datos históricos si existen
+          let lastValue = 0;
+          let history24h: SensorSample[] = [];
+          
+          if (sensor.datos && Array.isArray(sensor.datos) && sensor.datos.length > 0) {
+            // El último valor es el más reciente (último elemento del array)
+            const ultimoDato = sensor.datos[sensor.datos.length - 1];
+            lastValue = ultimoDato.valor;
             
-            // gs.get() ya parsea el JSON, no necesitas .json()
-            const activoConSensores = sensoresResponse as ActivoWithSensorsBackend;
-
-            // Obtener últimos valores
-            let ultimosValores: UltimosValores = {};
-            console.log("activo_id" , activo.activo_id);
-            try {
-              const valoresResponse = await gs.get(`/parser/lectura/${activo.id}/datos/ultimo`);
-              console.log(`📈 Respuesta últimos valores para ${activo.id}:`, valoresResponse);
-              // gs.get() ya parsea el JSON, usar directamente
-              ultimosValores = valoresResponse || {};
-            } catch (error) {
-              console.warn(`No se pudieron obtener últimos valores para ${activo.id}:`, error);
-            }
-
-            // Obtener datos históricos (todos los datos del activo)
-            let datosHistoricos: any = {};
-            try {
-              const historicosResponse = await gs.get(`/parser/lectura/${activo.id}/datos`);
-              console.log(`📊 Respuesta datos históricos para ${activo.id}:`, historicosResponse);
-              datosHistoricos = historicosResponse || {};
-            } catch (error) {
-              console.warn(`No se pudieron obtener datos históricos para ${activo.id}:`, error);
-            }
-
-            // Transformar sensores al formato del frontend
-            const sensoresTransformados: SensorRow[] = activoConSensores.sensores.map((sensor) => {
-              const ultimoValor = ultimosValores[sensor.sensor_id];
-              
-              // Buscar datos históricos para este sensor
-              let history24h: SensorSample[] = [];
-              
-              if (datosHistoricos.sensores && Array.isArray(datosHistoricos.sensores)) {
-                const sensorData = datosHistoricos.sensores.find(
-                  (s: any) => s.sensor_id === sensor.sensor_id
-                );
-                
-                if (sensorData && sensorData.datos && Array.isArray(sensorData.datos)) {
-                  // Convertir datos al formato SensorSample
-                  history24h = sensorData.datos.map((dato: any) => ({
-                    ts: new Date(dato.tiempo),
-                    value: dato.valor,
-                    unit: sensor.unidad
-                  }));
-                  
-                  // Filtrar solo las últimas 24 horas
-                  const hace24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
-                  history24h = history24h.filter(sample => sample.ts >= hace24h);
-                  
-                  // Ordenar por timestamp descendente (más reciente primero)
-                  history24h.sort((a, b) => b.ts.getTime() - a.ts.getTime());
-                  
-                  console.log(`📈 History24h para ${sensor.sensor_id}:`, history24h.length, 'muestras');
-                }
-              }
-              
-              return {
-                id: sensor.sensor_id,
-                name: generarNombreSensor(sensor.tipo, sensor.sensor_id),
-                type: sensor.tipo,
-                unit: sensor.unidad,
-                lastValue: ultimoValor?.valor || 0,
-                lastSeen: sensor.last_seen ? new Date(sensor.last_seen) : new Date(Date.now() - 10 * 60 * 1000), // 10 min ago si no hay fecha
-                status: sensor.estado, // Usar el estado directamente del backend
-                history24h: history24h // ← Agregar los datos históricos aquí
-              };
-            });
-
-            return {
-              assetName: `${activo.nombre} — ${activo.ubicacion}`,
-              imageUrl: TIPO_IMAGENES[activo.tipo.toLowerCase()] || TIPO_IMAGENES["transformador"],
-              sensores: sensoresTransformados,
-            } as ActivoWithSensors;
-
-          } catch (error) {
-            console.error(`❌ Error procesando activo ${activo.id}:`, error);
-            return null;
+            // Convertir todos los datos al formato SensorSample
+            history24h = sensor.datos.map((dato) => ({
+              ts: new Date(dato.tiempo),
+              value: dato.valor,
+              unit: sensor.unidad
+            }));
+            
+            // Filtrar solo las últimas 24 horas
+            const hace24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            history24h = history24h.filter(sample => sample.ts >= hace24h);
+            
+            // Ordenar por timestamp descendente (más reciente primero)
+            history24h.sort((a, b) => b.ts.getTime() - a.ts.getTime());
+            
+            console.log(`📈 History24h para ${sensor.sensor_id}:`, history24h.length, 'muestras');
           }
-        })
-      );
+          
+          return {
+            id: sensor.sensor_id,
+            name: generarNombreSensor(sensor.tipo, sensor.sensor_id),
+            type: sensor.tipo,
+            unit: sensor.unidad,
+            lastValue: lastValue,
+            lastSeen: sensor.last_seen ? new Date(sensor.last_seen) : new Date(Date.now() - 10 * 60 * 1000),
+            status: sensor.estado,
+            history24h: history24h
+          };
+        });
 
-      // Filtrar activos que no pudieron ser procesados
-      const activosValidos = activosConSensores.filter(
-        (activo): activo is ActivoWithSensors => activo !== null
-      );
+        return {
+          assetName: `${activo.nombre} — ${activo.ubicacion}`,
+          imageUrl: TIPO_IMAGENES[activo.tipo.toLowerCase()] || TIPO_IMAGENES["transformador"],
+          sensores: sensoresTransformados,
+        } as ActivoWithSensors;
+      });
 
-      console.log(`✅ Activos válidos procesados:`, activosValidos.length, activosValidos);
-      setActivos(activosValidos);
+      console.log(`✅ Activos procesados:`, activosTransformados.length, activosTransformados);
+      setActivos(activosTransformados);
 
     } catch (error) {
       console.error('Error fetching activos with sensors:', error);

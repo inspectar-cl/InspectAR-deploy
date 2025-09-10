@@ -23,7 +23,7 @@ export default function Page(): React.JSX.Element {
           ? response.map((c: any) => ({
               id: c.id,
               name: c.nombre,
-              email: c.email,
+              email: "juan_elpre@pucio.cl",
               phone: c.telefono,
               especialidad: c.especialidad,
               avatar: '/assets/avatar-8.png',

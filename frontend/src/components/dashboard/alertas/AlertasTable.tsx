@@ -40,10 +40,10 @@ export function AlertasTable(): React.JSX.Element {
       sortable: false,
       flex: 0.5,
       minWidth: 80,
-      renderCell: (params: GridRenderCellParams) => (
+      renderCell: (params: GridRenderCellParams<Alerta>) => (
         <Checkbox
-          checked={params.value}
-          disabled={params.value}
+          checked={params.value as boolean}
+          disabled={params.value as boolean}
           onChange={() => { handleAtender(params.row.id); }}
           color="primary"
         />
@@ -57,14 +57,14 @@ export function AlertasTable(): React.JSX.Element {
       headerName: 'Nivel de riesgo',
       flex: 1,
       minWidth: 100,
-      renderCell: (params) => {
+      renderCell: (params: GridRenderCellParams<Alerta>) => {
         const color =
           params.value === 'Crítico'
             ? 'error'
             : params.value === 'Medio'
               ? 'warning'
               : 'success'
-        return <Chip label={params.value} color={color} size="small" />
+        return <Chip label={params.value as string} color={color} size="small" />
       },
     },
     {
@@ -72,10 +72,10 @@ export function AlertasTable(): React.JSX.Element {
       headerName: 'Descripción',
       flex: 2,
       minWidth: 220,
-      renderCell: (params: GridRenderCellParams) => (
-        <Tooltip title={params.value}>
+      renderCell: (params: GridRenderCellParams<Alerta>) => (
+        <Tooltip title={params.value as string}>
           <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {params.value}
+            {params.value as string}
           </span>
         </Tooltip>
       ),
@@ -138,7 +138,7 @@ export function AlertasTable(): React.JSX.Element {
         <DataGrid
           rows={alertasFiltradas}
           columns={columns}
-          getRowId={(row) => row.id}
+          getRowId={(row: Alerta) => row.id}
           initialState={{
             pagination: {
               paginationModel: { pageSize: paginas, page: 0 },

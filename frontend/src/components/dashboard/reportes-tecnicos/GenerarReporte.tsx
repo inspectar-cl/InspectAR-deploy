@@ -6,8 +6,17 @@ import axios from "axios";
 
 const gs = new Services();
 
+interface ActivoReporte {
+  id: string;
+  nombre: string;
+}
+
+interface ActivosResponse {
+  activos?: ActivoReporte[];
+}
+
 function GenerarReporte() {
-  const [activos, setActivos] = useState<any[]>([]);
+  const [activos, setActivos] = useState<ActivoReporte[]>([]);
   const [activo, setActivo] = useState("");
   const [observaciones, setObservaciones] = useState("");
   //  CAMBIO: ahora es un array de reportes
@@ -19,7 +28,7 @@ function GenerarReporte() {
   useEffect(() => {
     const fetchActivos = async () => {
       try {
-        const data = await gs.get("/obtener-activos");
+        const data = await gs.get("/obtener-activos") as ActivosResponse | ActivoReporte[];
 
         // Si la API devuelve directamente un array de activos
         if (Array.isArray(data)) {

@@ -8,7 +8,7 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardHeader from '@mui/material/CardHeader';
 import { type SxProps, type Theme } from '@mui/material/styles';
-import { DataGrid, type GridColDef, type GridFilterModel, type GridColumnVisibilityModel} from '@mui/x-data-grid';
+import { DataGrid, type GridColDef, type GridFilterModel, type GridColumnVisibilityModel, type GridRowParams} from '@mui/x-data-grid';
 import { type Activo } from '@/types/'
 import { esES } from '@mui/x-data-grid/locales';
 
@@ -154,7 +154,7 @@ export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: SxProps<
                     onColumnVisibilityModelChange={(newModel) =>
                       { setColumnVisibilityModel(newModel); }
                     }
-                    onRowClick={(params) => {window.location.href = paths.dashboard.activoDetail(params.row.id.toString());}}
+                    onRowClick={(params: GridRowParams<Activo>) => {window.location.href = paths.dashboard.activoDetail(params.row.id.toString());}}
                     showToolbar
                     rows={activosList}
                     columns={columns}

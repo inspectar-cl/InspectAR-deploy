@@ -119,7 +119,7 @@ export default function ActivoDetailClient({ id }: { id: number}) {
 
     // Limpieza del intervalo al desmontar componente
     return () => { clearInterval(interval); };
-    }, [id, ESTADOS]);
+    }, [id]);
 
   // Estos nombres tendrían que ser dinámicos, de momento quedarán así.
   // Extracción de los valores de cada sensor:

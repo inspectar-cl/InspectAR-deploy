@@ -44,7 +44,7 @@ export function ContactosClient({ contactos, especialidades }: ContactosClientPr
   };
 
   const handleSendRequest = async (selectedRows: Contacto[]) => {
-    console.log('Contactos seleccionados para enviar solicitud:', selectedRows);
+    //console.log('Contactos seleccionados para enviar solicitud:', selectedRows);
     
     try {
       // Enviar notificación a cada contacto seleccionado
@@ -58,13 +58,13 @@ export function ContactosClient({ contactos, especialidades }: ContactosClientPr
           user_name: "Admin InspectAR" // Valor temporal
         };
         
-        console.log(`Enviando notificación a ${contacto.email}:`, payload);
+        //console.log(`Enviando notificación a ${contacto.email}:`, payload);
         return await gs.post("/notificacion/technician/contact", payload);
       });
 
       // Esperar a que todas las llamadas se completen
       const results = await Promise.all(promises);
-      console.log('Resultados de envío:', results);
+      //console.log('Resultados de envío:', results);
 
       // Realizar esta alerta si sale bien el envio por la API
       setAlertState({
@@ -75,7 +75,7 @@ export function ContactosClient({ contactos, especialidades }: ContactosClientPr
       });
 
     } catch (error) {
-      console.error('Error al enviar notificaciones:', error);
+      //console.error('Error al enviar notificaciones:', error);
       
       // Realizar esta alerta si sale mal el envio por API
       setAlertState({

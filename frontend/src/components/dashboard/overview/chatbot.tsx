@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 import * as React from 'react';
 import { Box, Typography, TextField, Button, Card, CardContent, Divider, Fab} from '@mui/material';
 import CardMedia from '@mui/material/CardMedia';

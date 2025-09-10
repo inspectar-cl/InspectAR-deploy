@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react'
 import { Box, Button, TextField, Typography, MenuItem, Collapse, Snackbar, Alert } from '@mui/material'
-import { DataGrid, type GridColDef } from '@mui/x-data-grid'
+import { DataGrid, type GridRenderCellParams, type GridColDef } from '@mui/x-data-grid'
 import { esES } from '@mui/x-data-grid/locales'
 
 import Services from '@/modules/Services'
@@ -62,7 +62,7 @@ export default function ListasAccionesView() {
         //console.error('Error al cargar activos:', error)
       }
     }
-    fetchActivos()
+    void fetchActivos()
   }, [])
 
   // --- API Acciones ---
@@ -120,7 +120,7 @@ export default function ListasAccionesView() {
 
   const actualizarEstado = async (id: number, nuevoEstado: string) => {
     try {
-      const res = await gs.put(`/gestion/acciones/${id}/estado`, { estado: nuevoEstado })
+      const res = await gs.put(`/gestion/acciones/${id}/estado`, { estado: nuevoEstado }) as { error?: boolean; mensaje?: string };
 
       if (!res.error) {
         // éxito
@@ -136,7 +136,7 @@ export default function ListasAccionesView() {
   }
 
   useEffect(() => {
-    fetchAcciones()
+    void fetchAcciones()
   }, [])
 
   // --- Columnas ---
@@ -151,7 +151,7 @@ export default function ListasAccionesView() {
       field: 'acciones',
       headerName: 'Acciones',
       flex: 1,
-      renderCell: (params) => (
+      renderCell: (params: GridRenderCellParams<Accion>) => (
         <Button
           size="small"
           onClick={() => { setExpandedId(expandedId === params.row.id ? null : params.row.id); }}

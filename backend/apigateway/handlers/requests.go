@@ -178,8 +178,8 @@ func ActivosYSensores(c *gin.Context) {
 	var wg sync.WaitGroup
     var mu sync.Mutex
 
-	tiposActivos := []string{"caldera"}
-    // tiposActivos := []string{"bomba de agua", "caldera", "ascensor", "transformador"}
+	// tiposActivos := []string{"bomba de agua"}
+    tiposActivos := []string{"transformador", "bomba de agua", "caldera", "ascensor"}
 	activos := []interface{}{}
 	
 	for _, tipo := range tiposActivos {
@@ -245,6 +245,66 @@ func ActivosYSensores(c *gin.Context) {
                     aMap["sensores"] = sensores 
                     mu.Unlock()
                     fmt.Printf("DEBUG: Sensores agregados para activo ID %s\n", activoID)
+
+                    // Obtener datos históricos para el activo completo
+                    wg.Add(1)
+                    go func(aID string, sensoresList interface{}) {
+                        defer wg.Done()
+                        fmt.Println("DEBUG: Obteniendo datos históricos para activo id: ", aID)
+                        url := fmt.Sprintf("%s/lectura/%s/datos", parserURL, aID)
+                        resp, err := httpClient.Get(url)
+                        if err != nil {
+                            fmt.Println("Error obteniendo datos históricos: ", err)
+                            return
+                        }
+                        defer resp.Body.Close()
+
+                        var datosHistoricos map[string]interface{}
+                        if err := json.NewDecoder(resp.Body).Decode(&datosHistoricos); err != nil {
+                            fmt.Println("Error decodificando datos históricos: ", err)
+                            return
+                        }
+
+                        // Distribuir los datos históricos a cada sensor
+                        if sensoresData, exists := datosHistoricos["sensores"]; exists {
+                            if sensoresArray, ok := sensoresData.([]interface{}); ok {
+                                // Crear un mapa para acceso rápido por sensor_id
+                                datosPorSensor := make(map[string]interface{})
+                                for _, sensorData := range sensoresArray {
+                                    if sensorMap, ok := sensorData.(map[string]interface{}); ok {
+                                        if sensorID, exists := sensorMap["sensor_id"]; exists {
+                                            datosPorSensor[fmt.Sprintf("%v", sensorID)] = sensorMap["datos"]
+                                            // fmt.Printf("DEBUG: Datos encontrados para sensor %s\n", sensorID)
+                                        }
+                                    }
+                                }
+
+                                // fmt.Printf("DEBUG: Total sensores con datos: %d\n", len(datosPorSensor))
+
+                                // Agregar los datos a cada sensor en la lista original
+                                mu.Lock()
+                                if sensoresOriginales, ok := sensoresList.([]interface{}); ok {
+                                    fmt.Printf("DEBUG: Distribuyendo datos a sensores del activo id: %s\n", aID)
+                                    for _, sensor := range sensoresOriginales {
+                                        if sensorMap, ok := sensor.(map[string]interface{}); ok {
+                                            // Usar 'sensor_id' en lugar de 'id'
+                                            if sensorID, exists := sensorMap["sensor_id"]; exists {
+                                                sensorIDStr := fmt.Sprintf("%v", sensorID)
+                                                // fmt.Printf("DEBUG: Buscando datos para sensor %s\n", sensorIDStr)
+                                                if datos, encontrado := datosPorSensor[sensorIDStr]; encontrado {
+                                                    sensorMap["datos"] = datos
+                                                    // fmt.Printf("DEBUG: Datos agregados al sensor %s\n", sensorIDStr)
+                                                } else {
+                                                    fmt.Printf("DEBUG: No se encontraron datos para sensor %s\n", sensorIDStr)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                mu.Unlock()
+                            }
+                        }
+                    }(activoID, sensores)
                 }
 
             }(activoMap) // Pasar el mapa del activo a la goroutine
@@ -252,6 +312,7 @@ func ActivosYSensores(c *gin.Context) {
     }
 
     wg.Wait() // Esperar a que terminen todas las goroutines
+
 
 	result := map[string]interface{}{
         "activos": activos,

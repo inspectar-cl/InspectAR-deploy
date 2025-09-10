@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
+
 // app/dashboard/reportes-tecnicos/page.tsx
 'use client'
-
+import * as React from 'react';
 import { useState } from 'react';
-import { Container, Typography, Box, Tabs, Tab, Button, TextField, MenuItem, Stack, Card, CardContent } from '@mui/material';
+import { Container, Typography, Box, Tabs, Tab, Stack, Card, CardContent } from '@mui/material';
 import GenerarReporte from '@/components/dashboard/reportes-tecnicos/GenerarReporte';
 import ListasAcciones from '@/components/dashboard/reportes-tecnicos/ListasAcciones';
 import DocumentosAsociados from '@/components/dashboard/reportes-tecnicos/DocumentosAsociados';
@@ -10,7 +12,7 @@ import DocumentosAsociados from '@/components/dashboard/reportes-tecnicos/Docume
 
 export default function ReportesPage() {
   const [tab, setTab] = useState(0)
-  const handleChange = (_: React.SyntheticEvent, newValue: number) => setTab(newValue)
+  const handleChange = (_: React.SyntheticEvent, newValue: number) => { setTab(newValue); }
 
   return (
     <Stack spacing={2}>

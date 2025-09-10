@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 'use client'
 
 import * as React from 'react';
@@ -10,7 +11,7 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box'
 import dayjs from 'dayjs';
-import { Activo } from '@/types/'
+import { type Activo } from '@/types/'
 import { DownloadSimple } from '@phosphor-icons/react';
 
 import ScoreChart from '@/components/dashboard/overview/score-chart';
@@ -20,7 +21,7 @@ import { TemperatureProgress } from '@/components/dashboard/overview/temperature
 import { LatestAlerts } from '@/components/dashboard/overview/latest-alerts';
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr/Warning';
 import Grid from '@mui/material/Grid';
-import { ScatterWithArgs} from '@/components/dashboard/overview/medicionTiempoReal'
+import { ScatterWithArgs} from '@/components/dashboard/overview/MedicionTiempoReal'
 import { ChatBotCard } from '@/components/dashboard/overview/chatbot'
 
 // Configuración rutas de obtención de datos desde db.
@@ -30,25 +31,53 @@ import dataAlertas from '@/mocks/alerts.json'
 
 const gs = new Services()
 
-export default function ActivoDetailClient({ id }: { id: Number}) {
+export default function ActivoDetailClient({ id }: { id: number}) {
 
   const [activo, setActivo] = React.useState<Activo | null>(null)
-  const [sensores, setSensores] = React.useState<any[]>([])
+  interface SensorDato {
+    valor: number;
+    [key: string]: unknown;
+  }
+
+  interface Sensor {
+    sensor_id: string;
+    datos: SensorDato[];
+    [key: string]: unknown;
+  }
+
+  const [sensores, setSensores] = React.useState<Sensor[]>([])
+
+  const estados = ['OK', 'Medio', 'Crítico', 'NN'] as const;
+  type Estado = (typeof estados)[number];
 
   // Actualización del método a penas se recarga la página
-  const hasFetchedRef = React.useRef(false)
+  //const hasFetchedRef = React.useRef(false)
   
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await gs.get(`/obtener-activo-id/${id}`);
-        console.log("response", response)
+        interface ActivoResponse {
+          activo_id?: number;
+          nombre?: string;
+          estado?: string;
+          ubicacion?: string;
+          img?: string;
+          id_edificio?: string;
+          id_ficha_tecnica?: number;
+          sensores?: Sensor[];
+        }
+        const response = await gs.get(`/obtener-activo-id/${id}`) as ActivoResponse;
+        //console.log("response", response)
 
         // Aqui deberian de cargarse la data de los activos (Ojala desde una llamada a API)
+        const estado: Estado = estados.includes(response.estado as Estado)
+          ? (response.estado as Estado)
+          : 'NN';
+
         const activoTransformado: Activo = {
           id: response.activo_id ?? 0,
           tipoActivo: response.nombre ?? 'NN',
-          estado: response.estado ?? 'NN',
+          estado,
           descripcion: 'Descripción personalizada :)',
           ubicacion: response.ubicacion ?? 'NN',
           img: 'https://www.sondagua.cl/blog/wp-content/uploads/2021/10/bomba-para-extraccion-de-agua.jpg',
@@ -59,34 +88,37 @@ export default function ActivoDetailClient({ id }: { id: Number}) {
         setActivo(activoTransformado);
         // setSensores(response.sensores ?? []);
       } catch (err) {
-        console.error('Error al obtener el activo', err);
+        //console.error('Error al obtener el activo', err);
       }
     };
     
     // Nueva función para obtener datos de sensores
     const fetchDatos = async () => {
       try {
-        const datos = await gs.get('/parser/lectura/1/datos');
-        console.log("Datos de sensores", datos);
+        const datos = await gs.get('/parser/lectura/1/datos') as { sensores?: Sensor[] };
+        //console.log("Datos de sensores", datos);
         setSensores(datos.sensores ?? []);
       } catch (err) {
-        console.error('Error al obtener los datos de sensores', err);
+        //console.error('Error al obtener los datos de sensores', err);
       } 
     };
 
+    const fetchAll = async () => {
+      await fetchData();
+      await fetchDatos();
+    };
+
     // Llamado inicial inmediato
-    fetchData();
-    fetchDatos();
+    void fetchAll();
 
     // Intervalo de actualización cada 5 segundos
     const interval = setInterval(() => {
-      fetchData();
-      fetchDatos();
+      void fetchAll();
     }, 5000);
 
     // Limpieza del intervalo al desmontar componente
-    return () => clearInterval(interval);
-  }, [id]);
+    return () => { clearInterval(interval); };
+    }, [id, estados]);
 
   // Estos nombres tendrían que ser dinámicos, de momento quedarán así.
   // Extracción de los valores de cada sensor:
@@ -102,7 +134,7 @@ export default function ActivoDetailClient({ id }: { id: Number}) {
     const ultimo = datos.at(-1)?.valor ?? 0
     const penultimo = datos.at(-2)?.valor ?? 0
     const diff = ultimo - penultimo
-    const trend = (diff >= 0 ? 'up' : 'down') as 'up' | 'down'
+    const trend = (diff >= 0 ? 'up' : 'down')
 
     return {
       valor: ultimo,

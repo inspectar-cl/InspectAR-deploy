@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
+
 'use client';
 
 import * as React from 'react';
@@ -23,14 +25,14 @@ import dayjs from 'dayjs';
 
 // body de la notificación
 import relativeTime from 'dayjs/plugin/relativeTime';
-dayjs.extend(relativeTime);
 
 import { useNotifications } from '@/contexts/notifications';
 
-type SensorStatus = 'connected' | 'disconnected' | 'never_connected';
+import { type SensorRow } from '@/hooks/use-activos-with-sensors';
 
-import { useState, useEffect, useCallback } from 'react';
-import { SensorRow, SensorSample } from '@/hooks/useActivosWithSensors';
+dayjs.extend(relativeTime);
+
+type SensorStatus = 'connected' | 'disconnected' | 'never_connected';
 
 export interface LatestSensorsProps {
   assetName: string;
@@ -39,6 +41,7 @@ export interface LatestSensorsProps {
   sx?: SxProps;
 }
 
+// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars -- creado para futuras mejoras
 function computeStatus(lastSeen: Date): SensorStatus {
   const minutes = dayjs().diff(dayjs(lastSeen), 'minute');
   return minutes > 5 ? 'disconnected' : 'connected';
@@ -87,7 +90,7 @@ export function LatestSensors({ assetName, imageUrl, sensors = [], sx }: LatestS
     if (page > maxPage) setPage(0);
   }, [sensors, page, rowsPerPage]);
 
-  const handleChangePage = (_: unknown, newPage: number) => setPage(newPage);
+  const handleChangePage = (_: unknown, newPage: number) => { setPage(newPage); };
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
@@ -207,7 +210,7 @@ export function LatestSensors({ assetName, imageUrl, sensors = [], sx }: LatestS
       </Box>
 
       {/* Detalle del sensor seleccionado */}
-      <Dialog fullWidth maxWidth="md" open={open} onClose={() => setOpen(false)}>
+      <Dialog fullWidth maxWidth="md" open={open} onClose={() => { setOpen(false); }}>
         <DialogTitle>
           {selected ? `${selected.name} — últimas 24 horas` : 'Sensor'}
         </DialogTitle>
@@ -240,7 +243,7 @@ export function LatestSensors({ assetName, imageUrl, sensors = [], sx }: LatestS
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cerrar</Button>
+          <Button onClick={() => { setOpen(false); }}>Cerrar</Button>
         </DialogActions>
       </Dialog>
     </Card>

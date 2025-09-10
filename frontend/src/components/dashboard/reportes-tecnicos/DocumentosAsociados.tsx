@@ -1,14 +1,15 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 import { useState, useEffect } from "react";
-import { Box, Button, TextField, Typography, Select, MenuItem } from "@mui/material";
-import { DataGrid, GridToolbar  } from '@mui/x-data-grid'
+import { Box, Button, TextField, Typography, Select, MenuItem, Snackbar, Alert } from "@mui/material";
+import { DataGrid, type GridColDef } from '@mui/x-data-grid'
 import { esES } from '@mui/x-data-grid/locales';
 import Services from '@/modules/Services';
-import { fi } from "zod/dist/types/v4/locales";
+
 const gs = new Services();
 
-const DocumentosAsociados = () => {
+function DocumentosAsociados() {
   const [documentos, setDocumentos] = useState<any[]>([]);
-  const [activos, setActivos] = useState([]);
+  const [activos, setActivos] = useState<any[]>([]);
   const [activo, setActivo] = useState("");
   const [categorias, setCategorias] = useState<string[]>([]);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("");
@@ -16,13 +17,14 @@ const DocumentosAsociados = () => {
   const [nombreDocumento, setNombreDocumento] = useState("");
   const [descripcionDocumento, setDescripcionDocumento] = useState("");
   const [palabrasClave, setPalabrasClave] = useState("");
+  const [mensaje, setMensaje] = useState<string | null>(null);
 
   const columns: GridColDef[] = [
-    { field: 'id', headerName: 'ID', flex:0.5, hide: true, filterable: false},
+    { field: 'id', headerName: 'ID', flex:0.5, filterable: false},
     { field: 'nombre', headerName: 'Nombre', flex: 1.5, filterable: false},
     { field: 'categoria', headerName: 'Categoría', flex: 1, filterable: true },
     { field: 'activo_nombre', headerName: 'Activo', flex: 1, filterable: false },
-    { field: 'palabras_clave', headerName: 'Palabras clave', flex: 1, hide:true, filterable: true },
+    { field: 'palabras_clave', headerName: 'Palabras clave', flex: 1, filterable: true },
     { field: 'creado_en_formateado', headerName: 'Fecha', flex: 1, filterable: true },
   ];
 
@@ -42,11 +44,11 @@ const DocumentosAsociados = () => {
         } 
         // Si no devuelve nada útil
         else {
-          console.warn("La respuesta no tiene activos válidos");
+          //console.warn("La respuesta no tiene activos válidos");
           setActivos([]);
         }
       } catch (error) {
-        console.error("Error al conectar con API Gateway:", error);
+        //console.error("Error al conectar con API Gateway:", error);
         setActivos([]);
       }
     };
@@ -67,9 +69,9 @@ const DocumentosAsociados = () => {
           new Set(documentos.map((doc: any) => doc.categoria))
         );
 
-        setCategorias(categoriasUnicas);
+        setCategorias(categoriasUnicas.filter(c => typeof c === "string"));
       } catch (error) {
-        console.error("Error al conectar con API Gateway:", error);
+        //console.error("Error al conectar con API Gateway:", error);
         setCategorias([]);
       }
     };
@@ -82,7 +84,6 @@ const DocumentosAsociados = () => {
     const fetchDocumentos = async () => {
       try {
         const data = await gs.get("/documentacion/documentos");
-        console.log("Respuesta documentos:", data);
 
         const docsArray = data?.documentos || [];
         const documentosConFecha = docsArray.map((doc: any) => {
@@ -100,20 +101,20 @@ const DocumentosAsociados = () => {
 
         // Extraer categorías únicas
         const cats = Array.from(new Set(docsArray.map((d: any) => d.categoria)));
-        setCategorias(cats);
+        setCategorias(cats.filter(c => typeof c === "string"));
         } catch (error) {
-          console.error("Error al cargar documentos:", error);
+          //console.error("Error al cargar documentos:", error);
         }
     };
     if (activos.length > 0) fetchDocumentos(); // 🔹 Solo corre cuando ya hay activos
 }, [activos]); // 🔹 Dependencia en activos
 
   const handleGuardarDocumento = async () => {
-    if (!archivo) return alert("Debe seleccionar un archivo");
-    if (!categoriaSeleccionada) return alert("Debe seleccionar una categoría");
-    if (!activo) return alert("Debe seleccionar un activo");
+    if (!archivo) { setMensaje("Debe seleccionar un archivo"); return; }
+    if (!categoriaSeleccionada) { setMensaje("Debe seleccionar una categoría"); return; }
+    if (!activo) { setMensaje("Debe seleccionar un activo"); return; }
     if (!nombreDocumento || !descripcionDocumento || !palabrasClave) {
-      return alert("Debe completar todos los campos");
+      setMensaje("Debe completar todos los campos"); return;
     }
     // const formData = {
     //   archivo: archivo,
@@ -130,12 +131,7 @@ const DocumentosAsociados = () => {
     formData.append("nombre", nombreDocumento);
     formData.append("descripcion", descripcionDocumento);
     formData.append("palabras_clave", palabrasClave);
-    console.log("Datos a enviar:");
-    formData.forEach((value, key) => {
-      console.log(key, value);
-    });
     try {
-      console.log("formData to send:", formData);
       await gs.post("/documentacion/documentos", formData);
       // Subido correctamente, puedes recargar documentos
       const data = await gs.get("/documentacion/documentos");
@@ -160,8 +156,7 @@ const DocumentosAsociados = () => {
       setActivo("");
       setCategoriaSeleccionada("");
     } catch (error) {
-      console.error(error);
-      alert("Error al subir documento");
+      setMensaje("Error al subir documento");
     }
   };
 
@@ -177,14 +172,14 @@ const DocumentosAsociados = () => {
           <input
             type="file"
             hidden
-            onChange={(e) => setArchivo(e.target.files ? e.target.files[0] : null)}
+            onChange={(e) => { setArchivo(e.target.files ? e.target.files[0] : null); }}
           />
         </Button>
 
         {/* Selector de categoría */}
         <Select
           value={categoriaSeleccionada}
-          onChange={(e) => setCategoriaSeleccionada(e.target.value)}
+          onChange={(e) => { setCategoriaSeleccionada(e.target.value); }}
           displayEmpty
         >
           <MenuItem value="">Categoría</MenuItem>
@@ -198,7 +193,7 @@ const DocumentosAsociados = () => {
         {/* Selector de activo */}
         <Select
           value={activo}
-          onChange={(e) => setActivo(e.target.value)}
+          onChange={(e) => { setActivo(e.target.value); }}
           displayEmpty
         >
           <MenuItem value="">Seleccionar Activo</MenuItem>
@@ -216,19 +211,19 @@ const DocumentosAsociados = () => {
         <TextField
           label="Nombre del Documento"
           value={nombreDocumento}
-          onChange={(e) => setNombreDocumento(e.target.value)}
+          onChange={(e) => { setNombreDocumento(e.target.value); }}
           fullWidth
         />
         <TextField
           label="Palabras Clave (separadas por coma)"
           value={palabrasClave}
-          onChange={(e) => setPalabrasClave(e.target.value)}
+          onChange={(e) => { setPalabrasClave(e.target.value); }}
           fullWidth
         />
         <TextField
           label="Descripción"
           value={descripcionDocumento}
-          onChange={(e) => setDescripcionDocumento(e.target.value)}
+          onChange={(e) => { setDescripcionDocumento(e.target.value); }}
           fullWidth
         />
       </Box>
@@ -238,7 +233,7 @@ const DocumentosAsociados = () => {
         <input
           type="file"
           hidden
-          onChange={(e) => setArchivo(e.target.files ? e.target.files[0] : null)}
+          onChange={(e) => { setArchivo(e.target.files ? e.target.files[0] : null); }}
         />
       </Button>
 
@@ -248,7 +243,7 @@ const DocumentosAsociados = () => {
             columns={columns}
             pageSizeOptions={[5]}
             disableRowSelectionOnClick
-            slots={{ toolbar: GridToolbar }}    
+            showToolbar
             slotProps={{
               toolbar: {
                 showQuickFilter: true,      // 🔹 CAMBIO: activa barra de búsqueda
@@ -282,8 +277,18 @@ const DocumentosAsociados = () => {
             }}
         />
      </Box>
+
+     <Snackbar
+        open={Boolean(mensaje)}
+        autoHideDuration={4000}
+        onClose={() => { setMensaje(null); }}
+      >
+        <Alert severity="warning" onClose={() => { setMensaje(null); }}>
+          {mensaje}
+        </Alert>
+      </Snackbar>
     </Box>
   );
-};
+}
 
 export default DocumentosAsociados;

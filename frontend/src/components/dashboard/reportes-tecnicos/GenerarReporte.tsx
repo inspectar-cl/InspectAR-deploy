@@ -1,18 +1,19 @@
-import { useState, useEffect } from "react";
-import { Box, Button, TextField, Typography, Select, MenuItem } from "@mui/material";
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
+import {useState, useEffect } from "react";
+import { Box, Button, TextField, Select, MenuItem, Snackbar, Alert } from "@mui/material";
 import Services from '@/modules/Services';
 import axios from "axios";
 
 const gs = new Services();
 
-const GenerarReporte = () => {
-  const [activos, setActivos] = useState([]);
+function GenerarReporte() {
+  const [activos, setActivos] = useState<any[]>([]);
   const [activo, setActivo] = useState("");
   const [observaciones, setObservaciones] = useState("");
   //  CAMBIO: ahora es un array de reportes
-  const [reportes, setReportes] = useState([]);
+  //const [reportes, setReportes] = useState<any[]>([]);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null); // <<< CAMBIO: estado para vista previa PDF
-
+  const [mensaje, setMensaje] = useState<string | null>(null);
 
   // Cargar activos al montar el componente
   useEffect(() => {
@@ -30,11 +31,11 @@ const GenerarReporte = () => {
         } 
         // Si no devuelve nada útil
         else {
-          console.warn("La respuesta no tiene activos válidos");
+          //console.warn("La respuesta no tiene activos válidos");
           setActivos([]);
         }
       } catch (error) {
-        console.error("Error al conectar con API Gateway:", error);
+        //console.error("Error al conectar con API Gateway:", error);
         setActivos([]);
       }
     };
@@ -71,11 +72,11 @@ const GenerarReporte = () => {
     document.body.removeChild(link);
 
     // Liberar objeto URL
-    setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+    setTimeout(() => { window.URL.revokeObjectURL(url); }, 10000);
 
   } catch (error) {
-    console.error("Error al exportar PDF:", error);
-    alert("No se pudo generar el PDF");
+    //console.error("Error al exportar PDF:", error);
+    setMensaje("No se pudo exportar el PDF");
   }
 };
 
@@ -92,14 +93,14 @@ const GenerarReporte = () => {
       const url = window.URL.createObjectURL(blob);
       setPdfUrl(url);
     } catch (error) {
-      console.error("Error al generar vista previa PDF:", error);
-      alert("No se pudo generar la vista previa");
+      //console.error("Error al generar vista previa PDF:", error);
+      setMensaje("No se pudo generar la vista previa");
     }
   };
 
   // Función para actualizar observaciones
 // Función para actualizar observaciones del analista
-const handleActualizarObservaciones = async () => {
+{/*const handleActualizarObservaciones = async () => {
   if (!reportes || reportes.length === 0) {
     console.log("No hay reportes para actualizar"); // <<< log agregado
     return;
@@ -115,12 +116,12 @@ const handleActualizarObservaciones = async () => {
       autor_analista: "Tu Nombre"            // ✅ remplazar por quien actualiza
     });
     console.log("Respuesta API:", data);
-    alert("Observaciones actualizadas correctamente");
+    setMensaje("Observaciones actualizadas correctamente");
   } catch (error) {
     console.error("Error al actualizar observaciones:", error);
-    alert("No se pudo actualizar las observaciones");
+    setMensaje("No se pudo actualizar las observaciones");
   }
-};
+};*/}
 
 
 
@@ -130,7 +131,7 @@ const handleActualizarObservaciones = async () => {
       <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
         <Select
           value={activo}
-          onChange={(e) => setActivo(e.target.value)}
+          onChange={(e) => { setActivo(e.target.value); }}
           displayEmpty
         >
           <MenuItem value="">Seleccionar Activo</MenuItem>
@@ -147,15 +148,13 @@ const handleActualizarObservaciones = async () => {
       </Box>
 
       {/* <<< CAMBIO: iframe para vista previa PDF */}
-      {pdfUrl && (
-        <Box sx={{ mt: 3, borderRadius: 2 }}>
+      {pdfUrl ? <Box sx={{ mt: 3, borderRadius: 2 }}>
           <iframe
             src={pdfUrl}
             style={{ width: "100%", height: "500px" }}
             title="Vista Previa PDF"
           />
-        </Box>
-      )}
+        </Box> : null}
 
       {/* Observaciones */}
       <Box sx={{ mt: 2 }}>
@@ -165,18 +164,27 @@ const handleActualizarObservaciones = async () => {
           rows={3}
           fullWidth
           value={observaciones}
-          onChange={(e) => setObservaciones(e.target.value)}
+          onChange={(e) => { setObservaciones(e.target.value); }}
         />
         <Button 
     variant="contained" 
     sx={{ mt: 1 }}
-    onClick={handleActualizarObservaciones}
+    //onClick={handleActualizarObservaciones}
   >
     Guardar Observaciones
   </Button>
       </Box>
+      <Snackbar
+        open={Boolean(mensaje)}
+        autoHideDuration={4000}
+        onClose={() => { setMensaje(null); }}
+      >
+        <Alert severity="warning" onClose={() => { setMensaje(null); }}>
+          {mensaje}
+        </Alert>
+      </Snackbar>    
     </Box>
   );
-};
+}
 
 export default GenerarReporte;

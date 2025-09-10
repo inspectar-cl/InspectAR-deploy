@@ -1,4 +1,4 @@
-export type Edificio = {
+export interface Edificio {
   id: string
   nombre_edificio: string
   ubicacion: string

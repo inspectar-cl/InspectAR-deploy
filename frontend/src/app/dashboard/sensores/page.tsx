@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 'use client';
 import * as React from 'react';
 import Grid from '@mui/material/Grid';
@@ -9,7 +10,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { LatestSensors } from '@/components/dashboard/overview/latest-sensors';
-import { useActivosWithSensors } from '@/hooks/useActivosWithSensors';
+import { useActivosWithSensors } from '@/hooks/use-activos-with-sensors';
 import dayjs from 'dayjs';
 
 export default function Page(): React.JSX.Element {
@@ -17,13 +18,13 @@ export default function Page(): React.JSX.Element {
 
   // Función para simular caída de sensor (para testing)
   const simulateDown = (activoIdx: number, sensorId: string) => {
-    console.log(`Simulando caída del sensor ${sensorId} en activo ${activoIdx}`);
+    //console.log(`Simulando caída del sensor ${sensorId} en activo ${activoIdx}`);
     // En el futuro se puede implementar una llamada a la API para simular
   };
 
   // Función para simular recuperación de sensor (para testing)
   const simulateUp = (activoIdx: number, sensorId: string) => {
-    console.log(`Simulando recuperación del sensor ${sensorId} en activo ${activoIdx}`);
+    //console.log(`Simulando recuperación del sensor ${sensorId} en activo ${activoIdx}`);
     // En el futuro se puede implementar una llamada a la API para simular
   };
 
@@ -133,24 +134,24 @@ export default function Page(): React.JSX.Element {
           <Grid key={`${activo.assetName}-${idx}`} size={{ lg: 8, md: 12, xs: 12 }}>
             
             {/* Botones de simulación (solo para desarrollo) */}
-            {process.env.NODE_ENV === 'development' && activo.sensores.length > 0 && (
+            {/* {process.env.NODE_ENV === 'development' && activo.sensores.length > 0 && (
               <Stack direction="row" spacing={1} sx={{ mb: 1, justifyContent: 'flex-end' }}>
                 <Button 
                   size="small" 
                   variant="outlined" 
-                  onClick={() => simulateDown(idx, activo.sensores[0].id)}
+                  onClick={() => { simulateDown(idx, activo.sensores[0].id); }}
                 >
                   Simular caída ({activo.sensores[0].name})
                 </Button>
                 <Button 
                   size="small" 
                   variant="outlined" 
-                  onClick={() => simulateUp(idx, activo.sensores[0].id)}
+                  onClick={() => { simulateUp(idx, activo.sensores[0].id); }}
                 >
                   Simular recovery
                 </Button>
               </Stack>
-            )}
+            )} */}
 
             <LatestSensors
               assetName={activo.assetName}

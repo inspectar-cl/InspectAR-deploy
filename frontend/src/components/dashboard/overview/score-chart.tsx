@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 'use client';
 
 import * as React from 'react';
@@ -8,7 +9,9 @@ import CardHeader from '@mui/material/CardHeader';
 import { useTheme } from '@mui/material/styles';
 import { Gauge } from '@mui/x-charts/Gauge';
 
-export default function ScoreChart({ sx }: { sx?: any }) {
+import type { SxProps, Theme } from '@mui/material/styles';
+
+export default function ScoreChart({ sx }: { sx?: SxProps<Theme> }) {
   const theme = useTheme();
 
   const h1 = theme.typography.h1;

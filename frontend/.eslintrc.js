@@ -21,6 +21,18 @@ module.exports = {
       },
     },
   },
+  overrides: [
+    {
+      files: ['*.js'],
+      parser: '@babel/eslint-parser',
+      parserOptions: {
+        requireConfigFile: false,
+      },
+      rules: {
+        '@typescript-eslint/restrict-template-expressions': 'off',
+      },
+    },
+  ],
   rules: {
     '@typescript-eslint/no-unused-vars': [
       'error',
@@ -45,7 +57,6 @@ module.exports = {
     ],
     'import/newline-after-import': 'error',
     'react/jsx-uses-react': 'error',
-    'react/react-in-jsx-scope': 'error',
     'unicorn/filename-case': [
       'error',
       {
@@ -78,5 +89,6 @@ module.exports = {
     'react/prop-types': 'off', // TypeScript is used for type checking
 
     '@next/next/no-img-element': 'off', // Temporary disabled
+    'react/react-in-jsx-scope': 'off', // Not needed with React 17+
   },
 };

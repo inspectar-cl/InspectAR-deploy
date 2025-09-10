@@ -1,19 +1,20 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 'use client';
 
 import * as React from 'react';
 
-export type Notification = {
+export interface Notification {
     id: string; // uuid
     title: string; // ej: "Bomba A — Sensor de Presión inactivo"
     body?: string; // detalle opcional
     severity?: 'info'|'warning'|'error'|'success';
     ts: Date;
     read?: boolean;
-    meta?: Record<string, any>;// sensorId, assetName, etc.
-};
+    meta?: Record<string, unknown>;// sensorId, assetName, etc.
+}
 
 
-export type NotificationsContextType = {
+export interface NotificationsContextType {
     notifications: Notification[];
     unreadCount: number;
     push: (n: Omit<Notification, 'id'|'ts'|'read'> & { id?: string; ts?: Date; read?: boolean }) => void;
@@ -23,7 +24,7 @@ export type NotificationsContextType = {
 // Registro de estado conocido por sensor para detectar transiciones
     getSensorStatus: (sensorId: string) => 'connected'|'disconnected'|'never_connected'|undefined;
     setSensorStatus: (sensorId: string, status: 'connected'|'disconnected'|'never_connected') => void;
-};
+}
 
 
 const NotificationsContext = React.createContext<NotificationsContextType | undefined>(undefined);

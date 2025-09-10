@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 'use client'
 
 import * as React from 'react';
@@ -8,7 +9,22 @@ import { ContactosClient } from '@/components/dashboard/contactos/contactos-clie
 
 import { useEffect, useState } from 'react';
 import Services from '@/modules/Services'
+
 const gs = new Services()
+
+interface TecnicoAPI {
+  id: number;
+  nombre: string;
+  telefono: string;
+  especialidad: string;
+}
+
+interface ActivoAPI {
+  id_activo?: number;
+  id?: number;
+  nombre_activo?: string;
+  nombre?: string;
+}
 
 export default function Page(): React.JSX.Element {
   const [contactos, setContactos] = useState<Contacto[]>([]);
@@ -17,11 +33,11 @@ export default function Page(): React.JSX.Element {
   useEffect(() => {
     const fetchContactos = async () => {
       try {
-        const response = await gs.get("/gestion/tecnicos");
-        console.log("response", response)
+        const response = await gs.get("/gestion/tecnicos") as TecnicoAPI[];
+        //console.log("response", response)
         const contactosMapeados = Array.isArray(response)
-          ? response.map((c: any) => ({
-              id: c.id,
+          ? response.map((c: TecnicoAPI) => ({
+              id: String(c.id),
               name: c.nombre,
               email: "j3291674@gmail.com",
               phone: c.telefono,
@@ -33,11 +49,11 @@ export default function Page(): React.JSX.Element {
         // Para cada técnico, busca sus activos asociados
         const contactosConActivos = await Promise.all(
           contactosMapeados.map(async (tecnico) => {
-            const activos = await gs.get(`/gestion/activos-de-tecnico/${tecnico.id}`);
+            const activos = await gs.get(`/gestion/activos-de-tecnico/${tecnico.id}`) as ActivoAPI[];
             // Mapea los activos a la estructura esperada por Contacto
             const activosMapeados = Array.isArray(activos)
-              ? activos.map((a: any) => ({
-                  id_activo: a.id_activo ?? a.id ?? "",
+              ? activos.map((a: ActivoAPI) => ({
+                  id_activo: String(a.id_activo ?? a.id ?? ""),
                   nombre_activo: a.nombre_activo ?? a.nombre ?? "",
                 }))
               : [];
@@ -58,7 +74,7 @@ export default function Page(): React.JSX.Element {
       }
     };
 
-    fetchContactos();
+    void fetchContactos();
   }, []);
 
   return <ContactosClient contactos={contactos} especialidades={especialidades} />;

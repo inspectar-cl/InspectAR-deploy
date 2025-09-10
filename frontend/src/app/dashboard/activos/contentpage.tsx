@@ -18,7 +18,7 @@ export default function ContentActivosPage(): React.JSX.Element {
     <Stack spacing={2}>
       <Grid size={{lg:8, md:6, xs:12}}>
         <MapaActivos onSeleccionarEdificio={(id) =>
-            setEdificioSeleccionado((prev) => (prev === id ? null : id))
+            { setEdificioSeleccionado((prev) => (prev === id ? null : id)); }
         }/>
       </Grid>
 

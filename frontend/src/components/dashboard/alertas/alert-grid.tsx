@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 'use client';
 
 import * as React from 'react';
@@ -6,8 +7,8 @@ import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardHeader from '@mui/material/CardHeader';
-import { DataGrid, GridColDef, GridFilterModel, GridColumnVisibilityModel} from '@mui/x-data-grid';
-import { Activo } from '@/types/'
+import { DataGrid, type GridColDef, type GridFilterModel, type GridColumnVisibilityModel} from '@mui/x-data-grid';
+import { type Activo } from '@/types/'
 import { esES } from '@mui/x-data-grid/locales';
 
 import { activosMock} from '@/mocks/'
@@ -18,10 +19,10 @@ import {
   STATUS_OPTIONS,
 } from './status';
 
-const activos = activosMock;
-
 // Configuración rutas de obtención de datos desde db.
 import Services from '@/modules/Services'
+
+const activos = activosMock;
 
 const gs = new Services()
 
@@ -142,7 +143,7 @@ export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: any; edi
                 <DataGrid 
                     columnVisibilityModel={columnVisibilityModel}
                     onColumnVisibilityModelChange={(newModel) =>
-                      setColumnVisibilityModel(newModel)
+                      { setColumnVisibilityModel(newModel); }
                     }
                     onRowClick={(params) => {window.location.href = paths.dashboard.activoDetail(params.row.id);}}
                     showToolbar
@@ -158,7 +159,7 @@ export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: any; edi
                     pageSizeOptions={[9]}
                     disableRowSelectionOnClick
                     filterModel={filterModel}
-                    onFilterModelChange={(newModel) => setFilterModel(newModel)}
+                    onFilterModelChange={(newModel) => { setFilterModel(newModel); }}
                     localeText={{
                       ...esES.components.MuiDataGrid.defaultProps.localeText,
                       filterPanelInputLabel: 'Valor a filtrar',

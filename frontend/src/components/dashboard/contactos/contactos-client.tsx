@@ -1,27 +1,23 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 'use client'
 
 import * as React from 'react';
-import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { DownloadIcon } from '@phosphor-icons/react/dist/ssr/Download';
-import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
-import { UploadIcon } from '@phosphor-icons/react/dist/ssr/Upload';
 
 import { ContactosFilters } from './contactos-filters';
-import { ContactosTable, Contacto } from './contactos-table';
+import { ContactosTable, type Contacto } from './contactos-table';
 import { CustomAlert } from '@/components/dashboard/alert-popups/customAlertPopup';
 
-interface Props {
+import Services from '@/modules/Services'
+
+interface ContactosClientProps {
   contactos: Contacto[];
   especialidades: string[];
 }
-
-import { useEffect, useState } from 'react';
-import Services from '@/modules/Services'
 const gs = new Services()
 
-export function ContactosClient({ contactos, especialidades }: Props) {
+export function ContactosClient({ contactos, especialidades }: ContactosClientProps) {
   const [filter, setFilter] = React.useState({ search: '', especialidad: null as string | null });
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
@@ -48,7 +44,7 @@ export function ContactosClient({ contactos, especialidades }: Props) {
   };
 
   const handleSendRequest = async (selectedRows: Contacto[]) => {
-    console.log('Contactos seleccionados para enviar solicitud:', selectedRows);
+    //console.log('Contactos seleccionados para enviar solicitud:', selectedRows);
     
     try {
       // Enviar notificación a cada contacto seleccionado
@@ -62,13 +58,13 @@ export function ContactosClient({ contactos, especialidades }: Props) {
           user_name: "Admin InspectAR" // Valor temporal
         };
         
-        console.log(`Enviando notificación a ${contacto.email}:`, payload);
-        return await gs.post("/notificacion/technician/contact", payload);
+        //console.log(`Enviando notificación a ${contacto.email}:`, payload);
+        return await gs.post("/notificacion/technician/contact", payload) as { success: boolean; message: string };
       });
 
       // Esperar a que todas las llamadas se completen
-      const results = await Promise.all(promises);
-      console.log('Resultados de envío:', results);
+      await Promise.all(promises);
+      //console.log('Resultados de envío:', results);
 
       // Realizar esta alerta si sale bien el envio por la API
       setAlertState({
@@ -79,7 +75,7 @@ export function ContactosClient({ contactos, especialidades }: Props) {
       });
 
     } catch (error) {
-      console.error('Error al enviar notificaciones:', error);
+      //console.error('Error al enviar notificaciones:', error);
       
       // Realizar esta alerta si sale mal el envio por API
       setAlertState({

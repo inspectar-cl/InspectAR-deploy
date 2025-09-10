@@ -1,11 +1,13 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Box, Button, TextField, Typography, MenuItem, Collapse } from '@mui/material'
-import { DataGrid, GridColDef } from '@mui/x-data-grid'
+import { Box, Button, TextField, Typography, MenuItem, Collapse, Snackbar, Alert } from '@mui/material'
+import { DataGrid, type GridRenderCellParams, type GridColDef } from '@mui/x-data-grid'
 import { esES } from '@mui/x-data-grid/locales'
 
 import Services from '@/modules/Services'
+
 const gs = new Services()
 
 interface Accion {
@@ -18,7 +20,10 @@ interface Accion {
   prioridad: string
   fecha_inicio: string
   creado_en: string
-  activo?: string
+  activo?: {
+    id: number
+    nombre: string
+  }
   tecnico?: {
     id: number
     nombre: string
@@ -36,6 +41,7 @@ export default function ListasAccionesView() {
   const [acciones, setAcciones] = useState<Accion[]>([])
   const [activos, setActivos] = useState<Activo[]>([])
   const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [mensaje, setMensaje] = useState<string | null>(null);
 
   // Campos para nueva acción
   const [activoSeleccionado, setActivoSeleccionado] = useState('')
@@ -47,24 +53,24 @@ export default function ListasAccionesView() {
   useEffect(() => {
     const fetchActivos = async () => {
       try {
-        const data = await gs.get("/obtener-activos")
-        console.log("Activos cargados:", data)
+        const data = await gs.get("/obtener-activos") as { activos: Activo[] }
+        //console.log("Activos cargados:", data)
         const activosArray = data.activos
         setActivos(Array.isArray(activosArray) ? activosArray : [])
-        console.log("Valor de setActivos (activos):", Array.isArray(activosArray) ? activosArray : [])
+        //console.log("Valor de setActivos (activos):", Array.isArray(activosArray) ? activosArray : [])
       } catch (error) {
-        console.error('Error al cargar activos:', error)
+        //console.error('Error al cargar activos:', error)
       }
     }
-    fetchActivos()
+    void fetchActivos()
   }, [])
 
   // --- API Acciones ---
   const fetchAcciones = async () => {
     try {
-      const res = await await gs.get(`/gestion/acciones/tecnico/${tecnicoActualId}`)
-      console.log("Acciones cargadas:", res)
-      const accionesProcesadas = res.map((accion: any) => ({
+      const res = await gs.get(`/gestion/acciones/tecnico/${tecnicoActualId}`) as Accion[]
+      //console.log("Acciones cargadas:", res)
+      const accionesProcesadas = res.map((accion) => ({
         ...accion,
         tecnico_nombre: accion.tecnico?.nombre || 'Sin técnico',
         activo_nombre: accion.activo?.nombre || 'Sin activo'
@@ -72,12 +78,12 @@ export default function ListasAccionesView() {
       // const data = await res.json()
       setAcciones(accionesProcesadas)
     } catch (err) {
-      console.error('Error cargando acciones:', err)
+      //console.error('Error cargando acciones:', err)
     }
   }
 
   const crearAccion = async () => {
-    if (!activoSeleccionado || !descripcion) return alert('Completa todos los campos.')
+    if (!activoSeleccionado || !descripcion) { setMensaje('Completa todos los campos.'); return; }
 
     try {
       const data = {
@@ -89,9 +95,9 @@ export default function ListasAccionesView() {
         prioridad,
       }
 
-      console.log("Datos para crear acción:", data)
-      
-      const res = await gs.post('/gestion/acciones', data)
+      //console.log("Datos para crear acción:", data)
+
+      const res = await gs.post('/gestion/acciones', data) as { error?: boolean; mensaje?: string }
 
       if (!res.error) {
         // Acción creada correctamente
@@ -102,40 +108,40 @@ export default function ListasAccionesView() {
         setTipo('')
       } else {
         // Manejo de error
-        console.error('Error en creación:', res.error)
-        alert('Error al crear la acción: ' + (res.mensaje || 'Error desconocido'))
+        // console.error('Error en creación:', res.error)
+        setMensaje(`Error al crear la acción: ${  res.mensaje || 'Error desconocido'}`)
       }
     } catch (err) {
-      console.error('Error creando acción:', err)
-      alert('Error inesperado al crear la acción')
+      //console.error('Error creando acción: ', err)
+      setMensaje('Error inesperado al crear la acción')
     }
   }
 
 
   const actualizarEstado = async (id: number, nuevoEstado: string) => {
     try {
-      const res = await gs.put(`/gestion/acciones/${id}/estado`, { estado: nuevoEstado })
+      const res = await gs.put(`/gestion/acciones/${id}/estado`, { estado: nuevoEstado }) as { error?: boolean; mensaje?: string };
 
       if (!res.error) {
         // éxito
         await fetchAcciones()
       } else {
-        console.error('Error actualizando estado:', res.error)
-        alert('Error al actualizar el estado: ' + (res.mensaje || 'Error desconocido'))
+        // console.error('Error actualizando estado:', res.error)
+        setMensaje(`Error al actualizar el estado: ${  res.mensaje || 'Error desconocido'}`)
       }
     } catch (err) {
-      console.error('Error actualizando estado:', err)
-      alert('Error inesperado al actualizar el estado')
+      //console.error('Error actualizando estado:', err)
+      setMensaje('Error inesperado al actualizar el estado')
     }
   }
 
   useEffect(() => {
-    fetchAcciones()
+    void fetchAcciones()
   }, [])
 
   // --- Columnas ---
   const columns: GridColDef[] = [
-    { field: 'id', headerName: 'ID', width: 70, flex:0.3, hide: true },
+    { field: 'id', headerName: 'ID', width: 70, flex:0.3},
     { field: 'tecnico_nombre', headerName: 'Técnico', width: 100, flex:0.5},
     { field: 'descripcion', headerName: 'Descripción', flex: 2 },
     { field: 'tipo', headerName: 'Tipo', flex: 0.7 , minWidth: 70},
@@ -145,10 +151,10 @@ export default function ListasAccionesView() {
       field: 'acciones',
       headerName: 'Acciones',
       flex: 1,
-      renderCell: (params) => (
+      renderCell: (params: GridRenderCellParams<Accion>) => (
         <Button
           size="small"
-          onClick={() => setExpandedId(expandedId === params.row.id ? null : params.row.id)}
+          onClick={() => { setExpandedId(expandedId === params.row.id ? null : params.row.id); }}
         >
           {expandedId === params.row.id ? 'Ocultar' : 'Cambiar Estado'}
         </Button>
@@ -165,7 +171,7 @@ export default function ListasAccionesView() {
           label="Activo"
           select
           value={activoSeleccionado}
-          onChange={(e) => setActivoSeleccionado(e.target.value)}
+          onChange={(e) => { setActivoSeleccionado(e.target.value); }}
           fullWidth
           sx={{ minWidth: 200 }}
         >
@@ -173,14 +179,14 @@ export default function ListasAccionesView() {
             <MenuItem key={a.id} value={a.id}>{a.nombre}</MenuItem>
           ))}
         </TextField>
-        <TextField label="Descripción" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} fullWidth />
+        <TextField label="Descripción" value={descripcion} onChange={(e) => { setDescripcion(e.target.value); }} fullWidth />
 
         {/* Tipo como dropdown */}
         <TextField
           label="Tipo"
           select
           value={tipo}
-          onChange={(e) => setTipo(e.target.value)}
+          onChange={(e) => { setTipo(e.target.value); }}
           fullWidth
           sx={{ minWidth: 150 }}
         >
@@ -194,7 +200,7 @@ export default function ListasAccionesView() {
           label="Prioridad"
           select
           value={prioridad}
-          onChange={(e) => setPrioridad(e.target.value)}
+          onChange={(e) => { setPrioridad(e.target.value); }}
           fullWidth
           sx={{ minWidth: 100 }}
         >
@@ -213,7 +219,7 @@ export default function ListasAccionesView() {
         <Collapse key={a.id} in={expandedId === a.id}>
           <Box sx={{ p: 2, mt: 2, mb: 2, border: '1px solid #ddd', borderRadius: 2 }}>
             <Typography variant="subtitle2">Detalle de Acción</Typography>
-            <Typography>Técnico: {a.tecnico.nombre}</Typography>
+            <Typography>Técnico: {a.tecnico?.nombre ?? 'Sin técnico'}</Typography>
             <Typography>Descripción: {a.descripcion}</Typography>
             <Typography>Tipo: {a.tipo}</Typography>
             <Typography>Estado: {a.estado}</Typography>
@@ -240,7 +246,7 @@ export default function ListasAccionesView() {
                   toolbarExport: 'Exportar',
                   // Traducción de paginación
                   paginationRowsPerPage: 'Acciones por página',
-                  noRowsLabel: 'No hay acciones asociados',
+                  noRowsLabel: 'No hay acciones asociadas',
                   footerTotalRows: 'Total de acciones:',
                   footerTotalVisibleRows: (visibleCount, totalCount) =>
                   `${visibleCount.toLocaleString()} de ${totalCount.toLocaleString()}`,
@@ -256,6 +262,15 @@ export default function ListasAccionesView() {
                     },
             }}
       />
+      <Snackbar
+        open={Boolean(mensaje)}
+        autoHideDuration={4000}
+        onClose={() => { setMensaje(null); }}
+      >
+        <Alert severity="warning" onClose={() => { setMensaje(null); }}>
+          {mensaje}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

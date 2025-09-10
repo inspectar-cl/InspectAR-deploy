@@ -1,17 +1,14 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 'use client';
 
 import * as React from 'react'
-import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
+import { DataGrid, type GridColDef, type GridRenderCellParams } from '@mui/x-data-grid'
 import { Paper, Box, Chip, TextField, MenuItem, Stack, Checkbox, Tooltip   } from '@mui/material'
 import { esES } from '@mui/x-data-grid/locales'
-import { Alerta } from '@/types/'
-import { activosMock, alertasMock } from '@/mocks/'
-
-
-const activos = activosMock
+import { type Alerta } from '@/types/'
 
 export function AlertasTable(): React.JSX.Element {
-  const [alertas, setAlertas] = React.useState<Alerta[]>(alertasMock)
+  const [alertas, setAlertas] = React.useState<Alerta[]>([])
   const [filtroTipo, setFiltroTipo] = React.useState('')
   const [filtroUbicacion, setFiltroUbicacion] = React.useState('')
   const [filtroEstado, setFiltroEstado] = React.useState('')
@@ -47,7 +44,7 @@ export function AlertasTable(): React.JSX.Element {
         <Checkbox
           checked={params.value}
           disabled={params.value}
-          onChange={() => handleAtender(params.row.id)}
+          onChange={() => { handleAtender(params.row.id); }}
           color="primary"
         />
       ),
@@ -97,7 +94,7 @@ export function AlertasTable(): React.JSX.Element {
             label="Estado de alerta"
             select
             value={filtroAtendidas}
-            onChange={(e) => setFiltroAtendidas(e.target.value)}
+            onChange={(e) => { setFiltroAtendidas(e.target.value); }}
             size="small"
             fullWidth
           >
@@ -108,7 +105,7 @@ export function AlertasTable(): React.JSX.Element {
           <TextField
             label="Tipo de activo"
             value={filtroTipo}
-            onChange={(e) => setFiltroTipo(e.target.value)}
+            onChange={(e) => { setFiltroTipo(e.target.value); }}
             size="small"
             fullWidth
           />
@@ -116,7 +113,7 @@ export function AlertasTable(): React.JSX.Element {
             label="Nivel de riesgo"
             select
             value={filtroEstado}
-            onChange={(e) => setFiltroEstado(e.target.value)}
+            onChange={(e) => { setFiltroEstado(e.target.value); }}
             size="small"
             fullWidth
           >
@@ -130,7 +127,7 @@ export function AlertasTable(): React.JSX.Element {
           <TextField
             label="Buscar ubicación"
             value={filtroUbicacion}
-            onChange={(e) => setFiltroUbicacion(e.target.value)}
+            onChange={(e) => { setFiltroUbicacion(e.target.value); }}
             size="small"
             fullWidth
           />

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 'use client';
 
 import * as React from 'react';
@@ -19,7 +20,7 @@ import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 
 import { useSelection } from '@/hooks/use-selection';
 
-export interface Activo_contactos {
+export interface ActivoContactos {
   id_activo: string;
   nombre_activo: string;
 }
@@ -30,9 +31,9 @@ export interface Contacto {
   avatar: string;
   name: string;
   email: string;
-  activo: Activo_contactos[];
+  activo: ActivoContactos[];
   phone: string;
-  especialidad: String;
+  especialidad: string;
 }
 
 interface ContactosTableProps {
@@ -45,13 +46,15 @@ interface ContactosTableProps {
   onSendRequest: (selectedRows: Contacto[]) => void;
 }
 
+const noop = () => undefined;
+
 export function ContactosTable({
   count = 0,
   rows = [],
   page = 0,
   rowsPerPage = 0,
-  onPageChange = () => {},
-  onRowsPerPageChange = () => {},
+  onPageChange = () => noop,
+  onRowsPerPageChange = () => noop,
   onSendRequest,
 }: ContactosTableProps): React.JSX.Element {
   const rowIds = React.useMemo(() => {

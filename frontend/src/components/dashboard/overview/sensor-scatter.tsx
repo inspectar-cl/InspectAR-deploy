@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
+
 'use client';
 
 import * as React from 'react';
@@ -6,30 +8,41 @@ import CardContent from '@mui/material/CardContent';
 import CardHeader from '@mui/material/CardHeader';
 import Divider from '@mui/material/Divider';
 import dayjs from 'dayjs';
-import { ChartsTooltipContainer } from '@mui/x-charts/ChartsTooltip';
 import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
 import FormControl from '@mui/material/FormControl'
 import InputLabel from '@mui/material/InputLabel'
 
-import { useRouter } from 'next/navigation';
 
 import { ScatterChart } from '@mui/x-charts/ScatterChart';
 import { useScatterSeries, useXScale, useYScale } from '@mui/x-charts/hooks';
 
-type SensorData = {
+interface SensorData {
   sensor_id: string
   datos: { tiempo: string; valor: number }[]
 }
 
-type Props = {
-  sx?: any
+interface SensorScatterProps {
+  sx?: unknown
   //dataTemp: SensorData
   dataTemp: SensorData
 }
 
-export function SensorScatter({ sx, dataTemp }: Props) {
-  const router = useRouter();
+// Dibuja las líneas conectando los puntos
+function LinkPoints({ seriesId }: { seriesId: string }) {
+  const scatter = useScatterSeries(seriesId);
+  const xScale = useXScale();
+  const yScale = useYScale();
+
+  if (!scatter?.data) return null;
+
+  const { color, data } = scatter;
+  const pathD = `M ${data.map(({ x, y }) => `${xScale(x)},${yScale(y)}`).join(' L ')}`;
+  
+  return <path fill="none" stroke={color} strokeWidth={2} d={pathD} />;
+}
+
+export function SensorScatter({ sx, dataTemp }: SensorScatterProps) {
   const [rangoMinutos, setrangoMinutos] = React.useState(360); // por defecto: ultimos 30 min
 
   const convert = (sensor: SensorData) => {
@@ -57,20 +70,6 @@ export function SensorScatter({ sx, dataTemp }: Props) {
     [ dataTemp, rangoMinutos]
   )
 
-  // Dibuja las líneas conectando los puntos
-  function LinkPoints({ seriesId }: { seriesId: string }) {
-    const scatter = useScatterSeries(seriesId);
-    const xScale = useXScale();
-    const yScale = useYScale();
-
-    if (!scatter?.data) return null;
-
-    const { color, data } = scatter;
-    const pathD = `M ${data.map(({ x, y }) => `${xScale(x)},${yScale(y)}`).join(' L ')}`;
-    
-    return <path fill="none" stroke={color} strokeWidth={2} d={pathD} />;
-  }
-
   return (
     <Card sx={sx}>
       <CardHeader title="Mediciones Sensor en Tiempo Real" 
@@ -81,7 +80,7 @@ export function SensorScatter({ sx, dataTemp }: Props) {
               labelId="rango-label"
               value={rangoMinutos}
               label="Rango de tiempo"
-              onChange={(e) => setrangoMinutos(Number(e.target.value))}
+              onChange={(e) => { setrangoMinutos(Number(e.target.value)); }}
             >
               <MenuItem value={30}>Últimos 30 minutos</MenuItem>
               <MenuItem value={60}>Última hora</MenuItem>

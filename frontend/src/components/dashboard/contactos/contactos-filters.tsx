@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 'use client';
 
 import * as React from 'react';
@@ -7,14 +8,12 @@ import InputAdornment from '@mui/material/InputAdornment';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 
-interface Props {
+interface ContactosFiltersProps  {
   onFilterChange: (filters: { search: string; especialidad: string | null }, resetPage?: boolean) => void;
   especialidades: string[];
 }
 
-const tipos_activos = ['Bomba de Agua', 'Sistema Eléctrico', 'Ascensor', 'Caldera']
-
-export function ContactosFilters({ onFilterChange, especialidades }: Props): React.JSX.Element {
+export function ContactosFilters({ onFilterChange, especialidades }: ContactosFiltersProps ): React.JSX.Element {
   const [search, setSearch] = React.useState('');
   const [tipo, setTipo] = React.useState<string | null>(null);
 
@@ -28,7 +27,7 @@ export function ContactosFilters({ onFilterChange, especialidades }: Props): Rea
     updateFilters(value, tipo);
   };
 
-  const handleTipoChange = (_: any, newValue: string | null) => {
+  const handleTipoChange = (_: React.SyntheticEvent, newValue: string | null) => {
     setTipo(newValue);
     updateFilters(search, newValue);
   };

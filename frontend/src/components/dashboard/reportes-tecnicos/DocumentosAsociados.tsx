@@ -1,9 +1,9 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 import { useState, useEffect } from "react";
-import { Box, Button, TextField, Typography, Select, MenuItem } from "@mui/material";
-import { DataGrid, GridToolbar, type GridColDef } from '@mui/x-data-grid'
+import { Box, Button, TextField, Typography, Select, MenuItem, Snackbar, Alert } from "@mui/material";
+import { DataGrid, type GridColDef } from '@mui/x-data-grid'
 import { esES } from '@mui/x-data-grid/locales';
 import Services from '@/modules/Services';
-import { fi } from "zod/dist/types/v4/locales";
 
 const gs = new Services();
 
@@ -17,6 +17,7 @@ function DocumentosAsociados() {
   const [nombreDocumento, setNombreDocumento] = useState("");
   const [descripcionDocumento, setDescripcionDocumento] = useState("");
   const [palabrasClave, setPalabrasClave] = useState("");
+  const [mensaje, setMensaje] = useState<string | null>(null);
 
   const columns: GridColDef[] = [
     { field: 'id', headerName: 'ID', flex:0.5, filterable: false},
@@ -43,11 +44,11 @@ function DocumentosAsociados() {
         } 
         // Si no devuelve nada útil
         else {
-          console.warn("La respuesta no tiene activos válidos");
+          //console.warn("La respuesta no tiene activos válidos");
           setActivos([]);
         }
       } catch (error) {
-        console.error("Error al conectar con API Gateway:", error);
+        //console.error("Error al conectar con API Gateway:", error);
         setActivos([]);
       }
     };
@@ -70,7 +71,7 @@ function DocumentosAsociados() {
 
         setCategorias(categoriasUnicas.filter(c => typeof c === "string"));
       } catch (error) {
-        console.error("Error al conectar con API Gateway:", error);
+        //console.error("Error al conectar con API Gateway:", error);
         setCategorias([]);
       }
     };
@@ -83,7 +84,6 @@ function DocumentosAsociados() {
     const fetchDocumentos = async () => {
       try {
         const data = await gs.get("/documentacion/documentos");
-        console.log("Respuesta documentos:", data);
 
         const docsArray = data?.documentos || [];
         const documentosConFecha = docsArray.map((doc: any) => {
@@ -103,18 +103,18 @@ function DocumentosAsociados() {
         const cats = Array.from(new Set(docsArray.map((d: any) => d.categoria)));
         setCategorias(cats.filter(c => typeof c === "string"));
         } catch (error) {
-          console.error("Error al cargar documentos:", error);
+          //console.error("Error al cargar documentos:", error);
         }
     };
     if (activos.length > 0) fetchDocumentos(); // 🔹 Solo corre cuando ya hay activos
 }, [activos]); // 🔹 Dependencia en activos
 
   const handleGuardarDocumento = async () => {
-    if (!archivo) { alert("Debe seleccionar un archivo"); return; }
-    if (!categoriaSeleccionada) { alert("Debe seleccionar una categoría"); return; }
-    if (!activo) { alert("Debe seleccionar un activo"); return; }
+    if (!archivo) { setMensaje("Debe seleccionar un archivo"); return; }
+    if (!categoriaSeleccionada) { setMensaje("Debe seleccionar una categoría"); return; }
+    if (!activo) { setMensaje("Debe seleccionar un activo"); return; }
     if (!nombreDocumento || !descripcionDocumento || !palabrasClave) {
-      alert("Debe completar todos los campos"); return;
+      setMensaje("Debe completar todos los campos"); return;
     }
     // const formData = {
     //   archivo: archivo,
@@ -131,12 +131,7 @@ function DocumentosAsociados() {
     formData.append("nombre", nombreDocumento);
     formData.append("descripcion", descripcionDocumento);
     formData.append("palabras_clave", palabrasClave);
-    console.log("Datos a enviar:");
-    formData.forEach((value, key) => {
-      console.log(key, value);
-    });
     try {
-      console.log("formData to send:", formData);
       await gs.post("/documentacion/documentos", formData);
       // Subido correctamente, puedes recargar documentos
       const data = await gs.get("/documentacion/documentos");
@@ -161,8 +156,7 @@ function DocumentosAsociados() {
       setActivo("");
       setCategoriaSeleccionada("");
     } catch (error) {
-      console.error(error);
-      alert("Error al subir documento");
+      setMensaje("Error al subir documento");
     }
   };
 
@@ -249,7 +243,7 @@ function DocumentosAsociados() {
             columns={columns}
             pageSizeOptions={[5]}
             disableRowSelectionOnClick
-            slots={{ toolbar: GridToolbar }}    
+            showToolbar
             slotProps={{
               toolbar: {
                 showQuickFilter: true,      // 🔹 CAMBIO: activa barra de búsqueda
@@ -283,6 +277,16 @@ function DocumentosAsociados() {
             }}
         />
      </Box>
+
+     <Snackbar
+        open={Boolean(mensaje)}
+        autoHideDuration={4000}
+        onClose={() => { setMensaje(null); }}
+      >
+        <Alert severity="warning" onClose={() => { setMensaje(null); }}>
+          {mensaje}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { Box, Button, TextField, Select, MenuItem } from "@mui/material";
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
+import {useState, useEffect } from "react";
+import { Box, Button, TextField, Select, MenuItem, Snackbar, Alert } from "@mui/material";
 import Services from '@/modules/Services';
 import axios from "axios";
 
@@ -12,7 +13,7 @@ function GenerarReporte() {
   //  CAMBIO: ahora es un array de reportes
   //const [reportes, setReportes] = useState<any[]>([]);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null); // <<< CAMBIO: estado para vista previa PDF
-
+  const [mensaje, setMensaje] = useState<string | null>(null);
 
   // Cargar activos al montar el componente
   useEffect(() => {
@@ -75,7 +76,7 @@ function GenerarReporte() {
 
   } catch (error) {
     //console.error("Error al exportar PDF:", error);
-    alert("No se pudo generar el PDF");
+    setMensaje("No se pudo exportar el PDF");
   }
 };
 
@@ -93,7 +94,7 @@ function GenerarReporte() {
       setPdfUrl(url);
     } catch (error) {
       //console.error("Error al generar vista previa PDF:", error);
-      alert("No se pudo generar la vista previa");
+      setMensaje("No se pudo generar la vista previa");
     }
   };
 
@@ -115,10 +116,10 @@ function GenerarReporte() {
       autor_analista: "Tu Nombre"            // ✅ remplazar por quien actualiza
     });
     console.log("Respuesta API:", data);
-    alert("Observaciones actualizadas correctamente");
+    setMensaje("Observaciones actualizadas correctamente");
   } catch (error) {
     console.error("Error al actualizar observaciones:", error);
-    alert("No se pudo actualizar las observaciones");
+    setMensaje("No se pudo actualizar las observaciones");
   }
 };*/}
 
@@ -173,6 +174,15 @@ function GenerarReporte() {
     Guardar Observaciones
   </Button>
       </Box>
+      <Snackbar
+        open={Boolean(mensaje)}
+        autoHideDuration={4000}
+        onClose={() => { setMensaje(null); }}
+      >
+        <Alert severity="warning" onClose={() => { setMensaje(null); }}>
+          {mensaje}
+        </Alert>
+      </Snackbar>    
     </Box>
   );
 }

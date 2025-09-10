@@ -1,6 +1,8 @@
+import type { ReactElement } from "react";
+
 export interface Product {
   id: string;
-  icon?: React.ReactElement;
+  icon?: ReactElement;
   name: string;
   updatedAt: Date;
 }

@@ -1,3 +1,5 @@
+/* eslint-disable camelcase -- Por consistencia */
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 import { useState, useEffect, useCallback } from 'react';
 import Services from '@/modules/Services';
 
@@ -115,7 +117,7 @@ export function useActivosWithSensors() {
       const tiposActivos = ['bomba de agua', 'caldera', 'ascensor', 'transformador'];
       const activosPromises = tiposActivos.map(async (tipo) => {
         try {
-          const response = await gs.get(`/gestion/activos/tipo/${encodeURIComponent(tipo)}`);
+          const response = await gs.get(`/gestion/activos/tipo/${encodeURIComponent(tipo)}`) as { activos?: ActivoBackend[] };
           //console.log(`📊 Respuesta activos tipo ${tipo}:`, response);
           return response.activos || [];
         } catch (error) {
@@ -125,7 +127,7 @@ export function useActivosWithSensors() {
       });
 
       const activosArrays = await Promise.all(activosPromises);
-      const todosLosActivos = activosArrays.flat() as ActivoBackend[];
+      const todosLosActivos = activosArrays.flat();
       
       //console.log(`📋 Total activos encontrados:`, todosLosActivos.length, todosLosActivos);
 

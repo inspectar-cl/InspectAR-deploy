@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 'use client';
 
 import * as React from 'react';
@@ -9,7 +10,7 @@ export interface Notification {
     severity?: 'info'|'warning'|'error'|'success';
     ts: Date;
     read?: boolean;
-    meta?: Record<string, any>;// sensorId, assetName, etc.
+    meta?: Record<string, unknown>;// sensorId, assetName, etc.
 }
 
 

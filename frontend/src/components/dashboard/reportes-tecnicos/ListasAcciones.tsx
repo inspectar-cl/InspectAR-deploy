@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Box, Button, TextField, Typography, MenuItem, Collapse } from '@mui/material'
+import { Box, Button, TextField, Typography, MenuItem, Collapse, Snackbar, Alert } from '@mui/material'
 import { DataGrid, type GridColDef } from '@mui/x-data-grid'
 import { esES } from '@mui/x-data-grid/locales'
 
@@ -19,7 +20,10 @@ interface Accion {
   prioridad: string
   fecha_inicio: string
   creado_en: string
-  activo?: string
+  activo?: {
+    id: number
+    nombre: string
+  }
   tecnico?: {
     id: number
     nombre: string
@@ -37,6 +41,7 @@ export default function ListasAccionesView() {
   const [acciones, setAcciones] = useState<Accion[]>([])
   const [activos, setActivos] = useState<Activo[]>([])
   const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [mensaje, setMensaje] = useState<string | null>(null);
 
   // Campos para nueva acción
   const [activoSeleccionado, setActivoSeleccionado] = useState('')
@@ -48,7 +53,7 @@ export default function ListasAccionesView() {
   useEffect(() => {
     const fetchActivos = async () => {
       try {
-        const data = await gs.get("/obtener-activos")
+        const data = await gs.get("/obtener-activos") as { activos: Activo[] }
         //console.log("Activos cargados:", data)
         const activosArray = data.activos
         setActivos(Array.isArray(activosArray) ? activosArray : [])
@@ -63,9 +68,9 @@ export default function ListasAccionesView() {
   // --- API Acciones ---
   const fetchAcciones = async () => {
     try {
-      const res = await gs.get(`/gestion/acciones/tecnico/${tecnicoActualId}`)
+      const res = await gs.get(`/gestion/acciones/tecnico/${tecnicoActualId}`) as Accion[]
       //console.log("Acciones cargadas:", res)
-      const accionesProcesadas = res.map((accion: any) => ({
+      const accionesProcesadas = res.map((accion) => ({
         ...accion,
         tecnico_nombre: accion.tecnico?.nombre || 'Sin técnico',
         activo_nombre: accion.activo?.nombre || 'Sin activo'
@@ -78,7 +83,7 @@ export default function ListasAccionesView() {
   }
 
   const crearAccion = async () => {
-    if (!activoSeleccionado || !descripcion) { alert('Completa todos los campos.'); return; }
+    if (!activoSeleccionado || !descripcion) { setMensaje('Completa todos los campos.'); return; }
 
     try {
       const data = {
@@ -92,7 +97,7 @@ export default function ListasAccionesView() {
 
       //console.log("Datos para crear acción:", data)
 
-      const res = await gs.post('/gestion/acciones', data)
+      const res = await gs.post('/gestion/acciones', data) as { error?: boolean; mensaje?: string }
 
       if (!res.error) {
         // Acción creada correctamente
@@ -104,11 +109,11 @@ export default function ListasAccionesView() {
       } else {
         // Manejo de error
         // console.error('Error en creación:', res.error)
-        alert(`Error al crear la acción: ${  res.mensaje || 'Error desconocido'}`)
+        setMensaje(`Error al crear la acción: ${  res.mensaje || 'Error desconocido'}`)
       }
     } catch (err) {
       //console.error('Error creando acción: ', err)
-      alert('Error inesperado al crear la acción')
+      setMensaje('Error inesperado al crear la acción')
     }
   }
 
@@ -122,11 +127,11 @@ export default function ListasAccionesView() {
         await fetchAcciones()
       } else {
         // console.error('Error actualizando estado:', res.error)
-        alert(`Error al actualizar el estado: ${  res.mensaje || 'Error desconocido'}`)
+        setMensaje(`Error al actualizar el estado: ${  res.mensaje || 'Error desconocido'}`)
       }
     } catch (err) {
       //console.error('Error actualizando estado:', err)
-      alert('Error inesperado al actualizar el estado')
+      setMensaje('Error inesperado al actualizar el estado')
     }
   }
 
@@ -257,6 +262,15 @@ export default function ListasAccionesView() {
                     },
             }}
       />
+      <Snackbar
+        open={Boolean(mensaje)}
+        autoHideDuration={4000}
+        onClose={() => { setMensaje(null); }}
+      >
+        <Alert severity="warning" onClose={() => { setMensaje(null); }}>
+          {mensaje}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

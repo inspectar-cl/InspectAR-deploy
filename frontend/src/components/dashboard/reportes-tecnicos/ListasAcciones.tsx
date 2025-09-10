@@ -240,7 +240,7 @@ export default function ListasAccionesView() {
                   toolbarExport: 'Exportar',
                   // Traducción de paginación
                   paginationRowsPerPage: 'Acciones por página',
-                  noRowsLabel: 'No hay acciones asociados',
+                  noRowsLabel: 'No hay acciones asociadas',
                   footerTotalRows: 'Total de acciones:',
                   footerTotalVisibleRows: (visibleCount, totalCount) =>
                   `${visibleCount.toLocaleString()} de ${totalCount.toLocaleString()}`,

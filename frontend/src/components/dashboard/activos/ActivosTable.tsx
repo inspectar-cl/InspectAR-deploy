@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
+import { DataGrid, type GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 import { Paper, Box, Chip, TextField, MenuItem, Stack} from '@mui/material'
 import { esES } from '@mui/x-data-grid/locales'
 import { Activo } from '@/types/'
@@ -54,7 +54,7 @@ export default function ActivosTable() {
           <TextField
             label="Tipo de activo"
             value={filtroTipo}
-            onChange={(e) => setFiltroTipo(e.target.value)}
+            onChange={(e) => { setFiltroTipo(e.target.value); }}
             size="small"
             fullWidth
           />
@@ -62,7 +62,7 @@ export default function ActivosTable() {
             label="Nivel de riesgo"
             select
             value={filtroEstado}
-            onChange={(e) => setFiltroEstado(e.target.value)}
+            onChange={(e) => { setFiltroEstado(e.target.value); }}
             size="small"
             fullWidth
           >
@@ -76,7 +76,7 @@ export default function ActivosTable() {
           <TextField
             label="Buscar ubicación"
             value={filtroUbicacion}
-            onChange={(e) => setFiltroUbicacion(e.target.value)}
+            onChange={(e) => { setFiltroUbicacion(e.target.value); }}
             size="small"
             fullWidth
           />

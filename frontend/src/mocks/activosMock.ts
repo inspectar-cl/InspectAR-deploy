@@ -1,4 +1,4 @@
-import { Activo } from '@/types'
+import { type Activo } from '@/types'
 
 export const activosMock: Activo[] = [
   { id: 1, tipoActivo: 'Ascensor', estado: 'OK', descripcion: 'Funciona correctamente', ubicacion: 'Edificio A, Santiago', img: "https://www.schindler.cl/content/dam/website/lac/images/modernizacion/cabinas/ascensor-interior-4.jpg/_jcr_content/renditions/original./ascensor-interior-4.jpg", id_edificio: "EA", id_ficha_tecnica: 1},

@@ -8,6 +8,7 @@ import { ContactosClient } from '@/components/dashboard/contactos/contactos-clie
 
 import { useEffect, useState } from 'react';
 import Services from '@/modules/Services'
+
 const gs = new Services()
 
 export default function Page(): React.JSX.Element {

@@ -1,4 +1,4 @@
-export type Alerta = {
+export interface Alerta {
   id: string
   tipoActivo: string
   descripcion: string

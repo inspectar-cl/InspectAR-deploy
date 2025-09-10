@@ -9,7 +9,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { LatestSensors } from '@/components/dashboard/overview/latest-sensors';
-import { useActivosWithSensors } from '@/hooks/useActivosWithSensors';
+import { useActivosWithSensors } from '@/hooks/UseActivosWithSensors';
 import dayjs from 'dayjs';
 
 export default function Page(): React.JSX.Element {
@@ -138,14 +138,14 @@ export default function Page(): React.JSX.Element {
                 <Button 
                   size="small" 
                   variant="outlined" 
-                  onClick={() => simulateDown(idx, activo.sensores[0].id)}
+                  onClick={() => { simulateDown(idx, activo.sensores[0].id); }}
                 >
                   Simular caída ({activo.sensores[0].name})
                 </Button>
                 <Button 
                   size="small" 
                   variant="outlined" 
-                  onClick={() => simulateUp(idx, activo.sensores[0].id)}
+                  onClick={() => { simulateUp(idx, activo.sensores[0].id); }}
                 >
                   Simular recovery
                 </Button>

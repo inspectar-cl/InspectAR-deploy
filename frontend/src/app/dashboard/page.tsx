@@ -8,9 +8,10 @@ import { TemperatureProgress } from '@/components/dashboard/overview/temperature
 
 import { config } from '@/config';
 import { SensorScatter } from '@/components/dashboard/overview/sensor-scatter';
-import { Activo } from '@/types/'
+import { type Activo } from '@/types/'
 
 import Services from '@/modules/Services'
+
 const gs = new Services()
 
 
@@ -37,7 +38,7 @@ export default function Page(): React.JSX.Element {
       fetchData();
     }, 5000);
 
-    return () => clearInterval(interval);
+    return () => { clearInterval(interval); };
   })
 
   const sensorTemp = sensores.find(s => s.sensor_id === 'sensortemp')
@@ -47,7 +48,7 @@ export default function Page(): React.JSX.Element {
     const ultimo = datos.at(-1)?.valor ?? 0
     const penultimo = datos.at(-2)?.valor ?? 0
     const diff = ultimo - penultimo
-    const trend = (diff >= 0 ? 'up' : 'down') as 'up' | 'down'
+    const trend = (diff >= 0 ? 'up' : 'down')
     
     return {
       valor: ultimo,

@@ -10,7 +10,7 @@ import DocumentosAsociados from '@/components/dashboard/reportes-tecnicos/Docume
 
 export default function ReportesPage() {
   const [tab, setTab] = useState(0)
-  const handleChange = (_: React.SyntheticEvent, newValue: number) => setTab(newValue)
+  const handleChange = (_: React.SyntheticEvent, newValue: number) => { setTab(newValue); }
 
   return (
     <Stack spacing={2}>

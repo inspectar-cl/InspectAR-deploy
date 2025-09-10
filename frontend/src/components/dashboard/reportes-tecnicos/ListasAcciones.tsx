@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { Box, Button, TextField, Typography, MenuItem, Collapse } from '@mui/material'
-import { DataGrid, GridColDef } from '@mui/x-data-grid'
+import { DataGrid, type GridColDef } from '@mui/x-data-grid'
 import { esES } from '@mui/x-data-grid/locales'
 
 import Services from '@/modules/Services'
+
 const gs = new Services()
 
 interface Accion {
@@ -48,12 +49,12 @@ export default function ListasAccionesView() {
     const fetchActivos = async () => {
       try {
         const data = await gs.get("/obtener-activos")
-        console.log("Activos cargados:", data)
+        //console.log("Activos cargados:", data)
         const activosArray = data.activos
         setActivos(Array.isArray(activosArray) ? activosArray : [])
-        console.log("Valor de setActivos (activos):", Array.isArray(activosArray) ? activosArray : [])
+        //console.log("Valor de setActivos (activos):", Array.isArray(activosArray) ? activosArray : [])
       } catch (error) {
-        console.error('Error al cargar activos:', error)
+        //console.error('Error al cargar activos:', error)
       }
     }
     fetchActivos()
@@ -62,8 +63,8 @@ export default function ListasAccionesView() {
   // --- API Acciones ---
   const fetchAcciones = async () => {
     try {
-      const res = await await gs.get(`/gestion/acciones/tecnico/${tecnicoActualId}`)
-      console.log("Acciones cargadas:", res)
+      const res = await gs.get(`/gestion/acciones/tecnico/${tecnicoActualId}`)
+      //console.log("Acciones cargadas:", res)
       const accionesProcesadas = res.map((accion: any) => ({
         ...accion,
         tecnico_nombre: accion.tecnico?.nombre || 'Sin técnico',
@@ -72,12 +73,12 @@ export default function ListasAccionesView() {
       // const data = await res.json()
       setAcciones(accionesProcesadas)
     } catch (err) {
-      console.error('Error cargando acciones:', err)
+      //console.error('Error cargando acciones:', err)
     }
   }
 
   const crearAccion = async () => {
-    if (!activoSeleccionado || !descripcion) return alert('Completa todos los campos.')
+    if (!activoSeleccionado || !descripcion) { alert('Completa todos los campos.'); return; }
 
     try {
       const data = {
@@ -89,8 +90,8 @@ export default function ListasAccionesView() {
         prioridad,
       }
 
-      console.log("Datos para crear acción:", data)
-      
+      //console.log("Datos para crear acción:", data)
+
       const res = await gs.post('/gestion/acciones', data)
 
       if (!res.error) {
@@ -102,11 +103,11 @@ export default function ListasAccionesView() {
         setTipo('')
       } else {
         // Manejo de error
-        console.error('Error en creación:', res.error)
-        alert('Error al crear la acción: ' + (res.mensaje || 'Error desconocido'))
+        // console.error('Error en creación:', res.error)
+        alert(`Error al crear la acción: ${  res.mensaje || 'Error desconocido'}`)
       }
     } catch (err) {
-      console.error('Error creando acción:', err)
+      //console.error('Error creando acción: ', err)
       alert('Error inesperado al crear la acción')
     }
   }
@@ -120,11 +121,11 @@ export default function ListasAccionesView() {
         // éxito
         await fetchAcciones()
       } else {
-        console.error('Error actualizando estado:', res.error)
-        alert('Error al actualizar el estado: ' + (res.mensaje || 'Error desconocido'))
+        // console.error('Error actualizando estado:', res.error)
+        alert(`Error al actualizar el estado: ${  res.mensaje || 'Error desconocido'}`)
       }
     } catch (err) {
-      console.error('Error actualizando estado:', err)
+      //console.error('Error actualizando estado:', err)
       alert('Error inesperado al actualizar el estado')
     }
   }
@@ -148,7 +149,7 @@ export default function ListasAccionesView() {
       renderCell: (params) => (
         <Button
           size="small"
-          onClick={() => setExpandedId(expandedId === params.row.id ? null : params.row.id)}
+          onClick={() => { setExpandedId(expandedId === params.row.id ? null : params.row.id); }}
         >
           {expandedId === params.row.id ? 'Ocultar' : 'Cambiar Estado'}
         </Button>
@@ -165,7 +166,7 @@ export default function ListasAccionesView() {
           label="Activo"
           select
           value={activoSeleccionado}
-          onChange={(e) => setActivoSeleccionado(e.target.value)}
+          onChange={(e) => { setActivoSeleccionado(e.target.value); }}
           fullWidth
           sx={{ minWidth: 200 }}
         >
@@ -173,14 +174,14 @@ export default function ListasAccionesView() {
             <MenuItem key={a.id} value={a.id}>{a.nombre}</MenuItem>
           ))}
         </TextField>
-        <TextField label="Descripción" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} fullWidth />
+        <TextField label="Descripción" value={descripcion} onChange={(e) => { setDescripcion(e.target.value); }} fullWidth />
 
         {/* Tipo como dropdown */}
         <TextField
           label="Tipo"
           select
           value={tipo}
-          onChange={(e) => setTipo(e.target.value)}
+          onChange={(e) => { setTipo(e.target.value); }}
           fullWidth
           sx={{ minWidth: 150 }}
         >
@@ -194,7 +195,7 @@ export default function ListasAccionesView() {
           label="Prioridad"
           select
           value={prioridad}
-          onChange={(e) => setPrioridad(e.target.value)}
+          onChange={(e) => { setPrioridad(e.target.value); }}
           fullWidth
           sx={{ minWidth: 100 }}
         >

@@ -6,7 +6,7 @@ import High from '@mui/icons-material/PriorityHigh';
 import DoneIcon from '@mui/icons-material/Done';
 
 import {
-  GridRenderCellParams,
+  type GridRenderCellParams,
 } from '@mui/x-data-grid';
 
 export const STATUS_OPTIONS = ['Medio', 'OK', 'Crítico'];

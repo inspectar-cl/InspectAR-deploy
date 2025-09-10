@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Box, Button, TextField, Typography, Select, MenuItem } from "@mui/material";
-import { DataGrid, GridToolbar, GridColDef } from '@mui/x-data-grid'
+import { DataGrid, GridToolbar, type GridColDef } from '@mui/x-data-grid'
 import { esES } from '@mui/x-data-grid/locales';
 import Services from '@/modules/Services';
 import { fi } from "zod/dist/types/v4/locales";
+
 const gs = new Services();
 
-const DocumentosAsociados = () => {
+function DocumentosAsociados() {
   const [documentos, setDocumentos] = useState<any[]>([]);
   const [activos, setActivos] = useState<any[]>([]);
   const [activo, setActivo] = useState("");
@@ -109,11 +110,11 @@ const DocumentosAsociados = () => {
 }, [activos]); // 🔹 Dependencia en activos
 
   const handleGuardarDocumento = async () => {
-    if (!archivo) return alert("Debe seleccionar un archivo");
-    if (!categoriaSeleccionada) return alert("Debe seleccionar una categoría");
-    if (!activo) return alert("Debe seleccionar un activo");
+    if (!archivo) { alert("Debe seleccionar un archivo"); return; }
+    if (!categoriaSeleccionada) { alert("Debe seleccionar una categoría"); return; }
+    if (!activo) { alert("Debe seleccionar un activo"); return; }
     if (!nombreDocumento || !descripcionDocumento || !palabrasClave) {
-      return alert("Debe completar todos los campos");
+      alert("Debe completar todos los campos"); return;
     }
     // const formData = {
     //   archivo: archivo,
@@ -177,14 +178,14 @@ const DocumentosAsociados = () => {
           <input
             type="file"
             hidden
-            onChange={(e) => setArchivo(e.target.files ? e.target.files[0] : null)}
+            onChange={(e) => { setArchivo(e.target.files ? e.target.files[0] : null); }}
           />
         </Button>
 
         {/* Selector de categoría */}
         <Select
           value={categoriaSeleccionada}
-          onChange={(e) => setCategoriaSeleccionada(e.target.value)}
+          onChange={(e) => { setCategoriaSeleccionada(e.target.value); }}
           displayEmpty
         >
           <MenuItem value="">Categoría</MenuItem>
@@ -198,7 +199,7 @@ const DocumentosAsociados = () => {
         {/* Selector de activo */}
         <Select
           value={activo}
-          onChange={(e) => setActivo(e.target.value)}
+          onChange={(e) => { setActivo(e.target.value); }}
           displayEmpty
         >
           <MenuItem value="">Seleccionar Activo</MenuItem>
@@ -216,19 +217,19 @@ const DocumentosAsociados = () => {
         <TextField
           label="Nombre del Documento"
           value={nombreDocumento}
-          onChange={(e) => setNombreDocumento(e.target.value)}
+          onChange={(e) => { setNombreDocumento(e.target.value); }}
           fullWidth
         />
         <TextField
           label="Palabras Clave (separadas por coma)"
           value={palabrasClave}
-          onChange={(e) => setPalabrasClave(e.target.value)}
+          onChange={(e) => { setPalabrasClave(e.target.value); }}
           fullWidth
         />
         <TextField
           label="Descripción"
           value={descripcionDocumento}
-          onChange={(e) => setDescripcionDocumento(e.target.value)}
+          onChange={(e) => { setDescripcionDocumento(e.target.value); }}
           fullWidth
         />
       </Box>
@@ -238,7 +239,7 @@ const DocumentosAsociados = () => {
         <input
           type="file"
           hidden
-          onChange={(e) => setArchivo(e.target.files ? e.target.files[0] : null)}
+          onChange={(e) => { setArchivo(e.target.files ? e.target.files[0] : null); }}
         />
       </Button>
 
@@ -284,6 +285,6 @@ const DocumentosAsociados = () => {
      </Box>
     </Box>
   );
-};
+}
 
 export default DocumentosAsociados;

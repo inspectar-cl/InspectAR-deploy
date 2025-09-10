@@ -7,14 +7,15 @@ import Slide from '@mui/material/Slide';
 import ChatIcon from '@mui/icons-material/Chat';
 
 import Services from '@/modules/Services'
+
 const gs = new Services()
 
-type Message = {
+interface Message {
   pregunta: string;
   respuesta: string;
-};
+}
 
-export function ChatBotCard ({ id }: { id: string | Number | null}) {
+export function ChatBotCard ({ id }: { id: string | number | null}) {
   const [open, setOpen] = React.useState(false);
   const [inputR, setInput] = React.useState('');
   const [loading, setLoading] = React.useState(false);
@@ -65,14 +66,13 @@ export function ChatBotCard ({ id }: { id: string | Number | null}) {
           right: 16,
           zIndex: 2000,
         }}
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => { setOpen((prev) => !prev); }}
         >
         <ChatIcon />
       </Fab>
 
       {/* Contenedor del Chat flotante */}
-      {open && (
-        <Slide direction="left" in={open} mountOnEnter unmountOnExit timeout={{enter:700}}>
+      {open ? <Slide direction="left" in={open} mountOnEnter unmountOnExit timeout={{enter:700}}>
           <Box
             sx={{
               position: 'fixed',
@@ -119,7 +119,7 @@ export function ChatBotCard ({ id }: { id: string | Number | null}) {
 
                       return (
                         <Box key={index} sx={{ mb: 2 }}>
-                          <Typography variant="subtitle2" color="primary" marginBottom={'5px'}>
+                          <Typography variant="subtitle2" color="primary" marginBottom="5px">
                             Tu pregunta: {msg.pregunta}
                           </Typography>
                           <Typography variant="body2">
@@ -142,7 +142,7 @@ export function ChatBotCard ({ id }: { id: string | Number | null}) {
                       maxRows={3}
                       fullWidth
                       value={inputR}
-                      onChange={(e) => setInput(e.target.value)}
+                      onChange={(e) => { setInput(e.target.value); }}
                       onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                     />
                 </Box>
@@ -159,8 +159,7 @@ export function ChatBotCard ({ id }: { id: string | Number | null}) {
                 </CardActions>
             </Card>
           </Box>
-        </Slide>
-        )}
+        </Slide> : null}
     </>
   );
 }

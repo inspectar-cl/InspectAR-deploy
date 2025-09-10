@@ -9,16 +9,16 @@ import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { UploadIcon } from '@phosphor-icons/react/dist/ssr/Upload';
 
 import { ContactosFilters } from './contactos-filters';
-import { ContactosTable, Contacto } from './contactos-table';
+import { ContactosTable, type Contacto } from './contactos-table';
 import { CustomAlert } from '@/components/dashboard/alert-popups/customAlertPopup';
+
+import { useEffect, useState } from 'react';
+import Services from '@/modules/Services'
 
 interface Props {
   contactos: Contacto[];
   especialidades: string[];
 }
-
-import { useEffect, useState } from 'react';
-import Services from '@/modules/Services'
 const gs = new Services()
 
 export function ContactosClient({ contactos, especialidades }: Props) {

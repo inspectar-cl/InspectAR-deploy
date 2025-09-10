@@ -1,2 +1,2 @@
-export * from './activosMock'
+export * from './ActivosMock'
 //export * from './alertasMock'

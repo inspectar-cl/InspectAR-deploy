@@ -17,12 +17,12 @@ import { useRouter } from 'next/navigation';
 import { ScatterChart } from '@mui/x-charts/ScatterChart';
 import { useScatterSeries, useXScale, useYScale } from '@mui/x-charts/hooks';
 
-type SensorData = {
+interface SensorData {
   sensor_id: string
   datos: { tiempo: string; valor: number }[]
 }
 
-type Props = {
+interface Props {
   sx?: any
   //dataTemp: SensorData
   dataTemp: SensorData
@@ -81,7 +81,7 @@ export function SensorScatter({ sx, dataTemp }: Props) {
               labelId="rango-label"
               value={rangoMinutos}
               label="Rango de tiempo"
-              onChange={(e) => setrangoMinutos(Number(e.target.value))}
+              onChange={(e) => { setrangoMinutos(Number(e.target.value)); }}
             >
               <MenuItem value={30}>Últimos 30 minutos</MenuItem>
               <MenuItem value={60}>Última hora</MenuItem>

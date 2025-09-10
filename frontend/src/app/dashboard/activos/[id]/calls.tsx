@@ -10,7 +10,7 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box'
 import dayjs from 'dayjs';
-import { Activo } from '@/types/'
+import { type Activo } from '@/types/'
 import { DownloadSimple } from '@phosphor-icons/react';
 
 import ScoreChart from '@/components/dashboard/overview/score-chart';
@@ -30,7 +30,7 @@ import dataAlertas from '@/mocks/alerts.json'
 
 const gs = new Services()
 
-export default function ActivoDetailClient({ id }: { id: Number}) {
+export default function ActivoDetailClient({ id }: { id: number}) {
 
   const [activo, setActivo] = React.useState<Activo | null>(null)
   const [sensores, setSensores] = React.useState<any[]>([])
@@ -85,7 +85,7 @@ export default function ActivoDetailClient({ id }: { id: Number}) {
     }, 5000);
 
     // Limpieza del intervalo al desmontar componente
-    return () => clearInterval(interval);
+    return () => { clearInterval(interval); };
   }, [id]);
 
   // Estos nombres tendrían que ser dinámicos, de momento quedarán así.
@@ -102,7 +102,7 @@ export default function ActivoDetailClient({ id }: { id: Number}) {
     const ultimo = datos.at(-1)?.valor ?? 0
     const penultimo = datos.at(-2)?.valor ?? 0
     const diff = ultimo - penultimo
-    const trend = (diff >= 0 ? 'up' : 'down') as 'up' | 'down'
+    const trend = (diff >= 0 ? 'up' : 'down')
 
     return {
       valor: ultimo,

@@ -42,12 +42,10 @@ interface ActivoWithSensorsBackend {
   };
 }
 
-interface UltimosValores {
-  [sensor_id: string]: {
+type UltimosValores = Record<string, {
     tiempo: string;
     valor: number;
-  } | null;
-}
+  } | null>;
 
 // Tipos para el frontend
 export interface SensorSample {
@@ -97,7 +95,7 @@ function generarNombreSensor(tipo: string, sensor_id: string): string {
   
   const nombreBase = tipoNombres[tipo.toLowerCase()] || `Sensor ${tipo}`;
   // Extraer número del ID si existe
-  const numeroMatch = sensor_id.match(/\d+/);
+  const numeroMatch = /\d+/.exec(sensor_id);
   const numero = numeroMatch ? ` #${numeroMatch[0]}` : '';
   
   return `${nombreBase}${numero}`;
@@ -118,10 +116,10 @@ export function useActivosWithSensors() {
       const activosPromises = tiposActivos.map(async (tipo) => {
         try {
           const response = await gs.get(`/gestion/activos/tipo/${encodeURIComponent(tipo)}`);
-          console.log(`📊 Respuesta activos tipo ${tipo}:`, response);
+          //console.log(`📊 Respuesta activos tipo ${tipo}:`, response);
           return response.activos || [];
         } catch (error) {
-          console.warn(`No se pudieron obtener activos de tipo ${tipo}:`, error);
+          //console.warn(`No se pudieron obtener activos de tipo ${tipo}:`, error);
           return [];
         }
       });
@@ -129,7 +127,7 @@ export function useActivosWithSensors() {
       const activosArrays = await Promise.all(activosPromises);
       const todosLosActivos = activosArrays.flat() as ActivoBackend[];
       
-      console.log(`📋 Total activos encontrados:`, todosLosActivos.length, todosLosActivos);
+      //console.log(`📋 Total activos encontrados:`, todosLosActivos.length, todosLosActivos);
 
       if (todosLosActivos.length === 0) {
         setActivos([]);
@@ -143,31 +141,31 @@ export function useActivosWithSensors() {
           try {
             // Obtener estado de sensores desde el parser service
             const sensoresResponse = await gs.get(`/parser/activo/${activo.id}/sensores/estado`);
-            console.log(`🔍 Respuesta sensores para ${activo.id}:`, sensoresResponse);
+            //console.log(`🔍 Respuesta sensores para ${activo.id}:`, sensoresResponse);
             
             // gs.get() ya parsea el JSON, no necesitas .json()
             const activoConSensores = sensoresResponse as ActivoWithSensorsBackend;
 
             // Obtener últimos valores
             let ultimosValores: UltimosValores = {};
-            console.log("activo_id" , activo.activo_id);
+            //console.log("activo_id" , activo.activo_id);
             try {
               const valoresResponse = await gs.get(`/parser/lectura/${activo.id}/datos/ultimo`);
-              console.log(`📈 Respuesta últimos valores para ${activo.id}:`, valoresResponse);
+              //console.log(`📈 Respuesta últimos valores para ${activo.id}:`, valoresResponse);
               // gs.get() ya parsea el JSON, usar directamente
               ultimosValores = valoresResponse || {};
             } catch (error) {
-              console.warn(`No se pudieron obtener últimos valores para ${activo.id}:`, error);
+              //console.warn(`No se pudieron obtener últimos valores para ${activo.id}:`, error);
             }
 
             // Obtener datos históricos (todos los datos del activo)
             let datosHistoricos: any = {};
             try {
               const historicosResponse = await gs.get(`/parser/lectura/${activo.id}/datos`);
-              console.log(`📊 Respuesta datos históricos para ${activo.id}:`, historicosResponse);
+              //console.log(`📊 Respuesta datos históricos para ${activo.id}:`, historicosResponse);
               datosHistoricos = historicosResponse || {};
             } catch (error) {
-              console.warn(`No se pudieron obtener datos históricos para ${activo.id}:`, error);
+              //console.warn(`No se pudieron obtener datos históricos para ${activo.id}:`, error);
             }
 
             // Transformar sensores al formato del frontend
@@ -182,7 +180,7 @@ export function useActivosWithSensors() {
                   (s: any) => s.sensor_id === sensor.sensor_id
                 );
                 
-                if (sensorData && sensorData.datos && Array.isArray(sensorData.datos)) {
+                if (sensorData?.datos && Array.isArray(sensorData.datos)) {
                   // Convertir datos al formato SensorSample
                   history24h = sensorData.datos.map((dato: any) => ({
                     ts: new Date(dato.tiempo),
@@ -197,7 +195,7 @@ export function useActivosWithSensors() {
                   // Ordenar por timestamp descendente (más reciente primero)
                   history24h.sort((a, b) => b.ts.getTime() - a.ts.getTime());
                   
-                  console.log(`📈 History24h para ${sensor.sensor_id}:`, history24h.length, 'muestras');
+                  //console.log(`📈 History24h para ${sensor.sensor_id}:`, history24h.length, 'muestras');
                 }
               }
               
@@ -209,7 +207,7 @@ export function useActivosWithSensors() {
                 lastValue: ultimoValor?.valor || 0,
                 lastSeen: sensor.last_seen ? new Date(sensor.last_seen) : new Date(Date.now() - 10 * 60 * 1000), // 10 min ago si no hay fecha
                 status: sensor.estado, // Usar el estado directamente del backend
-                history24h: history24h // ← Agregar los datos históricos aquí
+                history24h // ← Agregar los datos históricos aquí
               };
             });
 
@@ -220,7 +218,7 @@ export function useActivosWithSensors() {
             } as ActivoWithSensors;
 
           } catch (error) {
-            console.error(`❌ Error procesando activo ${activo.id}:`, error);
+            //console.error(`❌ Error procesando activo ${activo.id}:`, error);
             return null;
           }
         })
@@ -231,11 +229,11 @@ export function useActivosWithSensors() {
         (activo): activo is ActivoWithSensors => activo !== null
       );
 
-      console.log(`✅ Activos válidos procesados:`, activosValidos.length, activosValidos);
+      //console.log(`✅ Activos válidos procesados:`, activosValidos.length, activosValidos);
       setActivos(activosValidos);
 
     } catch (error) {
-      console.error('Error fetching activos with sensors:', error);
+      //console.error('Error fetching activos with sensors:', error);
       setError('Error al cargar los datos de activos y sensores');
     } finally {
       setLoading(false);
@@ -247,7 +245,7 @@ export function useActivosWithSensors() {
     fetchActivosWithSensors();
     
     const interval = setInterval(fetchActivosWithSensors, 30000);
-    return () => clearInterval(interval);
+    return () => { clearInterval(interval); };
   }, [fetchActivosWithSensors]);
 
   return {

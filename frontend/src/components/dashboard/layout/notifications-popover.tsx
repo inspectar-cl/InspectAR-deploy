@@ -71,7 +71,7 @@ export function NotificationsPopover({ anchorEl, onClose, open }: NotificationsP
             {notifications.map((n) => (
                 <ListItem key={n.id} secondaryAction={
                     <Tooltip title="Eliminar">
-                        <IconButton edge="end" onClick={() => remove(n.id)}>
+                        <IconButton edge="end" onClick={() => { remove(n.id); }}>
                             <TrashIcon />
                         </IconButton>
                     </Tooltip>

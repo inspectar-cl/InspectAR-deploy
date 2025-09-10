@@ -32,7 +32,7 @@ export interface Contacto {
   email: string;
   activo: Activo_contactos[];
   phone: string;
-  especialidad: String;
+  especialidad: string;
 }
 
 interface ContactosTableProps {

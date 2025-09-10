@@ -3,16 +3,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import Services from '@/modules/Services';
 
-// Tipos del backend
+// Tipos del backend (actualizados para el nuevo endpoint)
 interface ActivoBackend {
   id: number;
-  activo_id: string;
   nombre: string;
   tipo: string;
   estado: string;
   ubicacion: string;
   edificio_id: number;
   creado_en: string;
+  sensores: SensorBackend[];
 }
 
 interface SensorBackend {
@@ -26,6 +26,7 @@ interface SensorBackend {
   total_reports: number;
   created_at?: string;
   updated_at?: string;
+  datos?: Array<{
 }
 
 interface ActivoWithSensorsBackend {
@@ -47,6 +48,14 @@ interface ActivoWithSensorsBackend {
 type UltimosValores = Record<string, {
     tiempo: string;
     valor: number;
+  }> | null;
+}
+
+interface ApiResponse {
+  activos: ActivoBackend[];
+  total: number;
+  timestamp: string;
+}
   } | null>;
 
 // Tipos para el frontend
@@ -113,6 +122,11 @@ export function useActivosWithSensors() {
     setError(null);
     
     try {
+      // Una sola petición para obtener todos los activos con sensores y datos
+      const response = await gs.get('/activos-y-sensores') as ApiResponse;
+      console.log('📊 Respuesta completa de activos y sensores:', response);
+      
+      if (!response.activos || response.activos.length === 0) {
       // 1. Obtener todos los tipos de activos disponibles
       const tiposActivos = ['bomba de agua', 'caldera', 'ascensor', 'transformador'];
       const activosPromises = tiposActivos.map(async (tipo) => {
@@ -137,6 +151,47 @@ export function useActivosWithSensors() {
         return;
       }
 
+      // Transformar los datos al formato del frontend
+      const activosTransformados = response.activos.map((activo) => {
+        // Transformar sensores al formato del frontend
+        const sensoresTransformados: SensorRow[] = activo.sensores.map((sensor: SensorBackend) => {
+          // Obtener el último valor de los datos históricos si existen
+          let lastValue = 0;
+          let history24h: SensorSample[] = [];
+          
+          if (sensor.datos && Array.isArray(sensor.datos) && sensor.datos.length > 0) {
+            // El último valor es el más reciente (último elemento del array)
+            const ultimoDato = sensor.datos[sensor.datos.length - 1];
+            lastValue = ultimoDato.valor;
+            
+            // Convertir todos los datos al formato SensorSample
+            history24h = sensor.datos.map((dato) => ({
+              ts: new Date(dato.tiempo),
+              value: dato.valor,
+              unit: sensor.unidad
+            }));
+            
+            // Filtrar solo las últimas 24 horas
+            const hace24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            history24h = history24h.filter(sample => sample.ts >= hace24h);
+            
+            // Ordenar por timestamp descendente (más reciente primero)
+            history24h.sort((a, b) => b.ts.getTime() - a.ts.getTime());
+            
+            console.log(`📈 History24h para ${sensor.sensor_id}:`, history24h.length, 'muestras');
+          }
+          
+          return {
+            id: sensor.sensor_id,
+            name: generarNombreSensor(sensor.tipo, sensor.sensor_id),
+            type: sensor.tipo,
+            unit: sensor.unidad,
+            lastValue: lastValue,
+            lastSeen: sensor.last_seen ? new Date(sensor.last_seen) : new Date(Date.now() - 10 * 60 * 1000),
+            status: sensor.estado,
+            history24h: history24h
+          };
+        });
       // 2. Para cada activo, obtener sensores, últimos valores y datos históricos
       const activosConSensores = await Promise.all(
         todosLosActivos.map(async (activo) => {
@@ -213,6 +268,15 @@ export function useActivosWithSensors() {
               };
             });
 
+        return {
+          assetName: `${activo.nombre} — ${activo.ubicacion}`,
+          imageUrl: TIPO_IMAGENES[activo.tipo.toLowerCase()] || TIPO_IMAGENES["transformador"],
+          sensores: sensoresTransformados,
+        } as ActivoWithSensors;
+      });
+
+      console.log(`✅ Activos procesados:`, activosTransformados.length, activosTransformados);
+      setActivos(activosTransformados);
             return {
               assetName: `${activo.nombre} — ${activo.ubicacion}`,
               imageUrl: TIPO_IMAGENES[activo.tipo.toLowerCase()] || TIPO_IMAGENES["transformador"],

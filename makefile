@@ -40,3 +40,11 @@ run-b-ag:
 stop-b-ag:
 	cd backend && docker compose stop apigateway || true
 	cd backend && docker compose rm -f -s apigateway || true
+
+NGROK_URL := anita-submicroscopic-overgently.ngrok-free.app
+
+run-b-ngrok:
+	cd backend && docker compose up --build -d && ngrok http --domain=$(NGROK_URL) 3500
+
+run-ngrok:
+	ngrok http --domain=$(NGROK_URL) 3500

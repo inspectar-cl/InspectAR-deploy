@@ -7,12 +7,12 @@ INSERT INTO edificios (direccion, numero_activos) VALUES
 
 -- Insertar usuarios de ejemplo
 INSERT INTO usuarios (scope, usuario, correo, numero, edificio_id) VALUES
-('admin', 'admin_user', 'admin@inspectarar.com', '+56912345678', 1),
-('manager', 'manager_edificio1', 'manager1@inspectarar.com', '+56912345679', 1),
-('manager', 'manager_edificio2', 'manager2@inspectarar.com', '+56912345680', 2),
-('manager', 'manager_edificio3', 'manager3@inspectarar.com', '+56912345681', 3),
-('manager', 'manager_edificio4', 'manager4@inspectarar.com', '+56912345682', 4),
-('tech', 'tech_user', 'tech@inspectarar.com', '+56912345683', NULL);
+('admin', 'admin_user', 'j3291674@gmail.com', '+56912345678', 1),
+('manager', 'manager_edificio1', 'j3291674@gmail.com', '+56912345679', 1),
+('manager', 'manager_edificio2', 'j3291674@gmail.com', '+56912345680', 2),
+('manager', 'manager_edificio3', 'j3291674@gmail.com', '+56912345681', 3),
+('manager', 'manager_edificio4', 'j3291674@gmail.com', '+56912345682', 4),
+('tech', 'tech_user', 'j3291674@gmail.com', '+56912345683', NULL);
 
 -- Insertar activos sincronizados con Gestión DB (mismo orden, nombres y edificios)
 INSERT INTO activos (nombre, edificio_id) VALUES

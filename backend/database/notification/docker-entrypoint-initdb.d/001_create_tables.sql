@@ -12,7 +12,7 @@ CREATE TABLE usuarios (
     id SERIAL PRIMARY KEY,
     scope VARCHAR(100) NOT NULL,
     usuario VARCHAR(100) UNIQUE NOT NULL,
-    correo VARCHAR(255) UNIQUE NOT NULL,
+    correo VARCHAR(255) NOT NULL,
     numero VARCHAR(20),
     edificio_id INTEGER REFERENCES edificios(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

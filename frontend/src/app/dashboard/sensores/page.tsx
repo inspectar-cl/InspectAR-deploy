@@ -134,7 +134,7 @@ export default function Page(): React.JSX.Element {
           <Grid key={`${activo.assetName}-${idx}`} size={{ lg: 8, md: 12, xs: 12 }}>
             
             {/* Botones de simulación (solo para desarrollo) */}
-            {process.env.NODE_ENV === 'development' && activo.sensores.length > 0 && (
+            {/* {process.env.NODE_ENV === 'development' && activo.sensores.length > 0 && (
               <Stack direction="row" spacing={1} sx={{ mb: 1, justifyContent: 'flex-end' }}>
                 <Button 
                   size="small" 
@@ -151,7 +151,7 @@ export default function Page(): React.JSX.Element {
                   Simular recovery
                 </Button>
               </Stack>
-            )}
+            )} */}
 
             <LatestSensors
               assetName={activo.assetName}

@@ -28,7 +28,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 
 import { useNotifications } from '@/contexts/notifications';
 
-import { type SensorRow } from '@/hooks/UseActivosWithSensors';
+import { type SensorRow } from '@/hooks/use-activos-with-sensors';
 
 dayjs.extend(relativeTime);
 

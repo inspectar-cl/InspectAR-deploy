@@ -5,25 +5,27 @@ import * as React from 'react';
 import { useEffect } from 'react';
 import Grid from '@mui/material/Grid';
 import { TemperatureProgress } from '@/components/dashboard/overview/temperature';
-
 import { SensorScatter } from '@/components/dashboard/overview/sensor-scatter';
-import { type Activo } from '@/types/'
 
 import Services from '@/modules/Services'
 
 const gs = new Services()
 
+interface SensorData {
+  sensor_id: string;
+  datos: Array<{
+    tiempo: string;
+    valor: number;
+  }>;
+}
 
 export default function Page(): React.JSX.Element {
-  //const [activo, setActivo] = React.useState<Activo | null>(null)
-  const [sensores, setSensores] = React.useState<any[]>([])
-
-  const hasFetchedRef = React.useRef(false)
+  const [sensores, setSensores] = React.useState<SensorData[]>([])
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await gs.get("/lectura/Caldera1/datos");
+        const response = await gs.get("/lectura/Caldera1/datos") as { sensores?: SensorData[] };
         console.log("response", response);
         setSensores(response.sensores ?? []);
       } catch (err) {
@@ -63,7 +65,7 @@ export default function Page(): React.JSX.Element {
     <Grid container spacing={3}>
 
       <Grid size={{lg:20, md:12, xs:12}}>
-        <SensorScatter sx={{ height: 480 }} dataTemp={sensorTemp}/>
+        {sensorTemp && <SensorScatter sx={{ height: 480 }} dataTemp={sensorTemp}/>}
       </Grid>
 
       <Grid size={{md:2, xs:12}}>

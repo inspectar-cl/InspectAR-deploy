@@ -10,7 +10,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { LatestSensors } from '@/components/dashboard/overview/latest-sensors';
-import { useActivosWithSensors } from '@/hooks/UseActivosWithSensors';
+import { useActivosWithSensors } from '@/hooks/use-activos-with-sensors';
 import dayjs from 'dayjs';
 
 export default function Page(): React.JSX.Element {

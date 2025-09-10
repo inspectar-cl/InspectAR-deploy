@@ -48,6 +48,9 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 ### HdU04 - Reportes automáticos
 - ✅ Generación automática de reportes por activo (PDF)
 - ✅ Reportes por activo con información completa
+- ✅ **🆕 Reportes personalizables con campos específicos**
+- ✅ **🆕 Integración con IoT service para datos de sensores**
+- ✅ **🆕 Métricas calculadas automáticamente (media, tendencia)**
 - ✅ **Sistema de observaciones editables** 🆕
 - ✅ **Gestión de estado de revisión** 🆕
 - ✅ **Estructura de informe persistente** 🆕
@@ -94,7 +97,7 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 | `PUT` | `/reportes/:id/observaciones` | **🆕 Actualizar observaciones editables** | ✅ **NUEVO** |
 | `PUT` | `/reportes/:id/revision` | **🆕 Actualizar estado de revisión** | ✅ **NUEVO** |
 | `GET` | `/reportes/activo/:activo_id/observaciones` | **🆕 Reportes con observaciones por activo** | ✅ **NUEVO** |
-| `POST` | `/reportes/activo/:activo_id` | Generar reporte PDF por activo | ✅ Funcionando |
+| `POST` | `/reportes/activo/:activo_id` | **🆕 Generar reporte PDF personalizable con campos específicos** | ✅ **ACTUALIZADO** |
 | `GET` | `/reportes/activo/:activo_id` | Obtener reportes de un activo | ✅ Funcionando |
 
 ### 📋 Rutas de Solicitudes API v1 (HdU16) - 🎉 COMPLETAMENTE IMPLEMENTADAS
@@ -155,6 +158,10 @@ curl http://localhost:8092/acciones/pendientes
 
 # Reportes automáticos
 curl http://localhost:8092/reportes/activo/1
+
+# 🆕 **NUEVO: Reportes PDF personalizables con datos de sensores**
+curl -X POST http://localhost:8092/reportes/activo/1 -H "Content-Type: application/json" -d '{"campos":["datos_sensores"]}'
+curl -X POST http://localhost:8092/reportes/activo/1 -H "Content-Type: application/json" -d '{"campos":["ubicacion","historial_mantenimientos","datos_sensores"]}'
 
 # 🎉 RUTAS DE SOLICITUDES IMPLEMENTADAS
 curl http://localhost:8092/api/v1/solicitudes
@@ -799,6 +806,65 @@ curl -X POST http://localhost:8092/reportes/activo/1
 ```
 **Respuesta:** Archivo PDF para descarga
 
+#### 🆕 **Generar reporte PDF personalizado con campos específicos**
+La ruta ahora acepta un JSON body para especificar qué campos incluir en el reporte:
+
+**⚠️ Importante:** Solo las secciones solicitadas aparecerán en el PDF. La información básica del activo **siempre** está presente.
+
+**Campos disponibles:**
+- `ubicacion` - Información de ubicación y edificio
+- `historial_mantenimientos` - Historial completo de mantenimientos
+- `ultima_acciones` - Detalles de últimas acciones realizadas
+- `datos_sensores` - **Datos de sensores desde IoT service con métricas calculadas**
+
+**Comportamiento:**
+- **Sin campos especificados**: Genera reporte completo (comportamiento legacy)
+- **Con campos específicos**: Solo incluye las secciones solicitadas + información básica del activo
+- **Información básica del activo**: Siempre presente (nombre, tipo, estado, ubicación, ID)
+- **Código QR**: Siempre presente
+
+**Para datos de sensores:**
+- Hace llamada automática a IoT/Parser service usando la misma ID del activo
+- Calcula métricas inventadas: media, tendencia, y métricas derivadas
+- Incluye los resultados en sección "Datos de Sensores y Métricas" del PDF
+
+**Ejemplos:**
+
+```bash
+# Solo datos de sensores (mínimo + sensores)
+curl -X POST http://localhost:8092/reportes/activo/1 \
+  -H "Content-Type: application/json" \
+  -d '{"campos": ["datos_sensores"]}' \
+  -o reporte_solo_sensores.pdf
+```
+
+```bash
+# Solo ubicación e historial (sin sensores ni última acción)
+curl -X POST http://localhost:8092/reportes/activo/1 \
+  -H "Content-Type: application/json" \
+  -d '{"campos": ["ubicacion", "historial_mantenimientos"]}' \
+  -o reporte_ubicacion_historial.pdf
+```
+
+```bash
+# Reporte completo con todos los campos
+curl -X POST http://localhost:8092/reportes/activo/1 \
+  -H "Content-Type: application/json" \
+  -d '{"campos": ["ubicacion", "historial_mantenimientos", "ultima_acciones", "datos_sensores"]}' \
+  -o reporte_completo.pdf
+```
+
+```bash
+# Sin campos = reporte completo (legacy)
+curl -X POST http://localhost:8092/reportes/activo/1 \
+  -o reporte_legacy.pdf
+```
+
+**Configuración IoT Service:**
+- Variable de entorno: `PARSER_URL` (default: http://localhost:8090)
+- Endpoint consultado: `{PARSER_URL}/activo/{activo_id}/sensores/datos`
+- Métricas calculadas automáticamente: media, tendencia, métricas derivadas por sensor
+
 #### Obtener reportes de un activo
 ```bash
 curl -X GET http://localhost:8092/reportes/activo/1
@@ -1043,11 +1109,31 @@ curl -X POST http://localhost:8092/acciones \
 curl -X POST http://localhost:8092/reportes/activo/1
 ```
 
+### 🆕 **Generar reporte personalizado con datos de sensores**
+```bash
+# Con datos de sensores del IoT service
+curl -X POST http://localhost:8092/reportes/activo/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "campos": ["datos_sensores"]
+  }'
+
+# Reporte completo con todos los campos
+curl -X POST http://localhost:8092/reportes/activo/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "campos": ["ubicacion", "historial_mantenimientos", "ultima_acciones", "datos_sensores"]
+  }'
+```
+
 ## Configuración
 
 El microservicio utiliza PostgreSQL como base de datos. La configuración se encuentra en:
 - `config/config.yaml` - Configuración general
 - Variables de entorno para conexión a base de datos
+
+### 🆕 Variables de entorno adicionales:
+- `PARSER_URL` - URL del servicio IoT/Parser para obtener datos de sensores (default: http://localhost:8090)
 
 ## Ejecución
 

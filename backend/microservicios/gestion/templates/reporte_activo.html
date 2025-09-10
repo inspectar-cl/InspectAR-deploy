@@ -235,7 +235,7 @@
             </div>
         </div>
 
-        <!-- Información del Edificio -->
+        <!-- Información del Edificio - Solo si se incluye ubicación -->
         {{if .Edificio}}
         <div class="section">
             <h2>Ubicación del Edificio</h2>
@@ -254,49 +254,38 @@
                 </div>
             </div>
         </div>
-        {{else}}
+        {{end}}
+
+        <!-- Acciones de Mantenimiento - Solo si se incluye historial -->
+        {{if .Acciones}}
         <div class="section">
-            <h2>Ubicación del Edificio</h2>
-            <div class="no-data">
-                No se ha asignado un edificio a este activo.
-            </div>
+            <h2>Historial de Mantenimiento</h2>
+            <table class="acciones-table">
+                <thead>
+                    <tr>
+                        <th>Fecha Inicio</th>
+                        <th>Tipo</th>
+                        <th>Estado</th>
+                        <th>Prioridad</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Acciones}}
+                    <tr>
+                        <td>{{.FechaInicio.Format "02/01/2006"}}</td>
+                        <td>{{.Tipo}}</td>
+                        <td><span class="status-badge status-{{.Estado}}">{{.Estado}}</span></td>
+                        <td>{{.Prioridad}}</td>
+                        <td>{{.Descripcion}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
         </div>
         {{end}}
 
-        <!-- Acciones de Mantenimiento -->
-        <div class="section">
-            <h2>Historial de Mantenimiento</h2>
-            {{if .Acciones}}
-                <table class="acciones-table">
-                    <thead>
-                        <tr>
-                            <th>Fecha Inicio</th>
-                            <th>Tipo</th>
-                            <th>Estado</th>
-                            <th>Prioridad</th>
-                            <th>Descripción</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{range .Acciones}}
-                        <tr>
-                            <td>{{.FechaInicio.Format "02/01/2006"}}</td>
-                            <td>{{.Tipo}}</td>
-                            <td><span class="status-badge status-{{.Estado}}">{{.Estado}}</span></td>
-                            <td>{{.Prioridad}}</td>
-                            <td>{{.Descripcion}}</td>
-                        </tr>
-                        {{end}}
-                    </tbody>
-                </table>
-            {{else}}
-                <div class="no-data">
-                    No se encontraron acciones de mantenimiento para este activo.
-                </div>
-            {{end}}
-        </div>
-
-        <!-- Última Acción -->
+        <!-- Última Acción - Solo si se incluyen últimas acciones -->
         {{if .UltimaAccion}}
         <div class="section">
             <h2>Última Acción de Mantenimiento</h2>
@@ -327,7 +316,47 @@
         </div>
         {{end}}
 
-        <!-- Código QR (Placeholder) -->
+        <!-- Datos de Sensores y Métricas - Solo si se incluyen datos de sensores -->
+        {{ if .SensorMetrics }}
+        <div class="section">
+            <h2>Datos de Sensores y Métricas</h2>
+            <div class="info-grid">
+                {{ range $name, $vals := .SensorMetrics }}
+                <div class="info-item">
+                    <div class="info-label">{{ $name }}</div>
+                    <div class="info-value">
+                        {{ if eq $name "note" }}
+                            {{ $vals }}
+                        {{ else }}
+                            {{ printf "Media: %.2f | Tendencia: %.2f" (index $vals "mean") (index $vals "trend") }}
+                        {{ end }}
+                    </div>
+                </div>
+                {{ end }}
+            </div>
+        </div>
+        {{ end }}
+
+        <!-- Recomendaciones y Conclusiones - Solo si hay campos específicos o es legacy -->
+        {{if .Recomendaciones}}
+        <div class="section">
+            <h2>Recomendaciones</h2>
+            <ul>
+                {{range .Recomendaciones}}
+                <li>{{.}}</li>
+                {{end}}
+            </ul>
+        </div>
+        {{end}}
+
+        {{if .Conclusiones}}
+        <div class="section">
+            <h2>Conclusiones</h2>
+            <p>{{.Conclusiones}}</p>
+        </div>
+        {{end}}
+
+        <!-- Código QR (Siempre presente) -->
         <div class="section">
             <h2>Código QR del Activo</h2>
             <div class="qr-placeholder">

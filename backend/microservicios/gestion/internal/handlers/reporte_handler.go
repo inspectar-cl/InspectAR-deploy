@@ -143,7 +143,14 @@ func (h *ReporteHandler) GenerarReportePorActivo(c *gin.Context) {
 		return
 	}
 
-	pdfBytes, filename, err := h.service.GenerarReportePDFPorActivo(activoID)
+	// Leer body con campos solicitados
+	var req models.GenerarReporteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		// Si no viene body, asumimos campos por defecto
+		req = models.GenerarReporteRequest{Campos: []string{"ubicacion", "historico_mantenimientos", "ultima_acciones", "datos_sensores"}}
+	}
+
+	pdfBytes, filename, err := h.service.GenerarReportePDFPorActivo(activoID, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo generar el reporte", "details": err.Error()})
 		return

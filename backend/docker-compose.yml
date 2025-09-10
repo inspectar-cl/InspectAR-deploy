@@ -106,6 +106,8 @@ services:
       - "8092:8092"
     depends_on:
       - gestion-db
+    environment:
+      - PARSER_URL=http://iot-service:8090
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8092/health"]
       interval: 10s

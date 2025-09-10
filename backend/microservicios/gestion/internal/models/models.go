@@ -197,6 +197,11 @@ type CreateReporteRequest struct {
 	AutorAnalista         string `json:"autor_analista,omitempty"`
 }
 
+// DTO para generar reporte por activo con campos solicitados
+type GenerarReporteRequest struct {
+	Campos []string `json:"campos" binding:"required"` // e.g. ["ubicacion","historico_mantenimientos","ultima_acciones","datos_sensores"]
+}
+
 type UpdateObservacionesRequest struct {
 	ObservacionesAnalista string `json:"observaciones_analista" binding:"required"`
 	AutorAnalista         string `json:"autor_analista" binding:"required"`

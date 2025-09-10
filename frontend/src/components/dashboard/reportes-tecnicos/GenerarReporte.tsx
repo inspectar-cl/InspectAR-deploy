@@ -98,31 +98,6 @@ function GenerarReporte() {
     }
   };
 
-  // Función para actualizar observaciones
-// Función para actualizar observaciones del analista
-{/*const handleActualizarObservaciones = async () => {
-  if (!reportes || reportes.length === 0) {
-    console.log("No hay reportes para actualizar"); // <<< log agregado
-    return;
-  }
-
-  const reporteId = reportes[0].id;
-  console.log("Intentando actualizar observaciones para reporte ID:", reporteId);
-  console.log("Observaciones actuales:", observaciones);
-
-  try {
-    const data = await gs.put(`/reportes/${reporteId}/observaciones`, {
-      observaciones_analista: observaciones, // ✅ campo correcto
-      autor_analista: "Tu Nombre"            // ✅ remplazar por quien actualiza
-    });
-    console.log("Respuesta API:", data);
-    setMensaje("Observaciones actualizadas correctamente");
-  } catch (error) {
-    console.error("Error al actualizar observaciones:", error);
-    setMensaje("No se pudo actualizar las observaciones");
-  }
-};*/}
-
 
 
   return (

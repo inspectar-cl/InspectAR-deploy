@@ -15,7 +15,7 @@ interface Message {
   respuesta: string;
 }
 
-export function ChatBotCard ({ id }: { id: string | number | null}) {
+export function ChatBotCard ({ id }: { id: string | number | null}): React.JSX.Element {
   const [open, setOpen] = React.useState(false);
   const [inputR, setInput] = React.useState('');
   const [loading, setLoading] = React.useState(false);
@@ -24,7 +24,7 @@ export function ChatBotCard ({ id }: { id: string | number | null}) {
 
   const inspy = '../../../../assets/inspai.png';
 
-  const handleSend = async () => {
+  const handleSend = async (): Promise<void> => {
     if (!inputR.trim()) return;
 
     setLoading(true);
@@ -32,7 +32,6 @@ export function ChatBotCard ({ id }: { id: string | number | null}) {
 
     try {
       const response = await gs.post(API_URL, { pregunta: inputR }) as { mensaje?: string; respuesta?: string };
-      console.log('response from API, chatbot:', response);
 
       const newMessage = {
         pregunta: inputR,
@@ -45,7 +44,7 @@ export function ChatBotCard ({ id }: { id: string | number | null}) {
       setMessages((prev) => [...prev, newMessage]);
       setInput('');
     } catch (error) {
-      console.error('Error llamando a la API:', error);
+      // Error handling for API call failure
       setMessages((prev) => [
         ...prev,
         { pregunta: inputR, respuesta: 'Error al obtener respuesta de Inspy' },
@@ -118,7 +117,7 @@ export function ChatBotCard ({ id }: { id: string | number | null}) {
                       const typed = msg.respuesta;
 
                       return (
-                        <Box key={index} sx={{ mb: 2 }}>
+                        <Box key={`${msg.pregunta.slice(0, 20)}-${index}`} sx={{ mb: 2 }}>
                           <Typography variant="subtitle2" color="primary" marginBottom="5px">
                             Tu pregunta: {msg.pregunta}
                           </Typography>

@@ -80,7 +80,7 @@ export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: SxProps<
     items: [],
   });
 
-  const [activos, setActivos] = React.useState<Activo[]>([])
+  const [activosList, setActivosList] = React.useState<Activo[]>([])
   
   const hasFetchedRef = React.useRef(false)
 
@@ -91,7 +91,7 @@ export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: SxProps<
 
       // Si no hay datos desde backend, usamos mocks
       if (!response || response.length === 0) {
-        setActivos(activosMock)
+        setActivosList(activosMock)
         return
       }
 
@@ -105,10 +105,10 @@ export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: SxProps<
         id_edificio: item.id_edificio || 'ID no obtenida'
       }))
 
-      setActivos(transformados)
+      setActivosList(transformados)
     } catch (error) {
       // Error handling: use mock data when backend fails
-      setActivos(activosMock)
+      setActivosList(activosMock)
     }
   }
 
@@ -154,7 +154,7 @@ export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: SxProps<
                     }
                     onRowClick={(params) => {window.location.href = paths.dashboard.activoDetail(params.row.id);}}
                     showToolbar
-                    rows={activos}
+                    rows={activosList}
                     columns={columns}
                     initialState={{
                       pagination: {

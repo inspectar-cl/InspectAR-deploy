@@ -7,7 +7,7 @@ import Typography from '@mui/material/Typography';
 
 import { ContactosFilters } from './contactos-filters';
 import { ContactosTable, type Contacto } from './contactos-table';
-import { CustomAlert } from '@/components/dashboard/alert-popups/customAlertPopup';
+import { CustomAlert } from '@/components/dashboard/alert-popups/CustomAlertPopup';
 
 import Services from '@/modules/Services'
 

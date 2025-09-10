@@ -66,7 +66,7 @@ export default function NextAppDirEmotionCacheProvider(props: NextAppDirEmotionC
           }
         } else {
           styles += style;
-          dataEmotionAttribute += ` ${name}`;
+          dataEmotionAttribute += ` ${name ?? ''}`;
         }
       }
     });

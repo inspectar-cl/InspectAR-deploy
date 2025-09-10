@@ -160,7 +160,7 @@ export function LatestSensors({ assetName, imageUrl, sensors = [], sx }: LatestS
           <TableBody>
             {paginatedSensors.map((s) => {
               const status = s.status; // Usar el estado del backend
-              const color = status === 'connected' ? 'success' : 'error';
+              const color: 'success' | 'error' = status === 'connected' ? 'success' : 'error';
               const label = status === 'connected' ? 'Conectado' : 
                            status === 'disconnected' ? 'Desconectado' : 'Nunca conectado';
 
@@ -182,7 +182,7 @@ export function LatestSensors({ assetName, imageUrl, sensors = [], sx }: LatestS
                   </TableCell>
                   <TableCell>{dayjs(s.lastSeen).format('MMM D, YYYY HH:mm')}</TableCell>
                   <TableCell>
-                    <Chip color={color as any} label={label} size="small" />
+                    <Chip color={color} label={label} size="small" />
                   </TableCell>
                 </TableRow>
               );

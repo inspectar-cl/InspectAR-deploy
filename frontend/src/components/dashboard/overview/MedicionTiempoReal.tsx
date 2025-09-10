@@ -77,7 +77,7 @@ export function ScatterWithArgs({ sx, dataCaudal, dataPresion, dataTemp }: Medic
       { id: 'presion', data: convert(dataPresion), label: 'Presión' },
       { id: 'temperatura', data: convert(dataTemp), label: 'Temperatura' },
     ],
-    [dataCaudal, dataPresion, dataTemp, rangoMinutos, convert]
+    [dataCaudal, dataPresion, dataTemp, rangoMinutos]
   )
 
   

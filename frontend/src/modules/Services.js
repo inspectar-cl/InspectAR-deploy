@@ -6,6 +6,9 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL || '/api'
 const apiClient = axios.create({
     baseURL: BASE_URL,
     timeout: 30000,
+    headers: {
+        "ngrok-skip-browser-warning": "true",
+    },
     // No seteamos Content-Type globalmente, lo hace axios según el body
 })
 

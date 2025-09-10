@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
+
 'use client';
 
 /* Esta seccion del codigo corresponde a la grafica con las variables a sensorizar

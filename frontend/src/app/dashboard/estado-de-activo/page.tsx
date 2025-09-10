@@ -1,4 +1,5 @@
-import React from 'react';
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
+
 // fix vercel
 // import EstadoContent from '@/components/dashboard/estado/estado';
 

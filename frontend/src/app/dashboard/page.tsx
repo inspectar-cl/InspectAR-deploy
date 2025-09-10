@@ -1,12 +1,11 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 'use client'
 
 import * as React from 'react';
 import { useEffect } from 'react';
-import type { Metadata } from 'next';
 import Grid from '@mui/material/Grid';
 import { TemperatureProgress } from '@/components/dashboard/overview/temperature';
 
-import { config } from '@/config';
 import { SensorScatter } from '@/components/dashboard/overview/sensor-scatter';
 import { type Activo } from '@/types/'
 
@@ -16,7 +15,7 @@ const gs = new Services()
 
 
 export default function Page(): React.JSX.Element {
-  const [activo, setActivo] = React.useState<Activo | null>(null)
+  //const [activo, setActivo] = React.useState<Activo | null>(null)
   const [sensores, setSensores] = React.useState<any[]>([])
 
   const hasFetchedRef = React.useRef(false)

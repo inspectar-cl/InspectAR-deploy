@@ -1,27 +1,23 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 'use client'
 
 import * as React from 'react';
-import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { DownloadIcon } from '@phosphor-icons/react/dist/ssr/Download';
-import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
-import { UploadIcon } from '@phosphor-icons/react/dist/ssr/Upload';
 
 import { ContactosFilters } from './contactos-filters';
 import { ContactosTable, type Contacto } from './contactos-table';
 import { CustomAlert } from '@/components/dashboard/alert-popups/customAlertPopup';
 
-import { useEffect, useState } from 'react';
 import Services from '@/modules/Services'
 
-interface Props {
+interface ContactosClientProps {
   contactos: Contacto[];
   especialidades: string[];
 }
 const gs = new Services()
 
-export function ContactosClient({ contactos, especialidades }: Props) {
+export function ContactosClient({ contactos, especialidades }: ContactosClientProps) {
   const [filter, setFilter] = React.useState({ search: '', especialidad: null as string | null });
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);

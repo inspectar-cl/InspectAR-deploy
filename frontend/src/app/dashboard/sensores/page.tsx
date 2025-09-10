@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 'use client';
 import * as React from 'react';
 import Grid from '@mui/material/Grid';
@@ -17,13 +18,13 @@ export default function Page(): React.JSX.Element {
 
   // Función para simular caída de sensor (para testing)
   const simulateDown = (activoIdx: number, sensorId: string) => {
-    console.log(`Simulando caída del sensor ${sensorId} en activo ${activoIdx}`);
+    //console.log(`Simulando caída del sensor ${sensorId} en activo ${activoIdx}`);
     // En el futuro se puede implementar una llamada a la API para simular
   };
 
   // Función para simular recuperación de sensor (para testing)
   const simulateUp = (activoIdx: number, sensorId: string) => {
-    console.log(`Simulando recuperación del sensor ${sensorId} en activo ${activoIdx}`);
+    //console.log(`Simulando recuperación del sensor ${sensorId} en activo ${activoIdx}`);
     // En el futuro se puede implementar una llamada a la API para simular
   };
 

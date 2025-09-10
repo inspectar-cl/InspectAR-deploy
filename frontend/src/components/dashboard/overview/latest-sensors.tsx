@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
+
 'use client';
 
 import * as React from 'react';
@@ -26,8 +28,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 
 import { useNotifications } from '@/contexts/notifications';
 
-import { useState, useEffect, useCallback } from 'react';
-import { type SensorRow, SensorSample } from '@/hooks/UseActivosWithSensors';
+import { type SensorRow } from '@/hooks/UseActivosWithSensors';
 
 dayjs.extend(relativeTime);
 
@@ -40,6 +41,7 @@ export interface LatestSensorsProps {
   sx?: SxProps;
 }
 
+// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars -- creado para futuras mejoras
 function computeStatus(lastSeen: Date): SensorStatus {
   const minutes = dayjs().diff(dayjs(lastSeen), 'minute');
   return minutes > 5 ? 'disconnected' : 'connected';

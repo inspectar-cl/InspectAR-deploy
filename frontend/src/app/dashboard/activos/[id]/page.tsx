@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 import type { Metadata } from 'next';
 import { config } from '@/config';
 import ActivoDetailClient from './calls';

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 import * as React from 'react';
 import Chip from '@mui/material/Chip';
 import { styled } from '@mui/material/styles';
@@ -34,10 +35,10 @@ const StyledChip = styled(Chip)(({ theme }) => ({
   },
 }));
 
-const Status = React.memo((props: StatusProps) => {
+const Status = React.memo(function Status(props: StatusProps) {
   const { status } = props;
 
-  let icon: any = null;
+  let icon: React.ReactNode = null;
   if (status === 'Crítico') {
     icon = <ReportProblemIcon className="icon" />;
   } else if (status === 'Medio') {
@@ -64,11 +65,12 @@ const Status = React.memo((props: StatusProps) => {
     />
   );
 });
+Status.displayName = 'Status';
 
-export function renderStatus(params: GridRenderCellParams<any, string>) {
-  if (params.value == null) {
+export function renderStatus(params: GridRenderCellParams<unknown, string>) {
+  if (params.value === null) {
     return '';
   }
 
-  return <Status status={params.value} />;
+  return <Status status={params.value ?? ''} />;
 }

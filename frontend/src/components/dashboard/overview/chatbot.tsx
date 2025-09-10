@@ -117,7 +117,7 @@ export function ChatBotCard ({ id }: { id: string | number | null}): React.JSX.E
                       const typed = msg.respuesta;
 
                       return (
-                        <Box key={`${msg.pregunta.slice(0, 20)}-${index}`} sx={{ mb: 2 }}>
+                        <Box key={msg.pregunta} sx={{ mb: 2 }}>
                           <Typography variant="subtitle2" color="primary" marginBottom="5px">
                             Tu pregunta: {msg.pregunta}
                           </Typography>

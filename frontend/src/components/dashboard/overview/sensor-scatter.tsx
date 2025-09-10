@@ -45,7 +45,7 @@ function LinkPoints({ seriesId }: { seriesId: string }) {
 export function SensorScatter({ sx, dataTemp }: SensorScatterProps) {
   const [rangoMinutos, setrangoMinutos] = React.useState(360); // por defecto: ultimos 30 min
 
-  const convert = (sensor: SensorData) => {
+  const convert = React.useCallback((sensor: SensorData) => {
     if (!sensor?.datos || sensor.datos.length === 0) {
       // router.push('/errors');
       return []; //Para que no falle el map, nos vamos a error page
@@ -60,14 +60,14 @@ export function SensorScatter({ sx, dataTemp }: SensorScatterProps) {
         y: item.valor,
         id: index,
       }));
-  };
+  }, [rangoMinutos]);
   
   const series = React.useMemo(
     () => [
       { id: 'temperatura', data: convert(dataTemp), label: 'Temperatura' },
       // { id: 'temperatura', data: data1, label: 'Temperatura', color: 'red'},
     ],
-    [ dataTemp, rangoMinutos, convert]
+    [dataTemp, convert]
   )
 
   return (

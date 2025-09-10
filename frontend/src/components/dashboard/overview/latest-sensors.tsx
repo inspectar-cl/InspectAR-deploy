@@ -235,7 +235,7 @@ export function LatestSensors({ assetName, imageUrl, sensors = [], sx }: LatestS
             </Box>
           ) : (
             <Alert severity="info">
-              Este es un mock de UI: añade <code>history24h</code> al sensor para listar muestras.
+              Este sensor no cuenta con datos históricos.
             </Alert>
           )}
         </DialogContent>

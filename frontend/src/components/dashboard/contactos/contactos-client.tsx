@@ -7,7 +7,7 @@ import Typography from '@mui/material/Typography';
 
 import { ContactosFilters } from './contactos-filters';
 import { ContactosTable, type Contacto } from './contactos-table';
-import { CustomAlert } from '@/components/dashboard/alert-popups/customAlertPopup';
+import { CustomAlert } from '@/components/dashboard/alert-popups/CustomAlertPopup';
 
 import Services from '@/modules/Services'
 
@@ -59,11 +59,11 @@ export function ContactosClient({ contactos, especialidades }: ContactosClientPr
         };
         
         //console.log(`Enviando notificación a ${contacto.email}:`, payload);
-        return await gs.post("/notificacion/technician/contact", payload);
+        return await gs.post("/notificacion/technician/contact", payload) as { success: boolean; message: string };
       });
 
       // Esperar a que todas las llamadas se completen
-      const results = await Promise.all(promises);
+      await Promise.all(promises);
       //console.log('Resultados de envío:', results);
 
       // Realizar esta alerta si sale bien el envio por la API

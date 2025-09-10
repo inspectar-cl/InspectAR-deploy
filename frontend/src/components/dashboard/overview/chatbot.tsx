@@ -31,7 +31,7 @@ export function ChatBotCard ({ id }: { id: string | number | null}) {
     const API_URL = `/documentacion/documentos/${id}/consultar`;
 
     try {
-      const response = await gs.post(API_URL, { pregunta: inputR });
+      const response = await gs.post(API_URL, { pregunta: inputR }) as { mensaje?: string; respuesta?: string };
       console.log('response from API, chatbot:', response);
 
       const newMessage = {

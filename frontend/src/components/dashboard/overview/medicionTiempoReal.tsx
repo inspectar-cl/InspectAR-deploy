@@ -19,25 +19,39 @@ import MenuItem from '@mui/material/MenuItem'
 import FormControl from '@mui/material/FormControl'
 import InputLabel from '@mui/material/InputLabel'
 
-import { useRouter } from 'next/navigation';
 
 import { ScatterChart } from '@mui/x-charts/ScatterChart';
 import { useScatterSeries, useXScale, useYScale } from '@mui/x-charts/hooks';
+import { type SxProps } from '@mui/system/styleFunctionSx/styleFunctionSx';
+import { type Theme } from '@emotion/react';
 
 interface SensorData {
   sensor_id: string
   datos: { tiempo: string; valor: number }[]
 }
 
-interface Props {
-  sx?: any
+interface MedicionTiempoRealProps  {
+  sx?: SxProps<Theme>
   dataCaudal: SensorData
   dataPresion: SensorData
   dataTemp: SensorData
 }
 
-export function ScatterWithArgs({ sx, dataCaudal, dataPresion, dataTemp }: Props) {
-  const router = useRouter();
+// Dibuja las líneas conectando los puntos
+function LinkPoints({ seriesId }: { seriesId: string }) {
+  const scatter = useScatterSeries(seriesId);
+  const xScale = useXScale();
+  const yScale = useYScale();
+
+  if (!scatter?.data) return null;
+
+  const { color, data } = scatter;
+  const pathD = `M ${data.map(({ x, y }) => `${xScale(x)},${yScale(y)}`).join(' L ')}`;
+
+  return <path fill="none" stroke={color} strokeWidth={2} d={pathD} />;
+}
+
+export function ScatterWithArgs({ sx, dataCaudal, dataPresion, dataTemp }: MedicionTiempoRealProps ) {
   const [rangoMinutos, setrangoMinutos] = React.useState(30); // por defecto: ultimos 30 min
 
   const convert = (sensor: SensorData) => {
@@ -63,22 +77,10 @@ export function ScatterWithArgs({ sx, dataCaudal, dataPresion, dataTemp }: Props
       { id: 'presion', data: convert(dataPresion), label: 'Presión' },
       { id: 'temperatura', data: convert(dataTemp), label: 'Temperatura' },
     ],
-    [dataCaudal, dataPresion, dataTemp, rangoMinutos]
+    [dataCaudal, dataPresion, dataTemp, rangoMinutos, convert]
   )
 
-  // Dibuja las líneas conectando los puntos
-  function LinkPoints({ seriesId }: { seriesId: string }) {
-    const scatter = useScatterSeries(seriesId);
-    const xScale = useXScale();
-    const yScale = useYScale();
-
-    if (!scatter?.data) return null;
-
-    const { color, data } = scatter;
-    const pathD = `M ${data.map(({ x, y }) => `${xScale(x)},${yScale(y)}`).join(' L ')}`;
-
-    return <path fill="none" stroke={color} strokeWidth={2} d={pathD} />;
-  }
+  
 
   return (
     <Card sx={sx}>

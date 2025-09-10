@@ -39,7 +39,7 @@ function GenerarReporte() {
         setActivos([]);
       }
     };
-    fetchActivos();
+    void fetchActivos();
   }, []);
 
   // Exportar PDF

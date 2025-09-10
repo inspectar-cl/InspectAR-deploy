@@ -52,7 +52,7 @@ function DocumentosAsociados() {
         setActivos([]);
       }
     };
-    fetchActivos();
+    void fetchActivos();
   }, []);
 
   // Cargar categorías al montar el componente
@@ -76,7 +76,7 @@ function DocumentosAsociados() {
       }
     };
 
-    fetchCategorias();
+    void fetchCategorias();
   }, []);
 
   // Cargar documentos
@@ -106,7 +106,7 @@ function DocumentosAsociados() {
           //console.error("Error al cargar documentos:", error);
         }
     };
-    if (activos.length > 0) fetchDocumentos(); // 🔹 Solo corre cuando ya hay activos
+    if (activos.length > 0) void fetchDocumentos(); // 🔹 Solo corre cuando ya hay activos
 }, [activos]); // 🔹 Dependencia en activos
 
   const handleGuardarDocumento = async () => {

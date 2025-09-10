@@ -29,6 +29,10 @@ import Services from '@/modules/Services'
 
 import dataAlertas from '@/mocks/alerts.json'
 
+// Constantes globales
+const ESTADOS = ['OK', 'Medio', 'Crítico', 'NN'] as const;
+type Estado = (typeof ESTADOS)[number];
+
 const gs = new Services()
 
 export default function ActivoDetailClient({ id }: { id: number}) {
@@ -46,9 +50,6 @@ export default function ActivoDetailClient({ id }: { id: number}) {
   }
 
   const [sensores, setSensores] = React.useState<Sensor[]>([])
-
-  const estados = ['OK', 'Medio', 'Crítico', 'NN'] as const;
-  type Estado = (typeof estados)[number];
 
   // Actualización del método a penas se recarga la página
   //const hasFetchedRef = React.useRef(false)
@@ -70,7 +71,7 @@ export default function ActivoDetailClient({ id }: { id: number}) {
         //console.log("response", response)
 
         // Aqui deberian de cargarse la data de los activos (Ojala desde una llamada a API)
-        const estado: Estado = estados.includes(response.estado as Estado)
+        const estado: Estado = ESTADOS.includes(response.estado as Estado)
           ? (response.estado as Estado)
           : 'NN';
 
@@ -118,7 +119,7 @@ export default function ActivoDetailClient({ id }: { id: number}) {
 
     // Limpieza del intervalo al desmontar componente
     return () => { clearInterval(interval); };
-    }, [id, estados]);
+    }, [id, ESTADOS]);
 
   // Estos nombres tendrían que ser dinámicos, de momento quedarán así.
   // Extracción de los valores de cada sensor:

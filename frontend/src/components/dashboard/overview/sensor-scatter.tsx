@@ -67,7 +67,7 @@ export function SensorScatter({ sx, dataTemp }: SensorScatterProps) {
       { id: 'temperatura', data: convert(dataTemp), label: 'Temperatura' },
       // { id: 'temperatura', data: data1, label: 'Temperatura', color: 'red'},
     ],
-    [ dataTemp, rangoMinutos]
+    [ dataTemp, rangoMinutos, convert]
   )
 
   return (

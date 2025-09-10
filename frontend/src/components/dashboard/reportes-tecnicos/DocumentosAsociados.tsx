@@ -85,11 +85,11 @@ function DocumentosAsociados() {
         const data = await gs.get("/documentacion/documentos") as DocumentosResponse;
         //console.log("Respuesta documentos:", data);
 
-        const documentos = data.documentos || [];
+        const docsData = data.documentos || [];
 
         // Extraer categorías únicas
         const categoriasUnicas = Array.from(
-          new Set(documentos.map((doc) => doc.categoria))
+          new Set(docsData.map((doc) => doc.categoria))
         );
 
         setCategorias(categoriasUnicas.filter(c => typeof c === "string"));
@@ -123,7 +123,7 @@ function DocumentosAsociados() {
         setDocumentos(documentosConFecha);
 
         // Extraer categorías únicas
-        const cats = Array.from(new Set(docsArray.map((d: any) => d.categoria)));
+        const cats = Array.from(new Set(docsArray.map((d) => d.categoria)));
         setCategorias(cats.filter(c => typeof c === "string"));
         } catch (error) {
           //console.error("Error al cargar documentos:", error);
@@ -157,16 +157,16 @@ function DocumentosAsociados() {
     try {
       await gs.post("/documentacion/documentos", formData);
       // Subido correctamente, puedes recargar documentos
-      const data = await gs.get("/documentacion/documentos");
+      const data = await gs.get("/documentacion/documentos") as DocumentosResponse;
       const docsArray = data?.documentos || [];
-      const documentosConFecha = docsArray.map((doc: any) => {
+      const documentosConFecha = docsArray.map((doc) => {
         const fecha = new Date(doc.fecha_emision); 
         const fechaFormateada = new Intl.DateTimeFormat('es-CL').format(fecha); // dd/mm/aaaa
         return {
           ...doc,
           creado_en_formateado: fechaFormateada,
           palabras_clave: doc.palabras_clave || "-",
-          activo_nombre: activos.find((a: any) => a.id === doc.activo_id)?.nombre || `ID ${doc.activo_id}`,
+          activo_nombre: activos.find((a) => a.id === doc.activo_id)?.nombre || `ID ${doc.activo_id}`,
         };
       });
       setDocumentos(documentosConFecha);

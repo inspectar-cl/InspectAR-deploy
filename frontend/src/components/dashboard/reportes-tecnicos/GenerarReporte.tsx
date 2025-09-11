@@ -110,28 +110,28 @@ function GenerarReporte() {
   }
 };
 
-  // <<< CAMBIO: función para vista previa PDF
-  const handleVistaPreviaPDF = async () => {
-    if (!activo) return;
-    try {
-      // Preparar el payload con los campos seleccionados
-      const payload = {
-        campos: camposSeleccionados
-      };
+// <<< CAMBIO: función para vista previa PDF
+const handleVistaPreviaPDF = async () => {
+  if (!activo) return;
+  try {
+    // Preparar el payload con los campos seleccionados
+    const payload = {
+      campos: camposSeleccionados
+    };
 
-      const response = await axios.post(
-        `/api/gestion/reportes/activo/${activo}`,
-        payload,
-        { responseType: "blob" }
-      );
-      const blob = new Blob([response.data], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
-      setPdfUrl(url);
-    } catch (error) {
-      //console.error("Error al generar vista previa PDF:", error);
-      setMensaje("No se pudo generar la vista previa");
-    }
-  };
+    const response = await axios.post(
+      `/api/gestion/reportes/activo/${activo}`,
+      payload,
+      { responseType: "blob" }
+    );
+    const blob = new Blob([response.data], { type: "application/pdf" });
+    const url = window.URL.createObjectURL(blob);
+    setPdfUrl(url);
+  } catch (error) {
+    //console.error("Error al generar vista previa PDF:", error);
+    setMensaje("No se pudo generar la vista previa");
+  }
+};
 
 
 

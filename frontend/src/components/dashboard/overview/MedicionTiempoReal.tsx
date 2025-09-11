@@ -54,7 +54,7 @@ function LinkPoints({ seriesId }: { seriesId: string }) {
 export function ScatterWithArgs({ sx, dataCaudal, dataPresion, dataTemp }: MedicionTiempoRealProps ) {
   const [rangoMinutos, setrangoMinutos] = React.useState(30); // por defecto: ultimos 30 min
 
-  const convert = (sensor: SensorData) => {
+  const convert = React.useCallback((sensor: SensorData) => {
     if (!sensor?.datos || sensor.datos.length === 0) {
       //router.push('/errors'); // Esta linea de aqui hace que vayamos a la page de errors si no hay data en la grafica de sensores
       return []; //Para que no falle el map, nos vamos a error page
@@ -63,13 +63,12 @@ export function ScatterWithArgs({ sx, dataCaudal, dataPresion, dataTemp }: Medic
     const oneHourAgo = dayjs().subtract(rangoMinutos, 'minute');
 
     return sensor.datos
-      .filter(item => dayjs(item.tiempo).isAfter(oneHourAgo))
-      .map((item, index) => ({
-        x: dayjs(item.tiempo).valueOf(),
-        y: item.valor,
-        id: index,
+      .filter((entry) => dayjs(entry.tiempo).isAfter(oneHourAgo))
+      .map((entry) => ({
+        x: dayjs(entry.tiempo).valueOf(),
+        y: entry.valor
       }));
-  };
+  }, [rangoMinutos]);
 
   const series = React.useMemo(
     () => [
@@ -77,7 +76,7 @@ export function ScatterWithArgs({ sx, dataCaudal, dataPresion, dataTemp }: Medic
       { id: 'presion', data: convert(dataPresion), label: 'Presión' },
       { id: 'temperatura', data: convert(dataTemp), label: 'Temperatura' },
     ],
-    [dataCaudal, dataPresion, dataTemp, rangoMinutos, convert]
+    [dataCaudal, dataPresion, dataTemp, convert]
   )
 
   

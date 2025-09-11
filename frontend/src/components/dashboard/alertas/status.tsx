@@ -9,12 +9,15 @@ import DoneIcon from '@mui/icons-material/Done';
 import {
   type GridRenderCellParams,
 } from '@mui/x-data-grid';
+import { type Activo } from '@/types'
 
 export const STATUS_OPTIONS = ['Medio', 'OK', 'Crítico'];
 
 interface StatusProps {
   status: string;
 }
+
+
 
 const StyledChip = styled(Chip)(({ theme }) => ({
   justifyContent: 'left',
@@ -55,7 +58,7 @@ const Status = React.memo(function Status(props: StatusProps) {
   return (
     <StyledChip
       className={status}
-      icon={icon}
+      icon={icon ?? undefined}
       size="small"
       label={label}
       variant="outlined"
@@ -67,7 +70,7 @@ const Status = React.memo(function Status(props: StatusProps) {
 });
 Status.displayName = 'Status';
 
-export function renderStatus(params: GridRenderCellParams<unknown, string>) {
+export function renderStatus(params: GridRenderCellParams<Activo, Activo['estado']>) {
   if (params.value === null) {
     return '';
   }

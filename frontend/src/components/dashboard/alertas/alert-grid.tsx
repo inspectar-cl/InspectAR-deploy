@@ -8,7 +8,7 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardHeader from '@mui/material/CardHeader';
 import { type SxProps, type Theme } from '@mui/material/styles';
-import { DataGrid, type GridColDef, type GridFilterModel, type GridColumnVisibilityModel} from '@mui/x-data-grid';
+import { DataGrid, type GridColDef, type GridFilterModel, type GridColumnVisibilityModel, type GridRowParams} from '@mui/x-data-grid';
 import { type Activo } from '@/types/'
 import { esES } from '@mui/x-data-grid/locales';
 
@@ -87,7 +87,7 @@ export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: SxProps<
   // Función para obtener los activos
   const getActivos = async () => {
     try {
-      const response = await gs.get(uris.GET)
+      const response = await gs.get(uris.GET) as ActivoResponse[]
 
       // Si no hay datos desde backend, usamos mocks
       if (!response || response.length === 0) {
@@ -97,12 +97,14 @@ export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: SxProps<
 
       // Transformacion de los datos de la db
       const transformados = response.map((item: ActivoResponse, index: number) => ({
-        id: item.activo_id || `B${index + 1}`,
+        id: parseInt(item.activo_id) || index + 1,
         tipoActivo: item.nombre || 'Activo sin nombre',
-        estado: item.estado || 'NN',
+        estado: (item.estado || 'NN') as 'OK' | 'Medio' | 'Crítico' | 'NN',
         descripcion: item.descripcion || 'NN',
         ubicacion: item.ubicacion || 'Ubicación desconocida',
-        id_edificio: item.id_edificio || 'ID no obtenida'
+        id_edificio: item.id_edificio || 'ID no obtenida',
+        img: '', // Campo requerido por la interfaz
+        id_ficha_tecnica: 0, // Campo requerido por la interfaz
       }))
 
       setActivosList(transformados)
@@ -152,7 +154,7 @@ export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: SxProps<
                     onColumnVisibilityModelChange={(newModel) =>
                       { setColumnVisibilityModel(newModel); }
                     }
-                    onRowClick={(params) => {window.location.href = paths.dashboard.activoDetail(params.row.id);}}
+                    onRowClick={(params: GridRowParams<Activo>) => {window.location.href = paths.dashboard.activoDetail(params.row.id.toString());}}
                     showToolbar
                     rows={activosList}
                     columns={columns}

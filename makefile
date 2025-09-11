@@ -51,3 +51,6 @@ run-ngrok:
 
 err-f:
 	cd frontend && npx eslint . --ext .js,.ts,.tsx
+
+ml:
+	cd backend/scripts/ML && python3 main.py

@@ -26,7 +26,7 @@ func NewSensorMonitoringService(
 	timeoutMinutes int,
 ) *SensorMonitoringService {
 	if timeoutMinutes <= 0 {
-		timeoutMinutes = 5 // Default: 5 minutos
+		timeoutMinutes = 1 // Default: 5 minutos
 	}
 
 	return &SensorMonitoringService{

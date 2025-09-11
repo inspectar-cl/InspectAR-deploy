@@ -49,5 +49,5 @@ run-b-ngrok:
 run-ngrok:
 	ngrok http --domain=$(NGROK_URL) 3500
 
-errores-front:
+err-f:
 	cd frontend && npx eslint . --ext .js,.ts,.tsx

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 import {useState, useEffect } from "react";
-import { Box, Button, TextField, Select, MenuItem, Snackbar, Alert } from "@mui/material";
+import { Box, Button, TextField, Select, MenuItem, Snackbar, Alert, FormControl, InputLabel, Checkbox, ListItemText, OutlinedInput } from "@mui/material";
 import Services from '@/modules/Services';
 import axios from "axios";
 
@@ -23,6 +23,22 @@ function GenerarReporte() {
   //const [reportes, setReportes] = useState<any[]>([]);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null); // <<< CAMBIO: estado para vista previa PDF
   const [mensaje, setMensaje] = useState<string | null>(null);
+  
+  // Nuevo estado para los campos seleccionables del reporte
+  const [camposSeleccionados, setCamposSeleccionados] = useState<string[]>([
+    "ubicacion",
+    "historial_mantenimientos", 
+    "ultima_acciones",
+    "datos_sensores"
+  ]);
+
+  // Opciones disponibles para el dropdown
+  const opcionesCampos = [
+    { value: "ubicacion", label: "Ubicación" },
+    { value: "historial_mantenimientos", label: "Historial de Mantenimientos" },
+    { value: "ultima_acciones", label: "Últimas Acciones" },
+    { value: "datos_sensores", label: "Datos de Sensores" }
+  ];
 
   // Cargar activos al montar el componente
   useEffect(() => {
@@ -57,9 +73,14 @@ function GenerarReporte() {
   if (!activo) return;
 
   try {
+    // Preparar el payload con los campos seleccionados
+    const payload = {
+      campos: camposSeleccionados
+    };
+
     const response = await axios.post(
       `/api/gestion/reportes/activo/${activo}`,
-      {},
+      payload,
       { responseType: "blob" } // importante
     );
 
@@ -93,9 +114,14 @@ function GenerarReporte() {
   const handleVistaPreviaPDF = async () => {
     if (!activo) return;
     try {
+      // Preparar el payload con los campos seleccionados
+      const payload = {
+        campos: camposSeleccionados
+      };
+
       const response = await axios.post(
         `/api/gestion/reportes/activo/${activo}`,
-        {},
+        payload,
         { responseType: "blob" }
       );
       const blob = new Blob([response.data], { type: "application/pdf" });
@@ -112,26 +138,32 @@ function GenerarReporte() {
   return (
     <Box>
       {/* Filtros */}
-      <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
-        <Select
-          value={activo}
-          onChange={(e) => { setActivo(e.target.value); }}
-          displayEmpty
-        >
-          <MenuItem value="">Seleccionar Activo</MenuItem>
-          {Array.isArray(activos) &&
-            activos.map((a) => (
-              <MenuItem key={a.id} value={a.id}>
-                {a.nombre}
-              </MenuItem>
-            ))}
-        </Select>
-        <Button variant="contained" onClick={handleVistaPreviaPDF}>Vista Previa PDF</Button>
-        {/* <Button variant="contained" onClick={handleGenerar}>Generar</Button> */}
-        <Button variant="contained" onClick={handleExportarPDF}>Exportar PDF</Button>
-      </Box>
+      <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap", alignItems: "flex-start" }}>
+        <FormControl sx={{ minWidth: 200 }}>
+          <InputLabel>Seleccionar Activo</InputLabel>
+          <Select
+            value={activo}
+            onChange={(e) => { setActivo(e.target.value); }}
+            label="Seleccionar Activo"
+          >
+            <MenuItem value="">Ninguno</MenuItem>
+            {Array.isArray(activos) &&
+              activos.map((a) => (
+                <MenuItem key={a.id} value={a.id}>
+                  {a.nombre}
+                </MenuItem>
+              ))}
+          </Select>
+        </FormControl>
 
-      {/* <<< CAMBIO: iframe para vista previa PDF */}
+
+        <Button variant="contained" onClick={handleVistaPreviaPDF} disabled={!activo}>
+          Vista Previa PDF
+        </Button>
+        <Button variant="contained" onClick={handleExportarPDF} disabled={!activo}>
+          Exportar PDF
+        </Button>
+      </Box>      {/* <<< CAMBIO: iframe para vista previa PDF */}
       {pdfUrl ? <Box sx={{ mt: 3, borderRadius: 2 }}>
           <iframe
             src={pdfUrl}
@@ -139,7 +171,34 @@ function GenerarReporte() {
             title="Vista Previa PDF"
           />
         </Box> : null}
+      <Box sx={{mt: 2}}>
+        <FormControl sx={{ minWidth: 300 }}>
+          <InputLabel>Campos del Reporte</InputLabel>
+          <Select
+            multiple
+            value={camposSeleccionados}
+            onChange={(e) => {
+              const value = e.target.value;
+              setCamposSeleccionados(typeof value === 'string' ? value.split(',') : value);
+            }}
+            input={<OutlinedInput label="Campos del Reporte" />}
+            renderValue={(selected) => {
+              return opcionesCampos
+                .filter(opcion => selected.includes(opcion.value))
+                .map(opcion => opcion.label)
+                .join(', ');
+            }}
+          >
+            {opcionesCampos.map((opcion) => (
+              <MenuItem key={opcion.value} value={opcion.value}>
+                <Checkbox checked={camposSeleccionados.includes(opcion.value)} />
+                <ListItemText primary={opcion.label} />
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
+      </Box>
       {/* Observaciones */}
       <Box sx={{ mt: 2 }}>
         <TextField

@@ -56,7 +56,7 @@ func main() {
 	notificationURL := viper.GetString("notification.url") // Opcional, por ahora será console.log
 	timeoutMinutes := viper.GetInt("sensor.timeout_minutes")
 	if timeoutMinutes == 0 {
-		timeoutMinutes = 5 // Default: 5 minutos
+		timeoutMinutes = 1 // Default: 5 minutos
 	}
 
 	monitoringService := services.NewSensorMonitoringService(

@@ -24,7 +24,7 @@ influxdb:
 
 # Configuración de monitoreo de sensores
 sensor:
-  timeout_minutes: 5  # Tiempo en minutos para considerar un sensor desconectado
+  timeout_minutes: 1  # Tiempo en minutos para considerar un sensor desconectado
 
 # Configuración de notificaciones (opcional)
 notification:

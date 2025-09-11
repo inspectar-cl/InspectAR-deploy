@@ -5,6 +5,7 @@ import Services from '@/modules/Services';
 import axios from "axios";
 
 const gs = new Services();
+const BASE_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL || '/api'
 
 interface ActivoReporte {
   id: string;
@@ -79,7 +80,7 @@ function GenerarReporte() {
     };
 
     const response = await axios.post(
-      `/api/gestion/reportes/activo/${activo}`,
+      `${BASE_URL}/gestion/reportes/activo/${activo}`,
       payload,
       { responseType: "blob" } // importante
     );
@@ -120,7 +121,7 @@ const handleVistaPreviaPDF = async () => {
     };
 
     const response = await axios.post(
-      `/api/gestion/reportes/activo/${activo}`,
+      `${BASE_URL}/gestion/reportes/activo/${activo}`,
       payload,
       { responseType: "blob" }
     );

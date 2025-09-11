@@ -27,7 +27,7 @@ import { type Theme } from '@emotion/react';
 
 interface SensorData {
   sensor_id: string
-  datos: { fecha_actual: string; valor: string }[]
+  datos: { tiempo: string; valor: number }[]
 }
 
 interface MedicionTiempoRealProps  {
@@ -63,10 +63,10 @@ export function ScatterWithArgs({ sx, dataCaudal, dataPresion, dataTemp }: Medic
     const oneHourAgo = dayjs().subtract(rangoMinutos, 'minute');
 
     return sensor.datos
-      .filter((entry) => dayjs(entry.fecha_actual).isAfter(oneHourAgo))
+      .filter((entry) => dayjs(entry.tiempo).isAfter(oneHourAgo))
       .map((entry) => ({
-        x: dayjs(entry.fecha_actual).format('HH:mm'),
-        y: parseFloat(entry.valor)
+        x: dayjs(entry.tiempo).valueOf(),
+        y: entry.valor
       }));
   }, [rangoMinutos]);
 

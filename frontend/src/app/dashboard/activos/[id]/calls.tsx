@@ -32,7 +32,12 @@ import dataAlertas from '@/mocks/alerts.json'
 // Constantes globales
 const ESTADOS = ['OK', 'Medio', 'Crítico', 'NN'] as const;
 type Estado = (typeof ESTADOS)[number];
-
+type Trend = 'up' | 'down';
+function normalizeTrend(t: unknown): Trend {
+  if (t === 'up' || t === 'down') return t;
+  // valor por defecto — ajusta según tu lógica
+  return 'down';
+}
 const gs = new Services()
 
 export default function ActivoDetailClient({ id }: { id: number}) {
@@ -40,6 +45,7 @@ export default function ActivoDetailClient({ id }: { id: number}) {
   const [activo, setActivo] = React.useState<Activo | null>(null)
   interface SensorDato {
     valor: number;
+    tiempo: string;
     [key: string]: unknown;
   }
 
@@ -150,6 +156,9 @@ export default function ActivoDetailClient({ id }: { id: number}) {
   if (!activo) {
     return <div style={{ padding: '1rem' }}>No se encontró el activo con ID: {`${id}`}</div>;
   }
+  if (!sensorCaud || !sensorPres || !sensorTemp) {
+    return <div>Loading...</div>; // o skeleton / placeholder
+}
   return (
     <Box sx={{ p: 2 }}>
       {/* FILA SUPERIOR */}
@@ -215,12 +224,12 @@ export default function ActivoDetailClient({ id }: { id: number}) {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {/* Caudal */}
             <Caudal diff={parseFloat(caudalInfo.diff.toFixed(2))}
-              trend={caudalInfo.trend} 
-              sx={{ height: 192 }} 
+              trend={normalizeTrend(caudalInfo.trend)}
+              sx={{ height: 192 }}
               value={`${caudalInfo.valor.toFixed(2)} m³/h`}
             />
             {/* Presión */}
-            <Presion diff={parseFloat(presionInfo.diff.toFixed(2))} trend={presionInfo.trend} sx={{ height: 192}} value={`${presionInfo.valor.toFixed(2)} Psi`} />
+            <Presion diff={parseFloat(presionInfo.diff.toFixed(2))} trend={normalizeTrend(presionInfo.trend)} sx={{ height: 192}} value={`${presionInfo.valor.toFixed(2)} Psi`} />
           </Box>
         </Grid>
       </Grid>

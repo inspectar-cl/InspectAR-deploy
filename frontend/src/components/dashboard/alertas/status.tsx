@@ -16,6 +16,14 @@ interface StatusProps {
   status: string;
 }
 
+interface AlertaRow {
+  id: string;
+  estado: string;
+  descripcion: string;
+  fecha: string;
+}
+
+
 const StyledChip = styled(Chip)(({ theme }) => ({
   justifyContent: 'left',
   '& .icon': {
@@ -55,7 +63,7 @@ const Status = React.memo(function Status(props: StatusProps) {
   return (
     <StyledChip
       className={status}
-      icon={icon}
+      icon={icon ?? undefined}
       size="small"
       label={label}
       variant="outlined"
@@ -67,7 +75,7 @@ const Status = React.memo(function Status(props: StatusProps) {
 });
 Status.displayName = 'Status';
 
-export function renderStatus(params: GridRenderCellParams<unknown, string>) {
+export function renderStatus(params: GridRenderCellParams<AlertaRow, string>) {
   if (params.value === null) {
     return '';
   }

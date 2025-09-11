@@ -16,6 +16,8 @@ import InputLabel from '@mui/material/InputLabel'
 
 import { ScatterChart } from '@mui/x-charts/ScatterChart';
 import { useScatterSeries, useXScale, useYScale } from '@mui/x-charts/hooks';
+import {type SxProps, type Theme } from '@mui/material';
+
 
 interface SensorData {
   sensor_id: string
@@ -23,7 +25,7 @@ interface SensorData {
 }
 
 interface SensorScatterProps {
-  sx?: unknown
+  sx?: SxProps<Theme>;
   //dataTemp: SensorData
   dataTemp: SensorData
 }
@@ -68,7 +70,7 @@ export function SensorScatter({ sx, dataTemp }: SensorScatterProps) {
       // { id: 'temperatura', data: data1, label: 'Temperatura', color: 'red'},
     ],
     [ dataTemp, rangoMinutos, convert]
-  )
+  );
 
   return (
     <Card sx={sx}>

@@ -1,0 +1,7 @@
+database:
+  host: "database1"
+  port: 5432
+  user: "admin"
+  password: "joytan"
+  dbname: "db-oauth"
+  sslmode: "disable"

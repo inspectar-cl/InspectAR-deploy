@@ -1,0 +1,6 @@
+docker exec -it postgres_db psql -U admin -d my_database
+
+\i /db/migrations/001_create_users.up.sql;
+\i /db/migrations/002_create_forms.up.sql;
+
+\i /db/seed.sql;

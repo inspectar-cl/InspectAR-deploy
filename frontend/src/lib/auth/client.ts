@@ -56,13 +56,36 @@ class AuthClient {
 
     // Make API request
 
-    // We do not handle the API, so we'll check if the credentials match with the hardcoded ones.
+    /*
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+
+    const { token } = await res.json();
+    localStorage.setItem('custom-auth-token', token); // o manejarlo vía cookie segura
+    */
+
+    // We do not handle the API, so we'll check if the credentials match with the hardcoded ones. (Antigua "verificacion")
     if (email !== 'sofia@devias.io' || password !== 'Secret1') {
       return { error: 'Invalid credentials' };
     }
 
     const token = generateToken();
-    localStorage.setItem('custom-auth-token', token);
+
+    // datos de playload de prueba (ELIMINAR LUEGO DE AGREGAR API)
+    const payload = {
+      token,
+      edificio: 'EA',
+      role: 'tecnico',
+    };
+
+    localStorage.setItem('custom-auth-token', JSON.stringify(payload));
+
+
+    //const token = generateToken();
+    //localStorage.setItem('custom-auth-token', token);
 
     return {};
   }
@@ -81,11 +104,26 @@ class AuthClient {
     // We do not handle the API, so just check if we have a token in localStorage.
     const token = localStorage.getItem('custom-auth-token');
 
+    /*
     if (!token) {
       return { data: null };
     }
 
     return { data: user };
+    */
+    if (!token) return { data: null };
+
+    const payload = JSON.parse(token);
+
+    // (ELIMINAR) Esto en caso de que no sea optimo sacar toda la info y exponerla
+    return {
+      data: {
+        ...user,
+        edificio: payload.edificio,
+        role: payload.role,
+      } as User & { edificio: string; role: string },
+    };
+
   }
 
   async signOut(): Promise<{ error?: string }> {

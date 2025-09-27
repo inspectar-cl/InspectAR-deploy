@@ -149,6 +149,30 @@ services:
       retries: 3
     restart: on-failure
 
+  oauth2:
+    image: oauth2
+    build:
+      context: ./microservicios/oauth2
+      dockerfile: Dockerfile
+    ports:
+      - "8094:8094"
+    depends_on:
+      - database1
+
+  database1:
+    container_name: oauth2DB
+    build:
+      context: ./database/oauth2
+      dockerfile: Dockerfile
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: joytan
+      POSTGRES_DB: db-oauth
+    volumes:
+      - pgdata1:/var/lib/postgresql/data
+
   emqx:
     image: emqx/emqx:latest
     container_name: emqx
@@ -253,3 +277,4 @@ volumes:
   notification_data:
   documentacion_data:
   gestion_data:
+  pgdata1:

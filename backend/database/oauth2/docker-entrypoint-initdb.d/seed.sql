@@ -1,12 +1,9 @@
 -- Insertar users de prueba con IDs específicos
-INSERT INTO users (username, email, empresa, password, scope) 
-VALUES ('admin', 'admin@example.com', 'pleyasoft', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'read:users write:users read:reports');
+INSERT INTO users (username, email, password, scope) 
+VALUES ('admin', 'admin@example.com', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'read:users write:users read:reports');
 
-INSERT INTO users (username, email, empresa, password, scope) 
-VALUES ('microservicio', 'microservicio@example.com', 'pleyasoft', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'read:users write:users read:reports');
-
-INSERT INTO users (username, email, empresa, password, scope) 
-VALUES ('usuario', 'usuario@example.com', 'pleyasoft', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'read:users');
+INSERT INTO users (username, email, password, scope) 
+VALUES ('usuario', 'usuario@example.com', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'read:users');
 
 -- Insertar configuración
 

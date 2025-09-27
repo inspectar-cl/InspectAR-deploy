@@ -26,7 +26,7 @@ COPY --from=builder /app/main .
 COPY config/* /app/config/
 
 # Exponer el puerto
-EXPOSE 8080
+EXPOSE 8094
 
 # Ejecutar la aplicación
 CMD ["./main"]

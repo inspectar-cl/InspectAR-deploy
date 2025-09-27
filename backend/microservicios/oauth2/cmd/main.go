@@ -10,10 +10,8 @@ import (
 	"oauth2/internal/services"
 	"time"
 
-	"github.com/go-micro/plugins/v4/registry/consul"
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
-	"go-micro.dev/v4/registry"
 	"go-micro.dev/v4/web"
 )
 
@@ -36,9 +34,6 @@ func main() {
 	// Conectar a PostgreSQL
 	db := database.InitDB()
 	defer db.Close()
-
-	// Registro en consul
-	reg := consul.NewRegistry(registry.Addrs("consul:8500"))
 
 	// Inicializar dependencias
 	userRepo := repository.NewUserRepository(db)
@@ -67,8 +62,7 @@ func main() {
 
 	service := web.NewService(
 		web.Name("oauth2-service"),
-		web.Registry(reg),
-		web.Address(":8080"),
+		web.Address(":8094"),
 		web.Handler(r),
 		// web.TLSConfig(tlsConfig),
 	)

@@ -41,7 +41,6 @@ func (h *LoginHandler) Login(c *gin.Context) {
 	tokenPayload := &models.TokenPayload{
 		Username:   user.Username,
 		Email:      user.Email,
-		Empresa:    user.Empresa,
 		Device:     loginDto.DeviceID,
 		Scope:      user.Scope,
 		Expiration: time.Now().Add(15 * time.Minute).Unix(), //por ahora no se ocupa
@@ -74,7 +73,6 @@ func (c LoginHandler) RefreshToken(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Token inválido o expirado"})
 		return
 	}
-	
 
 	// Obtener el token almacenado usando userID y deviceID
 	storedToken, err := c.AuthService.GetRefreshToken(tokenPayload)
@@ -117,14 +115,14 @@ func (c LoginHandler) RefreshToken(ctx *gin.Context) {
 	})
 }
 
-// cambio de formato 
+// cambio de formato
 // Al cambiar la contrasena, invalida todos los refresh tokens del usuario
 func (c *LoginHandler) ChangePasswordToken(ctx *gin.Context) {
 	email, exists := ctx.Get("email")
 	if !exists {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No autorizado"})
 		return
-	}			
+	}
 
 	// Elimina los tokens de acceso y refresco al cambiar contrasena
 	err := c.AuthService.ChangePasswordToken(email.(string))

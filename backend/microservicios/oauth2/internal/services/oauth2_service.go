@@ -106,7 +106,6 @@ func (s *AuthService) GenerateTokens(payload *models.TokenPayload) (string, stri
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"username": payload.Username,
 		"email":    payload.Email,
-		"empresa":  payload.Empresa,
 		"device":   payload.Device,
 		"scope":    payload.Scope,
 		"exp":      time.Now().Add(time.Duration(s.Config.LifetimeAccess) * time.Minute).Unix(),
@@ -140,10 +139,10 @@ func (s *AuthService) GenerateTokens(payload *models.TokenPayload) (string, stri
 		refreshToken := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 			"username": payload.Username,
 			"email":    payload.Email,
-			"empresa":  payload.Empresa,
-			"device":   payload.Device,
-			"scope":    payload.Scope,
-			"exp":      time.Now().Add(time.Duration(s.Config.LifetimeRefresh) * time.Minute).Unix(),
+			// "empresa":  payload.Empresa, // eliminado, ya no se usa
+			"device": payload.Device,
+			"scope":  payload.Scope,
+			"exp":    time.Now().Add(time.Duration(s.Config.LifetimeRefresh) * time.Minute).Unix(),
 		})
 
 		refreshTokenString, err = refreshToken.SignedString(refreshPrivateKey)
@@ -180,9 +179,9 @@ func (s *AuthService) GetPayload(tokenString string) (*models.TokenPayload, erro
 	payload := &models.TokenPayload{
 		Username: claims["username"].(string),
 		Email:    claims["email"].(string),
-		Empresa:  claims["empresa"].(string),
-		Device:   claims["device"].(string),
-		Scope:    claims["scope"].(string),
+		// Empresa:  claims["empresa"].(string), // eliminado, ya no se usa
+		Device: claims["device"].(string),
+		Scope:  claims["scope"].(string),
 	}
 
 	// Manejo seguro del campo Expiration como interface{}
@@ -232,7 +231,6 @@ func (s *AuthService) Logout(email, deviceID string) error {
 	if err != nil {
 		return errors.New("credenciales inválidas #3")
 	}
-
 
 	err = s.TokenRepo.DeleteRefreshToken(user.ID, deviceID)
 	if err != nil {

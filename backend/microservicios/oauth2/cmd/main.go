@@ -53,13 +53,6 @@ func main() {
 	// Configurar rutas con Gin
 	r := router.SetupRouter(loginHandler)
 
-	// Crear servicio web con go-micro con soporte TLS
-	// tlsConfig := &tls.Config{
-	// 	Certificates: []tls.Certificate{
-	// 		mustLoadCert("config/server.crt", "config/server.key"),
-	// 	},
-	// }
-
 	service := web.NewService(
 		web.Name("oauth2-service"),
 		web.Address(":8094"),
@@ -71,11 +64,3 @@ func main() {
 		log.Fatal(err)
 	}
 }
-
-// func mustLoadCert(certFile, keyFile string) tls.Certificate {
-// 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-// 	if err != nil {
-// 		log.Fatalf("Error cargando certificado: %v", err)
-// 	}
-// 	return cert
-// }

@@ -78,7 +78,7 @@ class AuthClient {
     const payload = {
       token,
       edificio: 'EA',
-      role: 'tecnico',
+      role: 'residente',
     };
 
     localStorage.setItem('custom-auth-token', JSON.stringify(payload));

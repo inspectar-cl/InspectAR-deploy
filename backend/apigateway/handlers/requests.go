@@ -1,6 +1,7 @@
 package handlers
 
 import (
+    "bytes"
     "encoding/json"
     "fmt"
     "net/http"
@@ -15,6 +16,7 @@ var (
     gestionURL          string
     parserURL           string
     documentacionURL    string
+    oauth2URL           string
 	httpClient          *http.Client
 )
 
@@ -22,9 +24,11 @@ func init() {
 	gestionURL = os.Getenv("GESTION_URL")
     parserURL = os.Getenv("PARSER_URL")
     documentacionURL = os.Getenv("DOCUMENTATION_URL")
+    oauth2URL = os.Getenv("OAUTH2_URL")
     httpClient = &http.Client{
         Timeout: 15 * time.Second,
     }
+    // maxAgeCookie := 3600 // 1 hora, 60*60 segundos
 }
 
 // ActivosCompletosHandler maneja la petición consolidada de activos con sensores
@@ -480,4 +484,53 @@ func ObtenerActivoPorID(c *gin.Context) {
     }
 
     c.JSON(http.StatusOK, activo)
+}
+
+func LoginHandler(c *gin.Context) {
+    // var wg sync.WaitGroup
+    // var mu sync.Mutex
+
+    // Leer el body de la request
+    var loginData map[string]interface{}
+    if err := c.ShouldBindJSON(&loginData); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+        return
+    }
+    fmt.Printf("Login data received: %+v\n", loginData)
+
+    // Convertir a JSON para enviar al microservicio OAuth2
+    jsonData, err := json.Marshal(loginData)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing request"})
+        return
+    }
+
+    // Hacer la petición POST al microservicio OAuth2
+    url := fmt.Sprintf("%s/login", oauth2URL)
+    // fmt.Println("DEBUG: URL de login OAuth2:", url, oauth2URL)
+    resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+    if err != nil {
+        fmt.Println("Error llamando a OAuth2: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Authentication service unavailable"})
+        return
+    }
+    defer resp.Body.Close()
+
+    // Leer respuesta del microservicio
+    var response map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+        fmt.Println("Error decodificando respuesta OAuth2: ", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing response"})
+        return
+    }
+
+    // Filtrar la respuesta para no exponer el refresh_token
+    filteredResponse := make(map[string]interface{})
+    
+    // Copiar solo los campos que queremos exponer
+    if accessToken, exists := response["access_token"]; exists {
+        filteredResponse["access_token"] = accessToken
+    }
+
+    c.JSON(resp.StatusCode, filteredResponse)
 }

@@ -25,7 +25,9 @@ SERVICES := \
 	gestion-service \
 	documentacion-service \
 	middleware_mqtt \
-	data-sync-init
+	data-sync-init \
+	database1 \
+	oauth2
 
 # Levanta todo menos apigateway
 run-b-wa:

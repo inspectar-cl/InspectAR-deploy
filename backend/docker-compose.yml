@@ -1,15 +1,13 @@
 services:
+  # API Gateway
   apigateway:
     build: ./apigateway
     container_name: apigateway
     ports:
       - "3500:3500"
-    environment:
-      - GATEWAY_PORT=3500
-      - GESTION_URL=http://gestion-service:8092
-      - NOTIFICATION_URL=http://notification-service:8091
-      - PARSER_URL=http://iot-service:8090
-      - DOCUMENTATION_URL=http://documentacion-service:8093
+    env_file:
+      - ./apigateway/.env
+    
   # Microservicio
   iot-service:
     build:
@@ -151,6 +149,7 @@ services:
 
   oauth2:
     image: oauth2
+    container_name: oauth2
     build:
       context: ./microservicios/oauth2
       dockerfile: Dockerfile

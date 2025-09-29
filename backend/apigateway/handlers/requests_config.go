@@ -40,12 +40,22 @@ func getSpecialHandlers() []SpecialHandler {
             Pattern: "/api/obtener-activo-id/:id",
             Handler: ObtenerActivoPorID,
         },
+        { 
+            Method:  "POST",
+            Pattern: "/api/login",
+            Handler: LoginHandler,
+        },
         // Aquí puedes agregar más handlers especiales fácilmente
         // {
         //     Method:  "POST",
         //     Pattern: "/api/otra-ruta",
         //     Handler: OtroHandler,
         // }, // Importante la coma al final
+        // { 
+        //     Method:  "",
+        //     Pattern: "",
+        //     Handler: ,
+        // },
     }
 }
 

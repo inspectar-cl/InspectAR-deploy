@@ -6,9 +6,9 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"apigateway/config"
-	"apigateway/middleware"
 	"apigateway/proxy"
 	"apigateway/handlers"
+	"apigateway/api/middleware"
 )
 
 func main() {

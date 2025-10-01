@@ -3,13 +3,15 @@ package handlers
 import (
     "log"
     "github.com/gin-gonic/gin"
+    "apigateway/api/middleware"
 )
 
 // SpecialHandler representa un handler especial para Gin
 type SpecialHandler struct {
-    Method  string
-    Pattern string
-    Handler gin.HandlerFunc
+    Method      string
+    Pattern     string
+    Handler     gin.HandlerFunc
+    Protected   bool
 }
 
 // getSpecialHandlers devuelve todos los handlers especiales
@@ -19,31 +21,37 @@ func getSpecialHandlers() []SpecialHandler {
             Method:  "GET",
             Pattern: "/api/activos-completos",
             Handler: ActivosCompletosHandler,
+            Protected: true,
         },
         {
             Method:  "GET",
             Pattern: "/api/activos-y-sensores",
             Handler: ActivosYSensores,
+            Protected: true,
         },
         {
             Method: "GET",
             Pattern: "/api/obtener-activos",
             Handler: ObtenerActivos,
+            Protected: true,    
         },
         {
             Method: "GET",
             Pattern: "/api/generar-reporte/:id",
-            Handler: GenerarReporte,
+            Handler: GenerarReporte,   
+            Protected: true,
         },
         {
             Method: "GET",
             Pattern: "/api/obtener-activo-id/:id",
             Handler: ObtenerActivoPorID,
+            Protected: true,
         },
         { 
             Method:  "POST",
             Pattern: "/api/login",
             Handler: LoginHandler,
+            Protected: false,
         },
         // Aquí puedes agregar más handlers especiales fácilmente
         // {
@@ -63,16 +71,33 @@ func getSpecialHandlers() []SpecialHandler {
 func RegisterSpecialRoutes(r *gin.Engine) {
     specialHandlers := getSpecialHandlers()
     for _, handler := range specialHandlers {
+        var routeHandlers []gin.HandlerFunc
+
+        // Si la ruta está protegida esta pasa por el middleware de autenticación
+        if handler.Protected {
+            routeHandlers = append(routeHandlers, middleware.AuthMiddleware())
+        }
+        
+        // Agregar el handler principal
+        routeHandlers = append(routeHandlers, handler.Handler)
+
+        // Registrar la ruta en Gin según el método HTTP
         switch handler.Method {
         case "GET":
-            r.GET(handler.Pattern, handler.Handler)
+            r.GET(handler.Pattern, routeHandlers...)
         case "POST":
-            r.POST(handler.Pattern, handler.Handler)
+            r.POST(handler.Pattern, routeHandlers...)
         case "PUT":
-            r.PUT(handler.Pattern, handler.Handler)
+            r.PUT(handler.Pattern, routeHandlers...)
         case "DELETE":
-            r.DELETE(handler.Pattern, handler.Handler)
+            r.DELETE(handler.Pattern, routeHandlers...)
         }
-        log.Printf("Registered special handler: %s %s", handler.Method, handler.Pattern)
+
+        protectionStatus := "public"
+        if handler.Protected {
+            protectionStatus = "protected"
+        }
+
+        log.Printf("Registered special handler: %s %s (%s)", handler.Method, handler.Pattern, protectionStatus)
     }
 }

@@ -7,4 +7,4 @@ ENV POSTGRES_DB=db-oauth
 # Copia solo los archivos necesarios para oauth2
 COPY ./docker-entrypoint-initdb.d/ /docker-entrypoint-initdb.d/
 
-EXPOSE 5435
+EXPOSE 5432

@@ -1,10 +1,10 @@
 package middleware
 
 import (
+	"log"
 	"net/http"
 	"oauth2/internal/services"
 	"strings"
-	"log"
 
 	"github.com/gin-gonic/gin"
 )
@@ -38,7 +38,6 @@ func AuthMiddleware(authService *services.AuthService) gin.HandlerFunc {
 		c.Set("scope", claims["scope"])
 		c.Set("device", claims["device"])
 		c.Set("email", claims["email"])
-		c.Set("empresa", claims["empresa"])
 		c.Set("usermane", claims["usermane"])
 		c.Next()
 	}

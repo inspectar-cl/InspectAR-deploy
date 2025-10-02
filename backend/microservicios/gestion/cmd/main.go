@@ -38,6 +38,7 @@ func main() {
 	activoRepo := repository.NewActivoRepository(db)
 	edificioRepo := repository.NewEdificioRepository(db)
 	reporteRepo := repository.NewReporteRepository(db)
+	usuarioRepo := repository.NewUsuarioRepository(db)
 
 	// Servicios con las dependencias correctas
 	tecnicoService := services.NewTecnicoService(tecnicoRepo)
@@ -52,9 +53,10 @@ func main() {
 	activoHandler := handlers.NewActivoHandler(activoService)
 	reporteHandler := handlers.NewReporteHandler(reporteService)
 	solicitudHandler := handlers.NewSolicitudHandler(solicitudService)
+	usuarioHandler := handlers.NewUsuarioHandler(usuarioRepo)
 
 	// Router (ahora con todos los handlers)
-	r := router.SetupRouter(tecnicoHandler, accionHandler, activoHandler, reporteHandler, solicitudHandler)
+	r := router.SetupRouter(tecnicoHandler, accionHandler, activoHandler, reporteHandler, solicitudHandler, usuarioHandler)
 
 	// Servidor web
 	port := viper.GetString("server.port")

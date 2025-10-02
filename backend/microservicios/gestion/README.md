@@ -11,11 +11,11 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 - Testing completo exitoso en todas las rutas
 
 **📊 Estadísticas de Implementación:**
-- **36 rutas totales** configuradas 🆕
-- **35 rutas funcionando** (97.2% operativas)
+- **39 rutas totales** configuradas 🆕
+- **38 rutas funcionando** (97.4% operativas)
 - **1 ruta con issue DB** (reporte PDF legacy)
 - **0 rutas pendientes** de implementación
-- **6 nuevas rutas de observaciones** agregadas 🎉
+- **9 nuevas rutas agregadas** (6 observaciones + 3 usuarios/edificios/acceso) 🎉
 
 **🚀 Última Actualización:** 8 de Septiembre 2025 - **Sistema de Observaciones Editables** 🆕
 
@@ -123,13 +123,21 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 | `GET` | `/activos/edificio/{edificio_id}` | 🎯 **Filtrar activos por edificio** | ✅ **IMPLEMENTADO** |
 | `GET` | `/activos/tipo/{tipo}` | 🎯 **Filtrar activos por tipo** | ✅ **IMPLEMENTADO** |
 
+### 🏢 Rutas de Usuarios y Edificios - 🆕 NUEVA FUNCIONALIDAD
+
+| Método | Endpoint | Descripción | Estado |
+|--------|----------|-------------|---------|
+| `GET` | `/usuarios/edificios/{email}` | 🎯 **Obtener edificios asociados a un usuario por email** | ✅ **IMPLEMENTADO** |
+| `GET` | `/usuarios/{email}/edificio/{edificio_id}/acceso` | 🎯 **Verificar acceso de usuario a edificio** | ✅ **IMPLEMENTADO** |
+| `GET` | `/usuarios/{email}/activo/{activo_id}/acceso` | 🎯 **Verificar acceso de usuario a activo** | ✅ **IMPLEMENTADO** |
+
 ### 🎯 Resumen de Estado
 
-- **✅ Funcionando**: 35 rutas operativas (97.2% IMPLEMENTADAS) 🆕
+- **✅ Funcionando**: 38 rutas operativas (97.4% IMPLEMENTADAS) 🆕
 - **🔧 No implementado**: 0 rutas pendientes  
 - **⚠️ Issue DB**: 1 ruta con problema de schema
-- **🎉 Nuevas observaciones**: 6 rutas agregadas
-- **Total**: 36 rutas configuradas 🆕
+- **🎉 Nuevas rutas**: 9 rutas agregadas (6 observaciones + 3 usuarios/acceso)
+- **Total**: 39 rutas configuradas 🆕
 
 ### ⚡ Tests Rápidos
 
@@ -178,6 +186,17 @@ curl http://localhost:8092/reportes/1
 curl -X PUT http://localhost:8092/reportes/1/observaciones -H "Content-Type: application/json" -d '{"observaciones_analista":"Observación actualizada","autor_analista":"María González"}'
 curl -X PUT http://localhost:8092/reportes/1/revision -H "Content-Type: application/json" -d '{"estado_revision":"aprobado","revisor":"Supervisor"}'
 curl http://localhost:8092/reportes/activo/1/observaciones
+
+# 🏢 NUEVA RUTA: Obtener edificios de un usuario por email
+curl http://localhost:8092/usuarios/edificios/admin@example.com
+curl http://localhost:8092/usuarios/edificios/residente.especial@example.com
+
+# 🔒 NUEVAS RUTAS: Verificar acceso de usuario a edificios y activos
+curl http://localhost:8092/usuarios/admin@example.com/edificio/1/acceso
+curl http://localhost:8092/usuarios/residente.especial@example.com/edificio/1/acceso
+curl http://localhost:8092/usuarios/residente.especial@example.com/edificio/2/acceso
+curl http://localhost:8092/usuarios/admin@example.com/activo/1/acceso
+curl http://localhost:8092/usuarios/residente.especial@example.com/activo/1/acceso
 ```
 
 ## API Endpoints
@@ -1021,6 +1040,150 @@ curl -X GET http://localhost:8092/activos/tipo/motor
 
 ---
 
+### 🏢 Usuarios y Edificios - 🆕 NUEVA FUNCIONALIDAD
+
+#### 🎯 **NUEVA RUTA: Obtener edificios asociados a un usuario por email**
+```bash
+curl -X GET http://localhost:8092/usuarios/edificios/admin@example.com
+```
+**Respuesta:**
+```json
+{
+  "usuario": {
+    "id": 1,
+    "username": "admin",
+    "email": "admin@example.com",
+    "creado_en": "2025-10-01T12:00:00Z"
+  },
+  "edificios": [
+    {
+      "id": 1,
+      "nombre": "Edificio Central",
+      "direccion": "Av. Providencia 123, Santiago",
+      "creado_en": "2025-08-20T22:49:18Z"
+    },
+    {
+      "id": 2,
+      "nombre": "Torre Norte",
+      "direccion": "Av. Las Condes 456, Las Condes",
+      "creado_en": "2025-08-20T22:49:18Z"
+    },
+    {
+      "id": 3,
+      "nombre": "Complejo Industrial Sur",
+      "direccion": "Av. Vicuña Mackenna 789, La Florida",
+      "creado_en": "2025-08-20T22:49:18Z"
+    },
+    {
+      "id": 4,
+      "nombre": "Centro de Distribución",
+      "direccion": "Ruta 68 Km 15, Melipilla",
+      "creado_en": "2025-08-20T22:49:18Z"
+    }
+  ],
+  "total": 4
+}
+```
+
+#### Ejemplo con usuario de acceso limitado
+```bash
+curl -X GET http://localhost:8092/usuarios/edificios/residente.especial@example.com
+```
+**Respuesta:**
+```json
+{
+  "usuario": {
+    "id": 4,
+    "username": "residente_especial",
+    "email": "residente.especial@example.com",
+    "creado_en": "2025-10-01T12:00:00Z"
+  },
+  "edificios": [
+    {
+      "id": 1,
+      "nombre": "Edificio Central",
+      "direccion": "Av. Providencia 123, Santiago",
+      "creado_en": "2025-08-20T22:49:18Z"
+    }
+  ],
+  "total": 1
+}
+```
+
+#### Caso de error - Usuario no encontrado
+```bash
+curl -X GET http://localhost:8092/usuarios/edificios/noexiste@example.com
+```
+**Respuesta:**
+```json
+{
+  "error": "Usuario no encontrado",
+  "details": "sql: no rows in result set"
+}
+```
+
+#### 🔒 **NUEVA RUTA: Verificar acceso de usuario a edificio**
+```bash
+# Usuario con acceso al edificio
+curl -X GET http://localhost:8092/usuarios/admin@example.com/edificio/1/acceso
+```
+**Respuesta (200 OK):**
+```json
+{
+  "mensaje": "Usuario tiene acceso al edificio",
+  "email": "admin@example.com",
+  "edificio_id": 1,
+  "tiene_acceso": true
+}
+```
+
+```bash
+# Usuario SIN acceso al edificio
+curl -X GET http://localhost:8092/usuarios/residente.especial@example.com/edificio/2/acceso
+```
+**Respuesta (403 Forbidden):**
+```json
+{
+  "error": "Acceso denegado",
+  "mensaje": "El usuario no tiene acceso a este edificio",
+  "email": "residente.especial@example.com",
+  "edificio_id": 2,
+  "tiene_acceso": false
+}
+```
+
+#### 🔒 **NUEVA RUTA: Verificar acceso de usuario a activo**
+```bash
+# Usuario con acceso al activo (a través del edificio)
+curl -X GET http://localhost:8092/usuarios/admin@example.com/activo/1/acceso
+```
+**Respuesta (200 OK):**
+```json
+{
+  "mensaje": "Usuario tiene acceso al activo",
+  "email": "admin@example.com",
+  "activo_id": 1,
+  "tiene_acceso": true
+}
+```
+
+```bash
+# Usuario SIN acceso al activo
+curl -X GET http://localhost:8092/usuarios/residente.especial@example.com/activo/3/acceso
+```
+**Respuesta (403 Forbidden):**
+```json
+{
+  "error": "Acceso denegado",
+  "mensaje": "El usuario no tiene acceso a este activo",
+  "email": "residente.especial@example.com",
+  "activo_id": 3,
+  "tiene_acceso": false
+}
+```
+
+---
+
 ## Estructura de Base de Datos
 
 ### Tablas principales:
@@ -1031,6 +1194,8 @@ curl -X GET http://localhost:8092/activos/tipo/motor
 - **`reportes`** - Reportes automáticos generados **🆕 CON OBSERVACIONES EDITABLES**
 - **`activos_tecnicos`** - Tabla intermedia para relación muchos a muchos
 - **`solicitudes_tecnico`** - 🎉 **Solicitudes de servicio HdU16** (IMPLEMENTADA)
+- **`usuarios`** - 🆕 **Usuarios del sistema**
+- **`usuarios_edificios`** - 🆕 **Tabla intermedia usuarios ↔ edificios (muchos a muchos)**
 
 ### 🆕 Campos nuevos en tabla `reportes`:
 - **`observaciones_analista`** (TEXT) - Observaciones editables del analista
@@ -1051,6 +1216,7 @@ curl -X GET http://localhost:8092/activos/tipo/motor
 - `solicitudes_tecnico` ↔ `tecnicos` (muchos a uno)
 - `solicitudes_tecnico` ↔ `activos` (muchos a uno)
 - `solicitudes_tecnico` ↔ `edificios` (muchos a uno)
+- `usuarios` ↔ `edificios` (muchos a muchos vía `usuarios_edificios`) 🆕
 
 ## Ejemplos de Uso
 

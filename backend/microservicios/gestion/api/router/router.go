@@ -14,6 +14,7 @@ func SetupRouter(
 	activoHandler *handlers.ActivoHandler,
 	reporteHandler *handlers.ReporteHandler,
 	solicitudHandler *handlers.SolicitudHandler,
+	usuarioHandler *handlers.UsuarioHandler,
 ) *gin.Engine {
 	r := gin.Default()
 
@@ -70,6 +71,11 @@ func SetupRouter(
 	r.GET("/activos/:id", activoHandler.GetActivoByID)                          // Obtener activo por ID
 	r.GET("/activos/edificio/:edificio_id", activoHandler.GetActivosByEdificio) // Filtrar activos por edificio
 	r.GET("/activos/tipo/:tipo", activoHandler.GetActivosByTipo)                // Filtrar activos por tipo
+
+	// 🏢 Rutas de usuarios y edificios
+	r.GET("/usuarios/edificios/:email", usuarioHandler.GetEdificiosByEmail)                        // Obtener edificios de un usuario por email
+	r.GET("/usuarios/:email/edificio/:edificio_id/acceso", usuarioHandler.VerificarAccesoEdificio) // Verificar acceso a edificio
+	r.GET("/usuarios/:email/activo/:activo_id/acceso", usuarioHandler.VerificarAccesoActivo)       // Verificar acceso a activo
 
 	// Rutas de acciones de mantenimiento (HdU13 - Acciones de mantención colaborativas)
 	r.POST("/acciones", accionHandler.CrearAccion)

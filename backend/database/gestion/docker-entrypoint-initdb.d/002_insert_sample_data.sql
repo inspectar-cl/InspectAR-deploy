@@ -16,6 +16,27 @@ INSERT INTO edificios (nombre, direccion) VALUES
 ('Centro de Distribución', 'Ruta 68 Km 15, Melipilla')
 ON CONFLICT DO NOTHING;
 
+-- Insertar usuarios del sistema (basados en los usuarios de OAuth2)
+INSERT INTO usuarios (username, email) VALUES
+('admin', 'admin@example.com'),
+('tecnico', 'tecnico@example.com'),
+('usuario', 'usuario@example.com'),
+('residente_especial', 'residente.especial@example.com')
+ON CONFLICT (username) DO NOTHING;
+
+-- Crear relaciones usuarios-edificios
+-- Los primeros 3 usuarios tienen acceso a todos los edificios
+INSERT INTO usuarios_edificios (usuario_id, edificio_id) VALUES
+-- admin tiene acceso a todos los edificios
+(1, 1), (1, 2), (1, 3), (1, 4),
+-- tecnico tiene acceso a todos los edificios
+(2, 1), (2, 2), (2, 3), (2, 4),
+-- usuario tiene acceso a todos los edificios
+(3, 1), (3, 2), (3, 3), (3, 4),
+-- residente_especial solo tiene acceso al edificio 1
+(4, 1)
+ON CONFLICT DO NOTHING;
+
 -- Insertar técnicos especializados con empresas
 INSERT INTO tecnicos (nombre, apellido, email, telefono, especialidad, empresa_id, autorizado, activo) VALUES
 ('Juan', 'Pérez', 'juan.perez@mantencion.cl', '+56912345678', 'Sistemas Hidráulicos', 1, true, true),

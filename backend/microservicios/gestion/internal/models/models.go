@@ -61,6 +61,21 @@ type Edificio struct {
 	CreadoEn  time.Time `json:"creado_en" db:"creado_en"`
 }
 
+// Usuario del sistema
+type Usuario struct {
+	ID       int       `json:"id" db:"id"`
+	Username string    `json:"username" db:"username"`
+	Email    string    `json:"email" db:"email"`
+	CreadoEn time.Time `json:"creado_en" db:"creado_en"`
+}
+
+// Relación muchos a muchos entre usuarios y edificios
+type UsuarioEdificio struct {
+	UsuarioID  int       `json:"usuario_id" db:"usuario_id"`
+	EdificioID int       `json:"edificio_id" db:"edificio_id"`
+	AsignadoEn time.Time `json:"asignado_en" db:"asignado_en"`
+}
+
 // Activo gestionado
 type Activo struct {
 	ID         int       `json:"id" db:"id"`

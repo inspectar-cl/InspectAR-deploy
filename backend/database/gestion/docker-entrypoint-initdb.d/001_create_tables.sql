@@ -157,6 +157,22 @@ CREATE TABLE IF NOT EXISTS activos_tecnicos (
     PRIMARY KEY (activo_id, tecnico_id)
 );
 
+-- Tabla de usuarios del sistema
+CREATE TABLE IF NOT EXISTS usuarios (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla intermedia para la relación muchos a muchos entre usuarios y edificios
+CREATE TABLE IF NOT EXISTS usuarios_edificios (
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    edificio_id INTEGER NOT NULL REFERENCES edificios(id) ON DELETE CASCADE,
+    asignado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (usuario_id, edificio_id)
+);
+
 -- Índices para mejorar rendimiento
 CREATE INDEX IF NOT EXISTS idx_tecnicos_especialidad ON tecnicos(especialidad);
 CREATE INDEX IF NOT EXISTS idx_tecnicos_autorizado ON tecnicos(autorizado);
@@ -190,6 +206,10 @@ CREATE INDEX IF NOT EXISTS idx_activos_tecnicos_autorizados_tecnico ON activos_t
 CREATE INDEX IF NOT EXISTS idx_activos_tecnicos_autorizados_activo ON activos_tecnicos_autorizados(activo_id);
 CREATE INDEX IF NOT EXISTS idx_activos_tecnicos_autorizados_edificio ON activos_tecnicos_autorizados(edificio_id);
 
+-- Índices para usuarios y relación con edificios
+CREATE INDEX IF NOT EXISTS idx_usuarios_edificios_usuario ON usuarios_edificios(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_usuarios_edificios_edificio ON usuarios_edificios(edificio_id);
+
 COMMENT ON TABLE tecnicos IS 'Técnicos especializados para mantenimiento (HdU16)';
 COMMENT ON TABLE edificios IS 'Edificios donde se ubican los activos';
 COMMENT ON TABLE activos IS 'Activos industriales gestionados';
@@ -199,5 +219,7 @@ COMMENT ON TABLE empresas IS 'Empresas de mantención que emplean técnicos';
 COMMENT ON TABLE solicitudes_tecnico IS 'Solicitudes de trabajo enviadas a técnicos especializados (HdU16)';
 COMMENT ON TABLE archivos_solicitud IS 'Archivos adjuntos a solicitudes técnicas';
 COMMENT ON TABLE activos_tecnicos_autorizados IS 'Técnicos autorizados para trabajar en activos específicos';
+COMMENT ON TABLE usuarios IS 'Usuarios del sistema con acceso a edificios';
+COMMENT ON TABLE usuarios_edificios IS 'Relación muchos a muchos entre usuarios y edificios';
 
 -- Comentarios sobre las tablas creadas

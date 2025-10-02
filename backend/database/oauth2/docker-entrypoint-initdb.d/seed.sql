@@ -1,9 +1,12 @@
 -- Insertar users de prueba con IDs específicos
 INSERT INTO users (username, email, password, scope) 
-VALUES ('admin', 'admin@example.com', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'read:users write:users read:reports');
+VALUES ('admin', 'admin@example.com', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'user-type:Analista');
 
 INSERT INTO users (username, email, password, scope) 
-VALUES ('usuario', 'usuario@example.com', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'read:users');
+VALUES ('tecnico', 'tecnico@example.com', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'user-type:Tecnico');
+
+INSERT INTO users (username, email, password, scope) 
+VALUES ('usuario', 'usuario@example.com', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'user-type:Residente');
 
 -- Insertar configuración
 

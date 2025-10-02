@@ -30,7 +30,7 @@ func SetupRouter(loginHandler *handler.LoginHandler) *gin.Engine {
 	protected := r.Group("/api")
 	protected.Use(middleware.AuthMiddleware(loginHandler.AuthService))
 	protected.GET("/profile", func(c *gin.Context) {
-		userID, _ := c.Get("urername")
+		userID, _ := c.Get("username")
 		exp, _ := c.Get("exp")
 		c.JSON(200, gin.H{"message": "Bienvenido", "user_id": userID, "exp": exp})
 	})

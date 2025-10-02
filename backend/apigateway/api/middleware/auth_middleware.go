@@ -54,12 +54,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-        // if !validateTokenWithOAuth2(token) {
-        //     c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
-        //     c.Abort()
-        //     return
-        // }
-
+		// c.Set("token", token)
 		c.Set("exp", claims["exp"])
 		c.Set("scope", claims["scope"])
 		c.Set("device", claims["device"])

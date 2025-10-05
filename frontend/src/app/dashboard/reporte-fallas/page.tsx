@@ -16,14 +16,13 @@ import CardActions from '@mui/material/CardActions';
 import CircularProgress from '@mui/material/CircularProgress';
 import { v4 as uuid } from 'uuid';
 
-
 function isoNow(): string {
   return new Date().toISOString();
 }
 
 export default function ForoPage(): React.JSX.Element {
   const { user, isLoading, error } = useUser();
-  const edificioId = (user as any)?.edificio as string | undefined;
+  const edificioId = user?.edificio;
 
   const [posts, setPosts] = React.useState<ForumPost[]>([]);
   const [newPostContent, setNewPostContent] = React.useState('');
@@ -37,7 +36,7 @@ export default function ForoPage(): React.JSX.Element {
     setPosts(initial);
   }, [edificioId]);
 
-  const handlePublish = () => {
+  const handlePublish = (): void => {
     const content = newPostContent.trim();
     if (!content) return;
     // Componer contenido estilo "Nombre dijo: ..." si quieren forzarlo
@@ -53,7 +52,7 @@ export default function ForoPage(): React.JSX.Element {
     setNewPostContent('');
   };
 
-  const handleReply = (postId: string, replyText: string) => {
+  const handleReply = (postId: string, replyText: string): void => {
     const content = replyText.trim();
     if (!content) return;
     const reply: ForumReply = {
@@ -99,7 +98,7 @@ export default function ForoPage(): React.JSX.Element {
             minRows={3}
             placeholder="¿Alguna novedad en algún activo de tu edificio?"
             value={newPostContent}
-            onChange={(e) => setNewPostContent(e.target.value)}
+            onChange={(e) => {setNewPostContent(e.target.value)} }
           />
           <Box sx={{ textAlign: 'right' }}>
             <Button variant="contained" onClick={handlePublish} disabled={!newPostContent.trim()}>
@@ -129,7 +128,7 @@ export default function ForoPage(): React.JSX.Element {
   );
 }
 
-function PostCard({ post, onReply }: { post: ForumPost; onReply: (postId: string, replyText: string) => void; }) {
+function PostCard({ post, onReply }: { post: ForumPost; onReply: (postId: string, replyText: string) => void; }): React.JSX.Element {
   const [replyText, setReplyText] = React.useState('');
 
   return (
@@ -146,7 +145,7 @@ function PostCard({ post, onReply }: { post: ForumPost; onReply: (postId: string
       </CardContent>
 
       {/* Respuestas existentes del mock de momento*/}
-      {!!post.replies.length && (
+      {Boolean(post.replies.length) && (
         <CardContent sx={{ pt: 0 }}>
           <Stack spacing={1.25} sx={{ pl: { xs: 0, sm: 1.5 } }}>
             {post.replies.map((r) => (
@@ -163,7 +162,7 @@ function PostCard({ post, onReply }: { post: ForumPost; onReply: (postId: string
             fullWidth
             placeholder='Reply to...'
             value={replyText}
-            onChange={(e) => setReplyText(e.target.value)}
+            onChange={(e) => {setReplyText(e.target.value)} }
           />
           <Button
             variant="outlined"
@@ -178,7 +177,7 @@ function PostCard({ post, onReply }: { post: ForumPost; onReply: (postId: string
   );
 }
 
-function Reply({ content, createdAt }: { content: string; createdAt: string }) {
+function Reply({ content, createdAt }: { content: string; createdAt: string }): React.JSX.Element {
   return (
     <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
       <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>

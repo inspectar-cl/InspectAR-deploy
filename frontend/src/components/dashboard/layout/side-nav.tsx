@@ -17,7 +17,7 @@ import { Logo } from '@/components/core/logo';
 import { navItems } from './config';
 import { navIcons } from './nav-icons';
 
-import { rolePermissions } from '@/rolePermissions';
+import { rolePermissions } from '@/role-permissions';
 import { useAuthUser } from '@/contexts/user-context';
 
 export function SideNav(): React.JSX.Element {

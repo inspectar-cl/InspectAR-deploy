@@ -12,11 +12,6 @@ import Box from '@mui/material/Box';
 
 import { activosMock } from '@/mocks/ActivosEdificiosMocks'; // <-- si lo tienes en archivo; si no, pega ahí tu array
 
-
-type Props = {
-  edificioId: string | undefined;
-};
-
 const estadoColor: Record<string, 'success' | 'warning' | 'error' | 'default'> = {
   'OK': 'success',
   'Medio': 'warning',
@@ -35,12 +30,12 @@ const severity: Record<Estado, number> = {
   'NN': 0
 } as const;
 
-export function ActivosCriticosGrid({ edificioId }: Props) {
+export function ActivosCriticosGrid( edificioId : string ): React.JSX.Element{
   // Mostrar TODOS los activos del edificio (y ordenar por severidad opcional)
     const activos = React.useMemo(() => {
-    return activosMock
-        .filter(a => !edificioId || a.id_edificio === edificioId)
-        .sort((a, b) => severity[b.estado as Estado] - severity[a.estado as Estado]);
+        return activosMock
+            .filter(a => !edificioId || a.id_edificio === edificioId)
+            .sort((a, b) => severity[b.estado as Estado] - severity[a.estado as Estado]);
     }, [edificioId]);
 
     if (!activos.length) {

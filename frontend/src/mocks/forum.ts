@@ -1,12 +1,12 @@
 // src/mocks/forum.ts
-export type ForumReply = {
+export interface ForumReply {
   id: string;          // id de la respuesta
   postId: string;      // id del tema al que responde
   content: string;     // puedes incluir "Autor dijo: ..." aquí mismo
   createdAt: string;   // ISO date
 };
 
-export type ForumPost = {
+export interface ForumPost {
   id: string;               // id del tema
   buildingId: string;       // "EA" | "EB" | ...
   content: string;          // "Juanito dijo: ...", etc.

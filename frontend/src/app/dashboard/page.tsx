@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -43,7 +42,7 @@ export default function Page(): React.JSX.Element {
   useEffect(() => {
     let alive = true;
 
-    const fetchData = async () => {
+    const fetchData = async (): Promise<void> => {
       try {
         const response = await gs.get('/lectura/Caldera1/datos') as { sensores?: SensorData[] };
         if (!alive) return;
@@ -62,17 +61,19 @@ export default function Page(): React.JSX.Element {
 
   // ------ Vista “Residente”: tarjetas 2x2 de activos críticos de su edificio ------
   const isResidente = user?.role === 'residente';
-  const edificioId = (user as any)?.edificio as string | undefined;
+  const edificioId = (user)?.edificio;
 
   type Estado = 'OK' | 'Medio' | 'Crítico' | 'NN';
-  const severity: Record<Estado, number> = {
-    'Crítico': 3,
-    'Medio': 2,
-    'OK': 1,
-    'NN': 0
-  } as const;
 
   const activosCriticosDelEdificio = React.useMemo(() => {
+
+    const severity: Record<Estado, number> = {
+      'Crítico': 3,
+      'Medio': 2,
+      'OK': 1,
+      'NN': 0
+    } as const;
+
     if (!edificioId) return [];
     return activosMock
         .filter(a => !edificioId || a.id_edificio === edificioId)

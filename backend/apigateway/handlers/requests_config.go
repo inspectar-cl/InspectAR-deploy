@@ -8,11 +8,12 @@ import (
 
 // SpecialHandler representa un handler especial para Gin
 type SpecialHandler struct {
-    Method          string
-    Pattern         string
-    Handler         gin.HandlerFunc
-    Protected       bool
-    RequiredScopes  []string // Pueden ser 3 hasta el momento, user-type:Analista, user-type:Tecnico, user-type:Residente
+    Method              string
+    Pattern             string
+    Handler             gin.HandlerFunc
+    Protected           bool
+    RequiredScopes      []string // Pueden ser 3 hasta el momento, user-type:Analista, user-type:Tecnico, user-type:Residente
+    // RequiredValidation  bool   // Si es true, se valida que el usuario tenga acceso al edificio/activo especificado
 }
 
 // getSpecialHandlers devuelve todos los handlers especiales

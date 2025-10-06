@@ -8,7 +8,7 @@ import (
     "os"
     "sync"
     "time"
-
+    "log"
 	"github.com/gin-gonic/gin"
 )
 
@@ -516,7 +516,7 @@ func LoginHandler(c *gin.Context) {
     }
     defer resp.Body.Close()
 
-    // Leer respuesta del microservicio
+    // Leer respuesta del microservicio OAuth2
     var response map[string]interface{}
     if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
         fmt.Println("Error decodificando respuesta OAuth2: ", err)
@@ -524,13 +524,76 @@ func LoginHandler(c *gin.Context) {
         return
     }
 
-    // Filtrar la respuesta para no exponer el refresh_token
-    filteredResponse := make(map[string]interface{})
-    
-    // Copiar solo los campos que queremos exponer
-    if accessToken, exists := response["access_token"]; exists {
-        filteredResponse["access_token"] = accessToken
+    // Si el login es exitoso, obtener los edificios del usuario
+    if resp.StatusCode == http.StatusOK {
+        email, ok := loginData["email"].(string)
+        if !ok {
+            if user, exists := response["user"].(map[string]interface{}); exists {
+                if userEmail, hasEmail := user["email"].(string); hasEmail {
+                    email = userEmail
+                }
+            }
+        }
+
+        edificios := obtenerEdificiosUsuario(email)
+
+        // Filtrar la respuesta
+        filteredResponse := make(map[string]interface{})
+        
+        // Copiar solo los campos que queremos exponer
+        if accessToken, exists := response["access_token"]; exists {
+            filteredResponse["access_token"] = accessToken
+        }
+
+        if refreshToken, exists := response["refresh_token"]; exists {
+            filteredResponse["refresh_token"] = refreshToken
+        }
+
+        if edificios != nil {
+            filteredResponse["edificios"] = edificios
+        }
+
+        c.JSON(resp.StatusCode, filteredResponse)
+        return
     }
 
-    c.JSON(resp.StatusCode, filteredResponse)
+    // En caso de error en login, devolver el mensaje de error
+    c.JSON(resp.StatusCode, response)
+    return
+}
+
+func obtenerEdificiosUsuario(email string) []interface{} {
+    if email == "" {
+        log.Println("Email vacío, no se pueden obtener edificios")
+        return nil
+    }
+
+    // Construir URL para obtener edificios
+    url := fmt.Sprintf("%s/usuarios/edificios/%s", gestionURL, email)
+    
+    resp, err := http.Get(url)
+    if err != nil {
+        log.Printf("Error obteniendo edificios del usuario: %v", err)
+        return nil
+    }
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        log.Printf("Error en respuesta de edificios: status %d", resp.StatusCode)
+        return nil
+    }
+
+    // Leer respuesta
+    var edificiosResponse map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&edificiosResponse); err != nil {
+        log.Printf("Error decodificando edificios: %v", err)
+        return nil
+    }
+
+    // Extraer solo el array de edificios
+    if edificios, exists := edificiosResponse["edificios"].([]interface{}); exists {
+        return edificios
+    }
+
+    return nil
 }

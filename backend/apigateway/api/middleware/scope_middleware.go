@@ -1,11 +1,18 @@
 package middleware
 
 import (
+    "os"
 	"log"
     "net/http"
     "strings"
     "github.com/gin-gonic/gin"
 )
+
+var GestionURL string
+
+func init() {
+	GestionURL = os.Getenv("GESTION_URL")
+}
 
 // ScopeMiddleware verifica que el usuario tenga al menos uno de los scopes requeridos
 func ScopeMiddleware(requiredScopes []string) gin.HandlerFunc {

@@ -61,6 +61,20 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: false,
             RequiredScopes: nil, // No requiere scopes ya que es público
         },
+        {
+            Method:  "POST",
+            Pattern: "/api/logout",
+            Handler: LogoutHandler,
+            Protected: false,
+            RequiredScopes: nil,
+        },
+        { 
+            Method:  "POST",
+            Pattern: "/api/refresh",
+            Handler: RefreshHandler,
+            Protected: false,
+            RequiredScopes: nil,
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",

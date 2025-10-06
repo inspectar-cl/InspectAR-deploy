@@ -5,10 +5,12 @@ import (
     "encoding/json"
     "fmt"
     "net/http"
+    "strings"
     "os"
     "sync"
     "time"
     "log"
+    "encoding/base64"
 	"github.com/gin-gonic/gin"
 )
 
@@ -29,6 +31,77 @@ func init() {
         Timeout: 15 * time.Second,
     }
     // maxAgeCookie := 3600 // 1 hora, 60*60 segundos
+}
+
+func obtenerEdificiosUsuario(email string) []interface{} {
+    if email == "" {
+        log.Println("Email vacío, no se pueden obtener edificios")
+        return nil
+    }
+
+    // Construir URL para obtener edificios
+    url := fmt.Sprintf("%s/usuarios/edificios/%s", gestionURL, email)
+    
+    resp, err := http.Get(url)
+    if err != nil {
+        log.Printf("Error obteniendo edificios del usuario: %v", err)
+        return nil
+    }
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        log.Printf("Error en respuesta de edificios: status %d", resp.StatusCode)
+        return nil
+    }
+
+    // Leer respuesta
+    var edificiosResponse map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&edificiosResponse); err != nil {
+        log.Printf("Error decodificando edificios: %v", err)
+        return nil
+    }
+
+    // Extraer solo el array de edificios
+    if edificios, exists := edificiosResponse["edificios"].([]interface{}); exists {
+        return edificios
+    }
+
+    return nil
+}
+
+func extractEmailFromToken(tokenString string) (string, error) {
+    // Un JWT tiene 3 partes separadas por puntos: header.payload.signature
+    parts := strings.Split(tokenString, ".")
+    if len(parts) != 3 {
+        return "", fmt.Errorf("token inválido")
+    }
+
+    // Decodificar el payload (segunda parte)
+    payload := parts[1]
+    
+    // Agregar padding si es necesario
+    if l := len(payload) % 4; l > 0 {
+        payload += strings.Repeat("=", 4-l)
+    }
+
+    // Decodificar de base64
+    decoded, err := base64.URLEncoding.DecodeString(payload)
+    if err != nil {
+        return "", fmt.Errorf("error decodificando payload: %v", err)
+    }
+
+    // Parsear JSON
+    var claims map[string]interface{}
+    if err := json.Unmarshal(decoded, &claims); err != nil {
+        return "", fmt.Errorf("error parseando claims: %v", err)
+    }
+
+    // Extraer email
+    if email, ok := claims["email"].(string); ok {
+        return email, nil
+    }
+
+    return "", fmt.Errorf("email no encontrado en token")
 }
 
 // ActivosCompletosHandler maneja la petición consolidada de activos con sensores
@@ -562,38 +635,148 @@ func LoginHandler(c *gin.Context) {
     return
 }
 
-func obtenerEdificiosUsuario(email string) []interface{} {
-    if email == "" {
-        log.Println("Email vacío, no se pueden obtener edificios")
-        return nil
+
+func LogoutHandler(c *gin.Context) {
+    // Extraer token del header Authorization
+    authHeader := c.GetHeader("Authorization")
+    if authHeader == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+        return
     }
 
-    // Construir URL para obtener edificios
-    url := fmt.Sprintf("%s/usuarios/edificios/%s", gestionURL, email)
+    // Verificar formato del token Bearer
+    tokenParts := strings.Split(authHeader, " ")
+    if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization format"})
+        return
+    }
+
+    accessToken := tokenParts[1]
+
+    fmt.Printf("Logout token: %s\n", accessToken)
+
+     // Preparar la request al microservicio OAuth2
+    url := fmt.Sprintf("%s/api/logout", oauth2URL)
     
-    resp, err := http.Get(url)
+    // Crear request vacía o con body mínimo
+    req, err := http.NewRequest("POST", url, nil)
     if err != nil {
-        log.Printf("Error obteniendo edificios del usuario: %v", err)
-        return nil
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating request"})
+        return
+    }
+
+    // IMPORTANTE: Enviar el token en el HEADER, no en el body
+    req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
+    req.Header.Set("Content-Type", "application/json")
+
+    // Ejecutar la petición
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        fmt.Println("Error llamando a OAuth2 para logout: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Authentication service unavailable"})
+        return
     }
     defer resp.Body.Close()
 
-    if resp.StatusCode != http.StatusOK {
-        log.Printf("Error en respuesta de edificios: status %d", resp.StatusCode)
-        return nil
+    fmt.Println("DEBUG: Logout request sent to OAuth2, status:", resp.StatusCode)
+
+    // Leer respuesta del microservicio OAuth2
+    var response map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+        fmt.Println("Error decodificando respuesta OAuth2 de logout: ", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing response"})
+        return
     }
 
-    // Leer respuesta
-    var edificiosResponse map[string]interface{}
-    if err := json.NewDecoder(resp.Body).Decode(&edificiosResponse); err != nil {
-        log.Printf("Error decodificando edificios: %v", err)
-        return nil
+    // Devolver la respuesta del microservicio OAuth2 directamente
+    c.JSON(resp.StatusCode, response)
+}
+
+func RefreshHandler(c *gin.Context) {
+    // Leer el body con el refresh_token
+    var refreshData map[string]interface{}
+    if err := c.ShouldBindJSON(&refreshData); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+        return
     }
 
-    // Extraer solo el array de edificios
-    if edificios, exists := edificiosResponse["edificios"].([]interface{}); exists {
-        return edificios
+    // Verificar que venga el refresh_token
+    if _, exists := refreshData["refresh_token"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "refresh_token is required"})
+        return
     }
 
-    return nil
+    fmt.Printf("Refresh data received: %+v\n", refreshData)
+
+    // Convertir a JSON para enviar al microservicio OAuth2
+    jsonData, err := json.Marshal(refreshData)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing request"})
+        return
+    }
+
+    // Hacer la petición POST al microservicio OAuth2
+    url := fmt.Sprintf("%s/refresh", oauth2URL)
+    resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+    if err != nil {
+        fmt.Println("Error llamando a OAuth2 para refresh: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Authentication service unavailable"})
+        return
+    }
+    defer resp.Body.Close()
+
+    fmt.Println("DEBUG: Refresh request sent to OAuth2, status:", resp.StatusCode)
+
+    // Leer respuesta del microservicio OAuth2, que sería el nuevo access_token y refresh_token
+    var response map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+        fmt.Println("Error decodificando respuesta OAuth2 de refresh: ", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing response"})
+        return
+    }
+
+    // Obtener el email del usuario a partir del access_token recibido
+    
+
+    // Si el refresh es exitoso, obtener los edificios del usuario
+    if resp.StatusCode == http.StatusOK {
+        var email string
+        if accessToken, exists := response["access_token"].(string); exists {
+            email, err = extractEmailFromToken(accessToken)
+            if err != nil {
+                fmt.Println("Error extrayendo email del token: ", err)
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing token"})
+                return
+            }
+        }
+
+        fmt.Printf("Email extraído del token: %s\n", email)
+
+        // Obtener edificios del usuario
+        edificios := obtenerEdificiosUsuario(email)
+
+        // Filtrar la respuesta
+        filteredResponse := make(map[string]interface{})
+        
+        // Copiar solo los campos que queremos exponer
+        if accessToken, exists := response["access_token"]; exists {
+            filteredResponse["access_token"] = accessToken
+        }
+
+        if refreshToken, exists := response["refresh_token"]; exists {
+            filteredResponse["refresh_token"] = refreshToken
+        }
+
+        if edificios != nil {
+            filteredResponse["edificios"] = edificios
+        }
+
+        // Devolver la respuesta filtrada con edificios
+        c.JSON(resp.StatusCode, filteredResponse)
+        return
+    }
+
+    // Si hubo error en el refresh, retornar el error original
+    c.JSON(resp.StatusCode, response)
 }

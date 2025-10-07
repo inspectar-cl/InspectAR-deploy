@@ -133,11 +133,11 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 
 ### 🎯 Resumen de Estado
 
-- **✅ Funcionando**: 38 rutas operativas (97.4% IMPLEMENTADAS) 🆕
+- **✅ Funcionando**: 41 rutas operativas (97.6% IMPLEMENTADAS) 🆕
 - **🔧 No implementado**: 0 rutas pendientes  
 - **⚠️ Issue DB**: 1 ruta con problema de schema
-- **🎉 Nuevas rutas**: 9 rutas agregadas (6 observaciones + 3 usuarios/acceso)
-- **Total**: 39 rutas configuradas 🆕
+- **🎉 Nuevas rutas**: 12 rutas agregadas (6 observaciones + 3 usuarios/acceso + 3 reportes de fallas) 🆕
+- **Total**: 42 rutas configuradas 🆕
 
 ### ⚡ Tests Rápidos
 
@@ -1331,3 +1331,329 @@ El servicio estará disponible en el puerto `8092`.
 - `media` - Prioridad media
 - `alta` - Prioridad alta
 - `critica` - Prioridad crítica
+
+---
+
+## 🚨 HU22 - Sistema de Reportes de Fallas de Usuarios
+
+### Descripción (Octubre 2025)
+
+Sistema completo para que los usuarios residentes **reporten fallas en sus edificios** y **comenten sobre las mismas**, facilitando la comunicación entre residentes y administración.
+
+### Características HU22:
+- ✅ **3 rutas REST** implementadas
+- ✅ Reportar fallas por tipo (agua, ascensor, electricidad, caldera)
+- ✅ Sistema de comentarios colaborativos sobre reportes
+- ✅ Consulta con paginación inteligente (10 items por página)
+- ✅ Retorna `username` en lugar de `id_usuario` para mejor UX
+- ✅ Incluye todos los comentarios asociados a cada falla
+- ✅ Ordenamiento cronológico (más recientes primero)
+
+### Rutas Implementadas (HU22):
+
+#### 1. Crear Reporte de Falla
+```bash
+POST /tipos-falla
+Content-Type: application/json
+
+{
+  "email": "usuario@example.com",
+  "tipo": "falla agua",
+  "descripcion": "Fuga de agua en el baño del tercer piso",
+  "id_edificio": 1
+}
+
+# Respuesta 201 Created
+{
+  "mensaje": "Tipo de falla creado exitosamente",
+  "data": {
+    "id_falla": 1,
+    "tipo": "falla agua",
+    "descripcion": "Fuga de agua en el baño del tercer piso",
+    "fecha_publicacion": "2025-10-07T16:20:57.038705Z",
+    "id_usuario": 1,
+    "id_edificio": 1,
+    "estado": "reportado"
+  }
+}
+```
+
+**Tipos de falla válidos:**
+- `falla agua` - Problemas con tuberías, fugas, etc.
+- `falla ascensor` - Problemas con ascensores
+- `falla electricidad` - Cortes de luz, problemas eléctricos
+- `falla caldera` - Problemas con calderas
+
+**Estados posibles:**
+- `reportado` - Falla recién reportada (default)
+- `en_revision` - Falla en proceso de revisión
+- `resuelto` - Falla solucionada
+- `rechazado` - Reporte rechazado
+
+#### 2. Crear Comentario sobre Falla
+```bash
+POST /comentarios
+Content-Type: application/json
+
+{
+  "email": "tecnico@example.com",
+  "id_falla": 1,
+  "comentario": "Ya envié al plomero para revisar la fuga"
+}
+
+# Respuesta 201 Created
+{
+  "mensaje": "Comentario creado exitosamente",
+  "data": {
+    "id_comentario": 1,
+    "id_falla": 1,
+    "id_usuario": 2,
+    "comentario": "Ya envié al plomero para revisar la fuga",
+    "fecha_comentario": "2025-10-07T16:21:36.512417Z"
+  }
+}
+```
+
+#### 3. Obtener Fallas por Edificio
+Esta ruta tiene **dos comportamientos** dependiendo de si se proporciona el parámetro `pagina`:
+
+**A) Sin paginación (sin parámetro `pagina`)** - Retorna TODOS los resultados:
+```bash
+GET /tipos-falla/edificio/:edificio_id
+
+# Ejemplo
+curl "http://localhost:8092/tipos-falla/edificio/1"
+
+# Respuesta 200 OK
+{
+  "edificio_id": 1,
+  "total_items": 103,
+  "data": [
+    {
+      "id_falla": 103,
+      "tipo": "falla agua",
+      "descripcion": "Descripción de prueba para falla #25 del tipo falla agua",
+      "fecha_publicacion": "2025-10-07T17:05:22.845197Z",
+      "username": "admin",
+      "id_edificio": 1,
+      "estado": "reportado",
+      "comentarios": [
+        {
+          "id_comentario": 353,
+          "username": "usuario",
+          "comentario": "Comentario #1 para la falla 103",
+          "fecha_comentario": "2025-10-07T17:05:27.774693Z"
+        },
+        {
+          "id_comentario": 354,
+          "username": "residente_especial",
+          "comentario": "Comentario #2 para la falla 103",
+          "fecha_comentario": "2025-10-07T17:05:27.806493Z"
+        }
+      ]
+    },
+    {
+      "id_falla": 102,
+      "tipo": "falla caldera",
+      "descripcion": "Descripción de prueba para falla #24",
+      "fecha_publicacion": "2025-10-07T17:05:22.69523Z",
+      "username": "residente_especial",
+      "id_edificio": 1,
+      "estado": "reportado",
+      "comentarios": [
+        {
+          "id_comentario": 350,
+          "username": "admin",
+          "comentario": "Comentario #1 para la falla 102",
+          "fecha_comentario": "2025-10-07T17:05:27.606843Z"
+        }
+      ]
+    }
+    // ... 101 items más (total 103 en este ejemplo)
+  ]
+}
+```
+
+**B) Con paginación (con parámetro `?pagina=N`)** - Retorna 10 items por página:
+```bash
+GET /tipos-falla/edificio/:edificio_id?pagina=1
+
+# Ejemplo
+curl "http://localhost:8092/tipos-falla/edificio/1?pagina=1"
+
+# Respuesta 200 OK
+{
+  "data": [
+    {
+      "id_falla": 103,
+      "tipo": "falla agua",
+      "descripcion": "Descripción de prueba para falla #25 del tipo falla agua",
+      "fecha_publicacion": "2025-10-07T17:05:22.845197Z",
+      "username": "admin",
+      "id_edificio": 1,
+      "estado": "reportado",
+      "comentarios": [
+        {
+          "id_comentario": 353,
+          "username": "usuario",
+          "comentario": "Comentario #1 para la falla 103",
+          "fecha_comentario": "2025-10-07T17:05:27.774693Z"
+        },
+        {
+          "id_comentario": 354,
+          "username": "residente_especial",
+          "comentario": "Comentario #2 para la falla 103",
+          "fecha_comentario": "2025-10-07T17:05:27.806493Z"
+        }
+      ]
+    },
+    {
+      "id_falla": 102,
+      "tipo": "falla caldera",
+      "descripcion": "Descripción de prueba para falla #24",
+      "fecha_publicacion": "2025-10-07T17:05:22.69523Z",
+      "username": "residente_especial",
+      "id_edificio": 1,
+      "estado": "reportado",
+      "comentarios": [
+        {
+          "id_comentario": 350,
+          "username": "admin",
+          "comentario": "Comentario #1 para la falla 102",
+          "fecha_comentario": "2025-10-07T17:05:27.606843Z"
+        }
+      ]
+    }
+    // ... 8 items más (total 10)
+  ],
+  "edificio_id": 1,
+  "items_per_page": 10,
+  "pagina": 1,
+  "total_items": 10
+}
+```
+
+**Características:**
+- **Ordenamiento**: Siempre DESC por `fecha_publicacion` (más recientes primero)
+- **Comentarios**: Incluye TODOS los comentarios de cada falla, ordenados ASC por `fecha_comentario`
+- **Username**: Retorna `username` en lugar de `id_usuario` para mejor UX
+- **Paginación**: 10 items por página cuando se usa el parámetro `?pagina=N`
+- **Sin paginación**: Retorna todos los registros cuando NO se proporciona el parámetro `pagina`
+
+**Nota**: Usar sin paginación con precaución en edificios con muchas fallas reportadas.
+
+### Ejemplos Completos de Uso (HU22)
+
+#### Ejemplo completo: Reportar y comentar una falla,
+    {
+      "id_falla": 2,
+      "tipo": "falla ascensor",
+      "descripcion": "Ascensor atascado en el piso 5",
+      "fecha_publicacion": "2025-10-07T16:21:10.980351Z",
+      "username": "tecnico",
+      "id_edificio": 1,
+      "estado": "reportado",
+      "comentarios": [
+        {
+          "id_comentario": 3,
+          "username": "admin",
+          "comentario": "Necesitamos ayuda urgente",
+          "fecha_comentario": "2025-10-07T16:22:46.442026Z"
+        }
+      ]
+    },
+    {
+      "id_falla": 1,
+      "tipo": "falla agua",
+      "descripcion": "Fuga de agua en el baño del tercer piso",
+      "fecha_publicacion": "2025-10-07T16:20:57.038705Z",
+      "username": "admin",
+      "id_edificio": 1,
+      "estado": "reportado",
+      "comentarios": [
+        {
+          "id_comentario": 1,
+          "username": "tecnico",
+          "comentario": "Ya envié al plomero",
+          "fecha_comentario": "2025-10-07T16:21:36.512417Z"
+        },
+        {
+          "id_comentario": 2,
+          "username": "admin",
+          "comentario": "Gracias",
+          "fecha_comentario": "2025-10-07T16:22:07.385317Z"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Características de la paginación:**
+- Retorna los 10 últimos reportes de falla del edificio especificado
+- Ordenados por fecha de publicación (más recientes primero)
+- Incluye TODOS los comentarios de cada falla
+- Los comentarios están ordenados cronológicamente (ASC)
+- Retorna `username` en lugar de `id_usuario` para mejor experiencia
+
+### Ejemplos Completos de Uso (HU22)
+
+```bash
+# 1. Crear un reporte de falla de agua
+curl -X POST http://localhost:8092/tipos-falla \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "residente.especial@example.com",
+    "tipo": "falla agua",
+    "descripcion": "Fuga grande en la cocina",
+    "id_edificio": 1
+  }'
+
+# 2. Agregar comentario al reporte
+curl -X POST http://localhost:8092/comentarios \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "tecnico@example.com",
+    "id_falla": 1,
+    "comentario": "El técnico llegará en 30 minutos"
+  }'
+
+# 3. Obtener todas las fallas del edificio (sin paginación)
+curl "http://localhost:8092/tipos-falla/edificio/1"
+
+# 4. Obtener página 1 de fallas del edificio 1 (con paginación)
+curl "http://localhost:8092/tipos-falla/edificio/1?pagina=1"
+
+# 5. Obtener página 2 de fallas del edificio 2
+curl "http://localhost:8092/tipos-falla/edificio/2?pagina=2"
+```
+
+### Estructura de Base de Datos (HU22):
+
+**Tabla `tipos_falla`:**
+- `id_falla` (PK) - Serial
+- `tipo` - VARCHAR(50) con CHECK constraint
+- `descripcion` - TEXT
+- `fecha_publicacion` - TIMESTAMP (default CURRENT_TIMESTAMP)
+- `id_usuario` (FK) - INTEGER → usuarios(id)
+- `id_edificio` (FK) - INTEGER → edificios(id)
+- `estado` - VARCHAR(50) (default 'reportado')
+
+**Tabla `comentarios`:**
+- `id_comentario` (PK) - Serial
+- `id_falla` (FK) - INTEGER → tipos_falla(id_falla)
+- `id_usuario` (FK) - INTEGER → usuarios(id)
+- `comentario` - TEXT NOT NULL
+- `fecha_comentario` - TIMESTAMP (default CURRENT_TIMESTAMP)
+
+**Índices creados para performance:**
+- `idx_tipos_falla_tipo` - Búsqueda por tipo
+- `idx_tipos_falla_usuario` - Reportes por usuario
+- `idx_tipos_falla_edificio` - Reportes por edificio
+- `idx_tipos_falla_estado` - Filtrado por estado
+- `idx_tipos_falla_fecha` - Ordenamiento temporal
+- `idx_comentarios_falla` - Comentarios por falla
+- `idx_comentarios_usuario` - Comentarios por usuario
+- `idx_comentarios_fecha` - Ordenamiento temporal
+
+---

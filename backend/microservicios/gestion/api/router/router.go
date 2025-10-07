@@ -15,6 +15,7 @@ func SetupRouter(
 	reporteHandler *handlers.ReporteHandler,
 	solicitudHandler *handlers.SolicitudHandler,
 	usuarioHandler *handlers.UsuarioHandler,
+	tipoFallaHandler *handlers.TipoFallaHandler,
 ) *gin.Engine {
 	r := gin.Default()
 
@@ -205,6 +206,11 @@ func SetupRouter(
 			}
 		}
 	}
+
+	// 🚨 Rutas de reportes de fallas de usuarios (tipos_falla y comentarios)
+	r.POST("/tipos-falla", tipoFallaHandler.CrearTipoFalla)                                    // Crear reporte de falla
+	r.POST("/comentarios", tipoFallaHandler.CrearComentario)                                   // Crear comentario sobre una falla
+	r.GET("/tipos-falla/edificio/:edificio_id", tipoFallaHandler.ObtenerTiposFallaPorEdificio) // Obtener fallas con comentarios (paginado si ?pagina=N, todos si sin parámetro)
 
 	return r
 }

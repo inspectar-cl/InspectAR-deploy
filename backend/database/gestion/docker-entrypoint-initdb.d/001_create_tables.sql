@@ -173,6 +173,48 @@ CREATE TABLE IF NOT EXISTS usuarios_edificios (
     PRIMARY KEY (usuario_id, edificio_id)
 );
 
+-- Tabla de fallos por tipo de activo
+CREATE TABLE IF NOT EXISTS fallos (
+    id SERIAL PRIMARY KEY,
+    tipo_activo VARCHAR(100) NOT NULL CHECK (tipo_activo IN ('caldera', 'bomba_de_agua', 'ascensor', 'transformador')),
+    descripcion TEXT NOT NULL,
+    prioridad VARCHAR(20) NOT NULL DEFAULT 'media' CHECK (prioridad IN ('media', 'alta')),
+    probabilidad_ocurrencia DECIMAL(5,2) NOT NULL CHECK (probabilidad_ocurrencia >= 0 AND probabilidad_ocurrencia <= 100),
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla intermedia para relacionar activos con fallos específicos
+CREATE TABLE IF NOT EXISTS activos_fallos (
+    id SERIAL PRIMARY KEY,
+    activo_id INTEGER NOT NULL REFERENCES activos(id) ON DELETE CASCADE,
+    fallo_id INTEGER NOT NULL REFERENCES fallos(id) ON DELETE CASCADE,
+    fecha_deteccion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    estado VARCHAR(50) DEFAULT 'detectado' CHECK (estado IN ('detectado', 'en_revision', 'resuelto', 'pendiente')),
+    notas TEXT,
+    UNIQUE(activo_id, fallo_id, fecha_deteccion)
+);
+
+-- Tabla de reportes de fallas hechos por usuarios (tipos_falla)
+CREATE TABLE IF NOT EXISTS tipos_falla (
+    id_falla SERIAL PRIMARY KEY,
+    tipo VARCHAR(50) NOT NULL CHECK (tipo IN ('falla agua', 'falla ascensor', 'falla electricidad', 'falla caldera')),
+    descripcion TEXT,
+    fecha_publicacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    id_usuario INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    id_edificio INTEGER NOT NULL REFERENCES edificios(id) ON DELETE CASCADE,
+    estado VARCHAR(50) DEFAULT 'reportado' CHECK (estado IN ('reportado', 'en_revision', 'resuelto', 'rechazado'))
+);
+
+-- Tabla de comentarios sobre reportes de fallas
+CREATE TABLE IF NOT EXISTS comentarios (
+    id_comentario SERIAL PRIMARY KEY,
+    id_falla INTEGER NOT NULL REFERENCES tipos_falla(id_falla) ON DELETE CASCADE,
+    id_usuario INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    comentario TEXT NOT NULL,
+    fecha_comentario TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Índices para mejorar rendimiento
 CREATE INDEX IF NOT EXISTS idx_tecnicos_especialidad ON tecnicos(especialidad);
 CREATE INDEX IF NOT EXISTS idx_tecnicos_autorizado ON tecnicos(autorizado);
@@ -210,6 +252,25 @@ CREATE INDEX IF NOT EXISTS idx_activos_tecnicos_autorizados_edificio ON activos_
 CREATE INDEX IF NOT EXISTS idx_usuarios_edificios_usuario ON usuarios_edificios(usuario_id);
 CREATE INDEX IF NOT EXISTS idx_usuarios_edificios_edificio ON usuarios_edificios(edificio_id);
 
+-- Índices para fallos
+CREATE INDEX IF NOT EXISTS idx_fallos_tipo_activo ON fallos(tipo_activo);
+CREATE INDEX IF NOT EXISTS idx_fallos_prioridad ON fallos(prioridad);
+CREATE INDEX IF NOT EXISTS idx_fallos_probabilidad ON fallos(probabilidad_ocurrencia);
+CREATE INDEX IF NOT EXISTS idx_activos_fallos_activo ON activos_fallos(activo_id);
+CREATE INDEX IF NOT EXISTS idx_activos_fallos_fallo ON activos_fallos(fallo_id);
+CREATE INDEX IF NOT EXISTS idx_activos_fallos_estado ON activos_fallos(estado);
+
+-- Índices para reportes de fallas de usuarios
+CREATE INDEX IF NOT EXISTS idx_tipos_falla_tipo ON tipos_falla(tipo);
+CREATE INDEX IF NOT EXISTS idx_tipos_falla_usuario ON tipos_falla(id_usuario);
+CREATE INDEX IF NOT EXISTS idx_tipos_falla_edificio ON tipos_falla(id_edificio);
+CREATE INDEX IF NOT EXISTS idx_tipos_falla_estado ON tipos_falla(estado);
+CREATE INDEX IF NOT EXISTS idx_tipos_falla_fecha ON tipos_falla(fecha_publicacion);
+CREATE INDEX IF NOT EXISTS idx_comentarios_falla ON comentarios(id_falla);
+CREATE INDEX IF NOT EXISTS idx_comentarios_usuario ON comentarios(id_usuario);
+CREATE INDEX IF NOT EXISTS idx_comentarios_fecha ON comentarios(fecha_comentario);
+
+-- Comentarios sobre las tablas creadas
 COMMENT ON TABLE tecnicos IS 'Técnicos especializados para mantenimiento (HdU16)';
 COMMENT ON TABLE edificios IS 'Edificios donde se ubican los activos';
 COMMENT ON TABLE activos IS 'Activos industriales gestionados';
@@ -221,5 +282,9 @@ COMMENT ON TABLE archivos_solicitud IS 'Archivos adjuntos a solicitudes técnica
 COMMENT ON TABLE activos_tecnicos_autorizados IS 'Técnicos autorizados para trabajar en activos específicos';
 COMMENT ON TABLE usuarios IS 'Usuarios del sistema con acceso a edificios';
 COMMENT ON TABLE usuarios_edificios IS 'Relación muchos a muchos entre usuarios y edificios';
+COMMENT ON TABLE fallos IS 'Catálogo de fallos comunes por tipo de activo';
+COMMENT ON TABLE activos_fallos IS 'Relación entre activos específicos y fallos detectados';
+COMMENT ON TABLE tipos_falla IS 'Reportes de fallas hechos por usuarios residentes en edificios';
+COMMENT ON TABLE comentarios IS 'Comentarios de usuarios sobre reportes de fallas';
 
 -- Comentarios sobre las tablas creadas

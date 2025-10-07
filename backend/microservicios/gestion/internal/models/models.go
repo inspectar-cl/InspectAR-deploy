@@ -243,6 +243,60 @@ type EstructuraInformeReporte struct {
 	Conclusiones       string                 `json:"conclusiones"`
 }
 
+// Modelos para reportes de fallas de usuarios
+
+type TipoFalla struct {
+	IDFalla          int       `json:"id_falla" db:"id_falla"`
+	Tipo             string    `json:"tipo" db:"tipo"`
+	Descripcion      string    `json:"descripcion" db:"descripcion"`
+	FechaPublicacion time.Time `json:"fecha_publicacion" db:"fecha_publicacion"`
+	IDUsuario        int       `json:"id_usuario" db:"id_usuario"`
+	IDEdificio       int       `json:"id_edificio" db:"id_edificio"`
+	Estado           string    `json:"estado" db:"estado"`
+}
+
+type Comentario struct {
+	IDComentario    int       `json:"id_comentario" db:"id_comentario"`
+	IDFalla         int       `json:"id_falla" db:"id_falla"`
+	IDUsuario       int       `json:"id_usuario" db:"id_usuario"`
+	Comentario      string    `json:"comentario" db:"comentario"`
+	FechaComentario time.Time `json:"fecha_comentario" db:"fecha_comentario"`
+}
+
+// DTOs para las APIs
+
+type CreateTipoFallaRequest struct {
+	Email       string `json:"email" binding:"required"`
+	Tipo        string `json:"tipo" binding:"required"`
+	Descripcion string `json:"descripcion"`
+	IDEdificio  int    `json:"id_edificio" binding:"required"`
+}
+
+type CreateComentarioRequest struct {
+	Email      string `json:"email" binding:"required"`
+	IDFalla    int    `json:"id_falla" binding:"required"`
+	Comentario string `json:"comentario" binding:"required"`
+}
+
+// DTO para respuesta con username en lugar de id_usuario
+type TipoFallaResponse struct {
+	IDFalla          int                  `json:"id_falla"`
+	Tipo             string               `json:"tipo"`
+	Descripcion      string               `json:"descripcion"`
+	FechaPublicacion time.Time            `json:"fecha_publicacion"`
+	Username         string               `json:"username"`
+	IDEdificio       int                  `json:"id_edificio"`
+	Estado           string               `json:"estado"`
+	Comentarios      []ComentarioResponse `json:"comentarios"`
+}
+
+type ComentarioResponse struct {
+	IDComentario    int       `json:"id_comentario"`
+	Username        string    `json:"username"`
+	Comentario      string    `json:"comentario"`
+	FechaComentario time.Time `json:"fecha_comentario"`
+}
+
 type UpdateEstadoAccionRequest struct {
 	Estado string `json:"estado" binding:"required"`
 }

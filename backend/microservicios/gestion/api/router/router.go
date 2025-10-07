@@ -14,6 +14,8 @@ func SetupRouter(
 	activoHandler *handlers.ActivoHandler,
 	reporteHandler *handlers.ReporteHandler,
 	solicitudHandler *handlers.SolicitudHandler,
+	usuarioHandler *handlers.UsuarioHandler,
+	tipoFallaHandler *handlers.TipoFallaHandler,
 ) *gin.Engine {
 	r := gin.Default()
 
@@ -70,6 +72,11 @@ func SetupRouter(
 	r.GET("/activos/:id", activoHandler.GetActivoByID)                          // Obtener activo por ID
 	r.GET("/activos/edificio/:edificio_id", activoHandler.GetActivosByEdificio) // Filtrar activos por edificio
 	r.GET("/activos/tipo/:tipo", activoHandler.GetActivosByTipo)                // Filtrar activos por tipo
+
+	// 🏢 Rutas de usuarios y edificios
+	r.GET("/usuarios/edificios/:email", usuarioHandler.GetEdificiosByEmail)                        // Obtener edificios de un usuario por email
+	r.GET("/usuarios/:email/edificio/:edificio_id/acceso", usuarioHandler.VerificarAccesoEdificio) // Verificar acceso a edificio
+	r.GET("/usuarios/:email/activo/:activo_id/acceso", usuarioHandler.VerificarAccesoActivo)       // Verificar acceso a activo
 
 	// Rutas de acciones de mantenimiento (HdU13 - Acciones de mantención colaborativas)
 	r.POST("/acciones", accionHandler.CrearAccion)
@@ -199,6 +206,11 @@ func SetupRouter(
 			}
 		}
 	}
+
+	// 🚨 Rutas de reportes de fallas de usuarios (tipos_falla y comentarios)
+	r.POST("/tipos-falla", tipoFallaHandler.CrearTipoFalla)                                    // Crear reporte de falla
+	r.POST("/comentarios", tipoFallaHandler.CrearComentario)                                   // Crear comentario sobre una falla
+	r.GET("/tipos-falla/edificio/:edificio_id", tipoFallaHandler.ObtenerTiposFallaPorEdificio) // Obtener fallas con comentarios (paginado si ?pagina=N, todos si sin parámetro)
 
 	return r
 }

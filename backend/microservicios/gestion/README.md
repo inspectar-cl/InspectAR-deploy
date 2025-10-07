@@ -11,11 +11,11 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 - Testing completo exitoso en todas las rutas
 
 **📊 Estadísticas de Implementación:**
-- **36 rutas totales** configuradas 🆕
-- **35 rutas funcionando** (97.2% operativas)
+- **39 rutas totales** configuradas 🆕
+- **38 rutas funcionando** (97.4% operativas)
 - **1 ruta con issue DB** (reporte PDF legacy)
 - **0 rutas pendientes** de implementación
-- **6 nuevas rutas de observaciones** agregadas 🎉
+- **9 nuevas rutas agregadas** (6 observaciones + 3 usuarios/edificios/acceso) 🎉
 
 **🚀 Última Actualización:** 8 de Septiembre 2025 - **Sistema de Observaciones Editables** 🆕
 
@@ -123,13 +123,21 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 | `GET` | `/activos/edificio/{edificio_id}` | 🎯 **Filtrar activos por edificio** | ✅ **IMPLEMENTADO** |
 | `GET` | `/activos/tipo/{tipo}` | 🎯 **Filtrar activos por tipo** | ✅ **IMPLEMENTADO** |
 
+### 🏢 Rutas de Usuarios y Edificios - 🆕 NUEVA FUNCIONALIDAD
+
+| Método | Endpoint | Descripción | Estado |
+|--------|----------|-------------|---------|
+| `GET` | `/usuarios/edificios/{email}` | 🎯 **Obtener edificios asociados a un usuario por email** | ✅ **IMPLEMENTADO** |
+| `GET` | `/usuarios/{email}/edificio/{edificio_id}/acceso` | 🎯 **Verificar acceso de usuario a edificio** | ✅ **IMPLEMENTADO** |
+| `GET` | `/usuarios/{email}/activo/{activo_id}/acceso` | 🎯 **Verificar acceso de usuario a activo** | ✅ **IMPLEMENTADO** |
+
 ### 🎯 Resumen de Estado
 
-- **✅ Funcionando**: 35 rutas operativas (97.2% IMPLEMENTADAS) 🆕
+- **✅ Funcionando**: 41 rutas operativas (97.6% IMPLEMENTADAS) 🆕
 - **🔧 No implementado**: 0 rutas pendientes  
 - **⚠️ Issue DB**: 1 ruta con problema de schema
-- **🎉 Nuevas observaciones**: 6 rutas agregadas
-- **Total**: 36 rutas configuradas 🆕
+- **🎉 Nuevas rutas**: 12 rutas agregadas (6 observaciones + 3 usuarios/acceso + 3 reportes de fallas) 🆕
+- **Total**: 42 rutas configuradas 🆕
 
 ### ⚡ Tests Rápidos
 
@@ -178,6 +186,17 @@ curl http://localhost:8092/reportes/1
 curl -X PUT http://localhost:8092/reportes/1/observaciones -H "Content-Type: application/json" -d '{"observaciones_analista":"Observación actualizada","autor_analista":"María González"}'
 curl -X PUT http://localhost:8092/reportes/1/revision -H "Content-Type: application/json" -d '{"estado_revision":"aprobado","revisor":"Supervisor"}'
 curl http://localhost:8092/reportes/activo/1/observaciones
+
+# 🏢 NUEVA RUTA: Obtener edificios de un usuario por email
+curl http://localhost:8092/usuarios/edificios/admin@example.com
+curl http://localhost:8092/usuarios/edificios/residente.especial@example.com
+
+# 🔒 NUEVAS RUTAS: Verificar acceso de usuario a edificios y activos
+curl http://localhost:8092/usuarios/admin@example.com/edificio/1/acceso
+curl http://localhost:8092/usuarios/residente.especial@example.com/edificio/1/acceso
+curl http://localhost:8092/usuarios/residente.especial@example.com/edificio/2/acceso
+curl http://localhost:8092/usuarios/admin@example.com/activo/1/acceso
+curl http://localhost:8092/usuarios/residente.especial@example.com/activo/1/acceso
 ```
 
 ## API Endpoints
@@ -1021,6 +1040,150 @@ curl -X GET http://localhost:8092/activos/tipo/motor
 
 ---
 
+### 🏢 Usuarios y Edificios - 🆕 NUEVA FUNCIONALIDAD
+
+#### 🎯 **NUEVA RUTA: Obtener edificios asociados a un usuario por email**
+```bash
+curl -X GET http://localhost:8092/usuarios/edificios/admin@example.com
+```
+**Respuesta:**
+```json
+{
+  "usuario": {
+    "id": 1,
+    "username": "admin",
+    "email": "admin@example.com",
+    "creado_en": "2025-10-01T12:00:00Z"
+  },
+  "edificios": [
+    {
+      "id": 1,
+      "nombre": "Edificio Central",
+      "direccion": "Av. Providencia 123, Santiago",
+      "creado_en": "2025-08-20T22:49:18Z"
+    },
+    {
+      "id": 2,
+      "nombre": "Torre Norte",
+      "direccion": "Av. Las Condes 456, Las Condes",
+      "creado_en": "2025-08-20T22:49:18Z"
+    },
+    {
+      "id": 3,
+      "nombre": "Complejo Industrial Sur",
+      "direccion": "Av. Vicuña Mackenna 789, La Florida",
+      "creado_en": "2025-08-20T22:49:18Z"
+    },
+    {
+      "id": 4,
+      "nombre": "Centro de Distribución",
+      "direccion": "Ruta 68 Km 15, Melipilla",
+      "creado_en": "2025-08-20T22:49:18Z"
+    }
+  ],
+  "total": 4
+}
+```
+
+#### Ejemplo con usuario de acceso limitado
+```bash
+curl -X GET http://localhost:8092/usuarios/edificios/residente.especial@example.com
+```
+**Respuesta:**
+```json
+{
+  "usuario": {
+    "id": 4,
+    "username": "residente_especial",
+    "email": "residente.especial@example.com",
+    "creado_en": "2025-10-01T12:00:00Z"
+  },
+  "edificios": [
+    {
+      "id": 1,
+      "nombre": "Edificio Central",
+      "direccion": "Av. Providencia 123, Santiago",
+      "creado_en": "2025-08-20T22:49:18Z"
+    }
+  ],
+  "total": 1
+}
+```
+
+#### Caso de error - Usuario no encontrado
+```bash
+curl -X GET http://localhost:8092/usuarios/edificios/noexiste@example.com
+```
+**Respuesta:**
+```json
+{
+  "error": "Usuario no encontrado",
+  "details": "sql: no rows in result set"
+}
+```
+
+#### 🔒 **NUEVA RUTA: Verificar acceso de usuario a edificio**
+```bash
+# Usuario con acceso al edificio
+curl -X GET http://localhost:8092/usuarios/admin@example.com/edificio/1/acceso
+```
+**Respuesta (200 OK):**
+```json
+{
+  "mensaje": "Usuario tiene acceso al edificio",
+  "email": "admin@example.com",
+  "edificio_id": 1,
+  "tiene_acceso": true
+}
+```
+
+```bash
+# Usuario SIN acceso al edificio
+curl -X GET http://localhost:8092/usuarios/residente.especial@example.com/edificio/2/acceso
+```
+**Respuesta (403 Forbidden):**
+```json
+{
+  "error": "Acceso denegado",
+  "mensaje": "El usuario no tiene acceso a este edificio",
+  "email": "residente.especial@example.com",
+  "edificio_id": 2,
+  "tiene_acceso": false
+}
+```
+
+#### 🔒 **NUEVA RUTA: Verificar acceso de usuario a activo**
+```bash
+# Usuario con acceso al activo (a través del edificio)
+curl -X GET http://localhost:8092/usuarios/admin@example.com/activo/1/acceso
+```
+**Respuesta (200 OK):**
+```json
+{
+  "mensaje": "Usuario tiene acceso al activo",
+  "email": "admin@example.com",
+  "activo_id": 1,
+  "tiene_acceso": true
+}
+```
+
+```bash
+# Usuario SIN acceso al activo
+curl -X GET http://localhost:8092/usuarios/residente.especial@example.com/activo/3/acceso
+```
+**Respuesta (403 Forbidden):**
+```json
+{
+  "error": "Acceso denegado",
+  "mensaje": "El usuario no tiene acceso a este activo",
+  "email": "residente.especial@example.com",
+  "activo_id": 3,
+  "tiene_acceso": false
+}
+```
+
+---
+
 ## Estructura de Base de Datos
 
 ### Tablas principales:
@@ -1031,6 +1194,8 @@ curl -X GET http://localhost:8092/activos/tipo/motor
 - **`reportes`** - Reportes automáticos generados **🆕 CON OBSERVACIONES EDITABLES**
 - **`activos_tecnicos`** - Tabla intermedia para relación muchos a muchos
 - **`solicitudes_tecnico`** - 🎉 **Solicitudes de servicio HdU16** (IMPLEMENTADA)
+- **`usuarios`** - 🆕 **Usuarios del sistema**
+- **`usuarios_edificios`** - 🆕 **Tabla intermedia usuarios ↔ edificios (muchos a muchos)**
 
 ### 🆕 Campos nuevos en tabla `reportes`:
 - **`observaciones_analista`** (TEXT) - Observaciones editables del analista
@@ -1051,6 +1216,7 @@ curl -X GET http://localhost:8092/activos/tipo/motor
 - `solicitudes_tecnico` ↔ `tecnicos` (muchos a uno)
 - `solicitudes_tecnico` ↔ `activos` (muchos a uno)
 - `solicitudes_tecnico` ↔ `edificios` (muchos a uno)
+- `usuarios` ↔ `edificios` (muchos a muchos vía `usuarios_edificios`) 🆕
 
 ## Ejemplos de Uso
 
@@ -1165,3 +1331,329 @@ El servicio estará disponible en el puerto `8092`.
 - `media` - Prioridad media
 - `alta` - Prioridad alta
 - `critica` - Prioridad crítica
+
+---
+
+## 🚨 HU22 - Sistema de Reportes de Fallas de Usuarios
+
+### Descripción (Octubre 2025)
+
+Sistema completo para que los usuarios residentes **reporten fallas en sus edificios** y **comenten sobre las mismas**, facilitando la comunicación entre residentes y administración.
+
+### Características HU22:
+- ✅ **3 rutas REST** implementadas
+- ✅ Reportar fallas por tipo (agua, ascensor, electricidad, caldera)
+- ✅ Sistema de comentarios colaborativos sobre reportes
+- ✅ Consulta con paginación inteligente (10 items por página)
+- ✅ Retorna `username` en lugar de `id_usuario` para mejor UX
+- ✅ Incluye todos los comentarios asociados a cada falla
+- ✅ Ordenamiento cronológico (más recientes primero)
+
+### Rutas Implementadas (HU22):
+
+#### 1. Crear Reporte de Falla
+```bash
+POST /tipos-falla
+Content-Type: application/json
+
+{
+  "email": "usuario@example.com",
+  "tipo": "falla agua",
+  "descripcion": "Fuga de agua en el baño del tercer piso",
+  "id_edificio": 1
+}
+
+# Respuesta 201 Created
+{
+  "mensaje": "Tipo de falla creado exitosamente",
+  "data": {
+    "id_falla": 1,
+    "tipo": "falla agua",
+    "descripcion": "Fuga de agua en el baño del tercer piso",
+    "fecha_publicacion": "2025-10-07T16:20:57.038705Z",
+    "id_usuario": 1,
+    "id_edificio": 1,
+    "estado": "reportado"
+  }
+}
+```
+
+**Tipos de falla válidos:**
+- `falla agua` - Problemas con tuberías, fugas, etc.
+- `falla ascensor` - Problemas con ascensores
+- `falla electricidad` - Cortes de luz, problemas eléctricos
+- `falla caldera` - Problemas con calderas
+
+**Estados posibles:**
+- `reportado` - Falla recién reportada (default)
+- `en_revision` - Falla en proceso de revisión
+- `resuelto` - Falla solucionada
+- `rechazado` - Reporte rechazado
+
+#### 2. Crear Comentario sobre Falla
+```bash
+POST /comentarios
+Content-Type: application/json
+
+{
+  "email": "tecnico@example.com",
+  "id_falla": 1,
+  "comentario": "Ya envié al plomero para revisar la fuga"
+}
+
+# Respuesta 201 Created
+{
+  "mensaje": "Comentario creado exitosamente",
+  "data": {
+    "id_comentario": 1,
+    "id_falla": 1,
+    "id_usuario": 2,
+    "comentario": "Ya envié al plomero para revisar la fuga",
+    "fecha_comentario": "2025-10-07T16:21:36.512417Z"
+  }
+}
+```
+
+#### 3. Obtener Fallas por Edificio
+Esta ruta tiene **dos comportamientos** dependiendo de si se proporciona el parámetro `pagina`:
+
+**A) Sin paginación (sin parámetro `pagina`)** - Retorna TODOS los resultados:
+```bash
+GET /tipos-falla/edificio/:edificio_id
+
+# Ejemplo
+curl "http://localhost:8092/tipos-falla/edificio/1"
+
+# Respuesta 200 OK
+{
+  "edificio_id": 1,
+  "total_items": 103,
+  "data": [
+    {
+      "id_falla": 103,
+      "tipo": "falla agua",
+      "descripcion": "Descripción de prueba para falla #25 del tipo falla agua",
+      "fecha_publicacion": "2025-10-07T17:05:22.845197Z",
+      "username": "admin",
+      "id_edificio": 1,
+      "estado": "reportado",
+      "comentarios": [
+        {
+          "id_comentario": 353,
+          "username": "usuario",
+          "comentario": "Comentario #1 para la falla 103",
+          "fecha_comentario": "2025-10-07T17:05:27.774693Z"
+        },
+        {
+          "id_comentario": 354,
+          "username": "residente_especial",
+          "comentario": "Comentario #2 para la falla 103",
+          "fecha_comentario": "2025-10-07T17:05:27.806493Z"
+        }
+      ]
+    },
+    {
+      "id_falla": 102,
+      "tipo": "falla caldera",
+      "descripcion": "Descripción de prueba para falla #24",
+      "fecha_publicacion": "2025-10-07T17:05:22.69523Z",
+      "username": "residente_especial",
+      "id_edificio": 1,
+      "estado": "reportado",
+      "comentarios": [
+        {
+          "id_comentario": 350,
+          "username": "admin",
+          "comentario": "Comentario #1 para la falla 102",
+          "fecha_comentario": "2025-10-07T17:05:27.606843Z"
+        }
+      ]
+    }
+    // ... 101 items más (total 103 en este ejemplo)
+  ]
+}
+```
+
+**B) Con paginación (con parámetro `?pagina=N`)** - Retorna 10 items por página:
+```bash
+GET /tipos-falla/edificio/:edificio_id?pagina=1
+
+# Ejemplo
+curl "http://localhost:8092/tipos-falla/edificio/1?pagina=1"
+
+# Respuesta 200 OK
+{
+  "data": [
+    {
+      "id_falla": 103,
+      "tipo": "falla agua",
+      "descripcion": "Descripción de prueba para falla #25 del tipo falla agua",
+      "fecha_publicacion": "2025-10-07T17:05:22.845197Z",
+      "username": "admin",
+      "id_edificio": 1,
+      "estado": "reportado",
+      "comentarios": [
+        {
+          "id_comentario": 353,
+          "username": "usuario",
+          "comentario": "Comentario #1 para la falla 103",
+          "fecha_comentario": "2025-10-07T17:05:27.774693Z"
+        },
+        {
+          "id_comentario": 354,
+          "username": "residente_especial",
+          "comentario": "Comentario #2 para la falla 103",
+          "fecha_comentario": "2025-10-07T17:05:27.806493Z"
+        }
+      ]
+    },
+    {
+      "id_falla": 102,
+      "tipo": "falla caldera",
+      "descripcion": "Descripción de prueba para falla #24",
+      "fecha_publicacion": "2025-10-07T17:05:22.69523Z",
+      "username": "residente_especial",
+      "id_edificio": 1,
+      "estado": "reportado",
+      "comentarios": [
+        {
+          "id_comentario": 350,
+          "username": "admin",
+          "comentario": "Comentario #1 para la falla 102",
+          "fecha_comentario": "2025-10-07T17:05:27.606843Z"
+        }
+      ]
+    }
+    // ... 8 items más (total 10)
+  ],
+  "edificio_id": 1,
+  "items_per_page": 10,
+  "pagina": 1,
+  "total_items": 10
+}
+```
+
+**Características:**
+- **Ordenamiento**: Siempre DESC por `fecha_publicacion` (más recientes primero)
+- **Comentarios**: Incluye TODOS los comentarios de cada falla, ordenados ASC por `fecha_comentario`
+- **Username**: Retorna `username` en lugar de `id_usuario` para mejor UX
+- **Paginación**: 10 items por página cuando se usa el parámetro `?pagina=N`
+- **Sin paginación**: Retorna todos los registros cuando NO se proporciona el parámetro `pagina`
+
+**Nota**: Usar sin paginación con precaución en edificios con muchas fallas reportadas.
+
+### Ejemplos Completos de Uso (HU22)
+
+#### Ejemplo completo: Reportar y comentar una falla,
+    {
+      "id_falla": 2,
+      "tipo": "falla ascensor",
+      "descripcion": "Ascensor atascado en el piso 5",
+      "fecha_publicacion": "2025-10-07T16:21:10.980351Z",
+      "username": "tecnico",
+      "id_edificio": 1,
+      "estado": "reportado",
+      "comentarios": [
+        {
+          "id_comentario": 3,
+          "username": "admin",
+          "comentario": "Necesitamos ayuda urgente",
+          "fecha_comentario": "2025-10-07T16:22:46.442026Z"
+        }
+      ]
+    },
+    {
+      "id_falla": 1,
+      "tipo": "falla agua",
+      "descripcion": "Fuga de agua en el baño del tercer piso",
+      "fecha_publicacion": "2025-10-07T16:20:57.038705Z",
+      "username": "admin",
+      "id_edificio": 1,
+      "estado": "reportado",
+      "comentarios": [
+        {
+          "id_comentario": 1,
+          "username": "tecnico",
+          "comentario": "Ya envié al plomero",
+          "fecha_comentario": "2025-10-07T16:21:36.512417Z"
+        },
+        {
+          "id_comentario": 2,
+          "username": "admin",
+          "comentario": "Gracias",
+          "fecha_comentario": "2025-10-07T16:22:07.385317Z"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Características de la paginación:**
+- Retorna los 10 últimos reportes de falla del edificio especificado
+- Ordenados por fecha de publicación (más recientes primero)
+- Incluye TODOS los comentarios de cada falla
+- Los comentarios están ordenados cronológicamente (ASC)
+- Retorna `username` en lugar de `id_usuario` para mejor experiencia
+
+### Ejemplos Completos de Uso (HU22)
+
+```bash
+# 1. Crear un reporte de falla de agua
+curl -X POST http://localhost:8092/tipos-falla \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "residente.especial@example.com",
+    "tipo": "falla agua",
+    "descripcion": "Fuga grande en la cocina",
+    "id_edificio": 1
+  }'
+
+# 2. Agregar comentario al reporte
+curl -X POST http://localhost:8092/comentarios \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "tecnico@example.com",
+    "id_falla": 1,
+    "comentario": "El técnico llegará en 30 minutos"
+  }'
+
+# 3. Obtener todas las fallas del edificio (sin paginación)
+curl "http://localhost:8092/tipos-falla/edificio/1"
+
+# 4. Obtener página 1 de fallas del edificio 1 (con paginación)
+curl "http://localhost:8092/tipos-falla/edificio/1?pagina=1"
+
+# 5. Obtener página 2 de fallas del edificio 2
+curl "http://localhost:8092/tipos-falla/edificio/2?pagina=2"
+```
+
+### Estructura de Base de Datos (HU22):
+
+**Tabla `tipos_falla`:**
+- `id_falla` (PK) - Serial
+- `tipo` - VARCHAR(50) con CHECK constraint
+- `descripcion` - TEXT
+- `fecha_publicacion` - TIMESTAMP (default CURRENT_TIMESTAMP)
+- `id_usuario` (FK) - INTEGER → usuarios(id)
+- `id_edificio` (FK) - INTEGER → edificios(id)
+- `estado` - VARCHAR(50) (default 'reportado')
+
+**Tabla `comentarios`:**
+- `id_comentario` (PK) - Serial
+- `id_falla` (FK) - INTEGER → tipos_falla(id_falla)
+- `id_usuario` (FK) - INTEGER → usuarios(id)
+- `comentario` - TEXT NOT NULL
+- `fecha_comentario` - TIMESTAMP (default CURRENT_TIMESTAMP)
+
+**Índices creados para performance:**
+- `idx_tipos_falla_tipo` - Búsqueda por tipo
+- `idx_tipos_falla_usuario` - Reportes por usuario
+- `idx_tipos_falla_edificio` - Reportes por edificio
+- `idx_tipos_falla_estado` - Filtrado por estado
+- `idx_tipos_falla_fecha` - Ordenamiento temporal
+- `idx_comentarios_falla` - Comentarios por falla
+- `idx_comentarios_usuario` - Comentarios por usuario
+- `idx_comentarios_fecha` - Ordenamiento temporal
+
+---

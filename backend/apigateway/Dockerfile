@@ -24,6 +24,9 @@ WORKDIR /app
 # Copia el binario compilado desde el builder
 COPY --from=builder /app/apigateway .
 
+# Copiar la carpeta de configuración
+COPY config/* /app/config/
+
 # Copia el archivo .env si existe
 COPY .env .env
 

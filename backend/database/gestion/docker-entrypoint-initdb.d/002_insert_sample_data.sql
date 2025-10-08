@@ -18,10 +18,10 @@ ON CONFLICT DO NOTHING;
 
 -- Insertar usuarios del sistema (basados en los usuarios de OAuth2)
 INSERT INTO usuarios (username, email) VALUES
-('admin', 'admin@example.com'),
+('analista', 'analista@example.com'),
 ('tecnico', 'tecnico@example.com'),
-('usuario', 'usuario@example.com'),
-('residente_especial', 'residente.especial@example.com')
+('residente', 'residente@example.com'),
+('admin', 'admin@example.com')
 ON CONFLICT (username) DO NOTHING;
 
 -- Crear relaciones usuarios-edificios

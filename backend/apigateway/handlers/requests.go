@@ -443,7 +443,7 @@ func ObtenerActivos(c *gin.Context) {
 
 func GenerarReporte(c *gin.Context) {
     // NO terminado
-    id := c.Param("id")
+    id := c.Param("id_reporte")
     if id == "" {
         c.JSON(http.StatusBadRequest, gin.H{"error": "ID del activo es requerido"})
         return
@@ -458,7 +458,7 @@ func GenerarReporte(c *gin.Context) {
 func ObtenerActivoPorID(c *gin.Context) {
     var wg sync.WaitGroup
     var mu sync.Mutex
-    id := c.Param("id")
+    id := c.Param("id_activo")
     if id == "" {
         c.JSON(http.StatusBadRequest, gin.H{"error": "ID del activo es requerido"})
         return

@@ -25,6 +25,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
+    restart: on-failure
 
   # Base de datos PostgreSQL para documentación
   documentacion-db:
@@ -157,6 +158,7 @@ services:
       - "8094:8094"
     depends_on:
       - database1
+    restart: on-failure
 
   database1:
     container_name: oauth2DB

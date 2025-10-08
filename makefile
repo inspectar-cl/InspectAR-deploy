@@ -17,7 +17,6 @@ SERVICES := \
 	documentacion-db \
 	gestion-db \
 	notification-db \
-	oauth2DB \
 	mongu \
 	influxdb \
 	emqx \

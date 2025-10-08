@@ -75,13 +75,13 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: false,
             RequiredScopes: nil,
         },
-        // { 
-        //     Method:  "GET",
-        //     Pattern: "/api/rol",
-        //     Handler: ObtenerRol,
-        //     Protected: false,
-        //     RequiredScopes: nil,
-        // },
+        { 
+            Method:  "GET",
+            Pattern: "/api/rol",
+            Handler: ObtenerRol,
+            Protected: true,
+            RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente", "user-type:Analista", "user-type:Admin"},
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",

@@ -69,11 +69,11 @@ func obtenerEdificiosUsuario(email string) []interface{} {
     return nil
 }
 
-func extractEmailFromToken(tokenString string) (string, error) {
+func extractClaimFromToken(tokenString string, claimKey string) (interface{}, error) {
     // Un JWT tiene 3 partes separadas por puntos: header.payload.signature
     parts := strings.Split(tokenString, ".")
     if len(parts) != 3 {
-        return "", fmt.Errorf("token inválido")
+        return nil, fmt.Errorf("token inválido")
     }
 
     // Decodificar el payload (segunda parte)
@@ -87,21 +87,21 @@ func extractEmailFromToken(tokenString string) (string, error) {
     // Decodificar de base64
     decoded, err := base64.URLEncoding.DecodeString(payload)
     if err != nil {
-        return "", fmt.Errorf("error decodificando payload: %v", err)
+        return nil, fmt.Errorf("error decodificando payload: %v", err)
     }
 
     // Parsear JSON
     var claims map[string]interface{}
     if err := json.Unmarshal(decoded, &claims); err != nil {
-        return "", fmt.Errorf("error parseando claims: %v", err)
+        return nil, fmt.Errorf("error parseando claims: %v", err)
     }
 
-    // Extraer email
-    if email, ok := claims["email"].(string); ok {
-        return email, nil
+    // Extraer el claim solicitado
+    if value, ok := claims[claimKey]; ok {
+        return value, nil
     }
 
-    return "", fmt.Errorf("email no encontrado en token")
+    return nil, fmt.Errorf("%s no encontrado en token", claimKey)
 }
 
 // ActivosCompletosHandler maneja la petición consolidada de activos con sensores
@@ -635,7 +635,6 @@ func LoginHandler(c *gin.Context) {
     return
 }
 
-
 func LogoutHandler(c *gin.Context) {
     // Extraer token del header Authorization
     authHeader := c.GetHeader("Authorization")
@@ -743,10 +742,19 @@ func RefreshHandler(c *gin.Context) {
     if resp.StatusCode == http.StatusOK {
         var email string
         if accessToken, exists := response["access_token"].(string); exists {
-            email, err = extractEmailFromToken(accessToken)
+            emailInterface, err := extractClaimFromToken(accessToken, "email")
             if err != nil {
                 fmt.Println("Error extrayendo email del token: ", err)
                 c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing token"})
+                return
+            }
+            
+            // ✅ Type assertion para convertir interface{} a string
+            var ok bool
+            email, ok = emailInterface.(string)
+            if !ok {
+                fmt.Println("Error: email no es un string")
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid email format in token"})
                 return
             }
         }
@@ -779,4 +787,33 @@ func RefreshHandler(c *gin.Context) {
 
     // Si hubo error en el refresh, retornar el error original
     c.JSON(resp.StatusCode, response)
+}
+
+func ObtenerRol(c *gin.Context) {
+    // Extraer token del header Authorization
+    authHeader := c.GetHeader("Authorization")
+    if authHeader == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Token requerido"})
+        return
+    }
+
+    // Verificar formato del token Bearer
+    tokenParts := strings.Split(authHeader, " ")
+    if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Formato de token inválido"})
+        return
+    }
+
+    tokenString := tokenParts[1]
+
+    scope, err := extractClaimFromToken(tokenString, "scope")
+    if err != nil {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+        return
+    }
+
+    // Retornar solo el scope
+    c.JSON(http.StatusOK, gin.H{
+        "scope": scope,
+    })
 }

@@ -18,11 +18,11 @@ func main() {
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(middleware.CORS())
 	
-	// Registrar handlers
-	handlers.RegisterSpecialRoutes(r)
-	
 	// Rutas de proxy
 	proxy.RegisterRoutes(r)
+
+	// Registrar handlers
+	handlers.RegisterSpecialRoutes(r)
 
 	log.Printf("API Gateway escuchando en :%s", cfg.Port)
 	if err := r.Run(":" + cfg.Port); err != nil {

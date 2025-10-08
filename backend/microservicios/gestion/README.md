@@ -11,13 +11,13 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 - Testing completo exitoso en todas las rutas
 
 **📊 Estadísticas de Implementación:**
-- **39 rutas totales** configuradas 🆕
-- **38 rutas funcionando** (97.4% operativas)
+- **45 rutas totales** configuradas 🆕
+- **44 rutas funcionando** (97.8% operativas)
 - **1 ruta con issue DB** (reporte PDF legacy)
 - **0 rutas pendientes** de implementación
-- **9 nuevas rutas agregadas** (6 observaciones + 3 usuarios/edificios/acceso) 🎉
+- **15 nuevas rutas agregadas** (6 observaciones + 3 usuarios/edificios/acceso + 3 activos + 3 HU22) 🎉
 
-**🚀 Última Actualización:** 8 de Septiembre 2025 - **Sistema de Observaciones Editables** 🆕
+**🚀 Última Actualización:** 7 de Octubre 2025 - **Sistema de Reportes de Fallas HU22** 🆕
 
 ## Funcionalidades
 
@@ -54,6 +54,15 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 - ✅ **Sistema de observaciones editables** 🆕
 - ✅ **Gestión de estado de revisión** 🆕
 - ✅ **Estructura de informe persistente** 🆕
+
+### HU22 - Sistema de Reportes de Fallas de Usuarios 🆕
+- ✅ **Crear reportes de fallas** (agua, ascensor, electricidad, caldera)
+- ✅ **Sistema de comentarios colaborativos** sobre fallas
+- ✅ **Consulta con paginación inteligente** (10 items por página)
+- ✅ **Consulta sin paginación** (todos los registros)
+- ✅ **Username en respuestas** para mejor UX
+- ✅ **Ordenamiento cronológico** (DESC por fecha_publicacion)
+- ✅ **Estados de falla** (reportado, en_revision, resuelto, rechazado)
 
 ## 📋 Tabla de Rutas - Vista Rápida
 
@@ -131,13 +140,21 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 | `GET` | `/usuarios/{email}/edificio/{edificio_id}/acceso` | 🎯 **Verificar acceso de usuario a edificio** | ✅ **IMPLEMENTADO** |
 | `GET` | `/usuarios/{email}/activo/{activo_id}/acceso` | 🎯 **Verificar acceso de usuario a activo** | ✅ **IMPLEMENTADO** |
 
+### 🚨 Rutas de Reportes de Fallas (HU22) - 🆕 **SISTEMA COMPLETO IMPLEMENTADO**
+
+| Método | Endpoint | Descripción | Estado |
+|--------|----------|-------------|---------|
+| `POST` | `/tipos-falla` | 🎯 **Crear reporte de falla** (agua, ascensor, electricidad, caldera) | ✅ **IMPLEMENTADO** |
+| `POST` | `/comentarios` | 🎯 **Agregar comentario a una falla reportada** | ✅ **IMPLEMENTADO** |
+| `GET` | `/tipos-falla/edificio/{edificio_id}` | 🎯 **Obtener fallas de un edificio (con/sin paginación)** | ✅ **IMPLEMENTADO** |
+
 ### 🎯 Resumen de Estado
 
-- **✅ Funcionando**: 41 rutas operativas (97.6% IMPLEMENTADAS) 🆕
+- **✅ Funcionando**: 44 rutas operativas (97.8% IMPLEMENTADAS) 🆕
 - **🔧 No implementado**: 0 rutas pendientes  
 - **⚠️ Issue DB**: 1 ruta con problema de schema
-- **🎉 Nuevas rutas**: 12 rutas agregadas (6 observaciones + 3 usuarios/acceso + 3 reportes de fallas) 🆕
-- **Total**: 42 rutas configuradas 🆕
+- **🎉 Nuevas rutas**: 15 rutas agregadas (6 observaciones + 3 usuarios/acceso + 3 reportes de fallas + 3 HU22) 🆕
+- **Total**: 45 rutas configuradas 🆕
 
 ### ⚡ Tests Rápidos
 
@@ -197,6 +214,21 @@ curl http://localhost:8092/usuarios/residente.especial@example.com/edificio/1/ac
 curl http://localhost:8092/usuarios/residente.especial@example.com/edificio/2/acceso
 curl http://localhost:8092/usuarios/admin@example.com/activo/1/acceso
 curl http://localhost:8092/usuarios/residente.especial@example.com/activo/1/acceso
+
+# 🚨 NUEVAS RUTAS HU22: Reportes de Fallas
+# Crear reporte de falla
+curl -X POST http://localhost:8092/tipos-falla -H "Content-Type: application/json" -d '{"email":"usuario@example.com","tipo":"falla agua","descripcion":"Fuga en el baño","id_edificio":1}'
+
+# Agregar comentario a falla
+curl -X POST http://localhost:8092/comentarios -H "Content-Type: application/json" -d '{"email":"admin@example.com","id_falla":1,"comentario":"Revisando el problema"}'
+
+# Obtener todas las fallas del edificio (sin paginación)
+curl "http://localhost:8092/tipos-falla/edificio/1"
+
+# Obtener fallas del edificio con paginación
+curl "http://localhost:8092/tipos-falla/edificio/1?pagina=1"
+curl "http://localhost:8092/tipos-falla/edificio/1?pagina=2"
+curl "http://localhost:8092/tipos-falla/edificio/1?pagina=3"
 ```
 
 ## API Endpoints

@@ -84,7 +84,7 @@ class AuthClient {
     const payload: StoredPayload = {
       token: generateToken(),
       edificio: 'EA',
-      role: 'residente', // cambiar
+      role: 'tecnico', // cambiar
     };
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));

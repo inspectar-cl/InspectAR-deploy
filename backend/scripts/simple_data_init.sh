@@ -71,49 +71,49 @@ db.activos.insertMany([
   {
   activo_id: 2,
     nombre: 'Bomba Centrífuga A',
-    estado: 'operativo',
+    estado: 'Medio',
     edificio_id: 1,
     tipo: 'bomba'
   },
   {
   activo_id: 3,
     nombre: 'Bomba Hidráulica 1',
-    estado: 'operativo',
+    estado: 'Medio',
     edificio_id: 2,
     tipo: 'bomba'
   },
   {
   activo_id: 4,
     nombre: 'Ascensor Norte',
-    estado: 'operativo',
+    estado: 'Medio',
     edificio_id: 2,
     tipo: 'ascensor'
   },
   {
   activo_id: 5,
     nombre: 'Transformador Secundario',
-    estado: 'mantenimiento',
+    estado: 'Crítico',
     edificio_id: 3,
     tipo: 'transformador'
   },
   {
   activo_id: 6,
     nombre: 'Transformador Principal',
-    estado: 'operativo',
+    estado: 'Medio',
     edificio_id: 3,
     tipo: 'transformador'
   },
   {
   activo_id: 7,
     nombre: 'Ascensor Central',
-    estado: 'operativo',
+    estado: 'Medio',
     edificio_id: 1,
     tipo: 'ascensor'
   },
   {
   activo_id: 8,
     nombre: 'Bomba de Emergencia',
-    estado: 'mantenimiento',
+    estado: 'Crítico',
     edificio_id: 4,
     tipo: 'bomba'
   }

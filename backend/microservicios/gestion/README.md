@@ -146,7 +146,7 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 |--------|----------|-------------|---------|
 | `POST` | `/tipos-falla` | 🎯 **Crear reporte de falla** (agua, ascensor, electricidad, caldera) | ✅ **IMPLEMENTADO** |
 | `POST` | `/comentarios` | 🎯 **Agregar comentario a una falla reportada** | ✅ **IMPLEMENTADO** |
-| `GET` | `/tipos-falla/edificio/{edificio_id}` | 🎯 **Obtener fallas de un edificio (con/sin paginación)** | ✅ **IMPLEMENTADO** |
+| `GET` | `/tipos-falla/edificio/{edificio_id}?pagina={N}` | 🎯 **Obtener fallas de un edificio (con/sin paginación)** | ✅ **IMPLEMENTADO** |
 
 ### 🎯 Resumen de Estado
 

@@ -16,7 +16,7 @@ import { TemperatureProgress } from '@/components/dashboard/overview/temperature
 import { SensorScatter } from '@/components/dashboard/overview/sensor-scatter';
 
 import Services from '@/modules/Services';
-import { useUser } from '@/hooks/use-user';
+import { useUserToken } from '@/hooks/use-usertoken';
 import { activosMock } from '@/mocks/ActivosEdificiosMocks';
 
 const gs = new Services();
@@ -24,6 +24,16 @@ const gs = new Services();
 interface SensorData {
   sensor_id: string;
   datos: { tiempo: string; valor: number }[];
+}
+
+interface Activo {
+  id: number
+  edificio_id: number
+  creado_en: string
+  nombre: string
+  estado: 'OK' | 'Medio' | 'Crítico' | 'NN'
+  tipo: string
+  ubicacion: string
 }
 
 const estadoColor: Record<string, 'success' | 'warning' | 'error' | 'default'> = {
@@ -35,9 +45,15 @@ const estadoColor: Record<string, 'success' | 'warning' | 'error' | 'default'> =
 const fallbackImg = 'https://via.placeholder.com/640x360?text=Activo';
 
 export default function Page(): React.JSX.Element {
-  const { user, isLoading: loadingUser, error: userError } = useUser();
+  const { user, isLoading, error } = useUserToken();
 
   const [sensores, setSensores] = React.useState<SensorData[]>([]);
+
+  const [activosDelUsuario, setActivosDelUsuario] = React.useState<Activo[] | null>(null);
+  const [activosError, setActivosError] = React.useState<string | null>(null);
+  const [loadingActivos, setLoadingActivos] = React.useState(true);
+
+  type Estado = 'OK' | 'Medio' | 'Crítico' | 'NN';
 
   useEffect(() => {
     let alive = true;
@@ -59,57 +75,76 @@ export default function Page(): React.JSX.Element {
     return () => { alive = false; clearInterval(interval); };
   }, []); // 👈 importante
 
+  useEffect( () => {
+    // Si el usuario está cargando o no está definido, salimos.
+    if (isLoading || !user) {
+      setLoadingActivos(false);
+      return;
+    }
+
+    // Función asíncrona para obtener y filtrar los activos
+    const fetchActivos = async () => {
+      setLoadingActivos(true);
+      setActivosError(null);
+
+      try {
+        // Corregido: 'edificios' es el array de edificios del user
+        const edificiosIds = new Set((user.edificio || []).map(e => e.id));
+        const severity: Record<Estado, number> = { Crítico: 3, Medio: 2, OK: 1, NN: 0 };
+        
+        // LLAMADA ASÍNCRONA CORREGIDA (usando await)
+        const responseActivo = await gs.authorizedGet('/obtener-activos', user.token) as { activos?: Activo[], error?: any};
+
+        if (responseActivo.error) {
+          setActivosError(responseActivo.error.mensaje || 'Error al obtener activos.');
+          setActivosDelUsuario(null);
+          return;
+        }
+
+        // Filtrado de activos
+        const activosFiltrados = (responseActivo.activos ?? [])
+          .filter(a => edificiosIds.has(a.edificio_id))
+          .sort((a, b) => severity[b.estado] - severity[a.estado]);
+
+        setActivosDelUsuario(activosFiltrados);
+      } catch (err) {
+        setActivosError('Error de red o token inválido/expirado.');
+        setActivosDelUsuario(null);
+      } finally {
+        setLoadingActivos(false);
+      }
+    };
+
+    void fetchActivos();
+  }, [user, isLoading]);
+
   //Vista “Residente”: tarjetas 2x2 de activos críticos
   const isResidente = user?.role === 'residente';
-  const edificios = (user as any)?.edificioId as EdificioAPI[] | undefined;
 
-  // construimos un Set con claves de edificio para comparar
-  const buildingKeySet = React.useMemo<Set<string>>(() => {
-    if (!Array.isArray(edificios) || !edificios.length) return new Set();
-    return new Set(edificios.map(e => String(e.id).toUpperCase()));
-  }, [edificios]);
-
-  const activosDelUsuario = React.useMemo(() => {
-    const severity: Record<Estado, number> = { Crítico: 3, Medio: 2, OK: 1, NN: 0 };
-
-    if (buildingKeySet.size === 0) return [];
-    return activosMock
-      .filter(a => buildingKeySet.has(String(a.id_edificio).toUpperCase()))
-      .sort((a, b) => (severity[b.estado as Estado] ?? 0) - (severity[a.estado as Estado] ?? 0));
-  }, [buildingKeySet]);
-
-  type Estado = 'OK' | 'Medio' | 'Crítico' | 'NN';
-
-  type EdificioAPI = {
-  id: number;
-  nombre: string;
-  direccion: string;
-  creado_en: string;
-  };
-
-  if (loadingUser) {
+  if (isLoading || loadingActivos) {
     return (
       <Box sx={{ py: 8, textAlign: 'center' }}>
         <CircularProgress />
       </Box>
     );
   }
-  if (userError) {
+  if (error || activosError) {
     return (
       <Box sx={{ py: 8, textAlign: 'center' }}>
-        <Typography color="error">{userError}</Typography>
+        <Typography color="error">{error}</Typography>
       </Box>
     );
   }
 
   if (isResidente) {
+    const activosFinales = activosDelUsuario || [];
     return (
       <Box>
         <Typography variant="h4" sx={{ mb: 2 }}>
           Activos de tu edificio
         </Typography>
 
-        {activosDelUsuario.length === 0 ? (
+        {activosFinales.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 6 }}>
             <Typography variant="h6" color="text.secondary">
               No hay activos críticos en tu edificio
@@ -120,19 +155,19 @@ export default function Page(): React.JSX.Element {
           </Box>
         ) : (
           <Grid container spacing={3}>
-            {activosDelUsuario.map((a) => (
+            {activosFinales.map((a) => (
               <Grid key={a.id} size={{ xs: 12, md: 6 }}>
                 <Card sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, height: { md: 220 } }}>
                   <CardMedia
                     component="img"
-                    src={a.img || fallbackImg}
-                    alt={a.tipoActivo}
+                    src={fallbackImg}
+                    alt={a.tipo}
                     sx={{ width: { md: 260 }, height: { xs: 200, md: '100%' }, objectFit: 'cover' }}
                   />
                   <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                     <CardContent sx={{ pb: 1.5 }}>
                       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                        <Typography variant="h6">{a.tipoActivo}</Typography>
+                        <Typography variant="h6">{a.tipo}</Typography>
                         <Chip
                           label={a.estado}
                           color={estadoColor[a.estado] ?? 'default'}
@@ -143,8 +178,8 @@ export default function Page(): React.JSX.Element {
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                         <strong>Ubicación:</strong> {a.ubicacion}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary" noWrap title={a.descripcion}>
-                        {a.descripcion || 'Sin descripción'}
+                      <Typography variant="body2" color="text.secondary" noWrap title={a.creado_en}>
+                        {a.creado_en || 'Sin descripción'}
                       </Typography>
                     </CardContent>
                   </Box>

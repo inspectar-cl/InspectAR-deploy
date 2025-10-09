@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useUser } from '@/hooks/use-user';
+import { useUserToken } from '@/hooks/use-usertoken';
 import { forumPostsMock, type ForumPost, type ForumReply } from '@/mocks/forum';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -19,13 +19,6 @@ import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 
-type EdificioAPI = {
-  id: number;
-  nombre: string;
-  direccion: string;
-  creado_en: string;
-};
-
 function isoNow(): string {
   return new Date().toISOString();
 }
@@ -38,8 +31,8 @@ function makeId(prefix: string) {
 }
 
 export default function ForoPage(): React.JSX.Element {
-  const { user, isLoading, error } = useUser();
-  const edificios = (user as any)?.edificioId as EdificioAPI[] | undefined;
+  const { user, isLoading, error } = useUserToken();
+  const edificios = user?.edificio;
 
   const buildingIds = React.useMemo<number[]>(
     () => (Array.isArray(edificios) ? edificios.map((e) => e.id).filter((n) => Number.isFinite(n)) : []),

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Tabs, Tab, Box, Typography, Stack, FormControlLabel, Checkbox
@@ -25,12 +25,14 @@ interface SignatureDialogProps {
 
 export default function SignatureDialog({ open, onClose, onUseSignature }: SignatureDialogProps) {
   const sigRef = useRef<SignatureCanvas | null>(null);
+
   const [tab, setTab] = useState<0 | 1>(0);
   const [uploadedDataUrl, setUploadedDataUrl] = useState<string | null>(null);
   const [persist, setPersist] = useState<boolean>(true);
-  const [hasDrawn, setHasDrawn] = useState(false);        // ← AQUÍ, no arriba
+
   const [canvasSize, setCanvasSize] = useState({ width: 500, height: 200 });
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const [canUseDrawn, setCanUseDrawn] = useState(false);
 
   useEffect(() => {
     const resize = () => {
@@ -43,19 +45,32 @@ export default function SignatureDialog({ open, onClose, onUseSignature }: Signa
     return () => window.removeEventListener('resize', resize);
   }, []);
 
+
+  useEffect(() => {
+    if (open) setCanUseDrawn(false);
+  }, [open]);
+
+  useEffect(() => {
+    if (tab === 0) {
+      setCanUseDrawn(!!sigRef.current && !sigRef.current.isEmpty());
+    } else {
+      setCanUseDrawn(false);
+    }
+  }, [tab]);
+
   const handleUndo = () => {
     if (!sigRef.current) return;
     const data = sigRef.current.toData();
     if (data && data.length > 0) {
       data.pop();
       sigRef.current.fromData(data);
-      setHasDrawn(sigRef.current.isEmpty() ? false : true);
     }
+    setCanUseDrawn(!!sigRef.current && !sigRef.current.isEmpty());
   };
 
   const handleClear = () => {
     sigRef.current?.clear();
-    setHasDrawn(false);
+    setCanUseDrawn(false);
   };
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,41 +80,38 @@ export default function SignatureDialog({ open, onClose, onUseSignature }: Signa
     reader.onload = () => setUploadedDataUrl(reader.result as string);
     reader.readAsDataURL(file);
   };
-
+  // Extrae el dataUrl del canvas de firma (imagen PNG)
   function getSignatureDataUrlStrict(instance: any): string {
-  // intenta con trimmed; si falla, usa el canvas normal
-  try {
-    if (typeof instance.getTrimmedCanvas === 'function') {
-      return instance.getTrimmedCanvas().toDataURL('image/png');
+    try {
+      if (typeof instance.getTrimmedCanvas === 'function') {
+        return instance.getTrimmedCanvas().toDataURL('image/png');
+      }
+    } catch {
+      /* noop */
     }
-  } catch {
-    /* noop */
-  }
-  const canvas =
-    (typeof instance.getCanvas === 'function' && instance.getCanvas()) ||
-    instance._canvas ||
-    instance.canvas;
-
-  if (!canvas) throw new Error('No se pudo acceder al canvas de la firma.');
-  return canvas.toDataURL('image/png');
+    const canvas =
+      (typeof instance.getCanvas === 'function' && instance.getCanvas()) ||
+      instance._canvas ||
+      instance.canvas;
+    if (!canvas) throw new Error('No se pudo acceder al canvas de la firma.');
+    return canvas.toDataURL('image/png');
   }
 
-  const isEmpty = tab === 0 ? (!hasDrawn || sigRef.current?.isEmpty()) : !uploadedDataUrl;
+  const useSignature = () => {
+    if (tab === 0 && sigRef.current && !sigRef.current.isEmpty()) {
+      const dataUrl: string = getSignatureDataUrlStrict(sigRef.current);
+      onUseSignature(dataUrl, persist);
+      onClose();
+      return;
+    }
+    if (tab === 1 && uploadedDataUrl) {
+      onUseSignature(uploadedDataUrl, persist);
+      onClose();
+      return;
+    }
+  };
 
-    const useSignature = () => {
-        if (tab === 0 && sigRef.current && !sigRef.current.isEmpty()) {
-            const dataUrl: string = getSignatureDataUrlStrict(sigRef.current);
-            onUseSignature(dataUrl, persist);
-            onClose();
-            return;
-        }
-
-        if (tab === 1 && uploadedDataUrl) {
-            onUseSignature(uploadedDataUrl, persist);
-            onClose();
-            return;
-        }
-    };
+  const disabledUseButton = tab === 0 ? !canUseDrawn : !uploadedDataUrl;
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
@@ -117,8 +129,7 @@ export default function SignatureDialog({ open, onClose, onUseSignature }: Signa
                 ref={(instance) => { sigRef.current = instance; }}
                 penColor="#000000"
                 backgroundColor="rgba(255,255,255,0)"
-                onBegin={() => setHasDrawn(true)}   // habilita el botón al primer trazo
-                onEnd={() => setHasDrawn(true)}
+                onEnd={() => setCanUseDrawn(true)}
                 canvasProps={{
                   width: canvasSize.width,
                   height: canvasSize.height,
@@ -142,8 +153,12 @@ export default function SignatureDialog({ open, onClose, onUseSignature }: Signa
             {uploadedDataUrl && (
               <Box sx={{ mt: 2 }}>
                 <Typography variant="body2" sx={{ mb: 1 }}>Vista previa:</Typography>
-                <Box component="img" src={uploadedDataUrl} alt="Firma cargada"
-                     sx={{ maxWidth: '100%', maxHeight: 200, borderRadius: 1, border: '1px solid', borderColor: 'divider' }} />
+                <Box
+                  component="img"
+                  src={uploadedDataUrl}
+                  alt="Firma cargada"
+                  sx={{ maxWidth: '100%', maxHeight: 200, borderRadius: 1, border: '1px solid', borderColor: 'divider' }}
+                />
               </Box>
             )}
           </Box>
@@ -158,7 +173,7 @@ export default function SignatureDialog({ open, onClose, onUseSignature }: Signa
 
       <DialogActions>
         <Button onClick={onClose}>Cancelar</Button>
-        <Button onClick={useSignature} variant="contained" disabled={!!isEmpty}>
+        <Button onClick={useSignature} variant="contained" disabled={disabledUseButton}>
           Usar esta firma
         </Button>
       </DialogActions>

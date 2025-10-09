@@ -90,6 +90,13 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: []string{"user-type:Residente", "user-type:Admin"},
         },
+        {
+            Method:  "GET",
+            Pattern: "/api/obtener-contactos-id/:id_edificio",
+            Handler: ObtenerContactosPorEdificio,
+            Protected: true,
+            RequiredScopes: []string{"user-type:Residente", "user-type:Admin"},
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",

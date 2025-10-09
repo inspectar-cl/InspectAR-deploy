@@ -866,3 +866,49 @@ func ObtenerActivosPorEdificio(c *gin.Context) {
 
     c.JSON(http.StatusOK, result)
 }
+
+func ObtenerContactosPorEdificio(c *gin.Context) {
+    idEdificio := c.Param("id_edificio")
+    if idEdificio == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID del edificio es requerido"})
+        return
+    }
+
+    var wg sync.WaitGroup
+    var mu sync.Mutex
+    contactos := []interface{}{}
+    
+    wg.Add(1)
+    // Goroutine para obtener contactos
+    go func() {
+        defer wg.Done()
+        url := fmt.Sprintf("%s/tecnicos/edificio/%s", gestionURL, idEdificio)
+        resp, err := httpClient.Get(url)
+        if err != nil {
+            fmt.Println("Error obteniendo contactos: ", err)
+            return
+        }
+        defer resp.Body.Close()
+        
+        // La respuesta es un array directo, no un objeto con clave "contactos"
+        var contactosArray []interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&contactosArray); err != nil {
+            fmt.Println("Error decodificando contactos: ", err)
+            return
+        }
+        
+        mu.Lock()
+        contactos = contactosArray
+        mu.Unlock()
+    }()
+
+    wg.Wait() // Esperar a que termine la goroutine de contactos
+
+    result := map[string]interface{}{
+        "contactos": contactos,
+        "total": len(contactos),
+    }
+
+    c.JSON(http.StatusOK, result)
+
+}

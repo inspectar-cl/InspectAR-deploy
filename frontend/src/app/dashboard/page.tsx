@@ -59,26 +59,33 @@ export default function Page(): React.JSX.Element {
     return () => { alive = false; clearInterval(interval); };
   }, []); // 👈 importante
 
-  // ------ Vista “Residente”: tarjetas 2x2 de activos críticos de su edificio ------
+  //Vista “Residente”: tarjetas 2x2 de activos críticos
   const isResidente = user?.role === 'residente';
-  const edificioId = (user)?.edificio;
+  const edificios = (user as any)?.edificioId as EdificioAPI[] | undefined;
+
+  // construimos un Set con claves de edificio para comparar
+  const buildingKeySet = React.useMemo<Set<string>>(() => {
+    if (!Array.isArray(edificios) || !edificios.length) return new Set();
+    return new Set(edificios.map(e => String(e.id).toUpperCase()));
+  }, [edificios]);
+
+  const activosDelUsuario = React.useMemo(() => {
+    const severity: Record<Estado, number> = { Crítico: 3, Medio: 2, OK: 1, NN: 0 };
+
+    if (buildingKeySet.size === 0) return [];
+    return activosMock
+      .filter(a => buildingKeySet.has(String(a.id_edificio).toUpperCase()))
+      .sort((a, b) => (severity[b.estado as Estado] ?? 0) - (severity[a.estado as Estado] ?? 0));
+  }, [buildingKeySet]);
 
   type Estado = 'OK' | 'Medio' | 'Crítico' | 'NN';
 
-  const activosCriticosDelEdificio = React.useMemo(() => {
-
-    const severity: Record<Estado, number> = {
-      'Crítico': 3,
-      'Medio': 2,
-      'OK': 1,
-      'NN': 0
-    } as const;
-
-    if (!edificioId) return [];
-    return activosMock
-        .filter(a => !edificioId || a.id_edificio === edificioId)
-        .sort((a, b) => severity[b.estado as Estado] - severity[a.estado as Estado]);
-    }, [edificioId]);
+  type EdificioAPI = {
+  id: number;
+  nombre: string;
+  direccion: string;
+  creado_en: string;
+  };
 
   if (loadingUser) {
     return (
@@ -102,7 +109,7 @@ export default function Page(): React.JSX.Element {
           Activos de tu edificio
         </Typography>
 
-        {activosCriticosDelEdificio.length === 0 ? (
+        {activosDelUsuario.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 6 }}>
             <Typography variant="h6" color="text.secondary">
               No hay activos críticos en tu edificio
@@ -113,7 +120,7 @@ export default function Page(): React.JSX.Element {
           </Box>
         ) : (
           <Grid container spacing={3}>
-            {activosCriticosDelEdificio.map((a) => (
+            {activosDelUsuario.map((a) => (
               <Grid key={a.id} size={{ xs: 12, md: 6 }}>
                 <Card sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, height: { md: 220 } }}>
                   <CardMedia

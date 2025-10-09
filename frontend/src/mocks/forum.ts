@@ -2,14 +2,14 @@
 export interface ForumReply {
   id: string;          // id de la respuesta
   postId: string;      // id del tema al que responde
-  content: string;     // puedes incluir "Autor dijo: ..." aquí mismo
-  createdAt: string;   // ISO date
+  content: string;     // contenido de la respuesta
+  createdAt: string;   // date
 };
 
 export interface ForumPost {
   id: string;               // id del tema
-  buildingId: string;       // "EA" | "EB" | ...
-  content: string;          // "Juanito dijo: ...", etc.
+  buildingId: number;       // id del edificio asociado
+  content: string;          // contenido del tema
   createdAt: string;
   replies: ForumReply[];
 };
@@ -17,7 +17,7 @@ export interface ForumPost {
 export const forumPostsMock: ForumPost[] = [
   {
     id: 'p-1001',
-    buildingId: 'EA',
+    buildingId: 1,
     content: 'Juanito dijo: La luz del ascensor parpadea a ratos, posible falla eléctrica.',
     createdAt: '2025-10-04T11:05:00.000Z',
     replies: [
@@ -31,14 +31,14 @@ export const forumPostsMock: ForumPost[] = [
   },
   {
     id: 'p-1002',
-    buildingId: 'EA',
+    buildingId: 1,
     content: 'Pedro dijo: Caldera con ruido intermitente, quizá buje suelto.',
     createdAt: '2025-10-03T18:40:00.000Z',
     replies: []
   },
   {
     id: 'p-1003',
-    buildingId: 'EB',
+    buildingId: 2,
     content: 'Ana dijo: Bomba de agua marcó presión alta anoche.',
     createdAt: '2025-10-03T09:15:00.000Z',
     replies: [

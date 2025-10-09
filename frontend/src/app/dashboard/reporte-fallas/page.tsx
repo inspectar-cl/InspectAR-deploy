@@ -14,41 +14,74 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardActions from '@mui/material/CardActions';
 import CircularProgress from '@mui/material/CircularProgress';
-import { v4 as uuid } from 'uuid';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+
+type EdificioAPI = {
+  id: number;
+  nombre: string;
+  direccion: string;
+  creado_en: string;
+};
 
 function isoNow(): string {
   return new Date().toISOString();
 }
+function makeId(prefix: string) {
+  const base =
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}-${base}`;
+}
 
 export default function ForoPage(): React.JSX.Element {
   const { user, isLoading, error } = useUser();
-  const edificioId = user?.edificio;
+  const edificios = (user as any)?.edificioId as EdificioAPI[] | undefined;
+
+  const buildingIds = React.useMemo<number[]>(
+    () => (Array.isArray(edificios) ? edificios.map((e) => e.id).filter((n) => Number.isFinite(n)) : []),
+    [edificios]
+  );
 
   const [posts, setPosts] = React.useState<ForumPost[]>([]);
   const [newPostContent, setNewPostContent] = React.useState('');
+  const [selectedBuildingId, setSelectedBuildingId] = React.useState<number | ''>('');
 
   React.useEffect(() => {
-    if (!edificioId) return;
-    // carga inicial: filtrar por edificio y ordenar por fecha desc
+    setSelectedBuildingId(buildingIds[0] ?? '');
+  }, [buildingIds]);
+
+  //Cargar posts de los edificios del usuario
+  React.useEffect(() => {
+    if (!buildingIds.length) {
+      setPosts([]);
+      return;
+    }
+    const idSet = new Set(buildingIds);
     const initial = forumPostsMock
-      .filter(p => p.buildingId === edificioId)
+      .filter((p) => idSet.has(p.buildingId))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     setPosts(initial);
-  }, [edificioId]);
+  }, [buildingIds]);
 
   const handlePublish = (): void => {
     const content = newPostContent.trim();
-    if (!content) return;
-    // Componer contenido estilo "Nombre dijo: ..." si quieren forzarlo
-    // Aquí dejamos lo que escriba el usuario tal cual:
+    const bId = typeof selectedBuildingId === 'number' ? selectedBuildingId : buildingIds[0];
+
+    if (!content || !Number.isFinite(bId)) return;
+
     const newPost: ForumPost = {
-      id: `p-${uuid()}`,
-      buildingId: edificioId ?? 'NN',
+      id: makeId('p'),
+      buildingId: bId,
       content,
       createdAt: isoNow(),
       replies: []
     };
-    setPosts(prev => [newPost, ...prev]);
+
+    setPosts((prev) => [newPost, ...prev]);
     setNewPostContent('');
   };
 
@@ -56,15 +89,17 @@ export default function ForoPage(): React.JSX.Element {
     const content = replyText.trim();
     if (!content) return;
     const reply: ForumReply = {
-      id: `r-${uuid()}`,
+      id: makeId('r'),
       postId,
       content,
       createdAt: isoNow()
     };
-    setPosts(prev => prev.map(p => {
-      if (p.id !== postId) return p;
-      return { ...p, replies: [...p.replies, reply] };
-    }));
+    setPosts((prev) =>
+      prev.map((p) => {
+        if (p.id !== postId) return p;
+        return { ...p, replies: [...p.replies, reply] };
+      })
+    );
   };
 
   if (isLoading) {
@@ -87,21 +122,42 @@ export default function ForoPage(): React.JSX.Element {
     <Box sx={{ display: 'grid', gap: 3 }}>
       <Typography variant="h4">Foro del edificio</Typography>
       <Typography variant="body2" color="text.secondary">
-        Comparte novedades sobre los activos de tu edificio.
+        Comparte novedades sobre los activos de tus edificios.
       </Typography>
 
       {/* Composer */}
       <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
         <Stack spacing={2}>
+          {/* aqui se selecciona el edificio si el usuario tiene mas, es un filtro*/}
+          {buildingIds.length > 1 && (
+            <FormControl size="small" sx={{ minWidth: 220 }}>
+              <InputLabel id="edificio-select-label">Publicar en</InputLabel>
+              <Select
+                labelId="edificio-select-label"
+                label="Publicar en"
+                value={selectedBuildingId}
+                onChange={(e) => setSelectedBuildingId(Number(e.target.value))}
+              >
+                {edificios?.map((e) => (
+                  <MenuItem key={e.id} value={e.id}>
+                    {e.nombre ? `${e.nombre} (#${e.id})` : `Edificio #${e.id}`}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+
           <TextField
             multiline
             minRows={3}
-            placeholder="¿Alguna novedad en algún activo de tu edificio?"
+            placeholder="¿Alguna novedad en algún activo de tus edificios?"
             value={newPostContent}
-            onChange={(e) => {setNewPostContent(e.target.value)} }
+            onChange={(e) => {
+              setNewPostContent(e.target.value);
+            }}
           />
           <Box sx={{ textAlign: 'right' }}>
-            <Button variant="contained" onClick={handlePublish} disabled={!newPostContent.trim()}>
+            <Button variant="contained" onClick={handlePublish} disabled={!newPostContent.trim() || !buildingIds.length}>
               Publicar
             </Button>
           </Box>
@@ -114,7 +170,7 @@ export default function ForoPage(): React.JSX.Element {
       {!posts.length ? (
         <Box sx={{ textAlign: 'center', py: 6 }}>
           <Typography variant="h6" color="text.secondary">
-            Aún no hay publicaciones en tu edificio
+            Aún no hay publicaciones en tus edificios
           </Typography>
         </Box>
       ) : (
@@ -128,7 +184,13 @@ export default function ForoPage(): React.JSX.Element {
   );
 }
 
-function PostCard({ post, onReply }: { post: ForumPost; onReply: (postId: string, replyText: string) => void; }): React.JSX.Element {
+function PostCard({
+  post,
+  onReply
+}: {
+  post: ForumPost;
+  onReply: (postId: string, replyText: string) => void;
+}): React.JSX.Element {
   const [replyText, setReplyText] = React.useState('');
 
   return (
@@ -139,13 +201,12 @@ function PostCard({ post, onReply }: { post: ForumPost; onReply: (postId: string
             {post.content}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            {new Date(post.createdAt).toLocaleString()}
+            {new Date(post.createdAt).toLocaleString()} • Edificio #{post.buildingId}
           </Typography>
         </Stack>
       </CardContent>
 
-      {/* Respuestas existentes del mock de momento*/}
-      {Boolean(post.replies.length) && (
+      {!!post.replies.length && (
         <CardContent sx={{ pt: 0 }}>
           <Stack spacing={1.25} sx={{ pl: { xs: 0, sm: 1.5 } }}>
             {post.replies.map((r) => (
@@ -154,19 +215,24 @@ function PostCard({ post, onReply }: { post: ForumPost; onReply: (postId: string
           </Stack>
         </CardContent>
       )}
-        {/* Composer de respuesta, aqui podriamos obtener el nombre del comentario quizas */}
+
       <CardActions sx={{ px: 2, pb: 2 }}>
         <Stack direction="row" spacing={1} sx={{ width: '100%' }}>
           <TextField
             size="small"
             fullWidth
-            placeholder='Reply to...'
+            placeholder='Reply'
             value={replyText}
-            onChange={(e) => {setReplyText(e.target.value)} }
+            onChange={(e) => {
+              setReplyText(e.target.value);
+            }}
           />
           <Button
             variant="outlined"
-            onClick={() => { onReply(post.id, replyText); setReplyText(''); }}
+            onClick={() => {
+              onReply(post.id, replyText);
+              setReplyText('');
+            }}
             disabled={!replyText.trim()}
           >
             Responder

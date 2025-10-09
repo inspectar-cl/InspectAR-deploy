@@ -817,3 +817,52 @@ func ObtenerRol(c *gin.Context) {
         "scope": scope,
     })
 }
+
+// Obtener Activos por id_edificio
+func ObtenerActivosPorEdificio(c *gin.Context) {
+    idEdificio := c.Param("id_edificio")
+    if idEdificio == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID del edificio es requerido"})
+        return
+    }
+
+    var wg sync.WaitGroup
+    var mu sync.Mutex
+    activos := []interface{}{}
+    
+    wg.Add(1)
+    // Goroutine para obtener activos del edificio
+    go func() {
+        defer wg.Done()
+        url := fmt.Sprintf("%s/activos/edificio/%s", gestionURL, idEdificio)
+        resp, err := httpClient.Get(url)
+        if err != nil {
+            fmt.Println("Error obteniendo activos por edificio: ", err)
+            return
+        }
+        defer resp.Body.Close()
+        
+        var data map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+            fmt.Println("Error decodificando activos: ", err)
+            return
+        }
+        
+        if activosData, exists := data["activos"]; exists {
+            if activosArray, ok := activosData.([]interface{}); ok {
+                mu.Lock()
+                activos = activosArray
+                mu.Unlock()
+            }
+        }
+    }()
+
+    wg.Wait() // Esperar a que termine la goroutine de activos
+
+    result := map[string]interface{}{
+        "activos": activos,
+        "total": len(activos),
+    }
+
+    c.JSON(http.StatusOK, result)
+}

@@ -82,6 +82,14 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente", "user-type:Analista", "user-type:Admin"},
         },
+        // A partir de acá serían los handlers para el sprint 2
+        { 
+            Method:  "GET",
+            Pattern: "/api/obtener-activos-id/:id_edificio",
+            Handler: ObtenerActivosPorEdificio,
+            Protected: true,
+            RequiredScopes: []string{"user-type:Residente", "user-type:Admin"},
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",

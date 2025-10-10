@@ -44,20 +44,20 @@ export function Layout({ children }: LayoutProps): React.JSX.Element {
         <Stack spacing={3}>
           <Stack spacing={1}>
             <Typography color="inherit" sx={{ fontSize: '24px', lineHeight: '32px', textAlign: 'center' }} variant="h1">
-              Welcome to{' '}
-              <Box component="span" sx={{ color: '#15b79e' }}>
-                Devias Kit
+              Bienvenido a{' '}
+              <Box component="span" sx={{ color: '#b9750eff' }}>
+                InspectAR
               </Box>
             </Typography>
             <Typography align="center" variant="subtitle1">
-              A professional template that comes with ready-to-use MUI components.
+              Una nueva forma de vivir el proceso de inspección. Transparencia, educación y confianza.
             </Typography>
           </Stack>
           <Box sx={{ display: 'flex', justifyContent: 'center' }}>
             <Box
               component="img"
               alt="Widgets"
-              src="/assets/auth-widgets.png"
+              src="/assets/error-401.png"
               sx={{ height: 'auto', width: '100%', maxWidth: '600px' }}
             />
           </Box>

@@ -173,6 +173,9 @@ export default function Page(): React.JSX.Element {
                           color={estadoColor[a.estado] ?? 'default'}
                           size="small"
                           sx={{ fontWeight: 600 }}
+                          onClick={() => {
+                            /* Funcion vacia por ahora para evitar issue de que boton no tiene onClick*/
+                          }}
                         />
                       </Stack>
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>

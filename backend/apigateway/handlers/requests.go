@@ -749,7 +749,7 @@ func RefreshHandler(c *gin.Context) {
                 return
             }
             
-            // ✅ Type assertion para convertir interface{} a string
+            // Type assertion para convertir interface{} a string
             var ok bool
             email, ok = emailInterface.(string)
             if !ok {
@@ -913,7 +913,7 @@ func ObtenerContactosPorEdificio(c *gin.Context) {
 
 }
 
-func ForoEdificioHandler (c *gin.Context) {
+func ForoEdificioHandler(c *gin.Context) {
     idEdificio := c.Param("id_edificio")
     if idEdificio == "" {
         c.JSON(http.StatusBadRequest, gin.H{"error": "ID del edificio es requerido"})
@@ -972,4 +972,129 @@ func ForoEdificioHandler (c *gin.Context) {
     }
 
     c.JSON(http.StatusOK, foroData)
+}
+
+func PublicacionForoHandler(c *gin.Context) {
+    idEdificio := c.Param("id_edificio")
+    if idEdificio == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID del edificio es requerido"})
+        return
+    }
+
+    // Extraer el email desde el token JWT
+    var email string
+    authHeader := c.GetHeader("Authorization")
+    if authHeader == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+        return
+    }
+    
+    // fmt.Printf("DEBUG: Authorization header: %s\n", authHeader)
+
+    //Bearer eydsdsdsd...
+    tokenParts := strings.Split(authHeader, " ")
+
+    emailInterface, err := extractClaimFromToken(tokenParts[1], "email")
+    if err != nil {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+        return
+    }
+    
+    // Type assertion para convertir interface{} a string
+    var ok bool
+    email, ok = emailInterface.(string)
+    if !ok {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid email format in token"})
+        return
+    }
+    
+    fmt.Printf("Email extraído del token: %s\n", email)
+
+    // Leer el body de la request
+    var publicacionData map[string]interface{}
+    if err := c.ShouldBindJSON(&publicacionData); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+        return
+    }
+
+    // Validar que vengan los campos requeridos
+    if _, exists := publicacionData["tipo"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'tipo' es requerido"})
+        return
+    }
+
+    if _, exists := publicacionData["descripcion"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'descripcion' es requerido"})
+        return
+    }
+
+    fmt.Printf("Publicación recibida para edificio %s por usuario %s: %+v\n", idEdificio, email, publicacionData)
+    
+    // Body para el microservicio
+    // Convertir id_edificio a int
+    idEdificioInt := 0
+    if _, err := fmt.Sscanf(idEdificio, "%d", &idEdificioInt); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID del edificio debe ser un número válido"})
+        return
+    }
+
+    bodyData := map[string]interface{}{
+        "tipo": publicacionData["tipo"],
+        "descripcion": publicacionData["descripcion"],
+        "email": email,
+        "id_edificio": idEdificioInt,
+    }
+
+    // Convertir a JSON
+    jsonData, err := json.Marshal(bodyData)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando datos"})
+        return
+    }
+
+    fmt.Printf("DEBUG: Enviando publicación al foro: %+v\n", bodyData)
+
+    // Hacer POST al microservicio de gestión
+    var wg sync.WaitGroup
+    var mu sync.Mutex
+    var responseData map[string]interface{}
+    var statusCode int
+
+    wg.Add(1)
+    go func() {
+        defer wg.Done()
+        
+        url := fmt.Sprintf("%s/tipos-falla", gestionURL)
+        resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+        if err != nil {
+            fmt.Println("Error enviando publicación al foro: ", err)
+            return
+        }
+        defer resp.Body.Close()
+
+        mu.Lock()
+        statusCode = resp.StatusCode
+        mu.Unlock()
+
+        var data map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+            fmt.Println("Error decodificando respuesta de publicación: ", err)
+            return
+        }
+
+        mu.Lock()
+        responseData = data
+        mu.Unlock()
+    }()
+
+    wg.Wait()
+
+    // Verificar si hubo respuesta
+    if responseData == nil {
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al crear publicación en el foro"})
+        return
+    }
+
+    // Retornar la respuesta del microservicio
+    c.JSON(statusCode, responseData)
 }

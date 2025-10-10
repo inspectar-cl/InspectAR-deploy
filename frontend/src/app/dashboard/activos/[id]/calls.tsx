@@ -13,7 +13,7 @@ import Box from '@mui/material/Box'
 import dayjs from 'dayjs';
 import { type Activo } from '@/types/'
 import { DownloadSimple } from '@phosphor-icons/react';
-
+import { useUserToken } from '@/hooks/use-usertoken';
 import ScoreChart from '@/components/dashboard/overview/score-chart';
 import { Caudal } from '@/components/dashboard/overview/caudal';
 import { Presion } from '@/components/dashboard/overview/presion';
@@ -41,7 +41,8 @@ function normalizeTrend(t: unknown): Trend {
 const gs = new Services()
 
 export default function ActivoDetailClient({ id }: { id: number}) {
-
+  const { user, isLoading, error } = useUserToken();
+  const [loadingActivos, setLoadingActivos] = React.useState(true);
   const [activo, setActivo] = React.useState<Activo | null>(null)
   interface SensorDato {
     valor: number;
@@ -61,6 +62,9 @@ export default function ActivoDetailClient({ id }: { id: number}) {
   //const hasFetchedRef = React.useRef(false)
   
   useEffect(() => {
+    //ta raro esto, a veces funciona con este codigo o a veces no
+    //quitar el if y volver a colocarlo si no funca
+    if (isLoading || !user) {return;}
     const fetchData = async () => {
       try {
         interface ActivoResponse {
@@ -73,8 +77,9 @@ export default function ActivoDetailClient({ id }: { id: number}) {
           id_ficha_tecnica?: number;
           sensores?: Sensor[];
         }
-        const response = await gs.get(`/obtener-activo-id/${id}`) as ActivoResponse;
-        //console.log("response", response)
+        // falta solucion parche pal user
+        const response = await gs.authorizedGet(`/obtener-activo-id/${id}`, user.token) as ActivoResponse;
+        console.log("response", response)
 
         // Aqui deberian de cargarse la data de los activos (Ojala desde una llamada a API)
         const estado: Estado = ESTADOS.includes(response.estado as Estado)

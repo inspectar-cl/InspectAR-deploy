@@ -94,7 +94,7 @@ export default function Page(): React.JSX.Element {
         
         // LLAMADA ASÍNCRONA CORREGIDA (usando await)
         const responseActivo = await gs.authorizedGet('/obtener-activos', user.token) as { activos?: Activo[], error?: any};
-
+        console.log('Respuesta de activos:', responseActivo);
         if (responseActivo.error) {
           setActivosError(responseActivo.error.mensaje || 'Error al obtener activos.');
           setActivosDelUsuario(null);

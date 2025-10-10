@@ -912,3 +912,64 @@ func ObtenerContactosPorEdificio(c *gin.Context) {
     c.JSON(http.StatusOK, result)
 
 }
+
+func ForoEdificioHandler (c *gin.Context) {
+    idEdificio := c.Param("id_edificio")
+    if idEdificio == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID del edificio es requerido"})
+        return
+    }
+
+    // Obtener parámetro de paginación que puede ser opcional
+    pagina := c.Query("pagina")
+    
+    var wg sync.WaitGroup
+    var mu sync.Mutex
+    var foroData map[string]interface{}
+
+    wg.Add(1)
+    go func() {
+        defer wg.Done()
+        var url string
+        
+        // Si no tiene parámetro de paginación, se retornan todos los mensajes del foro (¡No recomendado! ☢️)
+        if pagina != "" {
+            url = fmt.Sprintf("%s/tipos-falla/edificio/%s?pagina=%s", gestionURL, idEdificio, pagina)
+        } else {
+            url = fmt.Sprintf("%s/tipos-falla/edificio/%s", gestionURL, idEdificio)
+        }
+
+        fmt.Println("DEBUG: URL foro edificio:", url)
+
+        resp, err := httpClient.Get(url)
+        if err != nil {
+            fmt.Println("Error obteniendo mensajes del foro: ", err)
+            return
+        }
+        defer resp.Body.Close()
+        
+        var data map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+            fmt.Println("Error decodificando mensajes del foro: ", err)
+            return
+        }
+
+        mu.Lock()
+        foroData = data
+        mu.Unlock()
+    }()
+
+    wg.Wait()
+
+    if foroData == nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "No se encontraron mensajes del foro"})
+        return
+    }
+
+    if mensajes, exists := foroData["data"]; exists {
+        foroData["foro"] = mensajes
+        delete(foroData, "data") // Eliminar la clave original "data"
+    }
+
+    c.JSON(http.StatusOK, foroData)
+}

@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# ejecutarlo con "bash test_tipos_falla.sh"
 # Script de prueba integral para tipos_falla y comentarios
 # Crea 25 reportes de falla con 3-4 comentarios cada uno
 # Luego verifica la paginación y estructura de respuesta
@@ -20,7 +21,7 @@ TOTAL_COMENTARIOS_CREADOS=0
 ERRORES=0
 
 # Arrays para emails y tipos de falla
-EMAILS=("admin@example.com" "usuario@example.com" "residente.especial@example.com")
+EMAILS=("residente@example.com" "tecnico@example.com" "analista@example.com")
 TIPOS_FALLA=("falla agua" "falla ascensor" "falla electricidad" "falla caldera")
 
 echo -e "${BLUE}================================================${NC}"

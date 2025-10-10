@@ -97,6 +97,13 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: []string{"user-type:Residente", "user-type:Admin"},
         },
+        { 
+            Method:  "GET",
+            Pattern: "/api/foro-edificio/:id_edificio",
+            Handler: ForoEdificioHandler,
+            Protected: true,
+            RequiredScopes: []string{"user-type:Residente", "user-type:Admin"},
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",
@@ -110,7 +117,7 @@ func getSpecialHandlers() []SpecialHandler {
         //     Pattern: "",
         //     Handler: ,
         //     Protected: true,
-        //     RequiredScopes: []string{"user-type:Analista", "user-type:Tecnico"},
+        //     RequiredScopes: []string{"user-type:Analista", "user-type:Admin"},
         // },
     }
 }

@@ -18,10 +18,12 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
+import Services from '@/modules/Services';
+import { ApiPublicacion, ApiForoResponse} from './helper';
 
-function isoNow(): string {
-  return new Date().toISOString();
-}
+
+const gs = new Services();
+
 function makeId(prefix: string) {
   const base =
     typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -30,69 +32,124 @@ function makeId(prefix: string) {
   return `${prefix}-${base}`;
 }
 
+const FORO_API_BASE = '/foro-edificio';
+
+/**
+ * Carga las publicaciones del foro para un edificio y página específicos.
+ * @param buildingId El ID del edificio a consultar.
+ * @param accessToken El token JWT para la autorización.
+ * @param page La página a cargar (opcional, por defecto es 1).
+ */
+async function fetchForumPosts(
+  buildingId: number,
+  accessToken: string,
+  page: number = 1
+): Promise<{ data: ApiPublicacion[] | null; totalItems: number; error: string | null }> {
+  // Construir la URI con el ID del edificio y el parámetro de paginación
+  let uri = `${FORO_API_BASE}/${buildingId}`;
+  if (page > 1) {
+    uri += `?pagina=${page}`;
+  }
+
+  try {
+    // Utilizamos authorizedGet o authorizedPost si tu gs lo soporta.
+    // Aquí usaremos authorizedGet, asumiendo que lo agregaste a Services como discutimos antes.
+    const res = await gs.authorizedGet(uri, accessToken) as ApiForoResponse & { error?: any };
+
+    // Manejo de errores de la API
+    if (res.error) {
+      const msg = res.error.data?.mensaje || res.error?.message || 'Error al cargar el foro.';
+      return { data: null, totalItems: 0, error: msg };
+    }
+
+    return {
+      data: res.foro || [],
+      totalItems: res.total_items || 0,
+      error: null
+    };
+  } catch (err) {
+    console.error('Error fetching forum posts:', err);
+    return { data: null, totalItems: 0, error: 'Error de red o conexión al servidor.' };
+  }
+}
+
 export default function ForoPage(): React.JSX.Element {
   const { user, isLoading, error } = useUserToken();
   const edificios = user?.edificio;
+  const token = user?.token;
 
   const buildingIds = React.useMemo<number[]>(
     () => (Array.isArray(edificios) ? edificios.map((e) => e.id).filter((n) => Number.isFinite(n)) : []),
     [edificios]
   );
 
-  const [posts, setPosts] = React.useState<ForumPost[]>([]);
-  const [newPostContent, setNewPostContent] = React.useState('');
+  const [posts, setPosts] = React.useState<ApiPublicacion[]>([]);
+  const [isPostsLoading, setIsPostsLoading] = React.useState(false);
+  const [postsError, setPostsError] = React.useState<string | null>(null);
+
+  //Paginacion
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [totalPages, setTotalPages] = React.useState(1);
+  const [itemsPerPage, setItemsPerPage] = React.useState(10);
+  //Seleccion de edificio
   const [selectedBuildingId, setSelectedBuildingId] = React.useState<number | ''>('');
 
-  React.useEffect(() => {
-    setSelectedBuildingId(buildingIds[0] ?? '');
-  }, [buildingIds]);
+  const [newPostContent, setNewPostContent] = React.useState('');
 
-  //Cargar posts de los edificios del usuario
+  //Seteo de primer edificio por defecto (de la lista de edificios tomo el primero)
   React.useEffect(() => {
-    if (!buildingIds.length) {
+    if (buildingIds.length > 0 && selectedBuildingId === '') {
+      setSelectedBuildingId(buildingIds[0] ?? '');
+    }
+  }, [buildingIds, selectedBuildingId]);
+
+   React.useEffect(() => {
+    // Asegurarse de tener token y un ID de edificio válido para hacer la llamada
+    const bId = typeof selectedBuildingId === 'number' ? selectedBuildingId : null;
+    if (!bId || !token) {
       setPosts([]);
+      setTotalPages(1);
       return;
     }
-    const idSet = new Set(buildingIds);
-    const initial = forumPostsMock
-      .filter((p) => idSet.has(p.buildingId))
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    setPosts(initial);
-  }, [buildingIds]);
 
-  const handlePublish = (): void => {
-    const content = newPostContent.trim();
-    const bId = typeof selectedBuildingId === 'number' ? selectedBuildingId : buildingIds[0];
+    // Función de carga real
+    const loadPosts = async () => {
+      setIsPostsLoading(true);
+      setPostsError(null);
 
-    if (!content || !Number.isFinite(bId)) return;
+      const { data, totalItems, error } = await fetchForumPosts(bId, token, currentPage);
 
-    const newPost: ForumPost = {
-      id: makeId('p'),
-      buildingId: bId,
-      content,
-      createdAt: isoNow(),
-      replies: []
+      if (error) {
+        setPostsError(error);
+        setPosts([]);
+      } else {
+        setPosts(data || []);
+        // Calcula el total de páginas, asumiendo 10 elementos por página si la API no lo devuelve
+        const itemsPerPageFinal = 10; 
+        setItemsPerPage(itemsPerPageFinal);
+        setTotalPages(Math.ceil(totalItems / itemsPerPageFinal));
+      }
+
+      setIsPostsLoading(false);
     };
 
-    setPosts((prev) => [newPost, ...prev]);
-    setNewPostContent('');
+    loadPosts();
+
+  }, [selectedBuildingId, currentPage, token]);
+
+  // Manejar el cambio de edificio, forzando la vuelta a la página 1
+  const handleBuildingChange = (id: number | ''): void => {
+    setSelectedBuildingId(id);
+    setCurrentPage(1); // Siempre resetear a la primera página al cambiar de edificio
   };
 
-  const handleReply = (postId: string, replyText: string): void => {
-    const content = replyText.trim();
-    if (!content) return;
-    const reply: ForumReply = {
-      id: makeId('r'),
-      postId,
-      content,
-      createdAt: isoNow()
-    };
-    setPosts((prev) =>
-      prev.map((p) => {
-        if (p.id !== postId) return p;
-        return { ...p, replies: [...p.replies, reply] };
-      })
-    );
+  // Los handlers de publicación y respuesta ahora son de "mock" temporalmente
+  // Aqui iria el post de las publicaciones
+  const handlePublish = (): void => { /* ... (mock por ahora) ... */ };
+  const handleReply = (postId: number, replyText: string): void => { 
+    // Aquí se debería llamar a una API de POST para crear un comentario
+    console.log(`Respuesta al post ${postId}: ${replyText}`);
+    // Por ahora solo loguea, ya que tu backend no tiene un POST implementado aquí
   };
 
   if (isLoading) {
@@ -159,18 +216,51 @@ export default function ForoPage(): React.JSX.Element {
 
       <Divider />
 
-      {/* Listado de temas */}
-      {!posts.length ? (
+      {isPostsLoading ? (
+        <Box sx={{ textAlign: 'center', py: 6 }}>
+          <CircularProgress />
+          <Typography>Cargando publicaciones...</Typography>
+        </Box>
+      ) : postsError ? (
+        <Box sx={{ textAlign: 'center', py: 6 }}>
+          <Typography color="error">{postsError}</Typography>
+        </Box>
+      ) : !posts.length ? (
         <Box sx={{ textAlign: 'center', py: 6 }}>
           <Typography variant="h6" color="text.secondary">
-            Aún no hay publicaciones en tus edificios
+            Aún no hay publicaciones para este edificio.
           </Typography>
         </Box>
       ) : (
         <Stack spacing={2}>
           {posts.map((p) => (
-            <PostCard key={p.id} post={p} onReply={handleReply} />
+            <PostCard 
+              key={p.id_falla}
+              post={p} 
+              onReply={(text) => handleReply(p.id_falla, text)} 
+            />
           ))}
+
+          {/* Control de Paginación */}
+          {totalPages > 1 && (
+            <Stack direction="row" justifyContent="center" spacing={2} sx={{ mt: 3 }}>
+              <Button
+                onClick={() => setCurrentPage((p) => p - 1)}
+                disabled={currentPage === 1}
+              >
+              Anterior
+              </Button>
+              <Typography variant="body2" sx={{ alignSelf: 'center' }}>
+                Página {currentPage} de {totalPages}
+              </Typography>
+              <Button
+                onClick={() => setCurrentPage((p) => p + 1)}
+                disabled={currentPage >= totalPages}
+              >
+                Siguiente
+              </Button>
+            </Stack>
+          )}
         </Stack>
       )}
     </Box>
@@ -181,8 +271,8 @@ function PostCard({
   post,
   onReply
 }: {
-  post: ForumPost;
-  onReply: (postId: string, replyText: string) => void;
+  post: ApiPublicacion;
+  onReply: (replyText: string) => void;
 }): React.JSX.Element {
   const [replyText, setReplyText] = React.useState('');
 
@@ -191,19 +281,26 @@ function PostCard({
       <CardContent>
         <Stack spacing={1.25}>
           <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
-            {post.content}
+            {post.descripcion}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            {new Date(post.createdAt).toLocaleString()} • Edificio #{post.buildingId}
+            Publicado por **{post.username}** el {new Date(post.fecha_publicacion).toLocaleString()} 
+            • Edificio #{post.id_edificio} • Estado: {post.estado} • Tipo: {post.tipo}
           </Typography>
         </Stack>
       </CardContent>
 
-      {!!post.replies.length && (
+      {!!post.comentarios.length && (
         <CardContent sx={{ pt: 0 }}>
+          <Divider sx={{ mb: 1.5 }} />
           <Stack spacing={1.25} sx={{ pl: { xs: 0, sm: 1.5 } }}>
-            {post.replies.map((r) => (
-              <Reply key={r.id} content={r.content} createdAt={r.createdAt} />
+          {post.comentarios.map((r) => (
+            <Reply 
+                key={r.id_comentario} 
+                content={r.comentario} 
+                createdAt={r.fecha_comentario} 
+                username={r.username} // Añadimos el username al Reply
+              />
             ))}
           </Stack>
         </CardContent>
@@ -223,7 +320,7 @@ function PostCard({
           <Button
             variant="outlined"
             onClick={() => {
-              onReply(post.id, replyText);
+              onReply(replyText);
               setReplyText('');
             }}
             disabled={!replyText.trim()}
@@ -236,14 +333,14 @@ function PostCard({
   );
 }
 
-function Reply({ content, createdAt }: { content: string; createdAt: string }): React.JSX.Element {
+function Reply({ content, createdAt, username }: { content: string; createdAt: string; username: string }): React.JSX.Element {
   return (
     <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
       <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
         {content}
       </Typography>
       <Typography variant="caption" color="text.secondary">
-        {new Date(createdAt).toLocaleString()}
+        Por **{username}** el {new Date(createdAt).toLocaleString()}
       </Typography>
     </Paper>
   );

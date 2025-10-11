@@ -19,6 +19,7 @@ import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Services from '@/modules/Services';
+import {decodeJwtToken} from '@/hooks/use-auth'
 import { ApiPublicacion, ApiForoResponse} from './helper';
 
 
@@ -33,27 +34,27 @@ function makeId(prefix: string) {
 }
 
 const FORO_API_BASE = '/foro-edificio';
+const PUBLICACION_API = '/publicacion-foro-id';
+const COMENTARIOS_API = '/comentarios-foro-id';
 
 /**
  * Carga las publicaciones del foro para un edificio y página específicos.
- * @param buildingId El ID del edificio a consultar.
- * @param accessToken El token JWT para la autorización.
- * @param page La página a cargar (opcional, por defecto es 1).
+ * @param buildingId
+ * @param accessToken
+ * @param page
  */
+
 async function fetchForumPosts(
   buildingId: number,
   accessToken: string,
   page: number = 1
 ): Promise<{ data: ApiPublicacion[] | null; totalItems: number; error: string | null }> {
-  // Construir la URI con el ID del edificio y el parámetro de paginación
   let uri = `${FORO_API_BASE}/${buildingId}`;
   if (page > 1) {
     uri += `?pagina=${page}`;
   }
 
   try {
-    // Utilizamos authorizedGet o authorizedPost si tu gs lo soporta.
-    // Aquí usaremos authorizedGet, asumiendo que lo agregaste a Services como discutimos antes.
     const res = await gs.authorizedGet(uri, accessToken) as ApiForoResponse & { error?: any };
 
     // Manejo de errores de la API
@@ -78,6 +79,8 @@ export default function ForoPage(): React.JSX.Element {
   const edificios = user?.edificio;
   const token = user?.token;
 
+  const payload = decodeJwtToken(token);
+
   const buildingIds = React.useMemo<number[]>(
     () => (Array.isArray(edificios) ? edificios.map((e) => e.id).filter((n) => Number.isFinite(n)) : []),
     [edificios]
@@ -86,6 +89,8 @@ export default function ForoPage(): React.JSX.Element {
   const [posts, setPosts] = React.useState<ApiPublicacion[]>([]);
   const [isPostsLoading, setIsPostsLoading] = React.useState(false);
   const [postsError, setPostsError] = React.useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = React.useState(false);
+  const [replyError, setReplyError] = React.useState<string | null>(null);
 
   //Paginacion
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -124,7 +129,6 @@ export default function ForoPage(): React.JSX.Element {
         setPosts([]);
       } else {
         setPosts(data || []);
-        // Calcula el total de páginas, asumiendo 10 elementos por página si la API no lo devuelve
         const itemsPerPageFinal = 10; 
         setItemsPerPage(itemsPerPageFinal);
         setTotalPages(Math.ceil(totalItems / itemsPerPageFinal));
@@ -143,13 +147,105 @@ export default function ForoPage(): React.JSX.Element {
     setCurrentPage(1); // Siempre resetear a la primera página al cambiar de edificio
   };
 
-  // Los handlers de publicación y respuesta ahora son de "mock" temporalmente
   // Aqui iria el post de las publicaciones
-  const handlePublish = (): void => { /* ... (mock por ahora) ... */ };
-  const handleReply = (postId: number, replyText: string): void => { 
-    // Aquí se debería llamar a una API de POST para crear un comentario
-    console.log(`Respuesta al post ${postId}: ${replyText}`);
-    // Por ahora solo loguea, ya que tu backend no tiene un POST implementado aquí
+  const handlePublish = async (): Promise<void> => {
+    const content = newPostContent.trim();
+    const bId = typeof selectedBuildingId === 'number' ? selectedBuildingId : null;
+
+    // Validacion
+    if (!content || !bId || !token) {
+      setPostsError('Error: Faltan datos para publicar (contenido, edificio o token expirado).');
+      return;
+    }
+
+    setIsPublishing(true);
+    setPostsError(null);
+
+    const API_PUBLISH_URI = `${PUBLICACION_API}/${bId}`;
+
+    const requestBody = {
+      // NOTA: tipo siempre será "falla agua". Esto a futuro podria ser seleccionable, 
+      tipo: "falla agua", 
+      descripcion: content,
+    };
+
+    try {
+      // Llamado a la API
+      const res = await gs.authorizedPost(API_PUBLISH_URI, requestBody, token) as ApiPublicacion & { error?: any };
+
+      if (res.error) {
+        const msg = res.error.data?.mensaje || res.error?.message || 'Error al publicar la falla.';
+        setPostsError(msg);
+      } else {
+        // Publicación exitosa:
+        const { data: updatedPosts } = await fetchForumPosts(bId, token, 1);
+        if (updatedPosts) {
+          setPosts(updatedPosts);
+        }
+
+        // Limpiar el campo
+        setNewPostContent('');
+        setCurrentPage(1);
+      }
+
+    } catch (err) {
+      console.error('Error al publicar:', err);
+      setPostsError('Error de red al intentar publicar.');
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+
+  const handleReply = async (postId: number, replyText: string): Promise<void> => {
+    const content = replyText.trim();
+    const currentToken = token;
+
+    if (!content || !currentToken) {
+      setReplyError('Error: Comentario vacío o token expirado.');
+      return;
+    }
+
+    setReplyError(null);
+
+    const uri = `${COMENTARIOS_API}/${postId}`;
+    const requestBody = {
+    comentario: content,
+    };
+
+    try {
+      const res = await gs.authorizedPost(uri, requestBody, currentToken) as any & { error?: any };
+
+      if (res.error) {
+        const msg = res.error.data?.mensaje || 'Error al publicar el comentario.';
+        setReplyError(msg);
+        return;
+      }
+
+      const newComment = {
+          id_comentario: res.id_comentario || makeId('reply'),
+          comentario: content,
+          fecha_comentario: new Date().toISOString(),
+          username: payload.username || 'Usuario Actual',
+      };
+
+      setPosts(prevPosts => 
+          prevPosts.map(post => {
+              if (post.id_falla === postId) {
+                  const currentComments = post.comentarios ?? []; 
+                  return {
+                      ...post,
+                      comentarios: [...currentComments, newComment], 
+                  };
+              }
+              return post;
+          })
+      );
+      console.log('Comentando post:', postId);
+
+    } catch (err) {
+      setReplyError('Error de red al intentar responder.');
+    } 
   };
 
   if (isLoading) {
@@ -207,8 +303,10 @@ export default function ForoPage(): React.JSX.Element {
             }}
           />
           <Box sx={{ textAlign: 'right' }}>
-            <Button variant="contained" onClick={handlePublish} disabled={!newPostContent.trim() || !buildingIds.length}>
-              Publicar
+            <Button variant="contained"
+             onClick={handlePublish} 
+             disabled={!newPostContent.trim() || !buildingIds.length}>
+              {isPublishing ? 'Publicando...' : 'Publicar'} {/* Feedback visual */}
             </Button>
           </Box>
         </Stack>
@@ -233,10 +331,10 @@ export default function ForoPage(): React.JSX.Element {
         </Box>
       ) : (
         <Stack spacing={2}>
-          {posts.map((p) => (
+          {posts.map((p, index) => (
             <PostCard 
-              key={p.id_falla}
-              post={p} 
+              key={p.id_falla || `temp-${index}-${Date.now()}`}
+              post={p}
               onReply={(text) => handleReply(p.id_falla, text)} 
             />
           ))}
@@ -276,6 +374,8 @@ function PostCard({
 }): React.JSX.Element {
   const [replyText, setReplyText] = React.useState('');
 
+  const comentarios = post.comentarios ?? []; 
+
   return (
     <Card variant="outlined" sx={{ borderRadius: 2 }}>
       <CardContent>
@@ -284,22 +384,21 @@ function PostCard({
             {post.descripcion}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Publicado por **{post.username}** el {new Date(post.fecha_publicacion).toLocaleString()} 
-            • Edificio #{post.id_edificio} • Estado: {post.estado} • Tipo: {post.tipo}
+            Publicado por {post.username} el {new Date(post.fecha_publicacion).toLocaleString()} • Edificio #{post.id_edificio}
           </Typography>
         </Stack>
       </CardContent>
 
-      {!!post.comentarios.length && (
+      {!!comentarios.length && (
         <CardContent sx={{ pt: 0 }}>
           <Divider sx={{ mb: 1.5 }} />
           <Stack spacing={1.25} sx={{ pl: { xs: 0, sm: 1.5 } }}>
-          {post.comentarios.map((r) => (
+          {comentarios.map((r) => (
             <Reply 
                 key={r.id_comentario} 
                 content={r.comentario} 
                 createdAt={r.fecha_comentario} 
-                username={r.username} // Añadimos el username al Reply
+                username={r.username}
               />
             ))}
           </Stack>
@@ -340,7 +439,7 @@ function Reply({ content, createdAt, username }: { content: string; createdAt: s
         {content}
       </Typography>
       <Typography variant="caption" color="text.secondary">
-        Por **{username}** el {new Date(createdAt).toLocaleString()}
+        Por {username} el {new Date(createdAt).toLocaleString()}
       </Typography>
     </Paper>
   );

@@ -2,7 +2,7 @@
 
 import type { User } from '@/types/user';
 import Services from '@/modules/Services';
-import { accessToken } from 'mapbox-gl';
+import {decodeJwtToken} from '@/hooks/use-auth'
 
 type Role = 'analista' | 'tecnico' | 'residente' | 'admin';
 
@@ -127,7 +127,6 @@ class AuthClient {
   async signInWithPassword(params: SignInWithPasswordParams): Promise<{ error?: string }> {
     const { email, password } = params;
     const API_URL = '/login'
-    const API_ROL = '/rol'
 
     const requestBody = {
       email: email,
@@ -145,17 +144,22 @@ class AuthClient {
           return {error: 'Error de autenticación: Email o contraseña invalida'};
         }
 
-        const rolRes = await gs.authorizedGet(API_ROL, accessToken) as { scope?: string, error?: any };
+        const decodedPayload = decodeJwtToken(accessToken);
 
-        if (rolRes.error) {
-          return { error: 'Error al obtener el rol del usuario.' };
+        if (!decodedPayload) {
+            return { error: 'Token JWT inválido o malformado.' };
         }
 
-        const scope = rolRes.scope;
-        const role = scope ? extractRole(scope) : undefined;
+        const rawRole = decodedPayload.scope || decodedPayload.rol; 
+        const userId = decodedPayload.sub || decodedPayload.user_id;
+
+        let role: Role | undefined;
+        if (typeof rawRole === 'string') {
+            role = extractRole(rawRole) || (isRole(rawRole.toLowerCase()) ? rawRole.toLowerCase() as Role : undefined);
+        }
 
         if (!role) {
-          return {error: 'Rol de ususairo invalido o no reconocido'};
+          return {error: 'Rol de ususairo invalido o no reconocido en el token.'};
         }
 
         const payload: StoredPayload = {

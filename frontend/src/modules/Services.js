@@ -39,6 +39,23 @@ export default class Services {
         }))
     }
 
+    async authorizedPost(uri, data, accessToken) {
+    // Configuración de headers, incluyendo la autorización
+        const config = {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json' // Aseguramos el tipo JSON para el body
+            }
+        };
+
+        return await apiClient.post(uri, data, config)
+            .then(res => res.data)
+            .catch(error => ({
+                mensaje: "error inesperado",
+                error: error.response
+        }))
+    }
+
     async post(uri, data) {
         // Si es FormData, no seteamos Content-Type, axios lo hace solo
         const isFormData = (typeof FormData !== 'undefined') && data instanceof FormData;

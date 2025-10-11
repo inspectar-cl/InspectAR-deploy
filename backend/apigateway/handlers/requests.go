@@ -1098,3 +1098,172 @@ func PublicacionForoHandler(c *gin.Context) {
     // Retornar la respuesta del microservicio
     c.JSON(statusCode, responseData)
 }
+
+func ComentariosForoHandler(c *gin.Context) {
+    idPublicacion := c.Param("id_publicacion")
+    if idPublicacion == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID de la publicación es requerido"})
+        return
+    }
+
+    // Extraer el email desde el token JWT
+    var email string
+    authHeader := c.GetHeader("Authorization")
+    if authHeader == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+        return
+    }
+    
+    // fmt.Printf("DEBUG: Authorization header: %s\n", authHeader)
+
+    //Bearer eydsdsdsd...
+    tokenParts := strings.Split(authHeader, " ")
+
+    emailInterface, err := extractClaimFromToken(tokenParts[1], "email")
+    if err != nil {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+        return
+    }
+    
+    // Type assertion para convertir interface{} a string
+    var ok bool
+    email, ok = emailInterface.(string)
+    if !ok {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid email format in token"})
+        return
+    }
+    
+    fmt.Printf("Email extraído del token: %s\n", email)
+
+    // Leer el body de la request
+    var comentarioData map[string]interface{}
+    if err := c.ShouldBindJSON(&comentarioData); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+        return
+    }
+
+    // Validar que venga el campo requerido
+    if _, exists := comentarioData["comentario"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'comentario' es requerido"})
+        return
+    }
+
+    // Body para el microservicio
+
+    //Convertir id_publicacion a int
+    idPublicacionInt := 0
+    if _, err := fmt.Sscanf(idPublicacion, "%d", &idPublicacionInt); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID de la publicación debe ser un número válido"})
+        return
+    }
+    bodyData := map[string]interface{}{
+        "id_falla": idPublicacionInt,
+        "email": email,
+        "comentario": comentarioData["comentario"],
+    }
+
+    // Convertir a JSON
+    jsonData, err := json.Marshal(bodyData)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando datos"})
+        return
+    }
+    
+    fmt.Printf("DEBUG: Enviando comentario al foro: %+v\n", bodyData)
+
+    // Hacer POST al microservicio de gestión
+    var wg sync.WaitGroup
+    var mu sync.Mutex
+    var responseData map[string]interface{}
+    var statusCode int
+    
+    wg.Add(1)
+    go func() {
+        defer wg.Done()
+
+        url := fmt.Sprintf("%s/comentarios", gestionURL)
+        resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+        if err != nil {
+            fmt.Println("Error enviando comentario al foro: ", err)
+            return
+        }
+        defer resp.Body.Close()
+
+        mu.Lock()
+        statusCode = resp.StatusCode
+        mu.Unlock()
+
+        var data map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+            fmt.Println("Error decodificando respuesta de comentario: ", err)
+            return
+        }
+
+        mu.Lock()
+        responseData = data
+        mu.Unlock()
+    }()
+
+    wg.Wait()
+
+    // Verificar si hubo respuesta
+    if responseData == nil {
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al crear comentario en el foro"})
+        return
+    }
+
+    // Retornar la respuesta del microservicio
+    c.JSON(statusCode, responseData)
+}
+
+func ListaActivosHandler(c *gin.Context) {
+    edificio := c.Query("edificio")
+
+    var wg sync.WaitGroup
+    var mu sync.Mutex
+    activos := []interface{}{}
+
+    wg.Add(1)
+    // Goroutine para obtener activos
+    go func() {
+        defer wg.Done()
+        var url string
+
+        // Si no trae edificio, extraer todos los activos
+        if edificio != "" {
+            url = fmt.Sprintf("%s/activos/edificio/%s", gestionURL, edificio)
+        } else {
+            url = fmt.Sprintf("%s/activos", gestionURL)
+        }
+        
+        resp, err := httpClient.Get(url)
+        if err != nil {
+            fmt.Println("Error obteniendo activos: ", err)
+            return
+        }
+        defer resp.Body.Close()
+        
+        var data map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+            fmt.Println("Error decodificando activos: ", err)
+            return
+        }
+        
+        if activosData, exists := data["activos"]; exists {
+            if activosArray, ok := activosData.([]interface{}); ok {
+                mu.Lock()
+                activos = activosArray
+                mu.Unlock()
+            }
+        }
+    }()
+
+    wg.Wait() // Esperar a que termine la goroutine de activos
+
+    result := map[string]interface{}{
+        "activos": activos,
+        "total": len(activos),
+    }
+
+    c.JSON(http.StatusOK, result)
+}

@@ -1215,3 +1215,55 @@ func ComentariosForoHandler(c *gin.Context) {
     // Retornar la respuesta del microservicio
     c.JSON(statusCode, responseData)
 }
+
+func ListaActivosHandler(c *gin.Context) {
+    edificio := c.Query("edificio")
+
+    var wg sync.WaitGroup
+    var mu sync.Mutex
+    activos := []interface{}{}
+
+    wg.Add(1)
+    // Goroutine para obtener activos
+    go func() {
+        defer wg.Done()
+        var url string
+
+        // Si no trae edificio, extraer todos los activos
+        if edificio != "" {
+            url = fmt.Sprintf("%s/activos/edificio/%s", gestionURL, edificio)
+        } else {
+            url = fmt.Sprintf("%s/activos", gestionURL)
+        }
+        
+        resp, err := httpClient.Get(url)
+        if err != nil {
+            fmt.Println("Error obteniendo activos: ", err)
+            return
+        }
+        defer resp.Body.Close()
+        
+        var data map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+            fmt.Println("Error decodificando activos: ", err)
+            return
+        }
+        
+        if activosData, exists := data["activos"]; exists {
+            if activosArray, ok := activosData.([]interface{}); ok {
+                mu.Lock()
+                activos = activosArray
+                mu.Unlock()
+            }
+        }
+    }()
+
+    wg.Wait() // Esperar a que termine la goroutine de activos
+
+    result := map[string]interface{}{
+        "activos": activos,
+        "total": len(activos),
+    }
+
+    c.JSON(http.StatusOK, result)
+}

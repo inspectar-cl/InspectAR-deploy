@@ -104,6 +104,13 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: []string{"user-type:Residente", "user-type:Admin"},
         },
+        { 
+            Method:  "POST",
+            Pattern: "/api/publicacion-foro-id/:id_edificio",
+            Handler: PublicacionForoHandler,
+            Protected: true,
+            RequiredScopes: []string{"user-type:Residente", "user-type:Admin"},
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",

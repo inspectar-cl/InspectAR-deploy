@@ -59,63 +59,43 @@ print('📦 Insertando activos sincronizados...');
 db.activos.insertMany([
   {
     activo_id: 1,
-    nombre: 'BombaDeAgua #1 ML',
-    ubicacion: 'Planta B',
     estado: 'OK',
-    id_edificio: 'EB',
-    tipo: 'bomba de agua',
-    // Campos adicionales para compatibilidad
-    edificio_id: 1,
-    _legacy_id: 1
+    edificio_id: 1
   },
   {
-  activo_id: 2,
-    nombre: 'Bomba Centrífuga A',
+    activo_id: 2,
     estado: 'Medio',
-    edificio_id: 1,
-    tipo: 'bomba'
+    edificio_id: 1
   },
   {
-  activo_id: 3,
-    nombre: 'Bomba Hidráulica 1',
+    activo_id: 3,
     estado: 'Medio',
-    edificio_id: 2,
-    tipo: 'bomba'
+    edificio_id: 2
   },
   {
-  activo_id: 4,
-    nombre: 'Ascensor Norte',
+    activo_id: 4,
     estado: 'Medio',
-    edificio_id: 2,
-    tipo: 'ascensor'
+    edificio_id: 2
   },
   {
-  activo_id: 5,
-    nombre: 'Transformador Secundario',
+    activo_id: 5,
     estado: 'Crítico',
-    edificio_id: 3,
-    tipo: 'transformador'
+    edificio_id: 3
   },
   {
-  activo_id: 6,
-    nombre: 'Transformador Principal',
+    activo_id: 6,
     estado: 'Medio',
-    edificio_id: 3,
-    tipo: 'transformador'
+    edificio_id: 3
   },
   {
-  activo_id: 7,
-    nombre: 'Ascensor Central',
+    activo_id: 7,
     estado: 'Medio',
-    edificio_id: 1,
-    tipo: 'ascensor'
+    edificio_id: 1
   },
   {
-  activo_id: 8,
-    nombre: 'Bomba de Emergencia',
+    activo_id: 8,
     estado: 'Crítico',
-    edificio_id: 4,
-    tipo: 'bomba'
+    edificio_id: 4
   }
 ]);
 

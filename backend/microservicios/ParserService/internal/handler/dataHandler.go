@@ -111,9 +111,16 @@ func (h *DataHandler) GetSensorByActivo(c *gin.Context) {
 		return
 	}
 
+	// Obtener sensores desde el servicio de activos
+	sensores, err := h.activoService.ObtenerSensoresPorActivo(c.Request.Context(), activoID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudieron obtener los sensores"})
+		return
+	}
+
 	var allLecturas []models.SensorDataset
 
-	for _, sensor := range activo.Sensores {
+	for _, sensor := range sensores {
 		datos, err := h.sensorService.GetDatosSensor(c.Request.Context(), sensor.SensorID, 30*time.Minute)
 		if err != nil {
 			continue
@@ -125,11 +132,10 @@ func (h *DataHandler) GetSensorByActivo(c *gin.Context) {
 	}
 
 	respuesta := gin.H{
-		"id":        activo.ID,
-		"activo_id": activo.ActivoID,
-		"nombre":    activo.Nombre,
-		"estado":    activo.Estado,
-		"sensores":  allLecturas,
+		"activo_id":   activo.ActivoID,
+		"estado":      activo.Estado,
+		"edificio_id": activo.EdificioID,
+		"sensores":    allLecturas,
 	}
 
 	c.JSON(http.StatusOK, respuesta)
@@ -159,8 +165,15 @@ func (h *DataHandler) GetSensorLastData(c *gin.Context) {
 		return
 	}
 
+	// Obtener sensores del activo
+	sensores, err := h.activoService.ObtenerSensoresPorActivo(c.Request.Context(), activoID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudieron obtener los sensores"})
+		return
+	}
+
 	result := make(map[string]interface{})
-	for _, sensor := range activo.Sensores {
+	for _, sensor := range sensores {
 		dato, err := h.sensorService.GetSensorLastData(c.Request.Context(), sensor.SensorID)
 		if err != nil || dato == nil {
 			result[sensor.SensorID] = nil
@@ -216,19 +229,24 @@ func (h *DataHandler) GetActivoWithSensorStatus(c *gin.Context) {
 		return
 	}
 
+	// Obtener sensores del activo
+	sensores, err := h.activoService.ObtenerSensoresPorActivo(c.Request.Context(), activoID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudieron obtener los sensores"})
+		return
+	}
+
 	// Crear la respuesta con información del activo y estado de sensores
 	response := gin.H{
-		"id":          activo.ID,
 		"activo_id":   activo.ActivoID,
-		"nombre":      activo.Nombre,
 		"estado":      activo.Estado,
-		"id_edificio": activo.Id_edificio,
+		"edificio_id": activo.EdificioID,
 		"sensores":    []gin.H{},
 	}
 
 	// Obtener estado de cada sensor
 	var sensoresConEstado []gin.H
-	for _, sensor := range activo.Sensores {
+	for _, sensor := range sensores {
 		sensorInfo := gin.H{
 			"sensor_id":     sensor.SensorID,
 			"tipo":          sensor.Tipo,
@@ -265,7 +283,7 @@ func (h *DataHandler) GetActivoWithSensorStatus(c *gin.Context) {
 	}
 
 	response["sensores"] = sensoresConEstado
-	response["total_sensores"] = len(activo.Sensores)
+	response["total_sensores"] = len(sensores)
 
 	// Agregar estadísticas resumidas
 	activeSensors := 0
@@ -334,5 +352,27 @@ func (h *DataHandler) AddSensorToActivo(c *gin.Context) {
 		"mensaje":   "Sensor agregado correctamente al activo",
 		"activo_id": activoID,
 		"sensor":    sensor,
+	})
+}
+
+// GET /activo/edificio/:edificio_id - Obtener todos los activos de un edificio
+func (h *DataHandler) GetActivosByEdificio(c *gin.Context) {
+	idStr := c.Param("edificio_id")
+	edificioID, errConv := strconv.Atoi(idStr)
+	if errConv != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "edificio_id debe ser entero"})
+		return
+	}
+
+	activos, err := h.activoService.ObtenerActivosPorEdificio(c.Request.Context(), edificioID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudieron obtener los activos del edificio"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"edificio_id": edificioID,
+		"activos":     activos,
+		"total":       len(activos),
 	})
 }

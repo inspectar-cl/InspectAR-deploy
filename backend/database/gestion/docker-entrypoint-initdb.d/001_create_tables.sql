@@ -25,7 +25,6 @@ CREATE TABLE IF NOT EXISTS activos (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
     tipo VARCHAR(100) NOT NULL CHECK (tipo IN ('caldera', 'bomba de agua', 'ascensor', 'transformador')),
-    estado VARCHAR(50) DEFAULT 'operativo',
     ubicacion VARCHAR(255),
     edificio_id INTEGER REFERENCES edificios(id) ON DELETE SET NULL,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -215,12 +214,26 @@ CREATE TABLE IF NOT EXISTS comentarios (
     fecha_comentario TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Tabla de firmas digitales para usuarios
+CREATE TABLE IF NOT EXISTS firmas_digitales (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    nombre_archivo VARCHAR(255) NOT NULL,
+    ruta_archivo VARCHAR(500) NOT NULL,
+    tipo_mime VARCHAR(100) NOT NULL CHECK (tipo_mime IN ('image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml')),
+    formato VARCHAR(20) NOT NULL CHECK (formato IN ('png', 'jpeg', 'jpg', 'svg')),
+    datos_firma BYTEA, -- Para almacenar SVG o datos binarios de la firma dibujada
+    tamano_bytes BIGINT,
+    es_predeterminada BOOLEAN DEFAULT false,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Índices para mejorar rendimiento
 CREATE INDEX IF NOT EXISTS idx_tecnicos_especialidad ON tecnicos(especialidad);
 CREATE INDEX IF NOT EXISTS idx_tecnicos_autorizado ON tecnicos(autorizado);
 CREATE INDEX IF NOT EXISTS idx_tecnicos_activo ON tecnicos(activo);
 CREATE INDEX IF NOT EXISTS idx_tecnicos_empresa ON tecnicos(empresa_id);
-CREATE INDEX IF NOT EXISTS idx_activos_estado ON activos(estado);
 CREATE INDEX IF NOT EXISTS idx_activos_tipo ON activos(tipo);
 CREATE INDEX IF NOT EXISTS idx_activos_edificio ON activos(edificio_id);
 CREATE INDEX IF NOT EXISTS idx_acciones_estado ON acciones_mantenimiento(estado);
@@ -270,6 +283,10 @@ CREATE INDEX IF NOT EXISTS idx_comentarios_falla ON comentarios(id_falla);
 CREATE INDEX IF NOT EXISTS idx_comentarios_usuario ON comentarios(id_usuario);
 CREATE INDEX IF NOT EXISTS idx_comentarios_fecha ON comentarios(fecha_comentario);
 
+-- Índices para firmas digitales
+CREATE INDEX IF NOT EXISTS idx_firmas_usuario ON firmas_digitales(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_firmas_predeterminada ON firmas_digitales(es_predeterminada);
+
 -- Comentarios sobre las tablas creadas
 COMMENT ON TABLE tecnicos IS 'Técnicos especializados para mantenimiento (HdU16)';
 COMMENT ON TABLE edificios IS 'Edificios donde se ubican los activos';
@@ -286,5 +303,6 @@ COMMENT ON TABLE fallos IS 'Catálogo de fallos comunes por tipo de activo';
 COMMENT ON TABLE activos_fallos IS 'Relación entre activos específicos y fallos detectados';
 COMMENT ON TABLE tipos_falla IS 'Reportes de fallas hechos por usuarios residentes en edificios';
 COMMENT ON TABLE comentarios IS 'Comentarios de usuarios sobre reportes de fallas';
+COMMENT ON TABLE firmas_digitales IS 'Firmas digitales de usuarios para firma de reportes (HdU Firmas Digitales)';
 
 -- Comentarios sobre las tablas creadas

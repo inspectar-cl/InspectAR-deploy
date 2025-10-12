@@ -355,7 +355,7 @@ func (h *DataHandler) AddSensorToActivo(c *gin.Context) {
 	})
 }
 
-// GET /activo/edificio/:edificio_id - Obtener todos los activos de un edificio
+// GET /activo/edificio/:edificio_id - Obtener todos los activos de un edificio con información de sensores
 func (h *DataHandler) GetActivosByEdificio(c *gin.Context) {
 	idStr := c.Param("edificio_id")
 	edificioID, errConv := strconv.Atoi(idStr)
@@ -370,9 +370,74 @@ func (h *DataHandler) GetActivosByEdificio(c *gin.Context) {
 		return
 	}
 
+	// Enriquecer cada activo con el estado de sus sensores
+	var activosEnriquecidos []gin.H
+	for _, activo := range activos {
+		// Obtener sensores del activo
+		sensores, err := h.activoService.ObtenerSensoresPorActivo(c.Request.Context(), activo.ActivoID)
+		if err != nil {
+			// Si no se pueden obtener sensores, incluir el activo sin información de sensores
+			activosEnriquecidos = append(activosEnriquecidos, gin.H{
+				"id":             activo.ID,
+				"activo_id":      activo.ActivoID,
+				"estado":         activo.Estado,
+				"id_edificio":    activo.EdificioID,
+				"sensores":       []gin.H{},
+				"total_sensores": 0,
+			})
+			continue
+		}
+
+		// Obtener estado de cada sensor
+		var sensoresConEstado []gin.H
+		for _, sensor := range sensores {
+			sensorInfo := gin.H{
+				"sensor_id":     sensor.SensorID,
+				"tipo":          sensor.Tipo,
+				"unidad":        sensor.Unidad,
+				"estado":        "unknown",
+				"is_active":     false,
+				"last_seen":     nil,
+				"total_reports": 0,
+			}
+
+			// Obtener estado del sensor desde el servicio de monitoreo
+			sensorStatus, err := h.monitoringService.GetSensorStatus(sensor.SensorID)
+			if err == nil && sensorStatus != nil {
+				var estado string
+				if sensorStatus.IsActive {
+					estado = "connected"
+				} else {
+					estado = "disconnected"
+				}
+
+				sensorInfo["estado"] = estado
+				sensorInfo["is_active"] = sensorStatus.IsActive
+				sensorInfo["last_seen"] = sensorStatus.LastSeen
+				sensorInfo["first_seen"] = sensorStatus.FirstSeen
+				sensorInfo["total_reports"] = sensorStatus.TotalReports
+				sensorInfo["created_at"] = sensorStatus.CreatedAt
+				sensorInfo["updated_at"] = sensorStatus.UpdatedAt
+			} else {
+				sensorInfo["estado"] = "never_connected"
+			}
+
+			sensoresConEstado = append(sensoresConEstado, sensorInfo)
+		}
+
+		activosEnriquecidos = append(activosEnriquecidos, gin.H{
+			"id":             activo.ID,
+			"activo_id":      activo.ActivoID,
+			"estado":         activo.Estado,
+			"id_edificio":    activo.EdificioID,
+			"sensores":       sensoresConEstado,
+			"total_sensores": len(sensores),
+		})
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"edificio_id": edificioID,
-		"activos":     activos,
-		"total":       len(activos),
+		"activos":     activosEnriquecidos,
+		"total":       len(activosEnriquecidos),
 	})
 }

@@ -114,7 +114,7 @@ curl http://localhost:8090/activo
 # Obtener activo específico
 curl http://localhost:8090/activo/1
 
-# 🆕 NUEVA RUTA: Obtener activos por edificio
+# 🆕 NUEVA RUTA: Obtener activos por edificio (con info de sensores)
 curl http://localhost:8090/activo/edificio/1
 
 # Obtener activo con estado de sensores
@@ -255,7 +255,7 @@ curl -X GET http://localhost:8090/activo/1
 }
 ```
 
-#### 🆕 **NUEVA RUTA: Obtener activos por edificio**
+#### 🆕 **NUEVA RUTA: Obtener activos por edificio con información de sensores**
 ```bash
 curl -X GET http://localhost:8090/activo/edificio/1
 ```
@@ -267,28 +267,56 @@ curl -X GET http://localhost:8090/activo/edificio/1
     {
       "id": "670586c9a3e45c001e8b4567",
       "activo_id": 1,
-      "nombre": "Caldera Principal",
       "estado": "operativo",
-      "id_edificio": "1",
+      "id_edificio": 1,
+      "total_sensores": 2,
       "sensores": [
         {
           "sensor_id": "TEMP_001",
           "tipo": "temperatura",
-          "unidad": "°C"
+          "unidad": "°C",
+          "estado": "connected",
+          "is_active": true,
+          "last_seen": "2025-10-11T12:00:00Z",
+          "first_seen": "2025-10-01T08:00:00Z",
+          "total_reports": 1458,
+          "created_at": "2025-10-01T08:00:00Z",
+          "updated_at": "2025-10-11T12:00:00Z"
+        },
+        {
+          "sensor_id": "PRESS_001",
+          "tipo": "presion",
+          "unidad": "bar",
+          "estado": "disconnected",
+          "is_active": false,
+          "last_seen": "2025-10-10T09:45:00Z",
+          "total_reports": 892
         }
       ]
     },
     {
       "id": "670586d2a3e45c001e8b4568",
       "activo_id": 2,
-      "nombre": "Bomba Centrífuga A",
       "estado": "operativo",
-      "id_edificio": "1",
+      "id_edificio": 1,
+      "total_sensores": 2,
       "sensores": [
         {
           "sensor_id": "FLOW_001",
           "tipo": "flujo",
-          "unidad": "L/min"
+          "unidad": "L/min",
+          "estado": "connected",
+          "is_active": true,
+          "last_seen": "2025-10-11T12:00:00Z",
+          "total_reports": 523
+        },
+        {
+          "sensor_id": "VIBR_001",
+          "tipo": "vibracion",
+          "unidad": "Hz",
+          "estado": "never_connected",
+          "is_active": false,
+          "total_reports": 0
         }
       ]
     }
@@ -296,6 +324,22 @@ curl -X GET http://localhost:8090/activo/edificio/1
   "total": 2
 }
 ```
+
+**Características:**
+- Incluye información completa de cada activo del edificio
+- Cada activo incluye el array de sensores con su estado
+- Cada sensor muestra:
+  - Datos básicos: `sensor_id`, `tipo`, `unidad`
+  - Estado de conexión: `estado`, `is_active`
+  - Métricas: `last_seen`, `first_seen`, `total_reports`
+  - Timestamps: `created_at`, `updated_at`
+- Campo `total_sensores` por activo
+- Campo `total` con cantidad de activos en el edificio
+
+**Estados de Sensores:**
+- **`connected`**: Sensor activo enviando datos
+- **`disconnected`**: Sensor que envió datos pero está inactivo (>5 min sin datos)
+- **`never_connected`**: Sensor registrado pero nunca ha enviado datos
 
 #### Obtener activo con estado de sensores
 ```bash
@@ -894,21 +938,21 @@ curl -X PUT http://localhost:8090/activo/1/estado \
   -d '{"estado": "mantenimiento"}'
 ```
 
-### Escenario: Monitoreo de múltiples edificios 🆕
+### Escenario: Monitoreo de múltiples edificios con información de sensores 🆕
 
 ```bash
 # Obtener todos los activos del sistema
 curl http://localhost:8090/activo
 
-# Filtrar activos por edificio específico
+# Filtrar activos por edificio específico (incluye estado de sensores)
 curl http://localhost:8090/activo/edificio/1
 curl http://localhost:8090/activo/edificio/2
 curl http://localhost:8090/activo/edificio/3
 
-# Obtener estado de sensores de cada edificio
+# Obtener estado detallado de sensores de cada edificio
 for edificio in 1 2 3; do
   echo "=== Edificio $edificio ==="
-  curl http://localhost:8090/activo/edificio/$edificio | jq '.activos[] | {activo_id, nombre, sensores}'
+  curl http://localhost:8090/activo/edificio/$edificio | jq '.activos[] | {activo_id, estado, total_sensores, sensores: .sensores | map({sensor_id, tipo, estado})}'
 done
 ```
 

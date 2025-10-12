@@ -1,8 +1,13 @@
 export interface ApiComentario {
   comentario: string;
-  fecha_comentario: string; // ISO String
-  id_comentario: number;
+  fecha_comentario: string;
+  id_comentario: number | string;
   username: string;
+}
+
+export interface ApiComentariosResponse {
+  id_comentario: number | string;
+  error?: { data: { mensaje: string } | undefined; message: string; };
 }
 
 export interface ApiPublicacion {

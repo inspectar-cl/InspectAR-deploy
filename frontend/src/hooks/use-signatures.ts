@@ -3,19 +3,26 @@ import type { SavedSignature } from '@/components/dashboard/reportes-tecnicos/Si
 
 const STORAGE_KEY = 'inspectar.signatures.v1';
 
-export function useSignatures() {
+export function useSignatures(): {
+    signatures: SavedSignature[];
+    addSignature: (sig: SavedSignature) => void;
+    removeSignature: (id: string) => void;
+} {
   const [signatures, setSignatures] = useState<SavedSignature[]>([]);
 
-  useEffect(() => {
+  useEffect(():void => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setSignatures(JSON.parse(raw));
+      if (raw) {
+        const parsedSignatures = JSON.parse(raw) as SavedSignature[];
+        setSignatures(parsedSignatures);
+      }
     } catch {
       // noop
     }
   }, []);
 
-  const saveAll = (items: SavedSignature[]) => {
+  const saveAll = (items: SavedSignature[]):void => {
     setSignatures(items);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
@@ -24,12 +31,12 @@ export function useSignatures() {
     }
   };
 
-  const addSignature = (sig: SavedSignature) => {
+  const addSignature = (sig: SavedSignature): void => {
     const items = [sig, ...signatures].slice(0, 25); 
     saveAll(items);
   };
 
-  const removeSignature = (id: string) => {
+  const removeSignature = (id: string): void => {
     saveAll(signatures.filter(s => s.id !== id));
   };
 

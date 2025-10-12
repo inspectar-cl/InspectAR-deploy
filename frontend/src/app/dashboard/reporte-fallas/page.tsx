@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { useUserToken } from '@/hooks/use-usertoken';
-import { forumPostsMock, type ForumPost, type ForumReply } from '@/mocks/forum';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Paper from '@mui/material/Paper';
@@ -20,12 +19,12 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Services from '@/modules/Services';
 import {decodeJwtToken} from '@/hooks/use-auth'
-import { ApiPublicacion, ApiForoResponse} from './helper';
-
+import type { ApiPublicacion, ApiForoResponse, ApiComentario, ApiComentariosResponse} from './helper';
+import type {DecodedJwt} from '@/types/token'
 
 const gs = new Services();
 
-function makeId(prefix: string) {
+function makeId(prefix: string): string{
   const base =
     typeof crypto !== 'undefined' && 'randomUUID' in crypto
       ? crypto.randomUUID()
@@ -37,17 +36,10 @@ const FORO_API_BASE = '/foro-edificio';
 const PUBLICACION_API = '/publicacion-foro-id';
 const COMENTARIOS_API = '/comentarios-foro-id';
 
-/**
- * Carga las publicaciones del foro para un edificio y página específicos.
- * @param buildingId
- * @param accessToken
- * @param page
- */
-
 async function fetchForumPosts(
   buildingId: number,
   accessToken: string,
-  page: number = 1
+  page: number
 ): Promise<{ data: ApiPublicacion[] | null; totalItems: number; error: string | null }> {
   let uri = `${FORO_API_BASE}/${buildingId}`;
   if (page > 1) {
@@ -55,7 +47,7 @@ async function fetchForumPosts(
   }
 
   try {
-    const res = await gs.authorizedGet(uri, accessToken) as ApiForoResponse & { error?: any };
+    const res = await gs.authorizedGet(uri, accessToken) as ApiForoResponse & { error?: { data?: { mensaje?: string }, message?: string } };
 
     // Manejo de errores de la API
     if (res.error) {
@@ -69,37 +61,35 @@ async function fetchForumPosts(
       error: null
     };
   } catch (err) {
-    console.error('Error fetching forum posts:', err);
     return { data: null, totalItems: 0, error: 'Error de red o conexión al servidor.' };
   }
 }
 
 export default function ForoPage(): React.JSX.Element {
+  const [posts, setPosts] = React.useState<ApiPublicacion[]>([]);
+  const [isPostsLoading, setIsPostsLoading] = React.useState(false);
+  const [postsError, setPostsError] = React.useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = React.useState(false);
+  const [_replyError, setReplyError] = React.useState<string | null>(null);
+
+  //Paginacion
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [totalPages, setTotalPages] = React.useState(1);
+  const [_itemsPerPage, setItemsPerPage] = React.useState(10);
+  //Seleccion de edificio
+  const [selectedBuildingId, setSelectedBuildingId] = React.useState<number | ''>('');
+
+  const [newPostContent, setNewPostContent] = React.useState('');
   const { user, isLoading, error } = useUserToken();
   const edificios = user?.edificio;
   const token = user?.token;
 
-  const payload = decodeJwtToken(token);
+  const payload: DecodedJwt | null = token ? decodeJwtToken(token) : null;
 
   const buildingIds = React.useMemo<number[]>(
     () => (Array.isArray(edificios) ? edificios.map((e) => e.id).filter((n) => Number.isFinite(n)) : []),
     [edificios]
   );
-
-  const [posts, setPosts] = React.useState<ApiPublicacion[]>([]);
-  const [isPostsLoading, setIsPostsLoading] = React.useState(false);
-  const [postsError, setPostsError] = React.useState<string | null>(null);
-  const [isPublishing, setIsPublishing] = React.useState(false);
-  const [replyError, setReplyError] = React.useState<string | null>(null);
-
-  //Paginacion
-  const [currentPage, setCurrentPage] = React.useState(1);
-  const [totalPages, setTotalPages] = React.useState(1);
-  const [itemsPerPage, setItemsPerPage] = React.useState(10);
-  //Seleccion de edificio
-  const [selectedBuildingId, setSelectedBuildingId] = React.useState<number | ''>('');
-
-  const [newPostContent, setNewPostContent] = React.useState('');
 
   //Seteo de primer edificio por defecto (de la lista de edificios tomo el primero)
   React.useEffect(() => {
@@ -108,7 +98,7 @@ export default function ForoPage(): React.JSX.Element {
     }
   }, [buildingIds, selectedBuildingId]);
 
-   React.useEffect(() => {
+   React.useEffect((): void => {
     // Asegurarse de tener token y un ID de edificio válido para hacer la llamada
     const bId = typeof selectedBuildingId === 'number' ? selectedBuildingId : null;
     if (!bId || !token) {
@@ -118,14 +108,14 @@ export default function ForoPage(): React.JSX.Element {
     }
 
     // Función de carga real
-    const loadPosts = async () => {
+    const loadPosts = async (): Promise<void> => {
       setIsPostsLoading(true);
       setPostsError(null);
 
-      const { data, totalItems, error } = await fetchForumPosts(bId, token, currentPage);
+      const { data, totalItems, error: fetchError } = await fetchForumPosts(bId, token, currentPage);
 
-      if (error) {
-        setPostsError(error);
+      if (fetchError) {
+        setPostsError(fetchError);
         setPosts([]);
       } else {
         setPosts(data || []);
@@ -137,15 +127,9 @@ export default function ForoPage(): React.JSX.Element {
       setIsPostsLoading(false);
     };
 
-    loadPosts();
+    void loadPosts();
 
   }, [selectedBuildingId, currentPage, token]);
-
-  // Manejar el cambio de edificio, forzando la vuelta a la página 1
-  const handleBuildingChange = (id: number | ''): void => {
-    setSelectedBuildingId(id);
-    setCurrentPage(1); // Siempre resetear a la primera página al cambiar de edificio
-  };
 
   // Aqui iria el post de las publicaciones
   const handlePublish = async (): Promise<void> => {
@@ -171,10 +155,9 @@ export default function ForoPage(): React.JSX.Element {
 
     try {
       // Llamado a la API
-      const res = await gs.authorizedPost(API_PUBLISH_URI, requestBody, token) as ApiPublicacion & { error?: any };
-
+      const res = await gs.authorizedPost(API_PUBLISH_URI, requestBody, token) as ApiPublicacion & { error?: { data?: { mensaje?: string }, message?: string } };
       if (res.error) {
-        const msg = res.error.data?.mensaje || res.error?.message || 'Error al publicar la falla.';
+        const msg = res.error.data?.mensaje || res.error.message || 'Error al publicar la falla.';
         setPostsError(msg);
       } else {
         // Publicación exitosa:
@@ -189,7 +172,6 @@ export default function ForoPage(): React.JSX.Element {
       }
 
     } catch (err) {
-      console.error('Error al publicar:', err);
       setPostsError('Error de red al intentar publicar.');
     } finally {
       setIsPublishing(false);
@@ -201,7 +183,7 @@ export default function ForoPage(): React.JSX.Element {
     const content = replyText.trim();
     const currentToken = token;
 
-    if (!content || !currentToken) {
+    if (!content || !currentToken || !payload) {
       setReplyError('Error: Comentario vacío o token expirado.');
       return;
     }
@@ -214,7 +196,7 @@ export default function ForoPage(): React.JSX.Element {
     };
 
     try {
-      const res = await gs.authorizedPost(uri, requestBody, currentToken) as any & { error?: any };
+      const res = await gs.authorizedPost(uri, requestBody, currentToken) as ApiComentariosResponse;
 
       if (res.error) {
         const msg = res.error.data?.mensaje || 'Error al publicar el comentario.';
@@ -222,7 +204,7 @@ export default function ForoPage(): React.JSX.Element {
         return;
       }
 
-      const newComment = {
+      const newComment: ApiComentario = {
           id_comentario: res.id_comentario || makeId('reply'),
           comentario: content,
           fecha_comentario: new Date().toISOString(),
@@ -241,7 +223,6 @@ export default function ForoPage(): React.JSX.Element {
               return post;
           })
       );
-      console.log('Comentando post:', postId);
 
     } catch (err) {
       setReplyError('Error de red al intentar responder.');
@@ -282,7 +263,7 @@ export default function ForoPage(): React.JSX.Element {
                 labelId="edificio-select-label"
                 label="Publicar en"
                 value={selectedBuildingId}
-                onChange={(e) => setSelectedBuildingId(Number(e.target.value))}
+                onChange={(e) => {setSelectedBuildingId(Number(e.target.value))}}
               >
                 {edificios?.map((e) => (
                   <MenuItem key={e.id} value={e.id}>
@@ -343,7 +324,7 @@ export default function ForoPage(): React.JSX.Element {
           {totalPages > 1 && (
             <Stack direction="row" justifyContent="center" spacing={2} sx={{ mt: 3 }}>
               <Button
-                onClick={() => setCurrentPage((p) => p - 1)}
+                onClick={() => {setCurrentPage((p) => p - 1)}}
                 disabled={currentPage === 1}
               >
               Anterior
@@ -352,7 +333,7 @@ export default function ForoPage(): React.JSX.Element {
                 Página {currentPage} de {totalPages}
               </Typography>
               <Button
-                onClick={() => setCurrentPage((p) => p + 1)}
+                onClick={() => {setCurrentPage((p) => p + 1)}}
                 disabled={currentPage >= totalPages}
               >
                 Siguiente
@@ -389,7 +370,7 @@ function PostCard({
         </Stack>
       </CardContent>
 
-      {!!comentarios.length && (
+      {Boolean(comentarios.length) && (
         <CardContent sx={{ pt: 0 }}>
           <Divider sx={{ mb: 1.5 }} />
           <Stack spacing={1.25} sx={{ pl: { xs: 0, sm: 1.5 } }}>

@@ -17,7 +17,6 @@ import { SensorScatter } from '@/components/dashboard/overview/sensor-scatter';
 
 import Services from '@/modules/Services';
 import { useUserToken } from '@/hooks/use-usertoken';
-import { activosMock } from '@/mocks/ActivosEdificiosMocks';
 
 const gs = new Services();
 
@@ -41,6 +40,11 @@ const estadoColor: Record<string, 'success' | 'warning' | 'error' | 'default'> =
   Medio: 'warning',
   Crítico: 'error',
 } as const;
+
+interface ApiActivosResponse {
+  activos?: Activo[];
+  error?: { mensaje: string };
+}
 
 const fallbackImg = 'https://via.placeholder.com/640x360?text=Activo';
 
@@ -83,7 +87,7 @@ export default function Page(): React.JSX.Element {
     }
 
     // Función asíncrona para obtener y filtrar los activos
-    const fetchActivos = async () => {
+    const fetchActivos = async (): Promise<void> => {
       setLoadingActivos(true);
       setActivosError(null);
 
@@ -93,8 +97,7 @@ export default function Page(): React.JSX.Element {
         const severity: Record<Estado, number> = { Crítico: 3, Medio: 2, OK: 1, NN: 0 };
         
         // LLAMADA ASÍNCRONA CORREGIDA (usando await)
-        const responseActivo = await gs.authorizedGet('/obtener-activos', user.token) as { activos?: Activo[], error?: any};
-        console.log('Respuesta de activos:', responseActivo);
+        const responseActivo = await gs.authorizedGet('/obtener-activos', user.token) as ApiActivosResponse;
         if (responseActivo.error) {
           setActivosError(responseActivo.error.mensaje || 'Error al obtener activos.');
           setActivosDelUsuario(null);

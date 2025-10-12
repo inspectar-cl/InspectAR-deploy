@@ -41,8 +41,7 @@ function normalizeTrend(t: unknown): Trend {
 const gs = new Services()
 
 export default function ActivoDetailClient({ id }: { id: number}) {
-  const { user, isLoading, error } = useUserToken();
-  const [loadingActivos, setLoadingActivos] = React.useState(true);
+  const { user, isLoading} = useUserToken();
   const [activo, setActivo] = React.useState<Activo | null>(null)
   interface SensorDato {
     valor: number;
@@ -79,7 +78,6 @@ export default function ActivoDetailClient({ id }: { id: number}) {
         }
         // falta solucion parche pal user
         const response = await gs.authorizedGet(`/obtener-activo-id/${id}`, user.token) as ActivoResponse;
-        console.log("response", response)
 
         // Aqui deberian de cargarse la data de los activos (Ojala desde una llamada a API)
         const estado: Estado = ESTADOS.includes(response.estado as Estado)
@@ -130,7 +128,7 @@ export default function ActivoDetailClient({ id }: { id: number}) {
 
     // Limpieza del intervalo al desmontar componente
     return () => { clearInterval(interval); };
-    }, [id]);
+    }, [id, isLoading, user]);
 
   // Estos nombres tendrían que ser dinámicos, de momento quedarán así.
   // Extracción de los valores de cada sensor:

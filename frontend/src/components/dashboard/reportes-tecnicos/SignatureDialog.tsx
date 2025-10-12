@@ -1,11 +1,27 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Tabs, Tab, Box, Typography, Stack, FormControlLabel, Checkbox
 } from '@mui/material';
-import SignatureCanvas from 'react-signature-canvas';
+import SignatureCanvasComponent from 'react-signature-canvas';
+import type SignatureCanvasType from 'react-signature-canvas';
+import type SignaturePad from 'signature_pad';
+
+type SignaturePoints = { x: number, y: number }[];
+type SignatureData = SignaturePoints[];
+
+type SignatureCanvasInstance = SignaturePad & {
+    getTrimmedCanvas: () => HTMLCanvasElement;
+    getCanvas: () => HTMLCanvasElement;
+    isEmpty: () => boolean;
+    clear: () => void;
+    toData: () => SignatureData;
+    fromData: (data: SignatureData) => void;
+    canvas?: HTMLCanvasElement;
+    _canvas?: HTMLCanvasElement;
+};
 
 type SignatureSource = 'drawn' | 'uploaded';
 
@@ -23,8 +39,8 @@ interface SignatureDialogProps {
   onUseSignature: (dataUrl: string, persist?: boolean) => void;
 }
 
-export default function SignatureDialog({ open, onClose, onUseSignature }: SignatureDialogProps) {
-  const sigRef = useRef<SignatureCanvas | null>(null);
+export default function SignatureDialog({ open, onClose, onUseSignature }: SignatureDialogProps): React.JSX.Element {
+  const sigRef = useRef<SignatureCanvasType | null>(null);
 
   const [tab, setTab] = useState<0 | 1>(0);
   const [uploadedDataUrl, setUploadedDataUrl] = useState<string | null>(null);
@@ -34,71 +50,82 @@ export default function SignatureDialog({ open, onClose, onUseSignature }: Signa
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [canUseDrawn, setCanUseDrawn] = useState(false);
 
-  useEffect(() => {
-    const resize = () => {
+  useEffect((): (() => void) | undefined => {
+    const resize = (): void => {
       if (!containerRef.current) return;
       const w = Math.min(containerRef.current.clientWidth - 16, 700);
       setCanvasSize({ width: Math.max(320, w), height: 200 });
     };
     resize();
     window.addEventListener('resize', resize);
-    return () => window.removeEventListener('resize', resize);
+    return () => { window.removeEventListener('resize', resize); };
   }, []);
 
 
-  useEffect(() => {
+   useEffect((): void => {
     if (open) setCanUseDrawn(false);
   }, [open]);
 
-  useEffect(() => {
+  useEffect((): void => {
     if (tab === 0) {
-      setCanUseDrawn(!!sigRef.current && !sigRef.current.isEmpty());
+      if (sigRef.current) {
+        setCanUseDrawn(!sigRef.current.isEmpty());
+      } else {
+        setCanUseDrawn(false);
+      }
     } else {
       setCanUseDrawn(false);
     }
   }, [tab]);
 
-  const handleUndo = () => {
+  const handleUndo = (): void => {
     if (!sigRef.current) return;
-    const data = sigRef.current.toData();
+    const instance = sigRef.current as unknown as SignatureCanvasInstance;
+    const data = instance.toData();
     if (data && data.length > 0) {
       data.pop();
       sigRef.current.fromData(data);
     }
-    setCanUseDrawn(!!sigRef.current && !sigRef.current.isEmpty());
+    setCanUseDrawn(Boolean(sigRef.current) && !sigRef.current.isEmpty());
   };
 
-  const handleClear = () => {
+  const handleClear = (): void => {
     sigRef.current?.clear();
     setCanUseDrawn(false);
   };
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => setUploadedDataUrl(reader.result as string);
+    reader.onload = () => { setUploadedDataUrl(reader.result as string); };
     reader.readAsDataURL(file);
   };
   // Extrae el dataUrl del canvas de firma (imagen PNG)
-  function getSignatureDataUrlStrict(instance: any): string {
+  function getSignatureDataUrlStrict(instance: SignatureCanvasType | null): string {
+    if (!instance) throw new Error('Instancia de SignatureCanvas es nula.');
+
+    const sigInstance = instance as unknown as SignatureCanvasInstance;
     try {
-      if (typeof instance.getTrimmedCanvas === 'function') {
-        return instance.getTrimmedCanvas().toDataURL('image/png');
+      if (typeof sigInstance.getTrimmedCanvas === 'function') {
+        return sigInstance.getTrimmedCanvas().toDataURL('image/png');
       }
     } catch {
       /* noop */
     }
-    const canvas =
-      (typeof instance.getCanvas === 'function' && instance.getCanvas()) ||
-      instance._canvas ||
-      instance.canvas;
+    const canvas: HTMLCanvasElement = 
+      (typeof sigInstance.getCanvas === 'function' && sigInstance.getCanvas()) ||
+      sigInstance._canvas ||
+      sigInstance.canvas;
     if (!canvas) throw new Error('No se pudo acceder al canvas de la firma.');
     return canvas.toDataURL('image/png');
   }
 
-  const useSignature = () => {
-    if (tab === 0 && sigRef.current && !sigRef.current.isEmpty()) {
+  const useSignature = (): void => {
+    if (tab === 0 && sigRef.current) {
+      const instance = sigRef.current as unknown as SignatureCanvasInstance;
+      if (instance.isEmpty()) return;
+
       const dataUrl: string = getSignatureDataUrlStrict(sigRef.current);
       onUseSignature(dataUrl, persist);
       onClose();
@@ -107,7 +134,6 @@ export default function SignatureDialog({ open, onClose, onUseSignature }: Signa
     if (tab === 1 && uploadedDataUrl) {
       onUseSignature(uploadedDataUrl, persist);
       onClose();
-      return;
     }
   };
 
@@ -117,7 +143,7 @@ export default function SignatureDialog({ open, onClose, onUseSignature }: Signa
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Agregar firma</DialogTitle>
       <DialogContent dividers>
-        <Tabs value={tab} onChange={(_, v) => setTab(v)}>
+        <Tabs value={tab} onChange={(_, v: 0 | 1) => { setTab(v); }}>
           <Tab label="Dibujar" />
           <Tab label="Subir imagen" />
         </Tabs>
@@ -125,11 +151,11 @@ export default function SignatureDialog({ open, onClose, onUseSignature }: Signa
         {tab === 0 && (
           <Box ref={containerRef} sx={{ mt: 2 }}>
             <Box sx={{ border: '1px dashed', borderColor: 'divider', borderRadius: 2, p: 1 }}>
-              <SignatureCanvas
+              <SignatureCanvasComponent
                 ref={(instance) => { sigRef.current = instance; }}
                 penColor="#000000"
                 backgroundColor="rgba(255,255,255,0)"
-                onEnd={() => setCanUseDrawn(true)}
+                onEnd={() => { setCanUseDrawn(true); }}
                 canvasProps={{
                   width: canvasSize.width,
                   height: canvasSize.height,
@@ -150,7 +176,7 @@ export default function SignatureDialog({ open, onClose, onUseSignature }: Signa
               Subir archivo de firma (PNG/JPG)
               <input type="file" hidden accept="image/*" onChange={handleUpload} />
             </Button>
-            {uploadedDataUrl && (
+            {uploadedDataUrl ? (
               <Box sx={{ mt: 2 }}>
                 <Typography variant="body2" sx={{ mb: 1 }}>Vista previa:</Typography>
                 <Box
@@ -160,13 +186,13 @@ export default function SignatureDialog({ open, onClose, onUseSignature }: Signa
                   sx={{ maxWidth: '100%', maxHeight: 200, borderRadius: 1, border: '1px solid', borderColor: 'divider' }}
                 />
               </Box>
-            )}
+            ): null}
           </Box>
         )}
 
         <FormControlLabel
           sx={{ mt: 2 }}
-          control={<Checkbox checked={persist} onChange={(e) => setPersist(e.target.checked)} />}
+          control={<Checkbox checked={persist}  onChange={(e) => { setPersist(e.target.checked); }} />}
           label="Guardar esta firma en el sistema"
         />
       </DialogContent>

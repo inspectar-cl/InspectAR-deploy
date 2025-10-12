@@ -28,12 +28,6 @@ const gs = new Services();
 
 const STORAGE_KEY = 'custom-auth-token';
 
-function generateToken(): string {
-  const arr = new Uint8Array(12);
-  window.crypto.getRandomValues(arr);
-  return Array.from(arr, (v) => v.toString(16).padStart(2, '0')).join('');
-}
-
 const baseUser: User = {
   id: 'USR-000',
   avatar: '/assets/avatar.png',
@@ -109,7 +103,7 @@ function extractRole(scope: string): Role | undefined {
     const roleString = parts[1].toLowerCase();
     // Verifica si es un rol válido
     if (isRole(roleString)) {
-      return roleString as Role;
+      return roleString;
     }
   }
   return undefined;
@@ -129,8 +123,8 @@ class AuthClient {
     const API_URL = '/login'
 
     const requestBody = {
-      email: email,
-      password: password,
+      email,
+      password,
       device_id: '1',
     };
 
@@ -150,8 +144,7 @@ class AuthClient {
             return { error: 'Token JWT inválido o malformado.' };
         }
 
-        const rawRole = decodedPayload.scope || decodedPayload.rol; 
-        const userId = decodedPayload.sub || decodedPayload.user_id;
+        const rawRole = decodedPayload.scope; 
 
         let role: Role | undefined;
         if (typeof rawRole === 'string') {
@@ -165,7 +158,7 @@ class AuthClient {
         const payload: StoredPayload = {
           token: accessToken,
           edificio: edificios.length > 0 ? edificios : undefined,
-          role: role,
+          role,
         };
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));

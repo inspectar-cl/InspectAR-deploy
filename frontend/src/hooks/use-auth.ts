@@ -1,9 +1,6 @@
-/**
- * @param token
- * @returns
- */
+import type {DecodedJwt} from '@/types/token'
 
-export function decodeJwtToken(token: string | undefined) {
+export function decodeJwtToken(token: string | undefined): DecodedJwt | null  {
   if (!token || typeof token === 'undefined') {
     return null;
   }
@@ -22,13 +19,13 @@ export function decodeJwtToken(token: string | undefined) {
     const jsonPayload = decodeURIComponent(
       atob(base64)
         .split('')
-        .map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        .map((c) => {
+          return `%${('00' + c.charCodeAt(0).toString(16)).slice(-2)}`;
         })
         .join('')
     );
 
-    return JSON.parse(jsonPayload);
+    return JSON.parse(jsonPayload) as DecodedJwt;
   } catch (error) {
     return null;
   }

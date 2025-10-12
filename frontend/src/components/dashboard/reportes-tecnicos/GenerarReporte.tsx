@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -7,9 +6,11 @@ import {
   FormControl, InputLabel, Checkbox, ListItemText, OutlinedInput,
   Stack, Typography, Card, CardContent, CardActions
 } from '@mui/material';
+import type {SelectChangeEvent} from '@mui/material'
 import Services from '@/modules/Services';
 import axios from 'axios';
-import SignatureDialog, { SavedSignature } from '@/components/dashboard/reportes-tecnicos/SignatureDialog';
+import type { SavedSignature } from '@/components/dashboard/reportes-tecnicos/SignatureDialog'; 
+import SignatureDialog from '@/components/dashboard/reportes-tecnicos/SignatureDialog';
 import { useSignatures } from '@/hooks/use-signatures';
 
 const gs = new Services();
@@ -21,6 +22,12 @@ interface ActivoReporte {
 }
 interface ActivosResponse {
   activos?: ActivoReporte[];
+}
+
+interface ReportePayload {
+    campos: string[];
+    observaciones?: string;
+    firmaDataUrl?: string;
 }
 
 function GenerarReporte() {
@@ -113,7 +120,7 @@ function GenerarReporte() {
   const handleExportarPDF = async () => {
     if (!activo) return;
     try {
-      const payload: any = {
+      const payload: ReportePayload = {
         campos: camposSeleccionados,
         observaciones: observaciones || undefined,
         firmaDataUrl: selectedSignatureDataUrl || undefined,
@@ -152,7 +159,7 @@ function GenerarReporte() {
   const handleVistaPreviaPDF = async () => {
     if (!activo) return;
     try {
-      const payload: any = {
+      const payload: ReportePayload = {
         campos: camposSeleccionados,
         observaciones: observaciones || undefined,
         firmaDataUrl: selectedSignatureDataUrl || undefined,
@@ -182,7 +189,9 @@ function GenerarReporte() {
             labelId="activo-label"
             value={activo}
             label="Seleccionar Activo"
-            onChange={(e) => setActivo(e.target.value as string)}
+            onChange={(e) => {
+              setActivo(e.target.value);
+            }}
             input={<OutlinedInput label="Seleccionar Activo" />}
             displayEmpty
             renderValue={(selected) => {
@@ -219,7 +228,7 @@ function GenerarReporte() {
           </Typography>
 
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
-            <Button variant="outlined" onClick={() => setSignatureDialogOpen(true)}>
+            <Button variant="outlined" onClick={() => { setSignatureDialogOpen(true); }}>
               Agregar firma
             </Button>
 
@@ -230,7 +239,7 @@ function GenerarReporte() {
               <Select
                 labelId="firmas-guardadas-label"
                 value={selectedSignatureId}
-                onChange={(e) => setSelectedSignatureId(e.target.value as string)}
+                onChange={(e) => { setSelectedSignatureId(e.target.value); }}
                 input={<OutlinedInput label="Firmas guardadas" />}
                 displayEmpty
                 renderValue={(selected) => {
@@ -294,8 +303,8 @@ function GenerarReporte() {
           <Select
             multiple
             value={camposSeleccionados}
-            onChange={(e) => {
-              const value = e.target.value as string[] | string;
+            onChange={(e: SelectChangeEvent<string[] | string>) => {
+              const value = e.target.value;
               setCamposSeleccionados(typeof value === 'string' ? value.split(',') : value);
             }}
             input={<OutlinedInput label="Campos del Reporte" />}
@@ -324,7 +333,7 @@ function GenerarReporte() {
           rows={3}
           fullWidth
           value={observaciones}
-          onChange={(e) => setObservaciones(e.target.value)}
+          onChange={(e) => { setObservaciones(e.target.value); }}
         />
         <Button variant="contained" sx={{ mt: 1 }}>
           Guardar Observaciones
@@ -339,7 +348,7 @@ function GenerarReporte() {
           setMensaje(null);
         }}
       >
-        <Alert severity="warning" onClose={() => setMensaje(null)}>
+        <Alert severity="warning" onClose={() => {setMensaje(null)}}>
           {mensaje}
         </Alert>
       </Snackbar>
@@ -347,7 +356,7 @@ function GenerarReporte() {
       {/* Diálogo de firma */}
       <SignatureDialog
         open={signatureDialogOpen}
-        onClose={() => setSignatureDialogOpen(false)}
+        onClose={() => {setSignatureDialogOpen(false)}}
         onUseSignature={handleUseSignature}
       />
     </Box>

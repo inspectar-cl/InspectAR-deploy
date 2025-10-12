@@ -13,7 +13,11 @@ interface AuthInfo {
     token: string;
 }
 
-export const useUserToken = () => {
+export const useUserToken = (): {
+    user: AuthInfo | null;
+    isLoading: boolean;
+    error: string | null;
+} => {
     const [user, setUser] = React.useState<AuthInfo | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
@@ -22,14 +26,11 @@ export const useUserToken = () => {
         try {
             const tokenString = localStorage.getItem('custom-auth-token');
             if (tokenString) {
-                const authData = JSON.parse(tokenString);
-                
-                const userInfo: AuthInfo = authData as AuthInfo;
+                const userInfo = JSON.parse(tokenString) as unknown as AuthInfo;
                 
                 setUser(userInfo);
             }
         } catch (e) {
-            console.error("Error al leer custom-auth-token:", e);
             setError("Error al cargar la sesión. Por favor, inicia sesión de nuevo.");
         } finally {
             setIsLoading(false);

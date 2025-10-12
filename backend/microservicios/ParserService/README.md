@@ -18,18 +18,18 @@ Microservicio encargado de la gestión de activos industriales, sensores IoT y a
 - **Sistema de monitoreo automático** activo (cada 2 minutos)
 - **Detección de desconexión** (timeout de 5 minutos)
 
-**🚀 Última Actualización:** 10 de Octubre 2025 - **Filtrado de Activos por Edificio** 🆕
+**🚀 Última Actualización:** 12 de Octubre 2025 - **Información de Sensores en Ruta de Activo Individual** 🆕
 
 ## Funcionalidades
 
 ### Sistema de Gestión de Activos
 - ✅ Crear activos industriales
 - ✅ Listar todos los activos del sistema
-- ✅ Obtener activo específico por ID
-- ✅ **🆕 Filtrar activos por edificio**
+- ✅ **Obtener activo específico con información completa de sensores**
+- ✅ **🆕 Filtrar activos por edificio con información de sensores**
 - ✅ Actualizar estado de activos
 - ✅ Agregar sensores a activos existentes
-- ✅ Consultar activos con estado de sensores
+- ✅ Consultar activos con estado de sensores (resumen estadístico)
 
 ### Sistema de Gestión de Lecturas
 - ✅ Registrar lecturas de sensores
@@ -59,7 +59,7 @@ Microservicio encargado de la gestión de activos industriales, sensores IoT y a
 |--------|----------|-------------|---------|
 | `POST` | `/activo` | Crear nuevo activo | ✅ Funcionando |
 | `GET` | `/activo` | Listar todos los activos | ✅ Funcionando |
-| `GET` | `/activo/:activo_id` | Obtener activo específico | ✅ Funcionando |
+| `GET` | `/activo/:activo_id` | **Obtener activo con info de sensores** | ✅ **ACTUALIZADO** |
 | `GET` | `/activo/:activo_id/sensores/estado` | Obtener activo con estado de sensores | ✅ Funcionando |
 | `POST` | `/activo/:activo_id/sensores` | Agregar sensor a activo existente | ✅ Funcionando |
 | `GET` | `/activo/edificio/:edificio_id` | 🆕 **Filtrar activos por edificio** | ✅ **NUEVO** |
@@ -233,7 +233,7 @@ curl -X GET http://localhost:8090/activo
 ]
 ```
 
-#### Obtener activo específico
+#### Obtener activo específico con información de sensores
 ```bash
 curl -X GET http://localhost:8090/activo/1
 ```
@@ -242,18 +242,49 @@ curl -X GET http://localhost:8090/activo/1
 {
   "id": "670586c9a3e45c001e8b4567",
   "activo_id": 1,
-  "nombre": "Caldera Principal",
   "estado": "operativo",
-  "id_edificio": "1",
+  "id_edificio": 1,
+  "total_sensores": 2,
   "sensores": [
     {
       "sensor_id": "TEMP_001",
       "tipo": "temperatura",
-      "unidad": "°C"
+      "unidad": "°C",
+      "estado": "connected",
+      "is_active": true,
+      "last_seen": "2025-10-11T12:00:00Z",
+      "first_seen": "2025-10-01T08:00:00Z",
+      "total_reports": 1458,
+      "created_at": "2025-10-01T08:00:00Z",
+      "updated_at": "2025-10-11T12:00:00Z"
+    },
+    {
+      "sensor_id": "PRESS_001",
+      "tipo": "presion",
+      "unidad": "bar",
+      "estado": "disconnected",
+      "is_active": false,
+      "last_seen": "2025-10-10T09:45:00Z",
+      "first_seen": "2025-10-01T08:00:00Z",
+      "total_reports": 892,
+      "created_at": "2025-10-01T08:00:00Z",
+      "updated_at": "2025-10-10T09:45:00Z"
     }
   ]
 }
 ```
+
+**Características:**
+- Incluye información completa del activo
+- Array de sensores con estado detallado de cada uno
+- Campos de estado: `estado`, `is_active`, `last_seen`, `first_seen`
+- Métricas: `total_reports`, `created_at`, `updated_at`
+- Campo `total_sensores` con cantidad de sensores del activo
+
+**Estados de Sensores:**
+- **`connected`**: Sensor activo enviando datos
+- **`disconnected`**: Sensor que envió datos pero está inactivo (>5 min sin datos)
+- **`never_connected`**: Sensor registrado pero nunca ha enviado datos
 
 #### 🆕 **NUEVA RUTA: Obtener activos por edificio con información de sensores**
 ```bash

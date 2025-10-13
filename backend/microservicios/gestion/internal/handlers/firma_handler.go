@@ -22,13 +22,12 @@ func NewFirmaHandler(service *services.FirmaService) *FirmaHandler {
 // POST /firmas/upload - Subir una firma como archivo (imagen)
 func (h *FirmaHandler) SubirFirma(c *gin.Context) {
 	// Obtener parámetros del form
-	usuarioIDStr := c.PostForm("usuario_id")
+	email := c.PostForm("email")
 	nombreArchivo := c.PostForm("nombre_archivo")
 	esPredeterminadaStr := c.PostForm("es_predeterminada")
 
-	usuarioID, err := strconv.Atoi(usuarioIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "usuario_id inválido"})
+	if email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "email requerido"})
 		return
 	}
 
@@ -43,7 +42,7 @@ func (h *FirmaHandler) SubirFirma(c *gin.Context) {
 	defer file.Close()
 
 	// Crear firma
-	firma, err := h.service.CrearFirmaDesdeArchivo(usuarioID, nombreArchivo, esPredeterminada, file, header)
+	firma, err := h.service.CrearFirmaDesdeArchivo(email, nombreArchivo, esPredeterminada, file, header)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -64,7 +63,7 @@ func (h *FirmaHandler) CrearFirmaSVG(c *gin.Context) {
 		return
 	}
 
-	firma, err := h.service.CrearFirmaDesdeSVG(req.UsuarioID, req.NombreArchivo, req.DatosSVG, req.EsPredeterminada)
+	firma, err := h.service.CrearFirmaDesdeSVG(req.Email, req.NombreArchivo, req.DatosSVG, req.EsPredeterminada)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -120,16 +119,15 @@ func (h *FirmaHandler) ObtenerImagenFirma(c *gin.Context) {
 	c.File(firma.RutaArchivo)
 }
 
-// GET /firmas/usuario/:usuario_id - Obtener todas las firmas de un usuario
+// GET /firmas/usuario/:email - Obtener todas las firmas de un usuario por email
 func (h *FirmaHandler) ObtenerFirmasUsuario(c *gin.Context) {
-	usuarioIDStr := c.Param("usuario_id")
-	usuarioID, err := strconv.Atoi(usuarioIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "usuario_id inválido"})
+	email := c.Param("email")
+	if email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "email requerido"})
 		return
 	}
 
-	firmas, err := h.service.ObtenerFirmasUsuario(usuarioID)
+	firmas, err := h.service.ObtenerFirmasUsuarioPorEmail(email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -141,16 +139,15 @@ func (h *FirmaHandler) ObtenerFirmasUsuario(c *gin.Context) {
 	})
 }
 
-// GET /firmas/usuario/:usuario_id/predeterminada - Obtener firma predeterminada de un usuario
+// GET /firmas/usuario/:email/predeterminada - Obtener firma predeterminada de un usuario por email
 func (h *FirmaHandler) ObtenerFirmaPredeterminada(c *gin.Context) {
-	usuarioIDStr := c.Param("usuario_id")
-	usuarioID, err := strconv.Atoi(usuarioIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "usuario_id inválido"})
+	email := c.Param("email")
+	if email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "email requerido"})
 		return
 	}
 
-	firma, err := h.service.ObtenerFirmaPredeterminada(usuarioID)
+	firma, err := h.service.ObtenerFirmaPredeterminadaPorEmail(email)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "No se encontró firma predeterminada"})
 		return
@@ -215,18 +212,18 @@ func (h *FirmaHandler) EstablecerComoPredeterminada(c *gin.Context) {
 		return
 	}
 
-	// Obtener usuario_id del body o query
+	// Obtener email del body o query
 	type SetDefaultRequest struct {
-		UsuarioID int `json:"usuario_id" binding:"required"`
+		Email string `json:"email" binding:"required,email"`
 	}
 
 	var req SetDefaultRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "usuario_id requerido"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "email requerido"})
 		return
 	}
 
-	err = h.service.EstablecerComoPredeterminada(id, req.UsuarioID)
+	err = h.service.EstablecerComoPredeterminadaPorEmail(id, req.Email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

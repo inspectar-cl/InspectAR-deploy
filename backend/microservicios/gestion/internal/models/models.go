@@ -216,7 +216,7 @@ type GenerarReporteRequest struct {
 	Campos                  []string `json:"campos" binding:"required"` // e.g. ["ubicacion","historico_mantenimientos","ultima_acciones","datos_sensores"]
 	FirmaID                 *int     `json:"firma_id,omitempty"`        // ID de la firma digital a incluir (opcional)
 	UsarFirmaPredeterminada bool     `json:"usar_firma_predeterminada"` // Si true, usa la firma predeterminada del usuario
-	UsuarioID               int      `json:"usuario_id,omitempty"`      // ID del usuario que genera el reporte (para obtener firma predeterminada)
+	Email                   string   `json:"email,omitempty"`           // Email del usuario que genera el reporte (para obtener firma predeterminada)
 }
 
 type UpdateObservacionesRequest struct {
@@ -320,14 +320,14 @@ type FirmaDigital struct {
 
 // DTOs para firmas digitales
 type CreateFirmaRequest struct {
-	UsuarioID        int    `form:"usuario_id" binding:"required"`
+	Email            string `form:"email" binding:"required,email"`
 	NombreArchivo    string `form:"nombre_archivo"`
 	EsPredeterminada bool   `form:"es_predeterminada"`
 	// El archivo se maneja por separado en el handler mediante c.FormFile()
 }
 
 type CreateFirmaSVGRequest struct {
-	UsuarioID        int    `json:"usuario_id" binding:"required"`
+	Email            string `json:"email" binding:"required,email"`
 	NombreArchivo    string `json:"nombre_archivo" binding:"required"`
 	DatosSVG         string `json:"datos_svg" binding:"required"` // SVG como string
 	EsPredeterminada bool   `json:"es_predeterminada"`

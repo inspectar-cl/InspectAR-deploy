@@ -25,6 +25,7 @@ type ReporteService struct {
 	accionRepo   *repository.AccionMantenimientoRepository
 	edificioRepo *repository.EdificioRepository
 	firmaRepo    *repository.FirmaRepository
+	usuarioRepo  *repository.UsuarioRepository
 }
 
 func NewReporteService(
@@ -45,6 +46,11 @@ func NewReporteService(
 // SetFirmaRepo configura el repositorio de firmas (opcional)
 func (s *ReporteService) SetFirmaRepo(firmaRepo *repository.FirmaRepository) {
 	s.firmaRepo = firmaRepo
+}
+
+// SetUsuarioRepo configura el repositorio de usuarios (opcional)
+func (s *ReporteService) SetUsuarioRepo(usuarioRepo *repository.UsuarioRepository) {
+	s.usuarioRepo = usuarioRepo
 }
 
 // Estructura para los datos del template
@@ -396,14 +402,14 @@ func (s *ReporteService) GenerarReportePDFPorActivo(activoID int, opts models.Ge
 		} else {
 			fmt.Printf("Advertencia: no se pudo cargar la firma ID %d: %v\n", *opts.FirmaID, err)
 		}
-	} else if opts.UsarFirmaPredeterminada && opts.UsuarioID > 0 && s.firmaRepo != nil {
-		// Obtener firma predeterminada del usuario
-		firma, err := s.firmaRepo.GetDefaultByUsuario(opts.UsuarioID)
+	} else if opts.UsarFirmaPredeterminada && opts.Email != "" && s.firmaRepo != nil && s.usuarioRepo != nil {
+		// Obtener firma predeterminada del usuario por email
+		firma, err := s.firmaRepo.GetDefaultByUsuarioEmail(opts.Email)
 		if err == nil {
 			firmaData = s.prepararFirmaParaTemplate(firma)
 			fmt.Printf("FIRMA PREDETERMINADA ENCONTRADA: ID=%d, Usuario=%d, Formato=%s\n", firma.ID, firma.UsuarioID, firma.Formato)
 		} else {
-			fmt.Printf("Advertencia: no se encontró firma predeterminada para usuario %d: %v\n", opts.UsuarioID, err)
+			fmt.Printf("Advertencia: no se encontró firma predeterminada para usuario con email %s: %v\n", opts.Email, err)
 		}
 	}
 

@@ -28,7 +28,7 @@ POST http://localhost:8092/firmas/upload
 
 # Ejemplo con curl (form-data)
 curl -X POST http://localhost:8092/firmas/upload \
-  -F "usuario_id=1" \
+  -F "email=usuario@example.com" \
   -F "nombre_archivo=Mi Firma Profesional" \
   -F "es_predeterminada=true" \
   -F "archivo=@/path/to/firma.png"
@@ -42,7 +42,7 @@ POST http://localhost:8092/firmas/svg
 Content-Type: application/json
 
 {
-  "usuario_id": 1,
+  "email": "usuario@example.com",
   "nombre_archivo": "Firma Dibujada",
   "datos_svg": "<svg>...</svg>",
   "es_predeterminada": false
@@ -67,18 +67,18 @@ curl http://localhost:8092/firmas/1/imagen --output firma.png
 
 #### 2.5 Listar Firmas de un Usuario
 ```bash
-GET http://localhost:8092/firmas/usuario/:usuario_id
+GET http://localhost:8092/firmas/usuario/:email
 
 # Ejemplo
-curl http://localhost:8092/firmas/usuario/1 | jq '.'
+curl http://localhost:8092/firmas/usuario/usuario@example.com | jq '.'
 ```
 
 #### 2.6 Obtener Firma Predeterminada de un Usuario
 ```bash
-GET http://localhost:8092/firmas/usuario/:usuario_id/predeterminada
+GET http://localhost:8092/firmas/usuario/:email/predeterminada
 
 # Ejemplo
-curl http://localhost:8092/firmas/usuario/1/predeterminada | jq '.'
+curl http://localhost:8092/firmas/usuario/usuario@example.com/predeterminada | jq '.'
 ```
 
 #### 2.7 Actualizar Firma
@@ -111,13 +111,13 @@ POST http://localhost:8092/firmas/:id/predeterminada
 Content-Type: application/json
 
 {
-  "usuario_id": 1
+  "email": "usuario@example.com"
 }
 
 # Ejemplo
 curl -X POST http://localhost:8092/firmas/2/predeterminada \
   -H "Content-Type: application/json" \
-  -d '{"usuario_id":1}'
+  -d '{"email":"usuario@example.com"}'
 ```
 
 ### ✅ 3. Integración con Reportes PDF
@@ -150,7 +150,7 @@ Content-Type: application/json
 {
   "campos": ["ubicacion", "historial_mantenimientos", "ultima_acciones"],
   "usar_firma_predeterminada": true,
-  "usuario_id": 1
+  "email": "usuario@example.com"
 }
 
 # Ejemplo
@@ -159,7 +159,7 @@ curl -X POST http://localhost:8092/reportes/activo/1 \
   -d '{
     "campos": ["ubicacion", "historial_mantenimientos"],
     "usar_firma_predeterminada": true,
-    "usuario_id": 1
+    "email": "usuario@example.com"
   }' \
   --output reporte_firmado.pdf
 ```
@@ -170,7 +170,7 @@ curl -X POST http://localhost:8092/reportes/activo/1 \
 ```bash
 # 1. Subir firma y marcarla como predeterminada
 curl -X POST http://localhost:8092/firmas/upload \
-  -F "usuario_id=1" \
+  -F "email=usuario@example.com" \
   -F "nombre_archivo=Firma Oficial" \
   -F "es_predeterminada=true" \
   -F "archivo=@mi_firma.png"
@@ -181,7 +181,7 @@ curl -X POST http://localhost:8092/reportes/activo/1 \
   -d '{
     "campos": ["ubicacion", "historial_mantenimientos"],
     "usar_firma_predeterminada": true,
-    "usuario_id": 1
+    "email": "usuario@example.com"
   }' \
   --output reporte_firmado.pdf
 ```
@@ -192,7 +192,7 @@ curl -X POST http://localhost:8092/reportes/activo/1 \
 curl -X POST http://localhost:8092/firmas/svg \
   -H "Content-Type: application/json" \
   -d '{
-    "usuario_id": 1,
+    "email": "usuario@example.com",
     "nombre_archivo": "Firma Digital Dibujada",
     "datos_svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"300\" height=\"150\"><path d=\"M10 100 Q 50 50 100 100\" stroke=\"black\" fill=\"none\"/></svg>",
     "es_predeterminada": true
@@ -204,7 +204,7 @@ curl -X POST http://localhost:8092/reportes/activo/1 \
   -d '{
     "campos": ["ubicacion"],
     "usar_firma_predeterminada": true,
-    "usuario_id": 1
+    "email": "usuario@example.com"
   }' \
   --output reporte_firmado.pdf
 ```
@@ -212,11 +212,11 @@ curl -X POST http://localhost:8092/reportes/activo/1 \
 #### Escenario 3: Usuario gestiona múltiples firmas
 ```bash
 # 1. Listar firmas actuales
-curl http://localhost:8092/firmas/usuario/1 | jq '.'
+curl http://localhost:8092/firmas/usuario/usuario@example.com | jq '.'
 
 # 2. Subir segunda firma
 curl -X POST http://localhost:8092/firmas/upload \
-  -F "usuario_id=1" \
+  -F "email=usuario@example.com" \
   -F "nombre_archivo=Firma Secundaria" \
   -F "es_predeterminada=false" \
   -F "archivo=@firma2.png"
@@ -224,7 +224,7 @@ curl -X POST http://localhost:8092/firmas/upload \
 # 3. Cambiar firma predeterminada
 curl -X POST http://localhost:8092/firmas/2/predeterminada \
   -H "Content-Type: application/json" \
-  -d '{"usuario_id":1}'
+  -d '{"email":"usuario@example.com"}'
 
 # 4. Eliminar firma antigua
 curl -X DELETE http://localhost:8092/firmas/1
@@ -296,7 +296,7 @@ curl http://localhost:8092/health
 
 # 3. Subir firma
 FIRMA_RESPONSE=$(curl -X POST http://localhost:8092/firmas/upload \
-  -F "usuario_id=1" \
+  -F "email=usuario@example.com" \
   -F "nombre_archivo=Test Firma" \
   -F "es_predeterminada=true" \
   -F "archivo=@test_firma.png")

@@ -47,9 +47,10 @@ func main() {
 	accionService := services.NewAccionMantenimientoService(accionRepo)
 	activoService := services.NewActivoService(activoRepo, edificioRepo)
 	reporteService := services.NewReporteService(reporteRepo, activoRepo, accionRepo, edificioRepo)
-	reporteService.SetFirmaRepo(firmaRepo) // Configurar repositorio de firmas
+	reporteService.SetFirmaRepo(firmaRepo)     // Configurar repositorio de firmas
+	reporteService.SetUsuarioRepo(usuarioRepo) // Configurar repositorio de usuarios
 	solicitudService := services.NewSolicitudService(db)
-	firmaService := services.NewFirmaService(firmaRepo)
+	firmaService := services.NewFirmaService(firmaRepo, usuarioRepo)
 
 	// Handlers
 	tecnicoHandler := handlers.NewTecnicoHandler(tecnicoService)

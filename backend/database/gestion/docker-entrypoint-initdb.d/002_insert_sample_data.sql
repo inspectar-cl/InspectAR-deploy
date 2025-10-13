@@ -302,3 +302,5 @@ INSERT INTO activos_fallos (activo_id, fallo_id, estado, notas) VALUES
 -- Activo 8: Bomba de Emergencia
 (8, 14, 'resuelto', 'Verificación de funcionamiento completada. Sin fallos detectados.')
 ON CONFLICT DO NOTHING;
+
+-- NOTA: Los datos de tipos_falla y comentarios se encuentran en 004_insert_tipos_falla.sql

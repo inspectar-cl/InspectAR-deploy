@@ -119,6 +119,48 @@ func (r *FirmaRepository) GetByUsuarioID(usuarioID int) ([]models.FirmaDigital, 
 	return firmas, nil
 }
 
+// GetByUsuarioEmail obtiene todas las firmas de un usuario por email
+func (r *FirmaRepository) GetByUsuarioEmail(email string) ([]models.FirmaDigital, error) {
+	query := `
+		SELECT f.id, f.usuario_id, f.nombre_archivo, f.ruta_archivo, f.tipo_mime, f.formato, 
+		       f.datos_firma, f.tamano_bytes, f.es_predeterminada, f.creado_en, f.actualizado_en
+		FROM firmas_digitales f
+		INNER JOIN usuarios u ON f.usuario_id = u.id
+		WHERE u.email = $1
+		ORDER BY f.es_predeterminada DESC, f.creado_en DESC
+	`
+
+	rows, err := r.db.Query(query, email)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var firmas []models.FirmaDigital
+	for rows.Next() {
+		var firma models.FirmaDigital
+		err := rows.Scan(
+			&firma.ID,
+			&firma.UsuarioID,
+			&firma.NombreArchivo,
+			&firma.RutaArchivo,
+			&firma.TipoMime,
+			&firma.Formato,
+			&firma.DatosFirma,
+			&firma.TamanoBytes,
+			&firma.EsPredeterminada,
+			&firma.CreadoEn,
+			&firma.ActualizadoEn,
+		)
+		if err != nil {
+			return nil, err
+		}
+		firmas = append(firmas, firma)
+	}
+
+	return firmas, nil
+}
+
 // GetDefaultByUsuario obtiene la firma predeterminada de un usuario
 func (r *FirmaRepository) GetDefaultByUsuario(usuarioID int) (*models.FirmaDigital, error) {
 	query := `
@@ -131,6 +173,39 @@ func (r *FirmaRepository) GetDefaultByUsuario(usuarioID int) (*models.FirmaDigit
 
 	var firma models.FirmaDigital
 	err := r.db.QueryRow(query, usuarioID).Scan(
+		&firma.ID,
+		&firma.UsuarioID,
+		&firma.NombreArchivo,
+		&firma.RutaArchivo,
+		&firma.TipoMime,
+		&firma.Formato,
+		&firma.DatosFirma,
+		&firma.TamanoBytes,
+		&firma.EsPredeterminada,
+		&firma.CreadoEn,
+		&firma.ActualizadoEn,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &firma, nil
+}
+
+// GetDefaultByUsuarioEmail obtiene la firma predeterminada de un usuario por email
+func (r *FirmaRepository) GetDefaultByUsuarioEmail(email string) (*models.FirmaDigital, error) {
+	query := `
+		SELECT f.id, f.usuario_id, f.nombre_archivo, f.ruta_archivo, f.tipo_mime, f.formato, 
+		       f.datos_firma, f.tamano_bytes, f.es_predeterminada, f.creado_en, f.actualizado_en
+		FROM firmas_digitales f
+		INNER JOIN usuarios u ON f.usuario_id = u.id
+		WHERE u.email = $1 AND f.es_predeterminada = true
+		LIMIT 1
+	`
+
+	var firma models.FirmaDigital
+	err := r.db.QueryRow(query, email).Scan(
 		&firma.ID,
 		&firma.UsuarioID,
 		&firma.NombreArchivo,

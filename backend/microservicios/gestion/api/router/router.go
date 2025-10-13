@@ -214,15 +214,15 @@ func SetupRouter(
 	r.GET("/tipos-falla/edificio/:edificio_id", tipoFallaHandler.ObtenerTiposFallaPorEdificio) // Obtener fallas con comentarios (paginado si ?pagina=N, todos si sin parámetro)
 
 	// ✍️ Rutas de firmas digitales (HdU Firmas Digitales)
-	r.POST("/firmas/upload", firmaHandler.SubirFirma)                                            // Subir firma como archivo (imagen)
-	r.POST("/firmas/svg", firmaHandler.CrearFirmaSVG)                                            // Crear firma desde SVG (pizarra)
-	r.GET("/firmas/:id", firmaHandler.ObtenerFirma)                                              // Obtener firma por ID
-	r.GET("/firmas/:id/imagen", firmaHandler.ObtenerImagenFirma)                                 // Obtener imagen de la firma
-	r.GET("/firmas/usuario/:usuario_id", firmaHandler.ObtenerFirmasUsuario)                      // Obtener todas las firmas de un usuario
-	r.GET("/firmas/usuario/:usuario_id/predeterminada", firmaHandler.ObtenerFirmaPredeterminada) // Obtener firma predeterminada de usuario
-	r.PUT("/firmas/:id", firmaHandler.ActualizarFirma)                                           // Actualizar firma
-	r.DELETE("/firmas/:id", firmaHandler.EliminarFirma)                                          // Eliminar firma
-	r.POST("/firmas/:id/predeterminada", firmaHandler.EstablecerComoPredeterminada)              // Establecer como predeterminada
+	r.POST("/firmas/upload", firmaHandler.SubirFirma)                                       // Subir firma como archivo (imagen)
+	r.POST("/firmas/svg", firmaHandler.CrearFirmaSVG)                                       // Crear firma desde SVG (pizarra)
+	r.GET("/firmas/:id", firmaHandler.ObtenerFirma)                                         // Obtener firma por ID
+	r.GET("/firmas/:id/imagen", firmaHandler.ObtenerImagenFirma)                            // Obtener imagen de la firma
+	r.GET("/firmas/usuario/:email", firmaHandler.ObtenerFirmasUsuario)                      // Obtener todas las firmas de un usuario por email
+	r.GET("/firmas/usuario/:email/predeterminada", firmaHandler.ObtenerFirmaPredeterminada) // Obtener firma predeterminada de usuario por email
+	r.PUT("/firmas/:id", firmaHandler.ActualizarFirma)                                      // Actualizar firma
+	r.DELETE("/firmas/:id", firmaHandler.EliminarFirma)                                     // Eliminar firma
+	r.POST("/firmas/:id/predeterminada", firmaHandler.EstablecerComoPredeterminada)         // Establecer como predeterminada
 
 	return r
 }

@@ -134,7 +134,7 @@ func getSpecialHandlers() []SpecialHandler {
         },
         {
             Method: "GET",
-            Pattern: "/api/obtener-acciones",
+            Pattern: "/api/obtener-acciones/:id_tecnico",
             Handler: ObtenerAcciones,
             Protected: true,
             RequiredScopes: []string{"user-type:Tecnico", "user-type:Admin"},

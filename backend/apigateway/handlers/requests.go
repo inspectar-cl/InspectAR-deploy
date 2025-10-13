@@ -1503,34 +1503,14 @@ func GenerarPDFReporte(c *gin.Context) {
 }
 
 func ObtenerAcciones(c *gin.Context) {
-    // Extraer el email desde el token JWT  
-    var email string
-    authHeader := c.GetHeader("Authorization")
-    if authHeader == "" {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+    id := c.Param("id_tecnico")
+    if id == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID del tecnico es requerido"})
         return
     }
-
-    tokenParts := strings.Split(authHeader, " ")
-
-    emailInterface, err := extractClaimFromToken(tokenParts[1], "email")
-    if err != nil {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-        return
-    }
-    
-    // Type assertion para convertir interface{} a string
-    var ok bool
-    email, ok = emailInterface.(string)
-    if !ok {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid email format in token"})
-        return
-    }
-    
-    fmt.Printf("Email extraído del token: %s\n", email)
 
     // Hacer GET al microservicio de gestión
-    url := fmt.Sprintf("%s/acciones/tecnico/%s", gestionURL, email)
+    url := fmt.Sprintf("%s/acciones/tecnico/%s", gestionURL, id)
     resp, err := httpClient.Get(url)
     if err != nil {
         fmt.Println("Error obteniendo acciones: ", err)
@@ -1550,15 +1530,16 @@ func ObtenerAcciones(c *gin.Context) {
         return
     }
 
-    // Leer la respuesta como JSON
-    var accionesData map[string]interface{}
-    if err := json.NewDecoder(resp.Body).Decode(&accionesData); err != nil {
+    // Leer la respuesta como array directo
+    var accionesArray []interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&accionesArray); err != nil {
         fmt.Println("Error decodificando acciones: ", err)
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando las acciones"})
         return
     }
 
-    c.JSON(http.StatusOK, accionesData)
+    // Retornar el array directamente
+    c.JSON(http.StatusOK, accionesArray)
 }
 
 func SubirDocumentoHandler(c *gin.Context) {

@@ -138,7 +138,14 @@ func getSpecialHandlers() []SpecialHandler {
             Handler: ObtenerAcciones,
             Protected: true,
             RequiredScopes: []string{"user-type:Tecnico", "user-type:Admin"},
-        }
+        },
+        { 
+            Method:  "POST",
+            Pattern: "/api/subir-documento",
+            Handler: SubirDocumentoHandler,
+            Protected: true,
+            RequiredScopes: []string{"user-type:Tecnico", "user-type:Admin"},
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",

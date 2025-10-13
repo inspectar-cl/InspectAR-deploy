@@ -4,6 +4,8 @@ import (
     "bytes"
     "encoding/json"
     "fmt"
+    "io"
+    "mime/multipart"
     "net/http"
     "strings"
     "os"
@@ -1557,4 +1559,147 @@ func ObtenerAcciones(c *gin.Context) {
     }
 
     c.JSON(http.StatusOK, accionesData)
+}
+
+func SubirDocumentoHandler(c *gin.Context) {
+    // // Extraer el email desde el token JWT
+    // var email string
+    // authHeader := c.GetHeader("Authorization")
+    // if authHeader != "" {
+    //     tokenParts := strings.Split(authHeader, " ")
+    //     if len(tokenParts) == 2 {
+    //         emailInterface, err := extractClaimFromToken(tokenParts[1], "email")
+    //         if err == nil {
+    //             if e, ok := emailInterface.(string); ok {
+    //                 email = e
+    //             }
+    //         }
+    //     }
+    // }
+
+    // fmt.Printf("Usuario subiendo documento: %s\n", email)
+
+    // Parsear multipart/form-data
+    err := c.Request.ParseMultipartForm(32 << 20) // 32 MB
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Error parseando form-data"})
+        return
+    }
+
+    // Obtener el archivo
+    file, fileHeader, err := c.Request.FormFile("archivo")
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'archivo' es requerido"})
+        return
+    }
+    defer file.Close()
+
+    fmt.Printf("Archivo recibido: %s, tamaño: %d bytes\n", fileHeader.Filename, fileHeader.Size)
+
+    // Obtener los demás campos del form
+    activoID := c.Request.FormValue("activo_id")
+    categoria := c.Request.FormValue("categoria")
+    nombre := c.Request.FormValue("nombre")
+    descripcion := c.Request.FormValue("descripcion")
+    palabrasClave := c.Request.FormValue("palabras_clave")
+
+    // Validar campos requeridos
+    if activoID == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'activo_id' es requerido"})
+        return
+    }
+
+    if categoria == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'categoria' es requerido"})
+        return
+    }
+
+    if nombre == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'nombre' es requerido"})
+        return
+    }
+
+    fmt.Printf("Datos del documento - activo_id: %s, categoria: %s, nombre: %s\n", activoID, categoria, nombre)
+
+    // Crear el form-data para el microservicio de documentación
+    var requestBody bytes.Buffer
+    writer := multipart.NewWriter(&requestBody)
+
+    // Agregar el archivo
+    part, err := writer.CreateFormFile("archivo", fileHeader.Filename)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creando form file"})
+        return
+    }
+
+    // Copiar el contenido del archivo
+    _, err = io.Copy(part, file)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error copiando archivo"})
+        return
+    }
+
+    // Agregar los demás campos
+    writer.WriteField("activo_id", activoID)
+    writer.WriteField("categoria", categoria)
+    writer.WriteField("nombre", nombre)
+    
+    if descripcion != "" {
+        writer.WriteField("descripcion", descripcion)
+    }
+    
+    if palabrasClave != "" {
+        writer.WriteField("palabras_clave", palabrasClave)
+    }
+
+    // Cerrar el writer
+    err = writer.Close()
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error cerrando writer"})
+        return
+    }
+
+    // Hacer POST al microservicio de documentación
+    url := fmt.Sprintf("%s/api/v1/documentos", documentacionURL)
+    req, err := http.NewRequest("POST", url, &requestBody)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creando request"})
+        return
+    }
+
+    // Establecer el Content-Type con el boundary correcto
+    req.Header.Set("Content-Type", writer.FormDataContentType())
+
+    // Ejecutar la petición
+    client := &http.Client{Timeout: 30 * time.Second} // Mayor timeout para uploads
+    resp, err := client.Do(req)
+    if err != nil {
+        fmt.Println("Error subiendo documento: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al subir el documento"})
+        return
+    }
+    defer resp.Body.Close()
+
+    fmt.Printf("DEBUG: Status code de respuesta de subida: %d\n", resp.StatusCode)
+
+    // Verificar si la respuesta es exitosa
+    if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+        var errorData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&errorData); err == nil {
+            c.JSON(resp.StatusCode, errorData)
+            return
+        }
+        c.JSON(resp.StatusCode, gin.H{"error": "Error al subir el documento"})
+        return
+    }
+
+    // Leer la respuesta exitosa
+    var responseData map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+        fmt.Println("Error decodificando respuesta de subida: ", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando respuesta"})
+        return
+    }
+
+    c.JSON(resp.StatusCode, responseData)
 }

@@ -1009,8 +1009,6 @@ func ComentariosForoHandler(c *gin.Context) {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
         return
     }
-    
-    // fmt.Printf("DEBUG: Authorization header: %s\n", authHeader)
 
     //Bearer eydsdsdsd...
     tokenParts := strings.Split(authHeader, " ")
@@ -1397,4 +1395,107 @@ func ObtenerActivoPorID(c *gin.Context) {
     }
 
     c.JSON(http.StatusOK, activo)
+}
+
+func GenerarPDFReporte(c *gin.Context) {
+    id := c.Param("id_activo")
+    if id == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID del activo es requerido"})
+        return
+    }
+
+    // Extraer el email desde el token JWT
+    var email string
+    authHeader := c.GetHeader("Authorization")
+    if authHeader == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+        return
+    }
+
+    tokenParts := strings.Split(authHeader, " ")
+
+    emailInterface, err := extractClaimFromToken(tokenParts[1], "email")
+    if err != nil {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+        return
+    }
+    
+    // Type assertion para convertir interface{} a string
+    var ok bool
+    email, ok = emailInterface.(string)
+    if !ok {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid email format in token"})
+        return
+    }
+    
+    fmt.Printf("Email extraído del token: %s\n", email)
+
+    // Leer el body de la request
+    var reporteData map[string]interface{}
+    if err := c.ShouldBindJSON(&reporteData); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+        return
+    }
+    
+    fmt.Printf("Datos recibidos para generar PDF: %+v\n", reporteData)
+
+    // Construir el body para el microservicio de documentación
+    bodyData := map[string]interface{}{
+        "campos": reporteData["campos"],
+        "usar_firma_predeterminada": true,
+        "usuario_id": 1,
+    }
+
+    // Convertir a JSON
+    jsonData, err := json.Marshal(bodyData)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando datos"})
+        return
+    }
+    
+    fmt.Printf("DEBUG: Enviando datos para generar PDF: %+v\n", bodyData)
+
+    // Hacer POST al microservicio de gestión
+    url := fmt.Sprintf("%s/reportes/activo/%s", gestionURL, id)
+    resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+    if err != nil {
+        fmt.Println("Error generando PDF: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al generar el PDF"})
+        return
+    }
+    defer resp.Body.Close()
+
+    fmt.Printf("DEBUG: Status code de respuesta PDF: %d\n", resp.StatusCode)
+
+    // Verificar si la respuesta es exitosa
+    if resp.StatusCode != http.StatusOK {
+        // Si no es 200, intentar leer como JSON (mensaje de error)
+        var errorData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&errorData); err == nil {
+            c.JSON(resp.StatusCode, errorData)
+            return
+        }
+        c.JSON(resp.StatusCode, gin.H{"error": "Error al generar el PDF"})
+        return
+    }
+
+    // Obtener el Content-Type del microservicio
+    contentType := resp.Header.Get("Content-Type")
+    if contentType == "" {
+        contentType = "application/pdf"
+    }
+
+    // Obtener el nombre del archivo si viene en el header
+    contentDisposition := resp.Header.Get("Content-Disposition")
+    if contentDisposition == "" {
+        contentDisposition = fmt.Sprintf("attachment; filename=reporte_activo_%s.pdf", id)
+    }
+
+    // Configurar headers para enviar el PDF al cliente
+    c.Header("Content-Type", contentType)
+    c.Header("Content-Disposition", contentDisposition)
+    c.Header("Content-Transfer-Encoding", "binary")
+
+    // Copiar el contenido del PDF directamente a la respuesta
+    c.DataFromReader(resp.StatusCode, resp.ContentLength, contentType, resp.Body, nil)
 }

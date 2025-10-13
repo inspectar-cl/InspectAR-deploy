@@ -125,6 +125,13 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente"},
         },
+        { 
+            Method:  "POST",
+            Pattern: "/api/pdf-reporte/:id_activo",
+            Handler: GenerarPDFReporte,
+            Protected: true,
+            RequiredScopes: []string{"user-type:Tecnico", "user-type:Admin"},
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",

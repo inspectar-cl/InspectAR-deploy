@@ -1499,3 +1499,62 @@ func GenerarPDFReporte(c *gin.Context) {
     // Copiar el contenido del PDF directamente a la respuesta
     c.DataFromReader(resp.StatusCode, resp.ContentLength, contentType, resp.Body, nil)
 }
+
+func ObtenerAcciones(c *gin.Context) {
+    // Extraer el email desde el token JWT  
+    var email string
+    authHeader := c.GetHeader("Authorization")
+    if authHeader == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+        return
+    }
+
+    tokenParts := strings.Split(authHeader, " ")
+
+    emailInterface, err := extractClaimFromToken(tokenParts[1], "email")
+    if err != nil {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+        return
+    }
+    
+    // Type assertion para convertir interface{} a string
+    var ok bool
+    email, ok = emailInterface.(string)
+    if !ok {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid email format in token"})
+        return
+    }
+    
+    fmt.Printf("Email extraído del token: %s\n", email)
+
+    // Hacer GET al microservicio de gestión
+    url := fmt.Sprintf("%s/acciones/tecnico/%s", gestionURL, email)
+    resp, err := httpClient.Get(url)
+    if err != nil {
+        fmt.Println("Error obteniendo acciones: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al obtener las acciones"})
+        return
+    }
+    defer resp.Body.Close()
+
+    // Verificar si la respuesta es exitosa
+    if resp.StatusCode != http.StatusOK {
+        var errorData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&errorData); err == nil {
+            c.JSON(resp.StatusCode, errorData)
+            return
+        }
+        c.JSON(resp.StatusCode, gin.H{"error": "Error al obtener las acciones"})
+        return
+    }
+
+    // Leer la respuesta como JSON
+    var accionesData map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&accionesData); err != nil {
+        fmt.Println("Error decodificando acciones: ", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando las acciones"})
+        return
+    }
+
+    c.JSON(http.StatusOK, accionesData)
+}

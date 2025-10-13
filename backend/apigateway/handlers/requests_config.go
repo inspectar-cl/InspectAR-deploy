@@ -132,6 +132,13 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: []string{"user-type:Tecnico", "user-type:Admin"},
         },
+        {
+            Method: "GET",
+            Pattern: "/api/obtener-acciones",
+            Handler: ObtenerAcciones,
+            Protected: true,
+            RequiredScopes: []string{"user-type:Tecnico", "user-type:Admin"},
+        }
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",

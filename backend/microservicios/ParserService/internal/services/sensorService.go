@@ -1,8 +1,8 @@
-// services/sensor_service.go
 package services
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"ParserService/internal/models"
@@ -18,7 +18,14 @@ func NewSensorService(influxRepo *repository.InfluxRepository) *SensorService {
 }
 
 func (s *SensorService) GetDatosSensor(ctx context.Context, sensorID string, since time.Duration) ([]models.SensorData, error) {
-	return s.influxRepo.GetSensorData(ctx, sensorID)
+	log.Printf("🔍 GetDatosSensor llamado para sensor: %s", sensorID)
+	result, err := s.influxRepo.GetSensorData(ctx, sensorID)
+	if err != nil {
+		log.Printf("❌ Error en GetDatosSensor para %s: %v", sensorID, err)
+	} else {
+		log.Printf("✅ GetDatosSensor exitoso para %s: %d registros", sensorID, len(result))
+	}
+	return result, err
 }
 
 func (s *SensorService) InsertarLectura(ctx context.Context, sensorID string, valor float64, timestamp time.Time) error {

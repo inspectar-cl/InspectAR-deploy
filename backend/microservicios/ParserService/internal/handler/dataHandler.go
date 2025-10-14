@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -174,17 +175,24 @@ func (h *DataHandler) GetSensorByActivo(c *gin.Context) {
 	// Obtener sensores desde el servicio de activos
 	sensores, err := h.activoService.ObtenerSensoresPorActivo(c.Request.Context(), activoID)
 	if err != nil {
+		log.Printf("❌ ERROR: No se pudieron obtener los sensores: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudieron obtener los sensores"})
 		return
 	}
+	log.Printf("✅ Sensores obtenidos exitosamente: %d sensores", len(sensores))
 
 	var allLecturas []models.SensorDataset
 
+	log.Printf("🔄 Iniciando loop para %d sensores", len(sensores))
+
 	for _, sensor := range sensores {
+		log.Printf("📡 Procesando sensor: %s", sensor.SensorID)
 		datos, err := h.sensorService.GetDatosSensor(c.Request.Context(), sensor.SensorID, 30*time.Minute)
 		if err != nil {
+			log.Printf("❌ Error obteniendo datos para sensor %s: %v", sensor.SensorID, err)
 			continue
 		}
+		log.Printf("✅ Datos recibidos para sensor %s: %d registros", sensor.SensorID, len(datos))
 		allLecturas = append(allLecturas, models.SensorDataset{
 			SensorID: sensor.SensorID,
 			Datos:    datos,

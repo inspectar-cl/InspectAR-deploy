@@ -261,15 +261,17 @@ services:
       - gestion-db
       - notification-db
       - documentacion-db
+      - influxdb
     volumes:
       - ./scripts:/scripts
     working_dir: /scripts
     command: >
       bash -c "
         echo '🔄 Iniciando sincronización automática de datos...';
-        apt-get update -qq && apt-get install -y netcat-traditional > /dev/null 2>&1;
+        apt-get update -qq && apt-get install -y netcat-traditional python3 python3-pip > /dev/null 2>&1;
         echo '📋 Herramientas instaladas...';
         chmod +x /scripts/simple_data_init.sh;
+        chmod +x /scripts/load_csv_to_influx.py;
         /scripts/simple_data_init.sh;
         echo '🎉 Proceso de inicialización automática finalizado.';
       "

@@ -2,7 +2,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Box, Button, TextField, Typography, MenuItem, Collapse, Snackbar, Alert } from '@mui/material'
+import { Box, Button, TextField, Typography, MenuItem, Collapse, Snackbar, Alert, 
+  Dialog, DialogTitle, DialogContent, DialogActions
+} from '@mui/material'
 import { DataGrid, type GridRenderCellParams, type GridColDef } from '@mui/x-data-grid'
 import { esES } from '@mui/x-data-grid/locales'
 
@@ -48,6 +50,11 @@ export default function ListasAccionesView() {
   const [descripcion, setDescripcion] = useState('')
   const [prioridad, setPrioridad] = useState('')
   const [tipo, setTipo] = useState('')
+
+  const [open, setOpen] = useState(false)
+
+  const handleOpen = async () => { setOpen(true); }
+  const handleClose = async () => { setOpen(false); }
 
   // --- Cargar activos desde API ---
   useEffect(() => {
@@ -164,73 +171,12 @@ export default function ListasAccionesView() {
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>Crear Nueva Acción</Typography>
-
-      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-        <TextField
-          label="Activo"
-          select
-          value={activoSeleccionado}
-          onChange={(e) => { setActivoSeleccionado(e.target.value); }}
-          fullWidth
-          sx={{ minWidth: 200 }}
-        >
-          {activos.map((a) => (
-            <MenuItem key={a.id} value={a.id}>{a.nombre}</MenuItem>
-          ))}
-        </TextField>
-        <TextField label="Descripción" value={descripcion} onChange={(e) => { setDescripcion(e.target.value); }} fullWidth />
-
-        {/* Tipo como dropdown */}
-        <TextField
-          label="Tipo"
-          select
-          value={tipo}
-          onChange={(e) => { setTipo(e.target.value); }}
-          fullWidth
-          sx={{ minWidth: 150 }}
-        >
-          <MenuItem value="">Seleccione tipo</MenuItem>
-          <MenuItem value="preventivo">Preventivo</MenuItem>
-          <MenuItem value="correctivo">Correctivo</MenuItem>
-        </TextField>
-
-        {/* Prioridad como dropdown */}
-        <TextField
-          label="Prioridad"
-          select
-          value={prioridad}
-          onChange={(e) => { setPrioridad(e.target.value); }}
-          fullWidth
-          sx={{ minWidth: 100 }}
-        >
-          <MenuItem value="">Seleccione prioridad</MenuItem>
-          <MenuItem value="alta">Alta</MenuItem>
-          <MenuItem value="media">Media</MenuItem>
-          <MenuItem value="baja">Baja</MenuItem>
-        </TextField>
-
-        <Button variant="contained" onClick={crearAccion}>Guardar</Button>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+        <Typography variant="h6">Acciones Asignadas</Typography>
+        <Button variant="contained" onClick={handleOpen}>Nueva Acción</Button>
       </Box>
 
-      <Typography variant="subtitle1" gutterBottom>Acciones Asignadas</Typography>
-
-      {acciones.map((a) => (
-        <Collapse key={a.id} in={expandedId === a.id}>
-          <Box sx={{ p: 2, mt: 2, mb: 2, border: '1px solid #ddd', borderRadius: 2 }}>
-            <Typography variant="subtitle2">Detalle de Acción</Typography>
-            <Typography>Técnico: {a.tecnico?.nombre ?? 'Sin técnico'}</Typography>
-            <Typography>Descripción: {a.descripcion}</Typography>
-            <Typography>Tipo: {a.tipo}</Typography>
-            <Typography>Estado: {a.estado}</Typography>
-            <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
-              <Button size="small" variant="outlined" onClick={() => actualizarEstado(a.id, 'en_progreso')}>En progreso</Button>
-              <Button size="small" variant="outlined" onClick={() => actualizarEstado(a.id, 'completado')}>Completado</Button>
-            </Box>
-          </Box>
-        </Collapse>
-      ))}
-
+      {/* Tabla de acciones */}
       <DataGrid
         rows={acciones}
         columns={columns}
@@ -262,6 +208,94 @@ export default function ListasAccionesView() {
                     },
             }}
       />
+
+      {acciones.map((a) => (
+        <Collapse key={a.id} in={expandedId === a.id}>
+          <Box sx={{ p: 2, mt: 2, mb: 2, border: '1px solid #ddd', borderRadius: 2 }}>
+            <Typography variant="subtitle2">Detalle de Acción</Typography>
+            <Typography>Técnico: {a.tecnico?.nombre ?? 'Sin técnico'}</Typography>
+            <Typography>Descripción: {a.descripcion}</Typography>
+            <Typography>Tipo: {a.tipo}</Typography>
+            <Typography>Estado: {a.estado}</Typography>
+            <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+              <Button size="small" variant="outlined" onClick={() => actualizarEstado(a.id, 'en_progreso')}>En progreso</Button>
+              <Button size="small" variant="outlined" onClick={() => actualizarEstado(a.id, 'completado')}>Completado</Button>
+            </Box>
+          </Box>
+        </Collapse>
+      ))}
+
+      {/* Modal para crear acción */}
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
+        <DialogTitle>Crear Nueva Acción</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+            <TextField
+              label="Activo"
+              select
+              value={activoSeleccionado}
+              onChange={(e) => { setActivoSeleccionado(e.target.value); }}
+              fullWidth
+              sx={{ minWidth: 200 }}
+            >
+          {activos.map((a) => (
+            <MenuItem key={a.id} value={a.id}>
+              {a.nombre}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          label="Descripción"
+          value={descripcion}
+          onChange={(e) => { setDescripcion(e.target.value); }}
+          fullWidth
+        />
+
+        {/* Tipo como dropdown */}
+        <TextField
+          label="Tipo"
+          select
+          value={tipo}
+          onChange={(e) => { setTipo(e.target.value); }}
+          fullWidth
+          sx={{ minWidth: 150 }}
+        >
+          <MenuItem value="">Seleccione tipo</MenuItem>
+          <MenuItem value="preventivo">Preventivo</MenuItem>
+          <MenuItem value="correctivo">Correctivo</MenuItem>
+        </TextField>
+
+        {/* Prioridad como dropdown */}
+        <TextField
+          label="Prioridad"
+          select
+          value={prioridad}
+          onChange={(e) => { setPrioridad(e.target.value); }}
+          fullWidth
+          sx={{ minWidth: 100 }}
+        >
+          <MenuItem value="">Seleccione prioridad</MenuItem>
+          <MenuItem value="alta">Alta</MenuItem>
+          <MenuItem value="media">Media</MenuItem>
+          <MenuItem value="baja">Baja</MenuItem>
+        </TextField>
+      </Box>
+          </DialogContent>
+          <DialogActions>
+                <Button onClick={handleClose}>Cancelar</Button>
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    void crearAccion()
+                    void handleClose()
+              }}
+            >
+              Guardar
+            </Button>
+          </DialogActions>
+      </Dialog>
+
       <Snackbar
         open={Boolean(mensaje)}
         autoHideDuration={4000}

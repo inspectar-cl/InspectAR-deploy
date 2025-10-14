@@ -1719,7 +1719,7 @@ func ActualizarEstadoContactoHandler(c *gin.Context) {
     }
 
     // Hacer PUT al microservicio de gestión para actualizar el estado
-    url := fmt.Sprintf("%s/tecnico/%s/autorizado", gestionURL, id)
+    url := fmt.Sprintf("%s/tecnicos/%s/autorizado", gestionURL, id)
     req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creando request"})
@@ -1739,19 +1739,27 @@ func ActualizarEstadoContactoHandler(c *gin.Context) {
     }
     defer resp.Body.Close()
 
-    statusCode := resp.StatusCode
+    // fmt.Printf("DEBUG: Status code de actualización estado: %d\n", resp.StatusCode)
 
-    var data map[string]interface{}
-    if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+    // Verificar si la respuesta es exitosa
+    if resp.StatusCode != http.StatusOK {
+        var errorData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&errorData); err == nil {
+            c.JSON(resp.StatusCode, errorData)
+            return
+        }
+        c.JSON(resp.StatusCode, gin.H{"error": "Error al actualizar el estado del contacto"})
+        return
+    }
+
+    // Leer la respuesta exitosa
+    var responseData map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
         fmt.Println("Error decodificando respuesta: ", err)
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando respuesta"})
         return
     }
 
-    if data == nil {
-        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al actualizar el estado del contacto."})
-        return
-    }
-
-    c.JSON(statusCode, data)
+    // Retornar la respuesta del microservicio
+    c.JSON(http.StatusOK, responseData)
 }

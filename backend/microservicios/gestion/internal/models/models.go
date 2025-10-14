@@ -187,7 +187,7 @@ type CreateActivoRequest struct {
 }
 
 type UpdateAutorizadoTecnicoRequest struct {
-	Autorizado bool `json:"autorizado" binding:"required"`
+	Autorizado *bool `json:"autorizado" binding:"required"`
 }
 
 type AsignarTecnicoActivoRequest struct {

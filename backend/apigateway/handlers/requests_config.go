@@ -146,6 +146,13 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: []string{"user-type:Tecnico", "user-type:Admin"},
         },
+        {
+            Method: "PUT",
+            Pattern: "/api/actualizar-estado-contacto/:id_contacto",
+            Handler: ActualizarEstadoContactoHandler,
+            Protected: true,
+            RequiredScopes: []string{"user-type:Analista", "user-type:Tecnico", "user-type:Admin"},
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",

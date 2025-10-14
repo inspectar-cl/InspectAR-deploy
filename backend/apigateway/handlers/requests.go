@@ -1530,7 +1530,8 @@ func ObtenerAcciones(c *gin.Context) {
     fmt.Printf("Email extraído del token: %s\n", email)
 
     // Hacer GET al microservicio de gestión
-    url := fmt.Sprintf("%s/acciones/tecnico/%s", gestionURL, email)
+    // url := fmt.Sprintf("%s/acciones/tecnico/%s", gestionURL, email)
+    url := fmt.Sprintf("%s/acciones/tecnico/%s", gestionURL, 1) // TODO: Hay que cambiarlo por el id, ya que le llegaría, en teoría desde la url
     resp, err := httpClient.Get(url)
     if err != nil {
         fmt.Println("Error obteniendo acciones: ", err)
@@ -1702,4 +1703,74 @@ func SubirDocumentoHandler(c *gin.Context) {
     }
 
     c.JSON(resp.StatusCode, responseData)
+}
+
+func ActualizarEstadoContactoHandler(c *gin.Context) {
+    id := c.Param("id_contacto")
+    if id == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID del contacto es requerido"})
+        return
+    }
+
+    // Leer el body de la request
+    var autorizadoData map[string]interface{}
+    if err := c.ShouldBindJSON(&autorizadoData); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+        return
+    }
+
+    // Validar que venga el campo requerido
+    if _, exists := autorizadoData["autorizado"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'autorizado' es requerido"})
+        return
+    }
+
+    // Body
+    bodyData := map[string]interface{}{
+        "autorizado": autorizadoData["autorizado"],
+    }
+
+    // Convertir a JSON
+    jsonData, err := json.Marshal(bodyData)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando datos"})
+        return
+    }
+
+    // Hacer PUT al microservicio de gestión para actualizar el estado
+    url := fmt.Sprintf("%s/tecnico/%s/autorizado", gestionURL, id)
+    req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creando request"})
+        return
+    }
+
+    // Establecer headers
+    req.Header.Set("Content-Type", "application/json")
+
+    // Ejecutar la petición
+    client := &http.Client{Timeout: 15 * time.Second}
+    resp, err := client.Do(req)
+    if err != nil {
+        fmt.Println("Error enviando la actualización de estado: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al actualizar el estado del contacto"})
+        return
+    }
+    defer resp.Body.Close()
+
+    statusCode := resp.StatusCode
+
+    var data map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+        fmt.Println("Error decodificando respuesta: ", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando respuesta"})
+        return
+    }
+
+    if data == nil {
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al actualizar el estado del contacto."})
+        return
+    }
+
+    c.JSON(statusCode, data)
 }

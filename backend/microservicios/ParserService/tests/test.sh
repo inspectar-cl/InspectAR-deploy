@@ -1,119 +1,323 @@
 #!/bin/bash
 
-# 🧪 Test runner compacto para ParserService (activo_id entero)
-set -euo pipefail
+# ===================================================================
+# SCRIPT DE PRUEBAS COMPLETO PARA PARSERSERVICE
+# ===================================================================
 
-API_URL="http://localhost:8090"
-VERBOSE=${VERBOSE:-1}
-GREEN='\033[0;32m'
+# Colores
 RED='\033[0;31m'
+GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
 
-req() {
-  local method="$1"; shift
-  local url="$1"; shift
-  local data="${1:-}"
-  local response
-  LAST_METHOD="$method"; LAST_URL="$url"; LAST_DATA="$data"
-  if [[ -n "$data" ]]; then
-    response=$(curl -s -w "HTTPSTATUS:%{http_code}" -X "$method" -H 'Content-Type: application/json' -d "$data" "$url")
-  else
-    response=$(curl -s -w "HTTPSTATUS:%{http_code}" -X "$method" "$url")
-  fi
-  CODE=$(printf '%s' "$response" | sed -E 's/.*HTTPSTATUS:([0-9]{3})$/\1/')
-  BODY=$(printf '%s' "$response" | sed -E 's/HTTPSTATUS:[0-9]{3}$//')
-  if [[ "$VERBOSE" == "1" ]]; then
-    echo ">> $method $url"
-    if [[ -n "$data" ]]; then echo "payload: $data"; fi
-    echo "<< status: $CODE"
-    if [[ -n "$BODY" ]]; then
-      if (( ${#BODY} > 600 )); then
-        echo "body: ${BODY:0:600}..."
-      else
-        echo "body: $BODY"
-      fi
+BASE_URL="http://localhost:8090"
+TESTS_PASSED=0
+TESTS_FAILED=0
+
+echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║     PRUEBAS COMPLETAS - PARSERSERVICE API                  ║${NC}"
+echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}\n"
+
+# Función para test exitoso
+pass_test() {
+    echo -e "${GREEN}✓ PASS${NC} - $1"
+    ((TESTS_PASSED++))
+}
+
+# Función para test fallido
+fail_test() {
+    echo -e "${RED}✗ FAIL${NC} - $1"
+    ((TESTS_FAILED++))
+}
+
+# ============================================================
+# TEST 1: HEALTH CHECK
+# ============================================================
+echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+echo -e "${YELLOW}📋 TEST 1: Health Check${NC}"
+echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/healthz")
+if [ "$HTTP_CODE" -eq 200 ]; then
+    pass_test "Servicio respondiendo correctamente"
+else
+    fail_test "Servicio no responde (HTTP $HTTP_CODE)"
+fi
+
+# ============================================================
+# TEST 2: GET /activo - Obtener todos los activos
+# ============================================================
+echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+echo -e "${YELLOW}📋 TEST 2: GET /activo - Obtener todos los activos${NC}"
+echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+
+RESPONSE=$(curl -s "${BASE_URL}/activo")
+TOTAL=$(echo "$RESPONSE" | jq 'length' 2>/dev/null)
+
+if [ "$TOTAL" -eq 8 ]; then
+    pass_test "Devuelve 8 activos correctamente"
+    echo "$RESPONSE" | jq -c '.[] | {activo_id, estado, edificio_id}' | head -3
+else
+    fail_test "Esperaba 8 activos, obtuvo: $TOTAL"
+fi
+
+# Verificar estructura de un activo
+FIRST_ACTIVO=$(echo "$RESPONSE" | jq '.[0]')
+HAS_ACTIVO_ID=$(echo "$FIRST_ACTIVO" | jq 'has("activo_id")')
+HAS_ESTADO=$(echo "$FIRST_ACTIVO" | jq 'has("estado")')
+HAS_EDIFICIO_ID=$(echo "$FIRST_ACTIVO" | jq 'has("edificio_id")')
+
+if [ "$HAS_ACTIVO_ID" == "true" ] && [ "$HAS_ESTADO" == "true" ] && [ "$HAS_EDIFICIO_ID" == "true" ]; then
+    pass_test "Estructura de activo correcta (activo_id, estado, edificio_id)"
+else
+    fail_test "Estructura de activo incorrecta"
+fi
+
+# ============================================================
+# TEST 3: GET /activo/:activo_id - Obtener activo específico
+# ============================================================
+echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+echo -e "${YELLOW}📋 TEST 3: GET /activo/:activo_id - Obtener activo específico${NC}"
+echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+
+RESPONSE=$(curl -s "${BASE_URL}/activo/1")
+ACTIVO_ID=$(echo "$RESPONSE" | jq -r '.activo_id')
+ESTADO=$(echo "$RESPONSE" | jq -r '.estado')
+
+if [ "$ACTIVO_ID" -eq 1 ] && [ -n "$ESTADO" ]; then
+    pass_test "Activo ID 1 obtenido correctamente"
+    echo "$RESPONSE" | jq '{activo_id, estado, edificio_id}'
+else
+    fail_test "Error obteniendo activo ID 1"
+fi
+
+# Test con activo inexistente
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/activo/999")
+if [ "$HTTP_CODE" -eq 404 ]; then
+    pass_test "Retorna 404 para activo inexistente"
+else
+    fail_test "Esperaba 404, obtuvo: $HTTP_CODE"
+fi
+
+# ============================================================
+# TEST 4: GET /activo/edificio/:edificio_id - Filtrar por edificio
+# ============================================================
+echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+echo -e "${YELLOW}📋 TEST 4: GET /activo/edificio/:edificio_id${NC}"
+echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+
+# Edificio 1
+RESPONSE=$(curl -s "${BASE_URL}/activo/edificio/1")
+TOTAL=$(echo "$RESPONSE" | jq -r '.total')
+EDIFICIO_ID=$(echo "$RESPONSE" | jq -r '.edificio_id')
+
+if [ "$TOTAL" -eq 3 ] && [ "$EDIFICIO_ID" -eq 1 ]; then
+    pass_test "Edificio 1 devuelve 3 activos"
+    echo "$RESPONSE" | jq -c '.activos[] | {activo_id, estado}'
+else
+    fail_test "Edificio 1 esperaba 3 activos, obtuvo: $TOTAL"
+fi
+
+# Edificio 2
+RESPONSE=$(curl -s "${BASE_URL}/activo/edificio/2")
+TOTAL=$(echo "$RESPONSE" | jq -r '.total')
+
+if [ "$TOTAL" -eq 2 ]; then
+    pass_test "Edificio 2 devuelve 2 activos"
+else
+    fail_test "Edificio 2 esperaba 2 activos, obtuvo: $TOTAL"
+fi
+
+# Edificio 3
+RESPONSE=$(curl -s "${BASE_URL}/activo/edificio/3")
+TOTAL=$(echo "$RESPONSE" | jq -r '.total')
+
+if [ "$TOTAL" -eq 2 ]; then
+    pass_test "Edificio 3 devuelve 2 activos"
+else
+    fail_test "Edificio 3 esperaba 2 activos, obtuvo: $TOTAL"
+fi
+
+# Edificio inexistente
+RESPONSE=$(curl -s "${BASE_URL}/activo/edificio/999")
+TOTAL=$(echo "$RESPONSE" | jq -r '.total')
+
+if [ "$TOTAL" -eq 0 ]; then
+    pass_test "Edificio inexistente devuelve 0 activos"
+else
+    fail_test "Edificio inexistente esperaba 0, obtuvo: $TOTAL"
+fi
+
+# Parámetro inválido
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/activo/edificio/abc")
+if [ "$HTTP_CODE" -eq 400 ]; then
+    pass_test "Retorna 400 para parámetro inválido"
+else
+    fail_test "Esperaba 400, obtuvo: $HTTP_CODE"
+fi
+
+# ============================================================
+# TEST 5: POST /activo - Crear activo
+# ============================================================
+echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+echo -e "${YELLOW}📋 TEST 5: POST /activo - Crear activo${NC}"
+echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+
+RESPONSE=$(curl -s -X POST "${BASE_URL}/activo" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "activo_id": 100,
+        "estado": "OK",
+        "edificio_id": 1
+    }')
+
+ACTIVO_ID=$(echo "$RESPONSE" | jq -r '.activo_id')
+
+if [ "$ACTIVO_ID" == "100" ]; then
+    pass_test "Activo creado correctamente (ID 100)"
+else
+    fail_test "Error creando activo"
+fi
+
+# Intentar crear duplicado
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${BASE_URL}/activo" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "activo_id": 100,
+        "estado": "OK",
+        "edificio_id": 1
+    }')
+
+if [ "$HTTP_CODE" -eq 409 ]; then
+    pass_test "Retorna 409 al intentar crear duplicado"
+else
+    fail_test "Esperaba 409, obtuvo: $HTTP_CODE"
+fi
+
+# ============================================================
+# TEST 6: PUT /activo/:activo_id/estado - Actualizar estado
+# ============================================================
+echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+echo -e "${YELLOW}📋 TEST 6: PUT /activo/:activo_id/estado${NC}"
+echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X PUT "${BASE_URL}/activo/100/estado" \
+    -H "Content-Type: application/json" \
+    -d '{"estado": "Crítico"}')
+
+if [ "$HTTP_CODE" -eq 200 ]; then
+    pass_test "Estado actualizado correctamente"
+    
+    # Verificar que el estado cambió
+    RESPONSE=$(curl -s "${BASE_URL}/activo/100")
+    ESTADO=$(echo "$RESPONSE" | jq -r '.estado')
+    
+    if [ "$ESTADO" == "Crítico" ]; then
+        pass_test "Estado verificado: Crítico"
+    else
+        fail_test "Estado no cambió correctamente"
     fi
-  fi
-}
+else
+    fail_test "Error actualizando estado (HTTP $HTTP_CODE)"
+fi
 
-assert_2xx() {
-  local code="$1"; shift
-  if [[ ! "$code" =~ ^2 ]]; then
-    echo -e "${RED}❌ HTTP $code${NC}"; exit 1
-  fi
-}
+# ============================================================
+# TEST 7: POST /lectura - Insertar lectura de sensor
+# ============================================================
+echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+echo -e "${YELLOW}📋 TEST 7: POST /lectura - Insertar lectura${NC}"
+echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
 
-echo -e "${YELLOW}🔎 Healthcheck${NC}"
-req GET "$API_URL/healthz"
-assert_2xx "$CODE"; echo -e "${GREEN}OK${NC}"
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${BASE_URL}/lectura" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "sensor_id": "temp1",
+        "valor": 75.5,
+        "timestamp": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"
+    }')
 
-TS=$(date +%s)
-ACTIVO_ID=$((200000 + (RANDOM % 700000)))
-SENS_A="TEMP_$TS"
-SENS_B="PRES_$TS"
+if [ "$HTTP_CODE" -eq 200 ]; then
+    pass_test "Lectura insertada correctamente"
+else
+    fail_test "Error insertando lectura (HTTP $HTTP_CODE)"
+fi
 
-echo -e "${YELLOW}➕ Crear Activo${NC}"
-payload_create=$(cat <<JSON
-{
-  "activo_id": $ACTIVO_ID,
-  "nombre": "Equipo $TS",
-  "estado": "operativo",
-  "id_edificio": "ED-01",
-  "sensores": [
-    {"sensor_id": "$SENS_A", "tipo": "temperatura", "unidad": "°C"}
-  ]
-}
-JSON
-)
-req POST "$API_URL/activo" "$payload_create"
-assert_2xx "$CODE"; echo "$BODY" | grep -q 'activo_id'
+# ============================================================
+# TEST 8: GET /sensor/:sensor_id - Obtener datos del sensor
+# ============================================================
+echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+echo -e "${YELLOW}📋 TEST 8: GET /sensor/:sensor_id - Datos del sensor${NC}"
+echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
 
-echo -e "${YELLOW}📚 Listar Activos${NC}"
-req GET "$API_URL/activo"
-assert_2xx "$CODE"
+sleep 2  # Esperar a que InfluxDB procese
 
-echo -e "${YELLOW}🔎 Obtener Activo${NC}"
-req GET "$API_URL/activo/$ACTIVO_ID"
-assert_2xx "$CODE"
+RESPONSE=$(curl -s "${BASE_URL}/sensor/temp1")
+DATOS_COUNT=$(echo "$RESPONSE" | jq 'length' 2>/dev/null)
 
-echo -e "${YELLOW}➕ Agregar Sensor${NC}"
-payload_sensor=$(cat <<JSON
-{"sensor_id":"$SENS_B","tipo":"presion","unidad":"bar"}
-JSON
-)
-req POST "$API_URL/activo/$ACTIVO_ID/sensores" "$payload_sensor"
-assert_2xx "$CODE"
+if [ "$DATOS_COUNT" -ge 1 ]; then
+    pass_test "Sensor temp1 devuelve datos (${DATOS_COUNT} lecturas)"
+else
+    fail_test "Sensor temp1 no devuelve datos"
+fi
 
-echo -e "${YELLOW}📡 Enviar Lecturas${NC}"
-now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-req POST "$API_URL/lectura" "{\"sensor_id\":\"$SENS_A\",\"valor\":22.5,\"timestamp\":\"$now\"}"
-assert_2xx "$CODE"
-req POST "$API_URL/lectura" "{\"sensor_id\":\"$SENS_B\",\"valor\":1.2,\"timestamp\":\"$now\"}"
-assert_2xx "$CODE"
+# ============================================================
+# TEST 9: GET /sensor/:sensor_id/last - Última lectura
+# ============================================================
+echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+echo -e "${YELLOW}📋 TEST 9: GET /sensor/:sensor_id/last - Última lectura${NC}"
+echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
 
-echo -e "${YELLOW}📈 Datos por Activo${NC}"
-req GET "$API_URL/lectura/$ACTIVO_ID/datos"
-assert_2xx "$CODE"
+RESPONSE=$(curl -s "${BASE_URL}/sensor/temp1/last")
+HAS_TIEMPO=$(echo "$RESPONSE" | jq 'has("tiempo")')
+HAS_VALOR=$(echo "$RESPONSE" | jq 'has("valor")')
 
-echo -e "${YELLOW}🕒 Últimos Datos por Activo${NC}"
-req GET "$API_URL/lectura/$ACTIVO_ID/datos/ultimo"
-assert_2xx "$CODE"
+if [ "$HAS_TIEMPO" == "true" ] && [ "$HAS_VALOR" == "true" ]; then
+    pass_test "Última lectura obtenida correctamente"
+    echo "$RESPONSE" | jq '{tiempo, valor}'
+else
+    fail_test "Estructura de última lectura incorrecta"
+fi
 
-echo -e "${YELLOW}⚙️  Cambiar Estado del Activo${NC}"
-req PUT "$API_URL/activo/$ACTIVO_ID/estado" '{"estado":"mantenimiento"}'
-assert_2xx "$CODE"
+# ============================================================
+# TEST 10: GET /activo/:activo_id/sensores - Sensores con datos
+# ============================================================
+echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+echo -e "${YELLOW}📋 TEST 10: GET /activo/:activo_id/sensores${NC}"
+echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
 
-echo -e "${YELLOW}🧭 Estado de Sensores del Activo${NC}"
-req GET "$API_URL/activo/$ACTIVO_ID/sensores/estado"
-assert_2xx "$CODE"
+RESPONSE=$(curl -s "${BASE_URL}/activo/1/sensores")
+HAS_ACTIVO_ID=$(echo "$RESPONSE" | jq 'has("activo_id")')
+HAS_SENSORES=$(echo "$RESPONSE" | jq 'has("sensores")')
 
-echo -e "${YELLOW}📊 Stats Monitoreo${NC}"
-req GET "$API_URL/api/sensors/stats"
-assert_2xx "$CODE"
+if [ "$HAS_ACTIVO_ID" == "true" ] && [ "$HAS_SENSORES" == "true" ]; then
+    pass_test "Estructura correcta con activo_id y sensores"
+    SENSORES_COUNT=$(echo "$RESPONSE" | jq '.sensores | length')
+    echo "  • Sensores encontrados: $SENSORES_COUNT"
+else
+    fail_test "Estructura incorrecta"
+fi
 
-echo -e "${YELLOW}🩺 Health Monitoreo${NC}"
-req GET "$API_URL/api/sensors/health"
-assert_2xx "$CODE"
+# ============================================================
+# RESUMEN
+# ============================================================
+echo -e "\n${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║                    RESUMEN DE PRUEBAS                      ║${NC}"
+echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
 
-echo -e "${GREEN}✅ Todos los endpoints probados con éxito (activo_id=$ACTIVO_ID)${NC}"
+TOTAL_TESTS=$((TESTS_PASSED + TESTS_FAILED))
+PERCENTAGE=$((TESTS_PASSED * 100 / TOTAL_TESTS))
+
+echo -e "\n${GREEN}✓ Tests Exitosos:${NC} $TESTS_PASSED"
+echo -e "${RED}✗ Tests Fallidos:${NC} $TESTS_FAILED"
+echo -e "${CYAN}📊 Total Tests:${NC} $TOTAL_TESTS"
+echo -e "${CYAN}📈 Porcentaje Éxito:${NC} ${PERCENTAGE}%\n"
+
+if [ $TESTS_FAILED -eq 0 ]; then
+    echo -e "${GREEN}🎉 ¡TODOS LOS TESTS PASARON EXITOSAMENTE!${NC}\n"
+    exit 0
+else
+    echo -e "${RED}❌ Algunos tests fallaron. Revisar los errores arriba.${NC}\n"
+    exit 1
+fi

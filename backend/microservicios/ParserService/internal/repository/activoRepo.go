@@ -81,15 +81,12 @@ func NewActivoRepository(db *mongo.Database) *ActivoRepository {
 }
 
 func (r *ActivoRepository) CreateActivo(ctx context.Context, activo *models.Activo) (string, error) {
-	result, err := r.primary.InsertOne(ctx, activo)
+	_, err := r.primary.InsertOne(ctx, activo)
 	if err != nil {
 		return "", err
 	}
-	id, ok := result.InsertedID.(primitive.ObjectID)
-	if !ok {
-		return "", mongo.ErrNilDocument
-	}
-	return id.Hex(), nil
+	// Devolver el activo_id en lugar del ObjectID de MongoDB
+	return fmt.Sprint(activo.ActivoID), nil
 }
 
 func (r *ActivoRepository) GetActivo(ctx context.Context, activoID int) (*models.Activo, error) {
@@ -107,8 +104,6 @@ func (r *ActivoRepository) GetActivo(ctx context.Context, activoID int) (*models
 			continue
 		}
 		act := mapToActivo(raw, src.fields)
-		// Enriquecer con sensores de colección aparte
-		r.enrichSensors(ctx, &act)
 		return &act, nil
 	}
 	return nil, mongo.ErrNoDocuments
@@ -170,8 +165,6 @@ func (r *ActivoRepository) GetAllActivos(ctx context.Context) ([]models.Activo, 
 					continue
 				}
 				act := mapToActivo(raw, src.fields)
-				// Enriquecer con sensores desde colección separada
-				r.enrichSensors(ctx, &act)
 				// Evitar duplicados por ActivoID
 				if act.ActivoID == 0 || seen[fmt.Sprint(act.ActivoID)] {
 					continue
@@ -225,15 +218,92 @@ func (r *ActivoRepository) ActualizarEstado(ctx context.Context, activoID int, n
 	return mongo.ErrNoDocuments
 }
 
+// GetActivosByEdificio obtiene todos los activos de un edificio específico
+func (r *ActivoRepository) GetActivosByEdificio(ctx context.Context, edificioID int) ([]models.Activo, error) {
+	var activos []models.Activo
+	seen := map[string]bool{}
+
+	log.Printf("DEBUG: Buscando activos para edificio_id=%d", edificioID)
+
+	for _, src := range r.sources {
+		// Buscar por edificio_id
+		// En MongoDB el campo se llama "edificio_id" y está guardado como int
+		filter := bson.M{src.fields["edificio_id"]: edificioID}
+
+		log.Printf("DEBUG: Buscando en colección %s con filtro: %v (edificio_id=%d)", src.coll.Name(), filter, edificioID)
+
+		cursor, err := src.coll.Find(ctx, filter)
+		if err != nil {
+			log.Printf("WARN: error buscando activos por edificio en %s: %v", src.coll.Name(), err)
+			continue
+		}
+
+		func() {
+			defer cursor.Close(ctx)
+			for cursor.Next(ctx) {
+				var raw bson.M
+				if err := cursor.Decode(&raw); err != nil {
+					log.Printf("WARN: error decodificando activo en %s: %v", src.coll.Name(), err)
+					continue
+				}
+				act := mapToActivo(raw, src.fields)
+				// Evitar duplicados por ActivoID
+				if act.ActivoID == 0 || seen[fmt.Sprint(act.ActivoID)] {
+					continue
+				}
+				seen[fmt.Sprint(act.ActivoID)] = true
+				activos = append(activos, act)
+			}
+		}()
+	}
+
+	log.Printf("Total activos encontrados para edificio %d: %d", edificioID, len(activos))
+	return activos, nil
+}
+
+// GetSensoresByActivo obtiene todos los sensores de un activo desde la colección de sensores
+func (r *ActivoRepository) GetSensoresByActivo(ctx context.Context, activoID int) ([]models.Sensor, error) {
+	if r.sensorColl == nil {
+		return []models.Sensor{}, nil
+	}
+
+	cursor, err := r.sensorColl.Find(ctx, bson.M{"activo_id": activoID})
+	if err != nil {
+		log.Printf("ERROR: No se pudieron obtener sensores para activo %d: %v", activoID, err)
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var sensores []models.Sensor
+	for cursor.Next(ctx) {
+		var sm bson.M
+		if err := cursor.Decode(&sm); err != nil {
+			log.Printf("WARN: error decodificando sensor: %v", err)
+			continue
+		}
+
+		sensor := models.Sensor{
+			SensorID: asString(sm["sensor_id"]),
+			Tipo:     asString(sm["tipo"]),
+			Unidad:   asString(sm["unidad"]),
+		}
+
+		if sensor.SensorID != "" {
+			sensores = append(sensores, sensor)
+		}
+	}
+
+	log.Printf("Sensores encontrados para activo %d: %d", activoID, len(sensores))
+	return sensores, nil
+}
+
 // --- Helpers ---
 
 func defaultFieldMap() map[string]string {
 	return map[string]string{
 		"activo_id":   "activo_id",
-		"nombre":      "nombre",
 		"estado":      "estado",
-		"sensores":    "sensores",
-		"id_edificio": "id_edificio",
+		"edificio_id": "edificio_id",
 	}
 }
 
@@ -296,68 +366,17 @@ func mapToActivo(raw bson.M, fm map[string]string) models.Activo {
 	}
 
 	activo := models.Activo{
-		ID:       id,
-		ActivoID: asInt(raw[fm["activo_id"]]),
-		Nombre:   asString(raw[fm["nombre"]]),
-		Estado:   asString(raw[fm["estado"]]),
-		Id_edificio: func() string {
-			v := asString(raw[fm["id_edificio"]])
-			if v == "" {
-				if alt, ok := raw["edificio_id"]; ok {
-					return asString(alt)
-				}
-			}
-			return v
-		}(),
-		Sensores: []models.Sensor{},
-	}
-
-	if sraw, ok := raw[fm["sensores"]]; ok {
-		if arr, ok := sraw.([]interface{}); ok {
-			for _, it := range arr {
-				if sm, ok := it.(bson.M); ok {
-					sensor := models.Sensor{
-						SensorID: asString(sm["sensor_id"]),
-						Tipo:     asString(sm["tipo"]),
-						Unidad:   asString(sm["unidad"]),
-					}
-					activo.Sensores = append(activo.Sensores, sensor)
-				}
-			}
-		}
+		ID:         id,
+		ActivoID:   asInt(raw[fm["activo_id"]]),
+		Estado:     asString(raw[fm["estado"]]),
+		EdificioID: asInt(raw[fm["edificio_id"]]),
 	}
 
 	return activo
 }
 
-// enrichSensors llena sensores desde la colección de sensores si no están embebidos
+// enrichSensors ya no es necesaria, se elimina
 func (r *ActivoRepository) enrichSensors(ctx context.Context, act *models.Activo) {
-	if act == nil || act.ActivoID == 0 || r.sensorColl == nil {
-		return
-	}
-	if len(act.Sensores) > 0 {
-		return
-	}
-	cur, err := r.sensorColl.Find(ctx, bson.M{"activo_id": act.ActivoID})
-	if err != nil {
-		return
-	}
-	defer cur.Close(ctx)
-	seen := map[string]bool{}
-	for cur.Next(ctx) {
-		var sm bson.M
-		if err := cur.Decode(&sm); err != nil {
-			continue
-		}
-		s := models.Sensor{
-			SensorID: asString(sm["sensor_id"]),
-			Tipo:     asString(sm["tipo"]),
-			Unidad:   asString(sm["unidad"]),
-		}
-		if s.SensorID == "" || seen[s.SensorID] {
-			continue
-		}
-		seen[s.SensorID] = true
-		act.Sensores = append(act.Sensores, s)
-	}
+	// Los activos ya no contienen sensores
+	return
 }

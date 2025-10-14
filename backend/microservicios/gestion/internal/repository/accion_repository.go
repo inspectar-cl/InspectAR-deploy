@@ -36,7 +36,7 @@ func (r *AccionMantenimientoRepository) GetByTecnico(tecnicoID int) ([]models.Ac
 		SELECT 
 			am.id, am.activo_id, am.tecnico_id, am.tipo, am.descripcion, am.estado, am.prioridad, 
 			am.fecha_inicio, am.fecha_fin, am.creado_en,
-			a.id, a.nombre, a.tipo, a.estado, a.ubicacion, a.edificio_id, a.creado_en,
+			a.id, a.nombre, a.tipo, a.ubicacion, a.edificio_id, a.creado_en,
 			t.id, t.nombre, t.email, t.telefono, t.especialidad, t.autorizado, t.fecha_registro
 		FROM acciones_mantenimiento am
 		JOIN activos a ON am.activo_id = a.id
@@ -58,7 +58,7 @@ func (r *AccionMantenimientoRepository) GetByTecnico(tecnicoID int) ([]models.Ac
 			&accion.Descripcion, &accion.Estado, &accion.Prioridad, &accion.FechaInicio,
 			&accion.FechaFin, &accion.CreadoEn,
 			&accion.Activo.ID, &accion.Activo.Nombre, &accion.Activo.Tipo,
-			&accion.Activo.Estado, &accion.Activo.Ubicacion, &accion.Activo.EdificioID, &accion.Activo.CreadoEn,
+			&accion.Activo.Ubicacion, &accion.Activo.EdificioID, &accion.Activo.CreadoEn,
 			&accion.Tecnico.ID, &accion.Tecnico.Nombre, &accion.Tecnico.Email, &accion.Tecnico.Telefono,
 			&accion.Tecnico.Especialidad, &accion.Tecnico.Autorizado, &accion.Tecnico.CreadoEn,
 		)
@@ -76,7 +76,7 @@ func (r *AccionMantenimientoRepository) GetByActivo(activoID int) ([]models.Acci
 		SELECT 
 			am.id, am.activo_id, am.tecnico_id, am.tipo, am.descripcion, am.estado, am.prioridad, 
 			am.fecha_inicio, am.fecha_fin, am.creado_en,
-			a.id, a.nombre, a.tipo, a.estado, a.ubicacion, a.edificio_id, a.creado_en,
+			a.id, a.nombre, a.tipo, a.ubicacion, a.edificio_id, a.creado_en,
 			t.id, t.nombre, t.email, t.telefono, t.especialidad, t.autorizado, t.fecha_registro
 		FROM acciones_mantenimiento am
 		JOIN activos a ON am.activo_id = a.id
@@ -98,7 +98,7 @@ func (r *AccionMantenimientoRepository) GetByActivo(activoID int) ([]models.Acci
 			&accion.Descripcion, &accion.Estado, &accion.Prioridad, &accion.FechaInicio,
 			&accion.FechaFin, &accion.CreadoEn,
 			&accion.Activo.ID, &accion.Activo.Nombre, &accion.Activo.Tipo,
-			&accion.Activo.Estado, &accion.Activo.Ubicacion, &accion.Activo.EdificioID, &accion.Activo.CreadoEn,
+			&accion.Activo.Ubicacion, &accion.Activo.EdificioID, &accion.Activo.CreadoEn,
 			&accion.Tecnico.ID, &accion.Tecnico.Nombre, &accion.Tecnico.Email, &accion.Tecnico.Telefono,
 			&accion.Tecnico.Especialidad, &accion.Tecnico.Autorizado, &accion.Tecnico.CreadoEn,
 		)
@@ -134,7 +134,7 @@ func (r *AccionMantenimientoRepository) GetPendientesConPrioridad() ([]models.Ac
 		SELECT 
 			am.id, am.activo_id, am.tecnico_id, am.tipo, am.descripcion, am.estado, am.prioridad, 
 			am.fecha_inicio, am.fecha_fin, am.creado_en,
-			a.id, a.nombre, a.tipo, a.estado, a.ubicacion, a.edificio_id, a.creado_en,
+			a.id, a.nombre, a.tipo, a.ubicacion, a.edificio_id, a.creado_en,
 			t.id, t.nombre, t.email, t.telefono, t.especialidad, t.autorizado, t.fecha_registro
 		FROM acciones_mantenimiento am
 		JOIN activos a ON am.activo_id = a.id
@@ -163,7 +163,7 @@ func (r *AccionMantenimientoRepository) GetPendientesConPrioridad() ([]models.Ac
 			&accion.Descripcion, &accion.Estado, &accion.Prioridad, &accion.FechaInicio,
 			&accion.FechaFin, &accion.CreadoEn,
 			&accion.Activo.ID, &accion.Activo.Nombre, &accion.Activo.Tipo,
-			&accion.Activo.Estado, &accion.Activo.Ubicacion, &accion.Activo.EdificioID, &accion.Activo.CreadoEn,
+			&accion.Activo.Ubicacion, &accion.Activo.EdificioID, &accion.Activo.CreadoEn,
 			&accion.Tecnico.ID, &accion.Tecnico.Nombre, &accion.Tecnico.Email, &accion.Tecnico.Telefono,
 			&accion.Tecnico.Especialidad, &accion.Tecnico.Autorizado, &accion.Tecnico.CreadoEn,
 		)

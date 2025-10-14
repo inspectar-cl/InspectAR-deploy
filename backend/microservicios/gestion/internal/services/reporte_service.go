@@ -3,6 +3,7 @@ package services
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"gestion/internal/models"
@@ -23,6 +24,8 @@ type ReporteService struct {
 	activoRepo   *repository.ActivoRepository
 	accionRepo   *repository.AccionMantenimientoRepository
 	edificioRepo *repository.EdificioRepository
+	firmaRepo    *repository.FirmaRepository
+	usuarioRepo  *repository.UsuarioRepository
 }
 
 func NewReporteService(
@@ -36,7 +39,18 @@ func NewReporteService(
 		activoRepo:   activoRepo,
 		accionRepo:   accionRepo,
 		edificioRepo: edificioRepo,
+		firmaRepo:    nil, // Será configurado opcionalmente
 	}
+}
+
+// SetFirmaRepo configura el repositorio de firmas (opcional)
+func (s *ReporteService) SetFirmaRepo(firmaRepo *repository.FirmaRepository) {
+	s.firmaRepo = firmaRepo
+}
+
+// SetUsuarioRepo configura el repositorio de usuarios (opcional)
+func (s *ReporteService) SetUsuarioRepo(usuarioRepo *repository.UsuarioRepository) {
+	s.usuarioRepo = usuarioRepo
 }
 
 // Estructura para los datos del template
@@ -53,7 +67,20 @@ type ReporteData struct {
 	Conclusiones       string
 	EstructuraCompleta models.EstructuraInformeReporte
 	// Campo para métricas de sensores
-	SensorMetrics      map[string]interface{} `json:"sensor_metrics,omitempty"`
+	SensorMetrics map[string]interface{} `json:"sensor_metrics,omitempty"`
+	// Campo para firma digital
+	FirmaDigital *FirmaDataTemplate `json:"firma_digital,omitempty"`
+}
+
+// FirmaDataTemplate contiene datos de la firma para el template
+type FirmaDataTemplate struct {
+	Existe       bool   `json:"existe"`
+	RutaArchivo  string `json:"ruta_archivo,omitempty"`
+	TipoMime     string `json:"tipo_mime,omitempty"`
+	Formato      string `json:"formato,omitempty"`
+	AutorNombre  string `json:"autor_nombre,omitempty"`
+	FechaFirma   string `json:"fecha_firma,omitempty"`
+	ImagenBase64 string `json:"imagen_base64,omitempty"` // Para incrustar en PDF
 }
 
 // Crear reporte con observaciones
@@ -69,11 +96,10 @@ func (s *ReporteService) CrearReporte(req models.CreateReporteRequest) (*models.
 
 	// Crear metadata
 	metadata := map[string]interface{}{
-		"fecha_creacion":  time.Now(),
-		"tipo_activo":     activo.Tipo,
-		"nombre_activo":   activo.Nombre,
-		"version":         1,
-		"estado_original": activo.Estado,
+		"fecha_creacion": time.Now(),
+		"tipo_activo":    activo.Tipo,
+		"nombre_activo":  activo.Nombre,
+		"version":        1,
 	}
 
 	// Usar contenido proporcionado o generar uno básico
@@ -140,7 +166,6 @@ func (s *ReporteService) generarEstructuraInforme(activo *models.Activo, observa
 			"id":        activo.ID,
 			"nombre":    activo.Nombre,
 			"tipo":      activo.Tipo,
-			"estado":    activo.Estado,
 			"ubicacion": activo.Ubicacion,
 		},
 		"acciones_realizadas": accionesRealizadas,
@@ -179,13 +204,6 @@ func (s *ReporteService) generarRecomendaciones(activo *models.Activo, ultimaAcc
 			"Documentar todas las intervenciones")
 	}
 
-	// Recomendaciones basadas en el estado
-	if activo.Estado == "mantenimiento" {
-		recomendaciones = append(recomendaciones,
-			"Completar mantenimiento programado lo antes posible",
-			"Verificar funcionamiento después de la intervención")
-	}
-
 	// Recomendaciones basadas en la última acción
 	if ultimaAccion != nil && ultimaAccion.Estado == "pendiente" {
 		recomendaciones = append(recomendaciones,
@@ -197,26 +215,22 @@ func (s *ReporteService) generarRecomendaciones(activo *models.Activo, ultimaAcc
 
 // Generar conclusiones automáticas
 func (s *ReporteService) generarConclusiones(activo *models.Activo, observaciones string) string {
-	baseConclusion := fmt.Sprintf("El activo %s se encuentra en estado %s.",
-		activo.Nombre, activo.Estado)
+	baseConclusion := fmt.Sprintf("El activo %s está ubicado en %s.",
+		activo.Nombre, activo.Ubicacion)
 
 	if observaciones != "" {
 		baseConclusion += " Las observaciones del analista proporcionan detalles adicionales para el seguimiento."
 	}
 
-	if activo.Estado == "operativo" {
-		baseConclusion += " Se recomienda continuar con el plan de mantenimiento preventivo."
-	} else if activo.Estado == "mantenimiento" {
-		baseConclusion += " Se requiere completar las tareas de mantenimiento programadas."
-	}
+	baseConclusion += " Se recomienda continuar con el plan de mantenimiento preventivo."
 
 	return baseConclusion
 }
 
 // Generar contenido básico del reporte
 func (s *ReporteService) generarContenidoBasico(activo *models.Activo) string {
-	return fmt.Sprintf("Reporte para %s - %s ubicado en %s. Estado actual: %s",
-		activo.Tipo, activo.Nombre, activo.Ubicacion, activo.Estado)
+	return fmt.Sprintf("Reporte para %s - %s ubicado en %s",
+		activo.Tipo, activo.Nombre, activo.Ubicacion)
 }
 
 // Generar reporte PDF por activo usando HTML template
@@ -229,8 +243,8 @@ func (s *ReporteService) GenerarReportePDFPorActivo(activoID int, opts models.Ge
 	if err != nil {
 		return nil, "", fmt.Errorf("no se pudo obtener el activo: %v", err)
 	}
-	fmt.Printf("ACTIVO ENCONTRADO: ID=%d, Nombre=%s, Tipo=%s, Estado=%s\n",
-		activo.ID, activo.Nombre, activo.Tipo, activo.Estado)
+	fmt.Printf("ACTIVO ENCONTRADO: ID=%d, Nombre=%s, Tipo=%s\n",
+		activo.ID, activo.Nombre, activo.Tipo)
 
 	// Obtener datos del edificio si existe
 	var edificio *models.Edificio
@@ -282,7 +296,7 @@ func (s *ReporteService) GenerarReportePDFPorActivo(activoID int, opts models.Ge
 	incluirHistorial := false
 	incluirUltimasAcciones := false
 	incluirDatosSensores := false
-	
+
 	// Si no se especifican campos, incluir todo por defecto (comportamiento legacy)
 	if len(opts.Campos) == 0 {
 		incluirUbicacion = true
@@ -302,7 +316,7 @@ func (s *ReporteService) GenerarReportePDFPorActivo(activoID int, opts models.Ge
 			incluirUltimasAcciones = true
 		case "datos_sensores":
 			incluirDatosSensores = true
-			
+
 			// Llamar a ParserService para obtener datos de sensores
 			parserURL := os.Getenv("PARSER_URL")
 			if parserURL == "" {
@@ -329,25 +343,25 @@ func (s *ReporteService) GenerarReportePDFPorActivo(activoID int, opts models.Ge
 					resp.Body.Close()
 				}
 			}
-			
+
 			// DEBUGGING: Verificar estado de sensorMetrics antes de procesamiento
 			fmt.Printf("DEBUG: Verificando métricas - len: %d, contenido: %+v\n", len(sensorMetrics), sensorMetrics)
-			
+
 			// Verificar si tenemos datos válidos de sensores, si no, generar métricas de ejemplo
 			if len(sensorMetrics) == 0 {
 				fmt.Printf("No hay métricas de sensores, generando métricas de ejemplo\n")
 				sensorMetrics = s.generateFakeMetrics(map[string]interface{}{
 					"sensors": []interface{}{
 						map[string]interface{}{
-							"name": "temp_001", 
+							"name":   "temp_001",
 							"values": []interface{}{22.5, 23.1, 22.8},
 						},
 						map[string]interface{}{
-							"name": "pres_001", 
+							"name":   "pres_001",
 							"values": []interface{}{1.2, 1.3, 1.1},
 						},
 						map[string]interface{}{
-							"name": "caud_001", 
+							"name":   "caud_001",
 							"values": []interface{}{5.4, 5.7, 5.2},
 						},
 					},
@@ -358,15 +372,15 @@ func (s *ReporteService) GenerarReportePDFPorActivo(activoID int, opts models.Ge
 				sensorMetrics = s.generateFakeMetrics(map[string]interface{}{
 					"sensors": []interface{}{
 						map[string]interface{}{
-							"name": "temp_001", 
+							"name":   "temp_001",
 							"values": []interface{}{22.5, 23.1, 22.8},
 						},
 						map[string]interface{}{
-							"name": "pres_001", 
+							"name":   "pres_001",
 							"values": []interface{}{1.2, 1.3, 1.1},
 						},
 						map[string]interface{}{
-							"name": "caud_001", 
+							"name":   "caud_001",
 							"values": []interface{}{5.4, 5.7, 5.2},
 						},
 					},
@@ -374,6 +388,28 @@ func (s *ReporteService) GenerarReportePDFPorActivo(activoID int, opts models.Ge
 				fmt.Printf("🚨 METRICAS REGENERADAS - ESTE LOG DEBE APARECER 🚨\n")
 			}
 			fmt.Printf("Métricas finales de sensores: %+v\n", sensorMetrics)
+		}
+	}
+
+	// Procesar firma digital si se proporcionó
+	var firmaData *FirmaDataTemplate
+	if opts.FirmaID != nil && s.firmaRepo != nil {
+		// Obtener firma específica
+		firma, err := s.firmaRepo.GetByID(*opts.FirmaID)
+		if err == nil {
+			firmaData = s.prepararFirmaParaTemplate(firma)
+			fmt.Printf("FIRMA ENCONTRADA: ID=%d, Nombre=%s, Formato=%s\n", firma.ID, firma.NombreArchivo, firma.Formato)
+		} else {
+			fmt.Printf("Advertencia: no se pudo cargar la firma ID %d: %v\n", *opts.FirmaID, err)
+		}
+	} else if opts.UsarFirmaPredeterminada && opts.Email != "" && s.firmaRepo != nil && s.usuarioRepo != nil {
+		// Obtener firma predeterminada del usuario por email
+		firma, err := s.firmaRepo.GetDefaultByUsuarioEmail(opts.Email)
+		if err == nil {
+			firmaData = s.prepararFirmaParaTemplate(firma)
+			fmt.Printf("FIRMA PREDETERMINADA ENCONTRADA: ID=%d, Usuario=%d, Formato=%s\n", firma.ID, firma.UsuarioID, firma.Formato)
+		} else {
+			fmt.Printf("Advertencia: no se encontró firma predeterminada para usuario con email %s: %v\n", opts.Email, err)
 		}
 	}
 
@@ -417,8 +453,14 @@ func (s *ReporteService) GenerarReportePDFPorActivo(activoID int, opts models.Ge
 		data.EstructuraCompleta.Conclusiones = estructura["conclusiones"].(string)
 	}
 
-	fmt.Printf("DATOS PREPARADOS PARA TEMPLATE - Campos incluidos: ubicacion=%v, historial=%v, ultimas_acciones=%v, sensores=%v\n", 
-		incluirUbicacion, incluirHistorial, incluirUltimasAcciones, incluirDatosSensores)
+	// Incluir firma digital si está disponible
+	if firmaData != nil {
+		data.FirmaDigital = firmaData
+		fmt.Printf("FIRMA INCLUIDA EN REPORTE - Formato: %s\n", firmaData.Formato)
+	}
+
+	fmt.Printf("DATOS PREPARADOS PARA TEMPLATE - Campos incluidos: ubicacion=%v, historial=%v, ultimas_acciones=%v, sensores=%v, firma=%v\n",
+		incluirUbicacion, incluirHistorial, incluirUltimasAcciones, incluirDatosSensores, firmaData != nil)
 	fmt.Printf("DATOS PREPARADOS PARA TEMPLATE CON ESTRUCTURA COMPLETA\n")
 
 	// Renderizar HTML template
@@ -493,14 +535,13 @@ Información del Activo:
 - ID: %d
 - Nombre: %s
 - Tipo: %s
-- Estado: %s
 - Ubicación: %s
 
 Información del Edificio:
 - Nombre: %s
 - Dirección: %s
 
-`, activo.ID, activo.Nombre, activo.Tipo, activo.Estado, activo.Ubicacion,
+`, activo.ID, activo.Nombre, activo.Tipo, activo.Ubicacion,
 		edificio.Nombre, edificio.Direccion)
 
 	if ultimaAccion != nil {
@@ -602,7 +643,13 @@ func (s *ReporteService) generateFakeMetrics(sensorData interface{}) map[string]
 
 	// Caso: mapa que contiene sensors o series
 	if m, ok := sensorData.(map[string]interface{}); ok {
-		fmt.Printf("🗂️ Procesando mapa con claves: %+v\n", func() []string { keys := []string{}; for k := range m { keys = append(keys, k) }; return keys }())
+		fmt.Printf("🗂️ Procesando mapa con claves: %+v\n", func() []string {
+			keys := []string{}
+			for k := range m {
+				keys = append(keys, k)
+			}
+			return keys
+		}())
 		if sarr, ok2 := m["sensors"].([]interface{}); ok2 {
 			fmt.Printf("🔄 Encontrada clave 'sensors', llamada recursiva\n")
 			return s.generateFakeMetrics(sarr)
@@ -735,4 +782,32 @@ func (s *ReporteService) generatePDFFromHTML(htmlContent string) ([]byte, error)
 	}
 
 	return pdfBytes, nil
+}
+
+// prepararFirmaParaTemplate convierte una firma en datos para el template
+func (s *ReporteService) prepararFirmaParaTemplate(firma *models.FirmaDigital) *FirmaDataTemplate {
+	if firma == nil {
+		return nil
+	}
+
+	firmaData := &FirmaDataTemplate{
+		Existe:      true,
+		RutaArchivo: firma.RutaArchivo,
+		TipoMime:    firma.TipoMime,
+		Formato:     firma.Formato,
+		FechaFirma:  firma.CreadoEn.Format("02/01/2006"),
+	}
+
+	// Intentar leer el archivo y convertirlo a base64 para incrustarlo en el PDF
+	if firma.RutaArchivo != "" {
+		imageData, err := os.ReadFile(firma.RutaArchivo)
+		if err == nil {
+			// Convertir a base64
+			firmaData.ImagenBase64 = base64.StdEncoding.EncodeToString(imageData)
+		} else {
+			fmt.Printf("Advertencia: no se pudo leer archivo de firma: %v\n", err)
+		}
+	}
+
+	return firmaData
 }

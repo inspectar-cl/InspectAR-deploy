@@ -40,13 +40,17 @@ func main() {
 	reporteRepo := repository.NewReporteRepository(db)
 	usuarioRepo := repository.NewUsuarioRepository(db)
 	tipoFallaRepo := repository.NewTipoFallaRepository(db)
+	firmaRepo := repository.NewFirmaRepository(db)
 
 	// Servicios con las dependencias correctas
 	tecnicoService := services.NewTecnicoService(tecnicoRepo)
 	accionService := services.NewAccionMantenimientoService(accionRepo)
 	activoService := services.NewActivoService(activoRepo, edificioRepo)
 	reporteService := services.NewReporteService(reporteRepo, activoRepo, accionRepo, edificioRepo)
+	reporteService.SetFirmaRepo(firmaRepo)     // Configurar repositorio de firmas
+	reporteService.SetUsuarioRepo(usuarioRepo) // Configurar repositorio de usuarios
 	solicitudService := services.NewSolicitudService(db)
+	firmaService := services.NewFirmaService(firmaRepo, usuarioRepo)
 
 	// Handlers
 	tecnicoHandler := handlers.NewTecnicoHandler(tecnicoService)
@@ -56,9 +60,10 @@ func main() {
 	solicitudHandler := handlers.NewSolicitudHandler(solicitudService)
 	usuarioHandler := handlers.NewUsuarioHandler(usuarioRepo)
 	tipoFallaHandler := handlers.NewTipoFallaHandler(tipoFallaRepo)
+	firmaHandler := handlers.NewFirmaHandler(firmaService)
 
 	// Router (ahora con todos los handlers)
-	r := router.SetupRouter(tecnicoHandler, accionHandler, activoHandler, reporteHandler, solicitudHandler, usuarioHandler, tipoFallaHandler)
+	r := router.SetupRouter(tecnicoHandler, accionHandler, activoHandler, reporteHandler, solicitudHandler, usuarioHandler, tipoFallaHandler, firmaHandler)
 
 	// Servidor web
 	port := viper.GetString("server.port")

@@ -12,6 +12,7 @@ export const paths = {
     contactos: '/dashboard/contactos',
     graficos: '/dashboard/graficos',
     settings: '/dashboard/settings',
+    ml: '/dashboard/prediccion',
     activoDetail: (id: string) => `/dashboard/activos/${id}`,
   },
   errors: { notFound: '/errors/not-found' },

@@ -4,6 +4,7 @@ import { Box, Button, TextField, Typography, Select, MenuItem, Snackbar, Alert }
 import { DataGrid, type GridColDef } from '@mui/x-data-grid'
 import { esES } from '@mui/x-data-grid/locales';
 import Services from '@/modules/Services';
+import { useUserToken } from '@/hooks/use-usertoken';
 
 const gs = new Services();
 
@@ -31,6 +32,7 @@ interface ActivosDocResponse {
 }
 
 function DocumentosAsociados() {
+  const { user, isLoading } = useUserToken();
   const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [activos, setActivos] = useState<ActivoDoc[]>([]);
   const [activo, setActivo] = useState("");
@@ -55,28 +57,31 @@ function DocumentosAsociados() {
   useEffect(() => {
     const fetchActivos = async () => {
       try {
-        const data = await gs.get("/obtener-activos") as ActivosDocResponse | ActivoDoc[];
-  
-        // Si la API devuelve directamente un array de activos
-        if (Array.isArray(data)) {
-          setActivos(data);
-        } 
+        if (isLoading || !user) {
+          console.log('user/token no disponibles para activos', { isLoading, user })
+          return
+        }
+
+        const data = await gs.authorizedGet("/obtener-todos-activos", user.token) as ActivosDocResponse;
+        
+        console.log("Activos cargados:", data);
+
         // Si la API devuelve un objeto con la propiedad 'activos'
-        else if (data && Array.isArray(data.activos)) {
+        if (data && Array.isArray(data.activos)) {
           setActivos(data.activos);
         } 
         // Si no devuelve nada útil
         else {
-          //console.warn("La respuesta no tiene activos válidos");
+          console.warn("La respuesta no tiene activos válidos");
           setActivos([]);
         }
       } catch (error) {
-        //console.error("Error al conectar con API Gateway:", error);
+        console.error("Error al cargar activos:", error);
         setActivos([]);
       }
     };
     void fetchActivos();
-  }, []);
+  }, [isLoading, user]);
 
   // Cargar categorías al montar el componente
   useEffect(() => {

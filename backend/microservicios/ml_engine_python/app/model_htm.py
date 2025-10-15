@@ -3,10 +3,7 @@ import pandas as pd
 from sklearn.linear_model import SGDRegressor
 from sklearn.preprocessing import StandardScaler
 from .utils import rolling_threshold, severity_from_likelihood, description_from_severity, normalize_score_0_100, compute_is_anomaly
-
-W = 180 # Tamaño de ventana
-alpha = 0.01 # Factor de suavizado
-k_adapt = 2.0  # sensibilidad del umbral
+from .config import WINDOW_SIZE as W, ALPHA as alpha, K_ADAPT as k_adapt
 
 def detectar_htm_multivar(df, prefix):
     """
@@ -27,7 +24,7 @@ def detectar_htm_multivar(df, prefix):
 
     scores, probs, preds = [], [], []
     likelihood = 0.0
-    err_ref = 0.0
+    err_ref = None
 
     for i in range(W, len(d)):
         window = d.iloc[i-W:i, 1:].values
@@ -43,10 +40,10 @@ def detectar_htm_multivar(df, prefix):
         # Entrenamiento incremental
         model.partial_fit(X_scaled, y_scaled)
 
-        # Predicción próximo paso
+        """# Predicción próximo paso
         X_pred = scaler_X.transform(np.array([[W]]))
         y_pred_scaled = model.predict(X_pred)[0]
-        y_pred = scaler_y.inverse_transform([[y_pred_scaled]])[0, 0]
+        y_pred = scaler_y.inverse_transform([[y_pred_scaled]])[0, 0]"""
 
         # --- Error normalizado ---
         mu = np.mean(window, axis=0)
@@ -63,7 +60,7 @@ def detectar_htm_multivar(df, prefix):
         # Suavizado HTM-like
         likelihood = (1 - alpha) * likelihood + alpha * score
 
-        preds.append(y_pred)
+        # preds.append(y_pred)
         scores.append(score)
         probs.append(likelihood)
 
@@ -73,7 +70,7 @@ def detectar_htm_multivar(df, prefix):
     res['AnomalyLikelihood'] = normalize_score_0_100(pd.Series(probs))
 
     # umbral adaptativo rolling (sobre AnomalyLikelihood)
-    thr = rolling_threshold(res['AnomalyLikelihood'], window=W, k=2.0, min_periods=50)
+    thr = rolling_threshold(res['AnomalyLikelihood'], window=W, k=k_adapt, min_periods=50)
     res['Threshold'] = thr.fillna(method='ffill').fillna(1e6)  # si no hay threshold inicial, usar gran valor para evitar marcar anomaly temprana
 
     # decisión y texto
@@ -82,13 +79,13 @@ def detectar_htm_multivar(df, prefix):
     res['Description'] = res['Severity'].apply(description_from_severity)
 
     # preparar salida: lista de dicts + summary (último)
-    resultados = res[['timestamp', 'AnomalyScore', 'AnomalyLikelihood', 'Threshold', 'is_anomaly', 'Severity', 'Description']].to_dict(orient='records')
-    ultimo = resultados[-1]
+    resultados = res[['timestamp', 'AnomalyScore', 'AnomalyLikelihood',
+                       'Threshold', 'is_anomaly', 'Severity', 'Description']].to_dict(orient='records')
 
     return {
         "pump": prefix,
         "n_rows": len(res),
         "n_anomalies": int(res['is_anomaly'].sum()),
         "results": resultados,
-        "last": ultimo
+        "last": resultados[-1] if len(resultados) > 0 else None
     }

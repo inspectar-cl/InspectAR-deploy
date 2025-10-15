@@ -62,11 +62,17 @@ RUN mkdir -p /app/storage/firmas && chmod -R 755 /app/storage
 COPY init-firmas.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/init-firmas.sh
 
+# Crear un script de inicio que ejecute ambos
+RUN echo '#!/bin/sh' > /usr/local/bin/startup.sh && \
+    echo '/usr/local/bin/init-firmas.sh' >> /usr/local/bin/startup.sh && \
+    echo 'exec /app/main' >> /usr/local/bin/startup.sh && \
+    chmod +x /usr/local/bin/startup.sh
+
 # Exponer el puerto
 EXPOSE 8092
 
 # Usar entrypoint para inicializar firmas antes de ejecutar la aplicación
-ENTRYPOINT ["/usr/local/bin/init-firmas.sh"]
+ENTRYPOINT ["/usr/local/bin/startup.sh"]
 
 # Ejecutar la aplicación
 CMD ["./main"]

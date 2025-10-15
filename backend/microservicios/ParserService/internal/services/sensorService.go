@@ -35,3 +35,14 @@ func (s *SensorService) InsertarLectura(ctx context.Context, sensorID string, va
 func (s *SensorService) GetSensorLastData(ctx context.Context, sensorID string) (*models.SensorData, error) {
 	return s.influxRepo.GetSensorLastData(ctx, sensorID)
 }
+
+func (s *SensorService) GetDatosSensorWindow(ctx context.Context, sensorID string, limit int, offset int) ([]models.SensorData, error) {
+	log.Printf("🔍 GetDatosSensorWindow llamado para sensor: %s con límite: %d, offset: %d", sensorID, limit, offset)
+	result, err := s.influxRepo.GetSensorDataWindow(ctx, sensorID, limit, offset)
+	if err != nil {
+		log.Printf("❌ Error en GetDatosSensorWindow para %s: %v", sensorID, err)
+	} else {
+		log.Printf("✅ GetDatosSensorWindow exitoso para %s: %d registros", sensorID, len(result))
+	}
+	return result, err
+}

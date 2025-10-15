@@ -1,12 +1,10 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
-import React from "react";
+import * as React from "react";
 import { Grid, Card, CardContent, Typography, Chip } from "@mui/material";
-import { severidadColor } from "@/utils/severityUtils";
-import { Prediccion } from "@/types/prediccion";
-import { color } from "@mui/system/palette/palette";
-import { minWidth } from "@mui/system";
+import { severidadColor } from "@/utils/SeverityUtils";
+import { type Prediccion } from "@/types/prediccion";
 
-export const AlertasResumen: React.FC<{ predicciones: Prediccion[] }> = ({ predicciones }) => {
+function AlertasResumen({ predicciones }: { predicciones: Prediccion[] }) {
   const contarPorSeveridad = (sev: "Baja" | "Media" | "Alta") =>
     predicciones.filter((p) => p.severidad === sev).length;
 
@@ -18,8 +16,8 @@ export const AlertasResumen: React.FC<{ predicciones: Prediccion[] }> = ({ predi
       alignItems="stretch"
       sx={{ mb: 2 }}
     >
-      {["Alta", "Media", "Baja"].map((sev) => (
-        <Grid item xs={12} sm={6} md={4} key={sev}>
+      {(["Alta", "Media", "Baja"] as ("Alta" | "Media" | "Baja")[]).map((sev) => (
+        <Grid size={{ xs: 12, sm: 4 }} key={sev}>
           <Card
             sx={{
               display: "flex",
@@ -42,8 +40,8 @@ export const AlertasResumen: React.FC<{ predicciones: Prediccion[] }> = ({ predi
               }}
             >
               <Typography variant="subtitle1">{sev}</Typography>
-              <Typography variant="h5">{contarPorSeveridad(sev as any)}</Typography>
-              <Chip label={sev} color={severidadColor(sev)} />
+              <Typography variant="h5">{contarPorSeveridad(sev)}</Typography>
+              <Chip label={sev} color={severidadColor(sev) as "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning"} />
             </CardContent>
           </Card>
         </Grid>

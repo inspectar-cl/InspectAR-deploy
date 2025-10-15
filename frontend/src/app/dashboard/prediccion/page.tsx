@@ -1,51 +1,42 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 "use client";
 
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   Box,
-  Chip,
   Typography,
-  Grid,
-  Card,
-  CardContent,
   TextField,
   MenuItem,
   Select,
   InputLabel,
   FormControl,
-  Avatar,
-  LinearProgress,
+  Grid,
 } from "@mui/material";
-import dynamic from "next/dynamic";
 import { Activity as ActivityIcon, AlertTriangle as AlertIcon } from "lucide-react";
-import { Prediccion } from "@/types/prediccion";
-import { getColorBySeverity } from "@/utils/severityUtils";
+import { type Prediccion } from "@/types/prediccion";
+import { getColorBySeverity } from "@/utils/SeverityUtils";
 import MetricCard from "@/components/dashboard/prediccion/MetricCard";
 import PrediccionCards from "@/components/dashboard/prediccion/PrediccionCards";
 import AlertasResumen from "@/components/dashboard/prediccion/AlertasResumen";
 import AnomalyChart from "@/components/dashboard/prediccion/AnomalyChart";
 
-// Dinámico porque ApexCharts no funciona en SSR
-const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
-
 // Tipos
-type Activo = {
+interface Activo {
   id: number;
   nombre: string;
   tipo: string;
   ubicacion: string;
-};
-
+}
 
 // Página principal
 export default function Page() {
   // Datos de ejemplo
-  const activos: Activo[] = [
+  const activos: Activo[] = useMemo(() => [
     { id: 1, nombre: "Bomba de agua", tipo: "Bomba", ubicacion: "Sótano" },
     { id: 2, nombre: "Caldera", tipo: "Caldera", ubicacion: "Cuarto de máquinas" },
-  ];
+  ], []);
 
-  const predicciones: Prediccion[] = [
+  const predicciones: Prediccion[] = useMemo(() => [
     {
       id: 1,
       activoId: 1,
@@ -79,7 +70,7 @@ export default function Page() {
       threshold: 50,
       is_anomaly: false,
     },
-  ];
+  ], []);
 
   // Filtros
   const [filtroActivo, setFiltroActivo] = useState<string>("Todos");
@@ -100,13 +91,13 @@ export default function Page() {
     <Box p={2}>
       {/* Filtros */}
       <Grid container spacing={2} mb={2}>
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <FormControl fullWidth>
             <InputLabel>Activo</InputLabel>
             <Select
               value={filtroActivo}
               label="Activo"
-              onChange={(e) => setFiltroActivo(e.target.value)}
+              onChange={(e) => { setFiltroActivo(e.target.value); }}
             >
               <MenuItem value="Todos">Todos</MenuItem>
               {activos.map((a) => (
@@ -117,13 +108,13 @@ export default function Page() {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <FormControl fullWidth>
             <InputLabel>Severidad</InputLabel>
             <Select
               value={filtroSeveridad}
               label="Severidad"
-              onChange={(e) => setFiltroSeveridad(e.target.value)}
+              onChange={(e) => { setFiltroSeveridad(e.target.value); }}
             >
               <MenuItem value="Todos">Todos</MenuItem>
               <MenuItem value="Baja">Baja</MenuItem>
@@ -132,12 +123,12 @@ export default function Page() {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <TextField
             fullWidth
             label="Buscar por palabra clave"
             value={filtroKeyword}
-            onChange={(e) => setFiltroKeyword(e.target.value)}
+            onChange={(e) => { setFiltroKeyword(e.target.value); }}
           />
         </Grid>
       </Grid>
@@ -161,7 +152,7 @@ export default function Page() {
 
             {/* Métricas principales */}
             <Grid container spacing={3} mb={3}>
-              <Grid item>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <MetricCard
                   title="Último Anomaly Score"
                   value={ultimaPred.anomalyScore}
@@ -170,7 +161,7 @@ export default function Page() {
                   suffix=""
                 />
               </Grid>
-              <Grid item>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <MetricCard
                   title="Último Anomaly Likelihood"
                   value={ultimaPred.anomalyLikelihood}
@@ -179,7 +170,7 @@ export default function Page() {
                   suffix=""
                 />
               </Grid>
-              <Grid item>
+              <Grid size={{ xs: 12 }}>
                   <PrediccionCards predicciones={predActivo} />
               </Grid>
             </Grid>

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 "use client";
 import React from "react";
 import { Card, Avatar, Typography, Box, LinearProgress } from "@mui/material";
@@ -11,14 +10,8 @@ interface MetricCardProps {
   suffix?: string;
 }
 
-export const MetricCard: React.FC<MetricCardProps> = ({
-  title,
-  value,
-  icon,
-  color,
-  suffix = "",
-}) => (
-  <Card
+function MetricCard({ title, value, icon, color, suffix = "" }: MetricCardProps) {
+  return <Card
     sx={{
       display: "flex",
       flexDirection: "column",
@@ -54,6 +47,6 @@ export const MetricCard: React.FC<MetricCardProps> = ({
       />
     </Box>
   </Card>
-);
+}
 
 export default MetricCard;

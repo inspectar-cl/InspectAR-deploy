@@ -1,4 +1,4 @@
-type Prediccion = {
+interface Prediccion {
   id: number;
   activoId: number;
   timestamp: string;
@@ -8,5 +8,5 @@ type Prediccion = {
   descripcion: string;
   threshold: number;
   is_anomaly: boolean;
-};
+}
 export type { Prediccion };

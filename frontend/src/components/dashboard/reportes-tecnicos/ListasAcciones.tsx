@@ -7,6 +7,7 @@ import { DataGrid, type GridRenderCellParams, type GridColDef } from '@mui/x-dat
 import { esES } from '@mui/x-data-grid/locales'
 
 import Services from '@/modules/Services'
+import { useUserToken } from '@/hooks/use-usertoken';
 
 const gs = new Services()
 
@@ -35,11 +36,24 @@ interface Activo {
   nombre: string
 }
 
+interface Tecnico {
+  id: number
+  nombre: string
+  apellido: string
+  especialidad: string
+  email: string
+  telefono: string
+}
+
 const tecnicoActualId = 1
+const edificioId = 1
 
 export default function ListasAccionesView() {
+  const { user, isLoading} = useUserToken();
   const [acciones, setAcciones] = useState<Accion[]>([])
   const [activos, setActivos] = useState<Activo[]>([])
+  const [tecnicos, setTecnicos] = useState<Tecnico[]>([])
+  const [tecnicoSeleccionado, setTecnicoSeleccionado] = useState<number>(tecnicoActualId)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [mensaje, setMensaje] = useState<string | null>(null);
 
@@ -51,10 +65,16 @@ export default function ListasAccionesView() {
 
   // --- Cargar activos desde API ---
   useEffect(() => {
+    // if (isLoading || !user) {return;}
     const fetchActivos = async () => {
       try {
-        const data = await gs.get("/obtener-activos") as { activos: Activo[] }
-        //console.log("Activos cargados:", data)
+        if (isLoading || !user) {
+          console.log('user/token no disponibles', { isLoading, user })
+          return
+        }
+        console.log('user.token:', user.token)
+        const data = await gs.authorizedGet("/obtener-todos-activos", user.token) as { activos: Activo[] }
+        console.log("Activos cargados:", data)
         const activosArray = data.activos
         setActivos(Array.isArray(activosArray) ? activosArray : [])
         //console.log("Valor de setActivos (activos):", Array.isArray(activosArray) ? activosArray : [])
@@ -63,12 +83,31 @@ export default function ListasAccionesView() {
       }
     }
     void fetchActivos()
-  }, [])
+  }, [isLoading, user])
+
+  // --- Cargar técnicos desde API ---
+  useEffect(() => {
+    const fetchTecnicos = async () => {
+      try {
+        if (isLoading || !user) {
+          console.log('user/token no disponibles para técnicos', { isLoading, user })
+          return
+        }
+        const data = await gs.authorizedGet(`/obtener-contactos-id/${edificioId}`, user.token) as { contactos: Tecnico[]; total: number }
+        console.log("Técnicos cargados:", data)
+        const tecnicosArray = data.contactos
+        setTecnicos(Array.isArray(tecnicosArray) ? tecnicosArray : [])
+      } catch (error) {
+        console.error('Error al cargar técnicos:', error)
+      }
+    }
+    void fetchTecnicos()
+  }, [isLoading, user])
 
   // --- API Acciones ---
   const fetchAcciones = async () => {
     try {
-      const res = await gs.get(`/gestion/acciones/tecnico/${tecnicoActualId}`) as Accion[]
+      const res = await gs.get(`/gestion/acciones/tecnico/${tecnicoSeleccionado}`) as Accion[]
       //console.log("Acciones cargadas:", res)
       const accionesProcesadas = res.map((accion) => ({
         ...accion,
@@ -137,7 +176,7 @@ export default function ListasAccionesView() {
 
   useEffect(() => {
     void fetchAcciones()
-  }, [])
+  }, [tecnicoSeleccionado])
 
   // --- Columnas ---
   const columns: GridColDef[] = [
@@ -213,7 +252,24 @@ export default function ListasAccionesView() {
         <Button variant="contained" onClick={crearAccion}>Guardar</Button>
       </Box>
 
-      <Typography variant="subtitle1" gutterBottom>Acciones Asignadas</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="subtitle1">Acciones Asignadas</Typography>
+        
+        <TextField
+          label="Filtrar por Técnico"
+          select
+          value={tecnicoSeleccionado}
+          onChange={(e) => { setTecnicoSeleccionado(Number(e.target.value)); }}
+          sx={{ minWidth: 250 }}
+          size="small"
+        >
+          {tecnicos.map((t) => (
+            <MenuItem key={t.id} value={t.id}>
+              {t.nombre} {t.apellido} - {t.especialidad}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Box>
 
       {acciones.map((a) => (
         <Collapse key={a.id} in={expandedId === a.id}>

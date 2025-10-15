@@ -72,7 +72,7 @@ export default function ListasAccionesView() {
           console.log('user/token no disponibles', { isLoading, user })
           return
         }
-        console.log('user.token:', user.token)
+        // console.log('user.token:', user.token)
         const data = await gs.authorizedGet("/obtener-todos-activos", user.token) as { activos: Activo[] }
         console.log("Activos cargados:", data)
         const activosArray = data.activos
@@ -97,6 +97,11 @@ export default function ListasAccionesView() {
         console.log("Técnicos cargados:", data)
         const tecnicosArray = data.contactos
         setTecnicos(Array.isArray(tecnicosArray) ? tecnicosArray : [])
+        
+        // Seleccionar el primer técnico de la lista por defecto
+        if (Array.isArray(tecnicosArray) && tecnicosArray.length > 0) {
+          setTecnicoSeleccionado(tecnicosArray[0].id)
+        }
       } catch (error) {
         console.error('Error al cargar técnicos:', error)
       }
@@ -107,39 +112,51 @@ export default function ListasAccionesView() {
   // --- API Acciones ---
   const fetchAcciones = async () => {
     try {
-      const res = await gs.get(`/gestion/acciones/tecnico/${tecnicoSeleccionado}`) as Accion[]
-      //console.log("Acciones cargadas:", res)
+      if (!user) {
+        console.log('Usuario no disponible para cargar acciones')
+        return
+      }
+
+      const res = await gs.authorizedGet(`/obtener-acciones/${tecnicoSeleccionado}`, user.token) as Accion[]
+      console.log("Acciones cargadas:", res)
       const accionesProcesadas = res.map((accion) => ({
         ...accion,
         tecnico_nombre: accion.tecnico?.nombre || 'Sin técnico',
         activo_nombre: accion.activo?.nombre || 'Sin activo'
       }))
-      // const data = await res.json()
       setAcciones(accionesProcesadas)
     } catch (err) {
-      //console.error('Error cargando acciones:', err)
+      console.error('Error cargando acciones:', err)
     }
   }
 
   const crearAccion = async () => {
-    if (!activoSeleccionado || !descripcion) { setMensaje('Completa todos los campos.'); return; }
+    if (!activoSeleccionado || !descripcion || !tipo || !prioridad) { 
+      setMensaje('Completa todos los campos.'); 
+      return; 
+    }
+
+    if (!user) {
+      setMensaje('Usuario no autenticado');
+      return;
+    }
 
     try {
       const data = {
-        titulo: "prueba",
-        activo_id: Number(activoSeleccionado),
-        tecnico_id: tecnicoActualId,
+        titulo: `Mantenimiento ${tipo} - ${activos.find(a => a.id === Number(activoSeleccionado))?.nombre || 'Activo'}`,
+        tecnico_id: tecnicoSeleccionado,
         tipo,
         descripcion,
         prioridad,
       }
 
-      //console.log("Datos para crear acción:", data)
+      console.log("Datos para crear acción:", data)
 
-      const res = await gs.post('/gestion/acciones', data) as { error?: boolean; mensaje?: string }
+      const res = await gs.authorizedPost(`/accion-mantenimiento-id/${activoSeleccionado}`, data, user.token) as { error?: boolean; mensaje?: string }
 
       if (!res.error) {
         // Acción creada correctamente
+        setMensaje('Acción creada exitosamente')
         await fetchAcciones()
         setActivoSeleccionado('')
         setDescripcion('')
@@ -147,11 +164,10 @@ export default function ListasAccionesView() {
         setTipo('')
       } else {
         // Manejo de error
-        // console.error('Error en creación:', res.error)
-        setMensaje(`Error al crear la acción: ${  res.mensaje || 'Error desconocido'}`)
+        setMensaje(`Error al crear la acción: ${res.mensaje || 'Error desconocido'}`)
       }
     } catch (err) {
-      //console.error('Error creando acción: ', err)
+      console.error('Error creando acción: ', err)
       setMensaje('Error inesperado al crear la acción')
     }
   }
@@ -159,17 +175,23 @@ export default function ListasAccionesView() {
 
   const actualizarEstado = async (id: number, nuevoEstado: string) => {
     try {
-      const res = await gs.put(`/gestion/acciones/${id}/estado`, { estado: nuevoEstado }) as { error?: boolean; mensaje?: string };
+      if (!user) {
+        setMensaje('Usuario no autenticado');
+        return;
+      }
+
+      const res = await gs.authorizedPut(`/actualizar-estado-accion/${id}`, { estado: nuevoEstado }, user.token) as { error?: boolean; mensaje?: string };
 
       if (!res.error) {
         // éxito
+        setMensaje('Estado actualizado exitosamente');
         await fetchAcciones()
       } else {
         // console.error('Error actualizando estado:', res.error)
-        setMensaje(`Error al actualizar el estado: ${  res.mensaje || 'Error desconocido'}`)
+        setMensaje(`Error al actualizar el estado: ${res.mensaje || 'Error desconocido'}`)
       }
     } catch (err) {
-      //console.error('Error actualizando estado:', err)
+      console.error('Error actualizando estado:', err)
       setMensaje('Error inesperado al actualizar el estado')
     }
   }

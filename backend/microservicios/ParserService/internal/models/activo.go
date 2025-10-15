@@ -11,10 +11,8 @@ type Sensor struct {
 }
 
 type Activo struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	ActivoID    int                `bson:"activo_id" json:"activo_id"`
-	Nombre      string             `bson:"nombre" json:"nombre"`
-	Estado      string             `bson:"estado" json:"estado"`
-	Sensores    []Sensor           `bson:"sensores" json:"sensores"`
-	Id_edificio string             `bson:"id_edificio" json:"id_edificio"`
+	ID         primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	ActivoID   int                `bson:"activo_id" json:"activo_id"`
+	Estado     string             `bson:"estado" json:"estado"`
+	EdificioID int                `bson:"edificio_id" json:"edificio_id"`
 }

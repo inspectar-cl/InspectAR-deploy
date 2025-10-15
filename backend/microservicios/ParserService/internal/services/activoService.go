@@ -42,3 +42,11 @@ func (s *ActivoService) GetAllActivos(ctx context.Context) ([]models.Activo, err
 func (s *ActivoService) ActualizarEstado(ctx context.Context, activoID int, nuevoEstado string) error {
 	return s.activoRepo.ActualizarEstado(ctx, activoID, nuevoEstado)
 }
+
+func (s *ActivoService) ObtenerActivosPorEdificio(ctx context.Context, edificioID int) ([]models.Activo, error) {
+	return s.activoRepo.GetActivosByEdificio(ctx, edificioID)
+}
+
+func (s *ActivoService) ObtenerSensoresPorActivo(ctx context.Context, activoID int) ([]models.Sensor, error) {
+	return s.activoRepo.GetSensoresByActivo(ctx, activoID)
+}

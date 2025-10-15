@@ -59,63 +59,43 @@ print('📦 Insertando activos sincronizados...');
 db.activos.insertMany([
   {
     activo_id: 1,
-    nombre: 'BombaDeAgua #1 ML',
-    ubicacion: 'Planta B',
     estado: 'OK',
-    id_edificio: 'EB',
-    tipo: 'bomba de agua',
-    // Campos adicionales para compatibilidad
-    edificio_id: 1,
-    _legacy_id: 1
+    edificio_id: 1
   },
   {
-  activo_id: 2,
-    nombre: 'Bomba Centrífuga A',
+    activo_id: 2,
     estado: 'Medio',
-    edificio_id: 1,
-    tipo: 'bomba'
+    edificio_id: 1
   },
   {
-  activo_id: 3,
-    nombre: 'Bomba Hidráulica 1',
+    activo_id: 3,
     estado: 'Medio',
-    edificio_id: 2,
-    tipo: 'bomba'
+    edificio_id: 2
   },
   {
-  activo_id: 4,
-    nombre: 'Ascensor Norte',
+    activo_id: 4,
     estado: 'Medio',
-    edificio_id: 2,
-    tipo: 'ascensor'
+    edificio_id: 2
   },
   {
-  activo_id: 5,
-    nombre: 'Transformador Secundario',
+    activo_id: 5,
     estado: 'Crítico',
-    edificio_id: 3,
-    tipo: 'transformador'
+    edificio_id: 3
   },
   {
-  activo_id: 6,
-    nombre: 'Transformador Principal',
+    activo_id: 6,
     estado: 'Medio',
-    edificio_id: 3,
-    tipo: 'transformador'
+    edificio_id: 3
   },
   {
-  activo_id: 7,
-    nombre: 'Ascensor Central',
+    activo_id: 7,
     estado: 'Medio',
-    edificio_id: 1,
-    tipo: 'ascensor'
+    edificio_id: 1
   },
   {
-  activo_id: 8,
-    nombre: 'Bomba de Emergencia',
+    activo_id: 8,
     estado: 'Crítico',
-    edificio_id: 4,
-    tipo: 'bomba'
+    edificio_id: 4
   }
 ]);
 
@@ -125,9 +105,18 @@ db.sensores.insertMany([
   {sensor_id: 'temp1', activo_id: 1, tipo: 'Temperatura', unidad: '°C', _legacy_activo_id: 1},
   {sensor_id: 'pres1', activo_id: 1, tipo: 'Presión', unidad: 'Pa', _legacy_activo_id: 1},
   {sensor_id: 'caud1', activo_id: 1, tipo: 'Caudal', unidad: 'm^3/s', _legacy_activo_id: 1},
+  // Sensores para Activo 2 (Bomba Centrífuga A) - 7 sensores según especificación
+  {sensor_id: 'A_ACR_Mot.PV', activo_id: 2, tipo: 'Motor PV', unidad: 'PV'},
+  {sensor_id: 'A_ACR_Mot.SV', activo_id: 2, tipo: 'Motor SV', unidad: 'SV'},
+  {sensor_id: 'A_ACR_Mot.TV', activo_id: 2, tipo: 'Motor TV', unidad: 'TV'},
+  {sensor_id: 'A_ACR_Pmp.PV', activo_id: 2, tipo: 'Bomba PV', unidad: 'PV'},
+  {sensor_id: 'A_ACR_Pmp.SV', activo_id: 2, tipo: 'Bomba SV', unidad: 'SV'},
+  {sensor_id: 'A_ACR_Pmp.TV', activo_id: 2, tipo: 'Bomba TV', unidad: 'TV'},
+  {sensor_id: 'A_Pres.PV', activo_id: 2, tipo: 'Presión', unidad: 'bar'},
+  {sensor_id: 'A_Temp.PV', activo_id: 2, tipo: 'Temperatura', unidad: '°C'},
+  {sensor_id: 'Barometer', activo_id: 2, tipo: 'Barómetro', unidad: 'hPa'},
+  {sensor_id: 'Temperature', activo_id: 2, tipo: 'Temperatura Ambiente', unidad: '°C'},
   // Sensores existentes para otros activos
-  {sensor_id: 'SENSOR_AC1002_01', activo_id: 2, tipo: 'vibracion', unidad: 'mm/s'},
-  {sensor_id: 'SENSOR_AC1002_02', activo_id: 2, tipo: 'caudal', unidad: 'L/min'},
   {sensor_id: 'SENSOR_AC1003_01', activo_id: 3, tipo: 'caudal', unidad: 'L/min'},
   {sensor_id: 'SENSOR_AC1003_02', activo_id: 3, tipo: 'presion', unidad: 'bar'},
   {sensor_id: 'SENSOR_AC1004_01', activo_id: 4, tipo: 'vibracion', unidad: 'mm/s'},
@@ -149,9 +138,18 @@ db.sensor_status.insertMany([
   {sensor_id: 'temp1', activo_id: 1, estado: 'conectado', ultima_lectura: now, valor_actual: 65.5, _legacy_activo_id: 1},
   {sensor_id: 'pres1', activo_id: 1, estado: 'conectado', ultima_lectura: now, valor_actual: 6200.0, _legacy_activo_id: 1}, // Convertido a Pa
   {sensor_id: 'caud1', activo_id: 1, estado: 'conectado', ultima_lectura: now, valor_actual: 0.425, _legacy_activo_id: 1}, // Convertido a m³/s
-  // Estados existentes para otros activos
-  {sensor_id: 'SENSOR_AC1002_01', activo_id: 2, estado: 'conectado', ultima_lectura: now, valor_actual: 12.8},
-  {sensor_id: 'SENSOR_AC1002_02', activo_id: 2, estado: 'conectado', ultima_lectura: now, valor_actual: 425.0},
+  // Estados para Activo 2 (Bomba Centrífuga A) - 7 sensores
+  {sensor_id: 'A_ACR_Mot.PV', activo_id: 2, estado: 'conectado', ultima_lectura: now, valor_actual: 45.2},
+  {sensor_id: 'A_ACR_Mot.SV', activo_id: 2, estado: 'conectado', ultima_lectura: now, valor_actual: 50.0},
+  {sensor_id: 'A_ACR_Mot.TV', activo_id: 2, estado: 'conectado', ultima_lectura: now, valor_actual: 48.5},
+  {sensor_id: 'A_ACR_Pmp.PV', activo_id: 2, estado: 'conectado', ultima_lectura: now, valor_actual: 72.3},
+  {sensor_id: 'A_ACR_Pmp.SV', activo_id: 2, estado: 'conectado', ultima_lectura: now, valor_actual: 75.0},
+  {sensor_id: 'A_ACR_Pmp.TV', activo_id: 2, estado: 'conectado', ultima_lectura: now, valor_actual: 74.1},
+  {sensor_id: 'A_Pres.PV', activo_id: 2, estado: 'conectado', ultima_lectura: now, valor_actual: 3.5},
+  {sensor_id: 'A_Temp.PV', activo_id: 2, estado: 'conectado', ultima_lectura: now, valor_actual: 65.8},
+  {sensor_id: 'Barometer', activo_id: 2, estado: 'conectado', ultima_lectura: now, valor_actual: 1013.25},
+  {sensor_id: 'Temperature', activo_id: 2, estado: 'conectado', ultima_lectura: now, valor_actual: 22.3},
+  // Status para sensores existentes de otros activos
   {sensor_id: 'SENSOR_AC1003_01', activo_id: 3, estado: 'conectado', ultima_lectura: now, valor_actual: 280.5},
   {sensor_id: 'SENSOR_AC1003_02', activo_id: 3, estado: 'conectado', ultima_lectura: now, valor_actual: 7.8},
   {sensor_id: 'SENSOR_AC1004_01', activo_id: 4, estado: 'conectado', ultima_lectura: now, valor_actual: 9.1},
@@ -182,9 +180,26 @@ else
     exit 1
 fi
 
+# Cargar datos CSV en InfluxDB usando Python
+echo -e "\n${YELLOW}📊 Cargando datos históricos de sensores en InfluxDB...${NC}"
+apt-get install -y python3 python3-pip > /dev/null 2>&1
+pip3 install requests --break-system-packages --quiet 2>/dev/null
+
+if [ -f "/scripts/load_csv_to_influx.py" ]; then
+    python3 /scripts/load_csv_to_influx.py
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✅ Datos CSV cargados exitosamente en InfluxDB${NC}"
+    else
+        echo -e "${RED}❌ Error cargando datos CSV en InfluxDB${NC}"
+    fi
+else
+    echo -e "${RED}❌ Script de carga CSV no encontrado${NC}"
+fi
+
 echo -e "\n${GREEN}🎯 Inicialización automática completada${NC}"
 echo -e "${BLUE}📋 Las bases de datos están sincronizadas:${NC}"
 echo -e "   • Gestión DB: IDs 1-8"
 echo -e "   • Notification DB: IDs 1-8"
 echo -e "   • Documentación DB: IDs 1-8"
 echo -e "   • MongoDB IoT: 1 a 8"
+echo -e "   • InfluxDB: Datos históricos de activo_id 2 (3 archivos CSV)"

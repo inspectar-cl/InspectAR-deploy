@@ -143,7 +143,7 @@ func (r *ReporteRepository) GetByActivo(activoID int) ([]models.ReporteCompleto,
 			r.estructura_informe, r.metadata_informe, r.version_reporte,
 			r.estado_revision, r.fecha_revision, r.revisor,
 			r.generado_en, r.estado,
-			a.id, a.nombre, a.tipo, a.estado, a.ubicacion, a.edificio_id, a.creado_en,
+			a.id, a.nombre, a.tipo, a.ubicacion, a.edificio_id, a.creado_en,
 			e.id, e.nombre, e.direccion, e.creado_en
 		FROM reportes r
 		JOIN activos a ON r.activo_id = a.id
@@ -181,7 +181,6 @@ func (r *ReporteRepository) GetByActivo(activoID int) ([]models.ReporteCompleto,
 			&reporte.ActivoConEdificio.ID,
 			&reporte.ActivoConEdificio.Nombre,
 			&reporte.ActivoConEdificio.Tipo,
-			&reporte.ActivoConEdificio.Estado,
 			&reporte.ActivoConEdificio.Ubicacion,
 			&reporte.ActivoConEdificio.EdificioID,
 			&reporte.ActivoConEdificio.CreadoEn,

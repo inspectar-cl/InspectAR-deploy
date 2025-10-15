@@ -54,8 +54,19 @@ COPY config/config.docker.yaml /app/config/config.yaml
 # Copiar templates
 COPY templates/ /app/templates/
 
+# Copiar directorio de storage para firmas digitales
+COPY storage/ /app/storage/
+RUN mkdir -p /app/storage/firmas && chmod -R 755 /app/storage
+
+# Copiar script de inicialización de firmas
+COPY init-firmas.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/init-firmas.sh
+
 # Exponer el puerto
 EXPOSE 8092
+
+# Usar entrypoint para inicializar firmas antes de ejecutar la aplicación
+ENTRYPOINT ["/usr/local/bin/init-firmas.sh"]
 
 # Ejecutar la aplicación
 CMD ["./main"]

@@ -47,13 +47,6 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente"},
         },
-        {
-            Method: "GET",
-            Pattern: "/api/obtener-activo-id/:id_activo",
-            Handler: ObtenerActivoPorID,
-            Protected: true,
-            RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente"},
-        },
         { 
             Method:  "POST",
             Pattern: "/api/login",
@@ -120,10 +113,45 @@ func getSpecialHandlers() []SpecialHandler {
         },
         { 
             Method:  "GET",
-            Pattern: "/api/lista-activos",
+            Pattern: "/api/lista-activos-edificio/:id_edificio",
             Handler: ListaActivosHandler,
             Protected: true,
+            RequiredScopes: []string{"user-type:Tecnico", "user-type:Analista", "user-type:Admin"},
+        },
+        {
+            Method: "GET",
+            Pattern: "/api/obtener-activo-id/:id_activo",
+            Handler: ObtenerActivoPorID,
+            Protected: true,
+            RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente"},
+        },
+        { 
+            Method:  "POST",
+            Pattern: "/api/pdf-reporte/:id_activo",
+            Handler: GenerarPDFReporte,
+            Protected: true,
             RequiredScopes: []string{"user-type:Tecnico", "user-type:Admin"},
+        },
+        {
+            Method: "GET",
+            Pattern: "/api/obtener-acciones/:id_tecnico",
+            Handler: ObtenerAcciones,
+            Protected: true,
+            RequiredScopes: []string{"user-type:Tecnico", "user-type:Admin"},
+        },
+        { 
+            Method:  "POST",
+            Pattern: "/api/subir-documento",
+            Handler: SubirDocumentoHandler,
+            Protected: true,
+            RequiredScopes: []string{"user-type:Tecnico", "user-type:Admin"},
+        },
+        {
+            Method: "PUT",
+            Pattern: "/api/actualizar-estado-contacto/:id_contacto",
+            Handler: ActualizarEstadoContactoHandler,
+            Protected: true,
+            RequiredScopes: []string{"user-type:Analista", "user-type:Tecnico", "user-type:Admin"},
         },
         // Aquí se agregan más handlers de manera fácil
         // {

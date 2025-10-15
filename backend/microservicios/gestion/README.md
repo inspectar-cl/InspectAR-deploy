@@ -49,6 +49,12 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 - ✅ Generación automática de reportes por activo (PDF)
 - ✅ Reportes por activo con información completa
 - ✅ **🆕 Reportes personalizables con campos específicos**
+- ✅ **🆕 Sistema de Firmas Digitales para Reportes PDF**
+  - ✅ Gestión completa de firmas digitales por usuario
+  - ✅ Soporte para formatos JPG, PNG y SVG
+  - ✅ Firma predeterminada por usuario
+  - ✅ Integración automática en reportes PDF
+  - ✅ 9 endpoints REST para gestión de firmas
 - ✅ **🆕 Integración con IoT service para datos de sensores**
 - ✅ **🆕 Métricas calculadas automáticamente (media, tendencia)**
 - ✅ **Sistema de observaciones editables** 🆕
@@ -148,13 +154,27 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 | `POST` | `/comentarios` | 🎯 **Agregar comentario a una falla reportada** | ✅ **IMPLEMENTADO** |
 | `GET` | `/tipos-falla/edificio/{edificio_id}?pagina={N}` | 🎯 **Obtener fallas de un edificio (con/sin paginación)** | ✅ **IMPLEMENTADO** |
 
+### ✍️ Rutas de Firmas Digitales - 🆕 **SISTEMA COMPLETO IMPLEMENTADO**
+
+| Método | Endpoint | Descripción | Estado |
+|--------|----------|-------------|---------|
+| `POST` | `/firmas` | 🎯 **Crear nueva firma digital** | ✅ **IMPLEMENTADO** |
+| `GET` | `/firmas` | 🎯 **Obtener todas las firmas** | ✅ **IMPLEMENTADO** |
+| `GET` | `/firmas/:id` | 🎯 **Obtener firma por ID** | ✅ **IMPLEMENTADO** |
+| `GET` | `/firmas/usuario/:usuario_id` | 🎯 **Obtener firmas de un usuario** | ✅ **IMPLEMENTADO** |
+| `GET` | `/firmas/usuario/:usuario_id/predeterminada` | 🎯 **Obtener firma predeterminada de usuario** | ✅ **IMPLEMENTADO** |
+| `PUT` | `/firmas/:id` | 🎯 **Actualizar firma** | ✅ **IMPLEMENTADO** |
+| `PUT` | `/firmas/:id/predeterminada` | 🎯 **Establecer firma como predeterminada** | ✅ **IMPLEMENTADO** |
+| `DELETE` | `/firmas/:id` | 🎯 **Eliminar firma** | ✅ **IMPLEMENTADO** |
+| `HEAD` | `/firmas/:id` | 🎯 **Verificar si firma existe** | ✅ **IMPLEMENTADO** |
+
 ### 🎯 Resumen de Estado
 
-- **✅ Funcionando**: 44 rutas operativas (97.8% IMPLEMENTADAS) 🆕
+- **✅ Funcionando**: 53 rutas operativas (98.1% IMPLEMENTADAS) 🆕
 - **🔧 No implementado**: 0 rutas pendientes  
 - **⚠️ Issue DB**: 1 ruta con problema de schema
-- **🎉 Nuevas rutas**: 15 rutas agregadas (6 observaciones + 3 usuarios/acceso + 3 reportes de fallas + 3 HU22) 🆕
-- **Total**: 45 rutas configuradas 🆕
+- **🎉 Nuevas rutas**: 24 rutas agregadas (6 observaciones + 3 usuarios/acceso + 3 activos + 3 fallas HU22 + 9 firmas digitales) 🆕
+- **Total**: 54 rutas configuradas 🆕
 
 ### ⚡ Tests Rápidos
 

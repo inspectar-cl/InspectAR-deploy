@@ -219,12 +219,6 @@
                     <div class="info-value">{{.Activo.Tipo}}</div>
                 </div>
                 <div class="info-item">
-                    <div class="info-label">Estado</div>
-                    <div class="info-value">
-                        <span class="status-badge status-{{.Activo.Estado}}">{{.Activo.Estado}}</span>
-                    </div>
-                </div>
-                <div class="info-item">
                     <div class="info-label">Ubicación</div>
                     <div class="info-value">{{if .Activo.Ubicacion}}{{.Activo.Ubicacion}}{{else}}No especificada{{end}}</div>
                 </div>
@@ -366,6 +360,30 @@
                 Escanee este código para acceder rápidamente a la información del activo
             </p>
         </div>
+
+        <!-- Firma Digital - Solo si está disponible -->
+        {{if .FirmaDigital}}
+        {{if .FirmaDigital.Existe}}
+        <div class="section">
+            <h2>Firma Digital</h2>
+            <div style="text-align: center; margin-top: 20px;">
+                {{if .FirmaDigital.ImagenBase64}}
+                <img src="data:{{.FirmaDigital.TipoMime}};base64,{{.FirmaDigital.ImagenBase64}}" 
+                     alt="Firma Digital" 
+                     style="max-width: 300px; max-height: 150px; border: 1px solid #ddd; padding: 10px; background: white;">
+                {{else}}
+                <div class="qr-placeholder" style="width: 300px; height: 150px; margin: 0 auto;">
+                    Firma Digital
+                </div>
+                {{end}}
+                <p style="margin-top: 15px; color: #6c757d; font-size: 12px;">
+                    {{if .FirmaDigital.AutorNombre}}Firmado por: {{.FirmaDigital.AutorNombre}}<br>{{end}}
+                    Fecha: {{.FirmaDigital.FechaFirma}}
+                </p>
+            </div>
+        </div>
+        {{end}}
+        {{end}}
 
         <!-- Footer -->
         <div class="footer">

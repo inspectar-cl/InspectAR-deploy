@@ -153,6 +153,13 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: []string{"user-type:Analista", "user-type:Tecnico", "user-type:Admin"},
         },
+        {
+            Method: "GET",
+            Pattern: "/api/obtener-todos-activos",
+            Handler: ObtenerTodosActivos,
+            Protected: true,
+            RequiredScopes: []string{"user-type:Tecnico", "user-type:Analista", "user-type:Admin"},
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",

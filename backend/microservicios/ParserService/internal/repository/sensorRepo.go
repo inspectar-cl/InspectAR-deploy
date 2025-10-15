@@ -102,6 +102,43 @@ from(bucket: "%s")
 	return datos, nil
 }
 
+// Obtiene los últimos N datos de un sensor con paginación (configurable)
+func (r *InfluxRepository) GetSensorDataWindow(ctx context.Context, sensorID string, limit int, offset int) ([]models.SensorData, error) {
+	query := fmt.Sprintf(`
+from(bucket: "%s")
+  |> range(start: 0)
+  |> filter(fn: (r) => r["_measurement"] == "sensor_reading" and r["sensor_id"] == "%s")
+  |> filter(fn: (r) => r["_field"] == "valor")
+  |> sort(columns: ["_time"], desc: true)
+  |> limit(n: %d, offset: %d)
+`, r.bucket, sensorID, limit, offset)
+
+	log.Printf("Ejecutando query window para sensor %s con límite %d y offset %d", sensorID, limit, offset)
+
+	result, err := r.queryAPI.Query(ctx, query)
+	if err != nil {
+		log.Printf("Error en query window para sensor %s: %v", sensorID, err)
+		return nil, err
+	}
+
+	var datos []models.SensorData
+	count := 0
+	for result.Next() {
+		count++
+		datos = append(datos, models.SensorData{
+			Tiempo: result.Record().Time().Format(time.RFC3339),
+			Valor:  result.Record().Value().(float64),
+		})
+	}
+	if result.Err() != nil {
+		log.Printf("Error iterando resultados window para sensor %s: %v", sensorID, result.Err())
+		return nil, result.Err()
+	}
+
+	log.Printf("Datos window obtenidos para sensor %s: %d registros (offset: %d)", sensorID, count, offset)
+	return datos, nil
+}
+
 func (r *InfluxRepository) GetSensorLastData(ctx context.Context, sensorID string) (*models.SensorData, error) {
 	log.Printf("Obteniendo último dato de sensor %s", sensorID)
 	query := fmt.Sprintf(`

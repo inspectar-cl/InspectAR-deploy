@@ -23,9 +23,7 @@ import { useUserToken } from '@/hooks/use-usertoken';
 import { renderStatus, STATUS_OPTIONS } from './status';
 import Services from '@/modules/Services';
 
-// ----------------------
-// Tipos
-// ----------------------
+
 interface Activo {
   id: number;
   edificio_id: number;
@@ -34,7 +32,6 @@ interface Activo {
   estado: 'OK' | 'Medio' | 'Crítico' | 'NN';
   tipo: string;
   ubicacion: string;
-  // si vendrán más campos puedes añadirlos opcionalmente aquí
 }
 
 interface ApiActivosResponse {
@@ -45,9 +42,6 @@ interface ApiActivosResponse {
 
 const gs = new Services();
 
-// ----------------------
-// Columnas (usar las keys reales de Activo)
-// ----------------------
 const columns: GridColDef<Activo>[] = [
   { field: 'id', headerName: 'ID', width: 90 },
   {
@@ -76,9 +70,7 @@ const columns: GridColDef<Activo>[] = [
     valueOptions: STATUS_OPTIONS,
     flex: 1,
     minWidth: 100,
-    // Wrapper: pasamos `params` a renderStatus pero casteado para evitar incompatibilidades de genéricos
     renderCell: (params: GridRenderCellParams<Activo>) => {
-      // Si renderStatus ya está tipado para Activo, remueve el "as any"
       return renderStatus(params as any);
     },
   },
@@ -101,11 +93,7 @@ export default function DataGridDemo({
   const { user } = useUserToken();
   const [activosList, setActivosList] = React.useState<Activo[]>([]);
   const [error, setError] = React.useState<string | null>(null);
-  //const hasFetchedRef = React.useRef(false);
 
-  // ----------------------
-  // Obtener activos
-  // ----------------------
   const getActivos = async (authToken: string) => {
     if (!authToken) {
       console.error("Token no disponible para getActivos.");
@@ -128,7 +116,6 @@ export default function DataGridDemo({
         return;
       }
 
-      // Validación mínima / canonicalización
       const transformados: Activo[] = response.activos.map((item, idx) => ({
         id: typeof item.id === 'number' ? item.id : idx + 1,
         edificio_id: typeof item.edificio_id === 'number' ? item.edificio_id : Number(item.edificio_id) || 0,
@@ -144,7 +131,7 @@ export default function DataGridDemo({
     } catch (err) {
       console.error('Error al obtener activos:', err);
       setError('Error de conexión. No se mostrarán activos.');
-      setActivosList([]); // dejar vacío en caso de error (según pediste)
+      setActivosList([]);
     }
   };
 

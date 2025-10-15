@@ -8,195 +8,227 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardHeader from '@mui/material/CardHeader';
 import { type SxProps, type Theme } from '@mui/material/styles';
-import { DataGrid, type GridColDef, type GridFilterModel, type GridColumnVisibilityModel, type GridRowParams} from '@mui/x-data-grid';
-import { type Activo } from '@/types/'
+import {
+  DataGrid,
+  type GridColDef,
+  type GridFilterModel,
+  type GridColumnVisibilityModel,
+  type GridRowParams,
+  type GridCellParams,
+  type GridRenderCellParams,
+} from '@mui/x-data-grid';
 import { esES } from '@mui/x-data-grid/locales';
 
-import { activosMock} from '@/mocks/'
+import { useUserToken } from '@/hooks/use-usertoken';
+import { renderStatus, STATUS_OPTIONS } from './status';
+import Services from '@/modules/Services';
 
-//Import de estatus personalizado
-import {
-  renderStatus,
-  STATUS_OPTIONS,
-} from './status';
-
-// Configuración rutas de obtención de datos desde db.
-import Services from '@/modules/Services'
-
-interface ActivoResponse {
-  activo_id: string;
+// ----------------------
+// Tipos
+// ----------------------
+interface Activo {
+  id: number;
+  edificio_id: number;
+  creado_en: string;
   nombre: string;
-  estado: string;
-  descripcion: string;
+  estado: 'OK' | 'Medio' | 'Crítico' | 'NN';
+  tipo: string;
   ubicacion: string;
-  id_edificio: string;
+  // si vendrán más campos puedes añadirlos opcionalmente aquí
 }
 
-const activos = activosMock;
-
-const gs = new Services()
-
-const uris = {
-  GET: `/parser/activo`
+interface ApiActivosResponse {
+  activos?: Activo[];
+  total?: number;
+  error?: { mensaje: string };
 }
 
-const columns: GridColDef<(typeof activos)[number]>[] = [
+const gs = new Services();
+
+// ----------------------
+// Columnas (usar las keys reales de Activo)
+// ----------------------
+const columns: GridColDef<Activo>[] = [
   { field: 'id', headerName: 'ID', width: 90 },
   {
-    field: 'id_edificio',
+    field: 'edificio_id',
     headerName: 'ID edificio',
-    flex: 0.5, minWidth: 50, // diseño responsivo
+    flex: 0.5,
+    minWidth: 80,
+    valueGetter: (params: GridCellParams<Activo>) => params.row.edificio_id,
   },
   {
-    field: 'tipoActivo',
+    field: 'tipo',
     headerName: 'Tipo de Activo',
-    flex: 1.5, minWidth: 120, // diseño responsivo
+    flex: 1.2,
+    minWidth: 120,
   },
   {
     field: 'ubicacion',
     headerName: 'Ubicación',
-    flex: 1.5, minWidth: 160, // diseño responsivo
+    flex: 1.5,
+    minWidth: 160,
   },
   {
     field: 'estado',
-    renderCell: renderStatus,
     headerName: 'Estado',
     type: 'singleSelect',
     valueOptions: STATUS_OPTIONS,
     flex: 1,
-    minWidth: 100, // diseño responsivo
+    minWidth: 100,
+    // Wrapper: pasamos `params` a renderStatus pero casteado para evitar incompatibilidades de genéricos
+    renderCell: (params: GridRenderCellParams<Activo>) => {
+      // Si renderStatus ya está tipado para Activo, remueve el "as any"
+      return renderStatus(params as any);
+    },
   },
   {
-    field: 'descripcion',
-    headerName: 'Descripción',
-    description: 'Descripcion de estado del activo',
-    flex: 2,
-    minWidth: 220, // diseño responsivo
+    field: 'nombre',
+    headerName: 'Nombre',
+    flex: 1.5,
+    minWidth: 180,
   },
 ];
 
-export default function DataGridDemo({sx, edificioSeleccionado,}: {sx?: SxProps<Theme>; edificioSeleccionado?: string | null;}) {
-  const [filterModel, setFilterModel] = React.useState<GridFilterModel>({
-    items: [],
-  });
+export default function DataGridDemo({
+  sx,
+  edificioSeleccionado,
+}: {
+  sx?: SxProps<Theme>;
+  edificioSeleccionado?: string | null;
+}) {
+  const [filterModel, setFilterModel] = React.useState<GridFilterModel>({ items: [] });
+  const { user } = useUserToken();
+  const [activosList, setActivosList] = React.useState<Activo[]>([]);
+  const [error, setError] = React.useState<string | null>(null);
+  //const hasFetchedRef = React.useRef(false);
 
-  const [activosList, setActivosList] = React.useState<Activo[]>([])
-  
-  const hasFetchedRef = React.useRef(false)
+  // ----------------------
+  // Obtener activos
+  // ----------------------
+  const getActivos = async (authToken: string) => {
+    if (!authToken) {
+      console.error("Token no disponible para getActivos.");
+      return;
+    }
 
-  // Función para obtener los activos
-  const getActivos = async () => {
     try {
-      const response = await gs.get(uris.GET) as ActivoResponse[]
+      console.log(authToken)
+      const response = await gs.authorizedGet('/obtener-todos-activos', authToken) as ApiActivosResponse;
 
-      // Si no hay datos desde backend, usamos mocks
-      if (!response || response.length === 0) {
-        setActivosList(activosMock)
-        return
+      if (response.error) {
+        setError(response.error.mensaje || 'Error al obtener activos.');
+        setActivosList([]); //mocks en caso de
+        return;
       }
 
-      // Transformacion de los datos de la db
-      const transformados = response.map((item: ActivoResponse, index: number) => ({
-        id: parseInt(item.activo_id) || index + 1,
-        tipoActivo: item.nombre || 'Activo sin nombre',
-        estado: (item.estado || 'NN') as 'OK' | 'Medio' | 'Crítico' | 'NN',
-        descripcion: item.descripcion || 'NN',
-        ubicacion: item.ubicacion || 'Ubicación desconocida',
-        id_edificio: item.id_edificio || 'ID no obtenida',
-        img: '', // Campo requerido por la interfaz
-        id_ficha_tecnica: 0, // Campo requerido por la interfaz
-      }))
+      if (!response.activos || !Array.isArray(response.activos)) {
+        setError('Respuesta inválida del servidor.');
+        setActivosList([]);
+        return;
+      }
 
-      setActivosList(transformados)
-    } catch (error) {
-      // Error handling: use mock data when backend fails
-      setActivosList(activosMock)
+      // Validación mínima / canonicalización
+      const transformados: Activo[] = response.activos.map((item, idx) => ({
+        id: typeof item.id === 'number' ? item.id : idx + 1,
+        edificio_id: typeof item.edificio_id === 'number' ? item.edificio_id : Number(item.edificio_id) || 0,
+        creado_en: item.creado_en || new Date().toISOString(),
+        nombre: item.nombre || 'Activo sin nombre',
+        estado: (item.estado || 'NN') as Activo['estado'],
+        tipo: item.tipo || 'Desconocido',
+        ubicacion: item.ubicacion || 'Ubicación no especificada',
+      }));
+
+      setActivosList(transformados);
+      setError(null);
+    } catch (err) {
+      console.error('Error al obtener activos:', err);
+      setError('Error de conexión. No se mostrarán activos.');
+      setActivosList([]); // dejar vacío en caso de error (según pediste)
     }
-  }
+  };
 
   React.useEffect(() => {
-    if (!hasFetchedRef.current) {
-      hasFetchedRef.current = true
-      void getActivos()
+    const authToken = user?.token;
+    if (authToken) {
+      void getActivos(authToken);
+    } else {
+      console.log("Esperando token de usuario...");
+      setActivosList([]); 
+      setError("Autenticación pendiente o fallida.");
     }
-  }, [])
+  }, [user?.token]);
 
   React.useEffect(() => {
     if (edificioSeleccionado) {
       setFilterModel({
         items: [
           {
-            field: 'id_edificio',
+            field: 'edificio_id',
             operator: 'equals',
             value: edificioSeleccionado,
           },
         ],
       });
     } else {
-      setFilterModel({ items: [] }); // Quitar filtro
+      setFilterModel({ items: [] });
     }
   }, [edificioSeleccionado]);
 
-  //Modelo de columnas invisibles al inicio
-  const [columnVisibilityModel, setColumnVisibilityModel] =
-    React.useState<GridColumnVisibilityModel>({
-      id: false,
-      id_edificio: false,
-    });
+  const [columnVisibilityModel, setColumnVisibilityModel] = React.useState<GridColumnVisibilityModel>({
+    id: false,
+    edificio_id: false,
+  });
 
   return (
     <Card sx={sx}>
-      <CardHeader title="Estado de Activos" />
-        <CardContent>
-            <Box sx={{ height: 600, width: '100%' }}>
-                <DataGrid 
-                    columnVisibilityModel={columnVisibilityModel}
-                    onColumnVisibilityModelChange={(newModel) =>
-                      { setColumnVisibilityModel(newModel); }
-                    }
-                    onRowClick={(params: GridRowParams<Activo>) => {window.location.href = paths.dashboard.activoDetail(params.row.id.toString());}}
-                    showToolbar
-                    rows={activosList}
-                    columns={columns}
-                    initialState={{
-                      pagination: {
-                          paginationModel: {
-                          pageSize: 9,
-                          },
-                      },
-                    }}
-                    pageSizeOptions={[9]}
-                    disableRowSelectionOnClick
-                    filterModel={filterModel}
-                    onFilterModelChange={(newModel) => { setFilterModel(newModel); }}
-                    localeText={{
-                      ...esES.components.MuiDataGrid.defaultProps.localeText,
-                      filterPanelInputLabel: 'Valor a filtrar',
-                      filterPanelOperator: 'Operador',
-                      filterPanelColumns: 'Filtrar por columna',
-                      toolbarColumns: 'Columnas visibles',
-                      toolbarFilters: 'Filtros',
-                      toolbarExport: 'Exportar',
-                      // Traducción de paginación
-                      paginationRowsPerPage: 'Activos por página',
-                      noRowsLabel: 'No hay activos disponibles',
-                      footerTotalRows: 'Total de activos:',
-                      footerTotalVisibleRows: (visibleCount, totalCount) =>
-                      `${visibleCount.toLocaleString()} de ${totalCount.toLocaleString()}`,
-                      footerRowSelected: (count) =>                          count > 1
-                        ? `${count.toLocaleString()} activos seleccionados`
-                        : `${count.toLocaleString()} activo seleccionado`,
-                      paginationDisplayedRows: ({ from, to, count, estimated }) => {
-                        if (!estimated) {                            
-                          return `${from}–${to} de ${count !== -1 ? count : `más de ${to}`}`;
-                        }
-                        const estimatedLabel = estimated && estimated > to ? `alrededor de ${estimated}` : `más de ${to}`;
-                        return `${from}–${to} de ${count !== -1 ? count : estimatedLabel}`;
-                        },
-                      }}
-                />
-            </Box>
-        </CardContent>
+      <CardHeader title="Estado de Activos" subheader={error ? `⚠️ ${error}` : undefined} />
+      <CardContent>
+        <Box sx={{ height: 600, width: '100%' }}>
+          <DataGrid
+            columnVisibilityModel={columnVisibilityModel}
+            onColumnVisibilityModelChange={(newModel) => setColumnVisibilityModel(newModel)}
+            onRowClick={(params: GridRowParams<Activo>) => {
+              window.location.href = paths.dashboard.activoDetail(params.row.id.toString());
+            }}
+            showToolbar
+            rows={activosList}
+            columns={columns}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 9 } },
+            }}
+            pageSizeOptions={[9]}
+            disableRowSelectionOnClick
+            filterModel={filterModel}
+            onFilterModelChange={(newModel) => setFilterModel(newModel)}
+            localeText={{
+              ...esES.components.MuiDataGrid.defaultProps.localeText,
+              filterPanelInputLabel: 'Valor a filtrar',
+              filterPanelOperator: 'Operador',
+              filterPanelColumns: 'Filtrar por columna',
+              toolbarColumns: 'Columnas visibles',
+              toolbarFilters: 'Filtros',
+              toolbarExport: 'Exportar',
+              paginationRowsPerPage: 'Activos por página',
+              noRowsLabel: 'No hay activos disponibles',
+              footerTotalRows: 'Total de activos:',
+              footerTotalVisibleRows: (visibleCount, totalCount) =>
+                `${visibleCount.toLocaleString()} de ${totalCount.toLocaleString()}`,
+              footerRowSelected: (count) =>
+                count > 1
+                  ? `${count.toLocaleString()} activos seleccionados`
+                  : `${count.toLocaleString()} activo seleccionado`,
+              paginationDisplayedRows: ({ from, to, count, estimated }) => {
+                if (!estimated) {
+                  return `${from}–${to} de ${count !== -1 ? count : `más de ${to}`}`;
+                }
+                const estimatedLabel = estimated && estimated > to ? `alrededor de ${estimated}` : `más de ${to}`;
+                return `${from}–${to} de ${count !== -1 ? count : estimatedLabel}`;
+              },
+            }}
+          />
+        </Box>
+      </CardContent>
     </Card>
   );
 }

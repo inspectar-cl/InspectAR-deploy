@@ -727,6 +727,7 @@ func ObtenerActivosPorEdificio(c *gin.Context) {
     var wg sync.WaitGroup
     var mu sync.Mutex
     activos := []interface{}{}
+    estadosMap := make(map[int]string) // Agregar declaración del mapa de estados
     
     wg.Add(1)
     // Goroutine para obtener activos del edificio
@@ -757,9 +758,103 @@ func ObtenerActivosPorEdificio(c *gin.Context) {
 
     wg.Wait() // Esperar a que termine la goroutine de activos
 
+    // Obtener el estado de cada activo mediante el parser
+    wg.Add(1)
+    go func() {
+        defer wg.Done()
+        url := fmt.Sprintf("%s/activo/edificio/%s", parserURL, idEdificio)
+
+        resp, err := httpClient.Get(url)
+        if err != nil {
+            fmt.Println("Error obteniendo estados de activos: ", err)
+            return
+        }
+        defer resp.Body.Close()
+
+        // Primero intentar decodificar como objeto con clave "activos"
+        var responseData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+            fmt.Println("Error decodificando respuesta de estados: ", err)
+            return
+        }
+
+        // fmt.Printf("DEBUG: Respuesta completa del parser: %+v\n", responseData)
+
+        // Extraer el array de estados (puede estar en diferentes claves)
+        var estadosArray []interface{}
+        
+        // Intentar varias posibles claves
+        if activos, exists := responseData["activos"]; exists {
+            if arr, ok := activos.([]interface{}); ok {
+                estadosArray = arr
+            }
+        }
+
+        mu.Lock()
+        for _, estadoItem := range estadosArray {
+            if estadoData, ok := estadoItem.(map[string]interface{}); ok {
+                if activoID, exists := estadoData["activo_id"]; exists {
+                    // Convertir activo_id a int
+                    var id int
+                    switch v := activoID.(type) {
+                    case float64:
+                        id = int(v)
+                    case int:
+                        id = v
+                    default:
+                        fmt.Printf("Tipo inesperado para activo_id: %T\n", activoID)
+                        continue
+                    }
+                    
+                    // Guardar estado
+                    if estado, existsEstado := estadoData["estado"]; existsEstado {
+                        if estadoStr, ok := estado.(string); ok {
+                            estadosMap[id] = estadoStr
+                        }
+                    }
+                }
+            }
+        }
+        mu.Unlock()
+    }()
+
+    wg.Wait() // Esperar a que termine la goroutine de estados
+
+    // Agregar el estado a cada activo en la lista
+    activosConEstado := []interface{}{}
+    for _, activo := range activos {
+        if activoMap, ok := activo.(map[string]interface{}); ok {
+            // Obtener el ID del activo
+            if idInterface, exists := activoMap["id"]; exists {
+                var activoID int
+                
+                // Convertir el ID a int
+                switch v := idInterface.(type) {
+                case float64:
+                    activoID = int(v)
+                case int:
+                    activoID = v
+                default:
+                    fmt.Printf("Tipo inesperado para id de activo: %T\n", idInterface)
+                    activosConEstado = append(activosConEstado, activoMap)
+                    continue
+                }
+                
+                // Buscar el estado en el mapa
+                if estado, encontrado := estadosMap[activoID]; encontrado {
+                    activoMap["estado"] = estado
+                } else {
+                    // Si no se encuentra estado, poner "Desconocido"
+                    activoMap["estado"] = "Desconocido"
+                }
+            }
+            activosConEstado = append(activosConEstado, activoMap)
+        }
+    }
+
     result := map[string]interface{}{
-        "activos": activos,
-        "total": len(activos),
+        "activos": activosConEstado,
+        "total": len(activosConEstado),
     }
 
     c.JSON(http.StatusOK, result)

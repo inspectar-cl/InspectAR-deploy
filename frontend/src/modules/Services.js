@@ -24,6 +24,55 @@ export default class Services {
             }))
     }
 
+    async authorizedGet(uri, accessToken) {
+        const config = {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`
+            }
+        };
+
+        return await apiClient.get(uri, config)
+            .then(res => res.data)
+            .catch(error => ({
+                mensaje: "error inesperado",
+                error: error.response
+        }))
+    }
+
+    async authorizedPost(uri, data, accessToken) {
+    // Configuración de headers, incluyendo la autorización
+        const config = {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json' // Aseguramos el tipo JSON para el body
+            }
+        };
+
+        return await apiClient.post(uri, data, config)
+            .then(res => res.data)
+            .catch(error => ({
+                mensaje: "error inesperado",
+                error: error.response
+        }))
+    }
+
+    async authorizedPut(uri, data, accessToken) {
+    // Configuración de headers, incluyendo la autorización
+        const config = {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            }
+        };
+
+        return await apiClient.put(uri, data, config)
+            .then(res => res.data)
+            .catch(error => ({
+                mensaje: "error inesperado",
+                error: error.response
+        }))
+    }
+
     async post(uri, data) {
         // Si es FormData, no seteamos Content-Type, axios lo hace solo
         const isFormData = (typeof FormData !== 'undefined') && data instanceof FormData;

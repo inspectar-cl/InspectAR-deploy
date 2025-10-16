@@ -2,11 +2,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Box, Button, TextField, Typography, MenuItem, Collapse, Snackbar, Alert } from '@mui/material'
+import { Box, Button, TextField, Typography, MenuItem, Collapse, Snackbar, Alert, 
+  Dialog, DialogTitle, DialogContent, DialogActions
+} from '@mui/material'
 import { DataGrid, type GridRenderCellParams, type GridColDef } from '@mui/x-data-grid'
 import { esES } from '@mui/x-data-grid/locales'
 
 import Services from '@/modules/Services'
+import { useUserToken } from '@/hooks/use-usertoken';
 
 const gs = new Services()
 
@@ -35,11 +38,24 @@ interface Activo {
   nombre: string
 }
 
+interface Tecnico {
+  id: number
+  nombre: string
+  apellido: string
+  especialidad: string
+  email: string
+  telefono: string
+}
+
 const tecnicoActualId = 1
+const edificioId = 1
 
 export default function ListasAccionesView() {
+  const { user, isLoading} = useUserToken();
   const [acciones, setAcciones] = useState<Accion[]>([])
   const [activos, setActivos] = useState<Activo[]>([])
+  const [tecnicos, setTecnicos] = useState<Tecnico[]>([])
+  const [tecnicoSeleccionado, setTecnicoSeleccionado] = useState<number>(tecnicoActualId)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [mensaje, setMensaje] = useState<string | null>(null);
 
@@ -49,58 +65,96 @@ export default function ListasAccionesView() {
   const [prioridad, setPrioridad] = useState('')
   const [tipo, setTipo] = useState('')
 
+  const [open, setOpen] = useState(false)
+
+  const handleOpen = async () => { setOpen(true); }
+  const handleClose = async () => { setOpen(false); }
+
   // --- Cargar activos desde API ---
   useEffect(() => {
+    // if (isLoading || !user) {return;}
     const fetchActivos = async () => {
       try {
-        const data = await gs.get("/obtener-activos") as { activos: Activo[] }
-        //console.log("Activos cargados:", data)
+        if (isLoading || !user) {
+          return
+        }
+        const data = await gs.authorizedGet("/obtener-todos-activos", user.token) as { activos: Activo[] }
         const activosArray = data.activos
         setActivos(Array.isArray(activosArray) ? activosArray : [])
-        //console.log("Valor de setActivos (activos):", Array.isArray(activosArray) ? activosArray : [])
       } catch (error) {
-        //console.error('Error al cargar activos:', error)
+        /* Intentionally empty - future implementation planned */
       }
     }
     void fetchActivos()
-  }, [])
+  }, [isLoading, user])
+
+  // --- Cargar técnicos desde API ---
+  useEffect(() => {
+    const fetchTecnicos = async () => {
+      try {
+        if (isLoading || !user) {
+          return
+        }
+        const data = await gs.authorizedGet(`/obtener-contactos-id/${edificioId}`, user.token) as { contactos: Tecnico[]; total: number }
+        const tecnicosArray = data.contactos
+        setTecnicos(Array.isArray(tecnicosArray) ? tecnicosArray : [])
+        
+        // Seleccionar el primer técnico de la lista por defecto
+        if (Array.isArray(tecnicosArray) && tecnicosArray.length > 0) {
+          setTecnicoSeleccionado(tecnicosArray[0].id)
+        }
+      } catch (error) {
+        /* Intentionally empty - future implementation planned */
+      }
+    }
+    void fetchTecnicos()
+  }, [isLoading, user])
 
   // --- API Acciones ---
   const fetchAcciones = async () => {
     try {
-      const res = await gs.get(`/gestion/acciones/tecnico/${tecnicoActualId}`) as Accion[]
-      //console.log("Acciones cargadas:", res)
+      if (!user) {
+        return
+      }
+
+      const res = await gs.authorizedGet(`/obtener-acciones/${tecnicoSeleccionado}`, user.token) as Accion[]
       const accionesProcesadas = res.map((accion) => ({
         ...accion,
         tecnico_nombre: accion.tecnico?.nombre || 'Sin técnico',
         activo_nombre: accion.activo?.nombre || 'Sin activo'
       }))
-      // const data = await res.json()
       setAcciones(accionesProcesadas)
     } catch (err) {
-      //console.error('Error cargando acciones:', err)
+      /* Intentionally empty - future implementation planned */
     }
   }
 
   const crearAccion = async () => {
-    if (!activoSeleccionado || !descripcion) { setMensaje('Completa todos los campos.'); return; }
+    if (!activoSeleccionado || !descripcion || !tipo || !prioridad) { 
+      setMensaje('Completa todos los campos.'); 
+      return; 
+    }
+
+    if (!user) {
+      setMensaje('Usuario no autenticado');
+      return;
+    }
 
     try {
       const data = {
-        titulo: "prueba",
-        activo_id: Number(activoSeleccionado),
-        tecnico_id: tecnicoActualId,
+        titulo: `Mantenimiento ${tipo} - ${activos.find(a => a.id === Number(activoSeleccionado))?.nombre || 'Activo'}`,
+        tecnico_id: tecnicoSeleccionado,
         tipo,
         descripcion,
         prioridad,
       }
 
-      //console.log("Datos para crear acción:", data)
 
-      const res = await gs.post('/gestion/acciones', data) as { error?: boolean; mensaje?: string }
+      const res = await gs.authorizedPost(`/accion-mantenimiento-id/${activoSeleccionado}`, data, user.token) as { error?: boolean; mensaje?: string }
 
       if (!res.error) {
         // Acción creada correctamente
+        setMensaje('Acción creada exitosamente')
         await fetchAcciones()
         setActivoSeleccionado('')
         setDescripcion('')
@@ -108,11 +162,9 @@ export default function ListasAccionesView() {
         setTipo('')
       } else {
         // Manejo de error
-        // console.error('Error en creación:', res.error)
-        setMensaje(`Error al crear la acción: ${  res.mensaje || 'Error desconocido'}`)
+        setMensaje(`Error al crear la acción: ${res.mensaje || 'Error desconocido'}`)
       }
     } catch (err) {
-      //console.error('Error creando acción: ', err)
       setMensaje('Error inesperado al crear la acción')
     }
   }
@@ -120,24 +172,28 @@ export default function ListasAccionesView() {
 
   const actualizarEstado = async (id: number, nuevoEstado: string) => {
     try {
-      const res = await gs.put(`/gestion/acciones/${id}/estado`, { estado: nuevoEstado }) as { error?: boolean; mensaje?: string };
+      if (!user) {
+        setMensaje('Usuario no autenticado');
+        return;
+      }
+
+      const res = await gs.authorizedPut(`/actualizar-estado-accion/${id}`, { estado: nuevoEstado }, user.token) as { error?: boolean; mensaje?: string };
 
       if (!res.error) {
         // éxito
+        setMensaje('Estado actualizado exitosamente');
         await fetchAcciones()
       } else {
-        // console.error('Error actualizando estado:', res.error)
-        setMensaje(`Error al actualizar el estado: ${  res.mensaje || 'Error desconocido'}`)
+        setMensaje(`Error al actualizar el estado: ${res.mensaje || 'Error desconocido'}`)
       }
     } catch (err) {
-      //console.error('Error actualizando estado:', err)
       setMensaje('Error inesperado al actualizar el estado')
     }
   }
 
   useEffect(() => {
     void fetchAcciones()
-  }, [])
+  }, [tecnicoSeleccionado])
 
   // --- Columnas ---
   const columns: GridColDef[] = [
@@ -164,56 +220,29 @@ export default function ListasAccionesView() {
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>Crear Nueva Acción</Typography>
-
-      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-        <TextField
-          label="Activo"
-          select
-          value={activoSeleccionado}
-          onChange={(e) => { setActivoSeleccionado(e.target.value); }}
-          fullWidth
-          sx={{ minWidth: 200 }}
-        >
-          {activos.map((a) => (
-            <MenuItem key={a.id} value={a.id}>{a.nombre}</MenuItem>
-          ))}
-        </TextField>
-        <TextField label="Descripción" value={descripcion} onChange={(e) => { setDescripcion(e.target.value); }} fullWidth />
-
-        {/* Tipo como dropdown */}
-        <TextField
-          label="Tipo"
-          select
-          value={tipo}
-          onChange={(e) => { setTipo(e.target.value); }}
-          fullWidth
-          sx={{ minWidth: 150 }}
-        >
-          <MenuItem value="">Seleccione tipo</MenuItem>
-          <MenuItem value="preventivo">Preventivo</MenuItem>
-          <MenuItem value="correctivo">Correctivo</MenuItem>
-        </TextField>
-
-        {/* Prioridad como dropdown */}
-        <TextField
-          label="Prioridad"
-          select
-          value={prioridad}
-          onChange={(e) => { setPrioridad(e.target.value); }}
-          fullWidth
-          sx={{ minWidth: 100 }}
-        >
-          <MenuItem value="">Seleccione prioridad</MenuItem>
-          <MenuItem value="alta">Alta</MenuItem>
-          <MenuItem value="media">Media</MenuItem>
-          <MenuItem value="baja">Baja</MenuItem>
-        </TextField>
-
-        <Button variant="contained" onClick={crearAccion}>Guardar</Button>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+        <Typography variant="h6">Acciones Asignadas</Typography>
+        <Button variant="contained" onClick={handleOpen}>Nueva Acción</Button>
       </Box>
 
-      <Typography variant="subtitle1" gutterBottom>Acciones Asignadas</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="subtitle1">Acciones Asignadas</Typography>
+        
+        <TextField
+          label="Filtrar por Técnico"
+          select
+          value={tecnicoSeleccionado}
+          onChange={(e) => { setTecnicoSeleccionado(Number(e.target.value)); }}
+          sx={{ minWidth: 250 }}
+          size="small"
+        >
+          {tecnicos.map((t) => (
+            <MenuItem key={t.id} value={t.id}>
+              {t.nombre} {t.apellido} - {t.especialidad}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Box>
 
       {acciones.map((a) => (
         <Collapse key={a.id} in={expandedId === a.id}>
@@ -262,6 +291,94 @@ export default function ListasAccionesView() {
                     },
             }}
       />
+
+      {acciones.map((a) => (
+        <Collapse key={a.id} in={expandedId === a.id}>
+          <Box sx={{ p: 2, mt: 2, mb: 2, border: '1px solid #ddd', borderRadius: 2 }}>
+            <Typography variant="subtitle2">Detalle de Acción</Typography>
+            <Typography>Técnico: {a.tecnico?.nombre ?? 'Sin técnico'}</Typography>
+            <Typography>Descripción: {a.descripcion}</Typography>
+            <Typography>Tipo: {a.tipo}</Typography>
+            <Typography>Estado: {a.estado}</Typography>
+            <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+              <Button size="small" variant="outlined" onClick={() => actualizarEstado(a.id, 'en_progreso')}>En progreso</Button>
+              <Button size="small" variant="outlined" onClick={() => actualizarEstado(a.id, 'completado')}>Completado</Button>
+            </Box>
+          </Box>
+        </Collapse>
+      ))}
+
+      {/* Modal para crear acción */}
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
+        <DialogTitle>Crear Nueva Acción</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+            <TextField
+              label="Activo"
+              select
+              value={activoSeleccionado}
+              onChange={(e) => { setActivoSeleccionado(e.target.value); }}
+              fullWidth
+              sx={{ minWidth: 200 }}
+            >
+          {activos.map((a) => (
+            <MenuItem key={a.id} value={a.id}>
+              {a.nombre}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          label="Descripción"
+          value={descripcion}
+          onChange={(e) => { setDescripcion(e.target.value); }}
+          fullWidth
+        />
+
+        {/* Tipo como dropdown */}
+        <TextField
+          label="Tipo"
+          select
+          value={tipo}
+          onChange={(e) => { setTipo(e.target.value); }}
+          fullWidth
+          sx={{ minWidth: 150 }}
+        >
+          <MenuItem value="">Seleccione tipo</MenuItem>
+          <MenuItem value="preventivo">Preventivo</MenuItem>
+          <MenuItem value="correctivo">Correctivo</MenuItem>
+        </TextField>
+
+        {/* Prioridad como dropdown */}
+        <TextField
+          label="Prioridad"
+          select
+          value={prioridad}
+          onChange={(e) => { setPrioridad(e.target.value); }}
+          fullWidth
+          sx={{ minWidth: 100 }}
+        >
+          <MenuItem value="">Seleccione prioridad</MenuItem>
+          <MenuItem value="alta">Alta</MenuItem>
+          <MenuItem value="media">Media</MenuItem>
+          <MenuItem value="baja">Baja</MenuItem>
+        </TextField>
+      </Box>
+          </DialogContent>
+          <DialogActions>
+                <Button onClick={handleClose}>Cancelar</Button>
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    void crearAccion()
+                    void handleClose()
+              }}
+            >
+              Guardar
+            </Button>
+          </DialogActions>
+      </Dialog>
+
       <Snackbar
         open={Boolean(mensaje)}
         autoHideDuration={4000}

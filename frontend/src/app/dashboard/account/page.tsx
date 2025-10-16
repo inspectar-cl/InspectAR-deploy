@@ -14,7 +14,7 @@ export default function Page(): React.JSX.Element {
   return (
     <Stack spacing={3}>
       <div>
-        <Typography variant="h4">Account</Typography>
+        <Typography variant="h4">Mi Cuenta</Typography>
       </div>
       <Grid container spacing={3}>
         <Grid size={{lg:4, md:6, xs:12}}>

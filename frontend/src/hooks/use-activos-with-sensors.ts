@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 import { useState, useEffect, useCallback } from 'react';
 import Services from '@/modules/Services';
+import { useUserToken } from '@/hooks/use-usertoken';
 
 // Tipos del backend (actualizados para el nuevo endpoint)
 interface ActivoBackend {
@@ -93,18 +94,22 @@ function generarNombreSensor(tipo: string, sensor_id: string): string {
 }
 
 export function useActivosWithSensors() {
+  const { user, isLoading: authLoading } = useUserToken();
   const [activos, setActivos] = useState<ActivoWithSensors[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchActivosWithSensors = useCallback(async () => {
+    if (authLoading || !user) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
     
     try {
-      // Una sola petición para obtener todos los activos con sensores y datos
-      const response = await gs.get('/activos-y-sensores') as ApiResponse;
-      // console.log('📊 Respuesta completa de activos y sensores:', response);
+      // Usar el nuevo endpoint con autenticación
+      const response = await gs.authorizedGet('/obtener-todos-activos?sensores=true', user.token) as ApiResponse;
       
       if (!response.activos || response.activos.length === 0) {
         setActivos([]);
@@ -114,32 +119,44 @@ export function useActivosWithSensors() {
 
       // Transformar los datos al formato del frontend
       const activosTransformados = response.activos.map((activo) => {
+        
         // Transformar sensores al formato del frontend
         const sensoresTransformados: SensorRow[] = activo.sensores.map((sensor: SensorBackend) => {
+          
           // Obtener el último valor de los datos históricos si existen
           let lastValue = 0;
           let history24h: SensorSample[] = [];
           
           if (sensor.datos && Array.isArray(sensor.datos) && sensor.datos.length > 0) {
-            // El último valor es el más reciente (último elemento del array)
-            const ultimoDato = sensor.datos[sensor.datos.length - 1];
+            
+            // El último valor es el más reciente (primer elemento del array ya que viene ordenado descendente)
+            const ultimoDato = sensor.datos[0];
             lastValue = ultimoDato.valor;
             
-            // Convertir todos los datos al formato SensorSample
-            history24h = sensor.datos.map((dato) => ({
+            // Tomar los últimos 100 datos (o todos si hay menos de 100)
+            // El backend ya los envía ordenados por tiempo descendente
+            const datosRecientes = sensor.datos.slice(0, 100);
+            
+            // Convertir al formato SensorSample
+            history24h = datosRecientes.map((dato) => ({
               ts: new Date(dato.tiempo),
               value: dato.valor,
               unit: sensor.unidad
             }));
             
-            // Filtrar solo las últimas 24 horas
-            const hace24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
-            history24h = history24h.filter(sample => sample.ts >= hace24h);
-            
-            // Ordenar por timestamp descendente (más reciente primero)
-            history24h.sort((a, b) => b.ts.getTime() - a.ts.getTime());
-            
-            // console.log(`📈 History24h para ${sensor.sensor_id}:`, history24h.length, 'muestras');
+          }
+          
+          // Determinar la última transmisión desde los datos reales
+          let lastSeenDate: Date;
+          if (sensor.datos && Array.isArray(sensor.datos) && sensor.datos.length > 0) {
+            // Usar la fecha del primer dato (más reciente)
+            lastSeenDate = new Date(sensor.datos[0].tiempo);
+          } else if (sensor.last_seen) {
+            // Fallback al campo last_seen si existe
+            lastSeenDate = new Date(sensor.last_seen);
+          } else {
+            // Si no hay datos, usar una fecha antigua como fallback
+            lastSeenDate = new Date(Date.now() - 10 * 60 * 1000);
           }
           
           return {
@@ -148,7 +165,7 @@ export function useActivosWithSensors() {
             type: sensor.tipo,
             unit: sensor.unidad,
             lastValue,
-            lastSeen: sensor.last_seen ? new Date(sensor.last_seen) : new Date(Date.now() - 10 * 60 * 1000),
+            lastSeen: lastSeenDate,
             status: sensor.estado,
             history24h
           };
@@ -161,27 +178,25 @@ export function useActivosWithSensors() {
         } as ActivoWithSensors;
       });
 
-      // console.log(`✅ Activos procesados:`, activosTransformados.length, activosTransformados);
       setActivos(activosTransformados);
 
     } catch (err) {
-      // console.error('Error fetching activos with sensors:', err);
       setError('Error al cargar los datos de activos y sensores');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [authLoading, user]);
 
   // Refresh automático cada 30 segundos
   useEffect(() => {
     void fetchActivosWithSensors();
     
-    const interval = setInterval(() => {
-      void fetchActivosWithSensors();
-    }, 30000);
-    return () => { 
-      clearInterval(interval); 
-    };
+    // const interval = setInterval(() => {
+    //   void fetchActivosWithSensors();
+    // }, 30000);
+    // return () => { 
+    //   clearInterval(interval); 
+    // };
   }, [fetchActivosWithSensors]);
 
   return {

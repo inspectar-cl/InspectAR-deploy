@@ -54,7 +54,7 @@ export default function Page() {
         const results = await Promise.all(
           activosList.map(async (activo: Activo) => {
             try {
-              const res = await gs.authorizedGet(`/anomalies/activo/${activo.id}`, user.token) as { data?: Prediccion[] };
+              const res = await gs.get(`/anomalies/activo/${activo.id}`, user.token) as { data?: Prediccion[] };
               return Array.isArray(res.data)
                 ? res.data.map((p: Prediccion) => ({ ...p, activoId: activo.id }))
                 : [];

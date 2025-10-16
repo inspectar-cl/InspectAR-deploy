@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, Tabs, Tab, Box, Typography, Stack, FormControlLabel, Checkbox
+  Button, Tabs, Tab, Box, Typography, Stack, TextField
 } from '@mui/material';
 import SignatureCanvasComponent from 'react-signature-canvas';
 import type SignatureCanvasType from 'react-signature-canvas';
@@ -36,7 +36,7 @@ export interface SavedSignature {
 interface SignatureDialogProps {
   open: boolean;
   onClose: () => void;
-  onUseSignature: (dataUrl: string, persist?: boolean) => void;
+  onUseSignature: (dataUrl: string, persist?: boolean, fileName?: string) => void;
 }
 
 export default function SignatureDialog({ open, onClose, onUseSignature }: SignatureDialogProps): React.JSX.Element {
@@ -44,7 +44,9 @@ export default function SignatureDialog({ open, onClose, onUseSignature }: Signa
 
   const [tab, setTab] = useState<0 | 1>(0);
   const [uploadedDataUrl, setUploadedDataUrl] = useState<string | null>(null);
-  const [persist, setPersist] = useState<boolean>(true);
+  // Siempre guardar en el sistema (persist siempre true)
+  const persist = true;
+  const [fileName, setFileName] = useState<string>('');
 
   const [canvasSize, setCanvasSize] = useState({ width: 500, height: 200 });
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -63,7 +65,10 @@ export default function SignatureDialog({ open, onClose, onUseSignature }: Signa
 
 
    useEffect((): void => {
-    if (open) setCanUseDrawn(false);
+    if (open) {
+      setCanUseDrawn(false);
+      setFileName(''); // Limpiar nombre al abrir
+    }
   }, [open]);
 
   useEffect((): void => {
@@ -122,17 +127,19 @@ export default function SignatureDialog({ open, onClose, onUseSignature }: Signa
   }
 
   const useSignature = (): void => {
+    const finalFileName = fileName.trim() || 'firma';
+    
     if (tab === 0 && sigRef.current) {
       const instance = sigRef.current as unknown as SignatureCanvasInstance;
       if (instance.isEmpty()) return;
 
       const dataUrl: string = getSignatureDataUrlStrict(sigRef.current);
-      onUseSignature(dataUrl, persist);
+      onUseSignature(dataUrl, persist, finalFileName);
       onClose();
       return;
     }
     if (tab === 1 && uploadedDataUrl) {
-      onUseSignature(uploadedDataUrl, persist);
+      onUseSignature(uploadedDataUrl, persist, finalFileName);
       onClose();
     }
   };
@@ -143,6 +150,16 @@ export default function SignatureDialog({ open, onClose, onUseSignature }: Signa
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Agregar firma</DialogTitle>
       <DialogContent dividers>
+        <TextField
+          label="Nombre del archivo"
+          placeholder="Ej: Firma_Juan_Perez"
+          fullWidth
+          value={fileName}
+          onChange={(e) => { setFileName(e.target.value); }}
+          sx={{ mb: 2 }}
+          helperText="Este nombre se usará para guardar el archivo de firma"
+        />
+        
         <Tabs value={tab} onChange={(_, v: 0 | 1) => { setTab(v); }}>
           <Tab label="Dibujar" />
           <Tab label="Subir imagen" />
@@ -189,12 +206,6 @@ export default function SignatureDialog({ open, onClose, onUseSignature }: Signa
             ): null}
           </Box>
         )}
-
-        <FormControlLabel
-          sx={{ mt: 2 }}
-          control={<Checkbox checked={persist}  onChange={(e) => { setPersist(e.target.checked); }} />}
-          label="Guardar esta firma en el sistema"
-        />
       </DialogContent>
 
       <DialogActions>

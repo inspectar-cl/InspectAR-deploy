@@ -26,6 +26,24 @@ interface ActivosResponse {
   activos?: ActivoReporte[];
 }
 
+interface FirmaBackend {
+  id: number;
+  usuario_id: number;
+  nombre_archivo: string;
+  ruta_archivo: string;
+  tipo_mime: string;
+  formato: string;
+  tamano_bytes: number;
+  es_predeterminada: boolean;
+  creado_en: string;
+  actualizado_en: string;
+}
+
+interface FirmasResponse {
+  firmas: FirmaBackend[];
+  total: number;
+}
+
 /** Convierte un dataURL (p.ej., canvas.toDataURL()) a Blob */
 function dataUrlToBlob(dataUrl: string): Blob {
   const [meta, base64] = dataUrl.split(',');
@@ -107,7 +125,8 @@ function GenerarReporte() {
   const { signatures, addSignature, removeSignature } = useSignatures();
   const [selectedSignatureDataUrl, setSelectedSignatureDataUrl] = useState<string | null>(null);
   const [selectedSignatureId, setSelectedSignatureId] = useState<string>('');
-  const [firmaId, setFirmaId] = useState<number | null>(null); // <- NUEVO
+  const [firmaId, setFirmaId] = useState<number | null>(null);
+  const [firmasBackend, setFirmasBackend] = useState<FirmaBackend[]>([]); // <- NUEVO
 
   // cargar activos
   useEffect(() => {
@@ -129,15 +148,62 @@ function GenerarReporte() {
     void fetchActivos();
   }, [isLoading, user]);
 
-  // actualizar dataUrl al elegir una firma guardada
+  // cargar firmas del backend
+  useEffect(() => {
+    const fetchFirmas = async () => {
+      try {
+        if (isLoading || !user) return;
+
+        const email = datos?.email as string;
+        if (!email) {
+          console.warn('No se pudo obtener el email del usuario');
+          return;
+        }
+
+        console.log('Obteniendo firmas para usuario:', email);
+        const data = await gs.authorizedGet(`/gestion/firmas/usuario/${email}`, user.token) as FirmasResponse;
+
+        console.log('Firmas del backend:', data);
+
+        if (data && Array.isArray(data.firmas)) {
+          setFirmasBackend(data.firmas);
+        } else {
+          setFirmasBackend([]);
+        }
+      } catch (error) {
+        console.error('Error al cargar firmas:', error);
+        setFirmasBackend([]);
+      }
+    };
+    void fetchFirmas();
+  }, [isLoading, user, datos?.email]);
+
+  // actualizar dataUrl al elegir una firma guardada del backend
   useEffect(() => {
     if (!selectedSignatureId) {
       setSelectedSignatureDataUrl(null);
+      setFirmaId(null);
       return;
     }
+
+    // Verificar si es un ID numérico (firma del backend) o UUID (firma local)
+    const numId = Number(selectedSignatureId);
+    if (!isNaN(numId)) {
+      // Es una firma del backend
+      const firma = firmasBackend.find((f) => f.id === numId);
+      if (firma) {
+        // Obtener la imagen de la firma
+        const imageUrl = `${BASE_URL}/gestion/firmas/${firma.id}/imagen`;
+        setSelectedSignatureDataUrl(imageUrl);
+        setFirmaId(firma.id);
+        return;
+      }
+    }
+
+    // Es una firma local guardada en localStorage
     const found = signatures.find((s) => s.id === selectedSignatureId);
     setSelectedSignatureDataUrl(found?.dataUrl ?? null);
-  }, [selectedSignatureId, signatures]);
+  }, [selectedSignatureId, signatures, firmasBackend]);
 
   // limpiar firma al cambiar de activo
   useEffect(() => {
@@ -147,7 +213,7 @@ function GenerarReporte() {
   }, [activo]);
 
   // callback del diálogo: recibe dataUrl (ya sea de canvas o archivo leído como dataURL)
-  const handleUseSignature = async (dataUrl: string, persist?: boolean) => {
+  const handleUseSignature = async (dataUrl: string, persist?: boolean, fileName?: string) => {
     try {
       // 1) Mostrar en UI
       const id = crypto.randomUUID();
@@ -157,7 +223,7 @@ function GenerarReporte() {
       if (persist) {
         const item: SavedSignature = {
           id,
-          name: `Firma ${new Date().toLocaleString()}`,
+          name: fileName || `Firma ${new Date().toLocaleString()}`,
           dataUrl,
           source: 'drawn',
           createdAt: new Date().toISOString(),
@@ -167,23 +233,35 @@ function GenerarReporte() {
 
       // 2) Subir a backend de gestión para obtener firma_id
       if (!user?.token) throw new Error('Usuario no autenticado');
-      const email = (datos?.email as string) || 'usuario@example.com';
+      const userEmail = (datos?.email as string) || 'usuario@example.com';
 
       const blob = dataUrlToBlob(dataUrl);
-      const fileName =
-        blob.type.includes('jpeg') || blob.type.includes('jpg') ? 'firma.jpg' : 'firma.png';
+      
+      // Usar el nombre proporcionado o uno por defecto
+      const baseFileName = fileName?.trim() || 'firma';
+      const fileExtension = blob.type.includes('jpeg') || blob.type.includes('jpg') ? '.jpg' : '.png';
+      const finalFileName = baseFileName.endsWith('.png') || baseFileName.endsWith('.jpg') 
+        ? baseFileName 
+        : `${baseFileName}${fileExtension}`;
 
       const newFirmaId = await uploadSignatureFile({
         baseUrl: BASE_URL,
         token: user.token,
-        email,
+        email: userEmail,
         fileBlob: blob,
-        fileName,
-        esPredeterminada: true, // cámbialo a true si quieres marcarla por defecto
+        fileName: finalFileName,
+        esPredeterminada: true,
       });
 
       setFirmaId(newFirmaId);
-      setMensaje(`Firma subida (#${newFirmaId})`);
+      setSelectedSignatureId(String(newFirmaId)); // Usar el ID del backend
+      setMensaje(`Firma guardada: ${finalFileName}`);
+
+      // Recargar lista de firmas del backend
+      const data = await gs.authorizedGet(`/gestion/firmas/usuario/${userEmail}`, user.token) as FirmasResponse;
+      if (data && Array.isArray(data.firmas)) {
+        setFirmasBackend(data.firmas);
+      }
     } catch (err: any) {
       console.error('Error al usar/subir firma:', err);
       setMensaje(err?.message || 'No se pudo subir la firma');
@@ -193,17 +271,82 @@ function GenerarReporte() {
   };
 
   const handleRemoveSelectedSignature = () => {
-    if (selectedSignatureId) {
-      removeSignature(selectedSignatureId);
-      setSelectedSignatureId('');
-    }
+    setSelectedSignatureId('');
     setSelectedSignatureDataUrl(null);
     setFirmaId(null);
   };
 
+  /** Establece una firma como predeterminada */
+  const handleSetDefaultSignature = async () => {
+    if (!selectedSignatureId || !user?.token) return;
+
+    const numId = Number(selectedSignatureId);
+    if (isNaN(numId)) {
+      setMensaje('Solo se pueden marcar como predeterminadas las firmas del servidor');
+      return;
+    }
+
+    const firma = firmasBackend.find((f) => f.id === numId);
+    if (!firma) return;
+
+    // Si ya es predeterminada, no hacer nada
+    if (firma.es_predeterminada) {
+      setMensaje('Esta firma ya es la predeterminada');
+      return;
+    }
+
+    try {
+      console.log(`Estableciendo firma ${numId} como predeterminada`);
+
+      const response = await fetch(`${BASE_URL}/gestion/firmas/${numId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({
+          nombre_archivo: firma.nombre_archivo,
+          es_predeterminada: true,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      setMensaje('Firma establecida como predeterminada');
+
+      // Recargar lista de firmas
+      const userEmail = (datos?.email as string) || 'usuario@example.com';
+      const data = await gs.authorizedGet(`/gestion/firmas/usuario/${userEmail}`, user.token) as FirmasResponse;
+      if (data && Array.isArray(data.firmas)) {
+        setFirmasBackend(data.firmas);
+      }
+    } catch (error) {
+      console.error('Error al establecer firma predeterminada:', error);
+      setMensaje('No se pudo establecer la firma como predeterminada');
+    }
+  };
+
+  /** Verifica si la firma seleccionada es del backend y si es predeterminada */
+  const isSelectedSignatureDefault = (): boolean => {
+    if (!selectedSignatureId) return false;
+    const numId = Number(selectedSignatureId);
+    if (isNaN(numId)) return false;
+    const firma = firmasBackend.find((f) => f.id === numId);
+    return firma?.es_predeterminada ?? false;
+  };
+
+  /** Verifica si la firma seleccionada es del backend */
+  const isSelectedSignatureFromBackend = (): boolean => {
+    if (!selectedSignatureId) return false;
+    const numId = Number(selectedSignatureId);
+    return !isNaN(numId);
+  };
+
   /** Arma el payload de reporte según haya firma_id o no */
   const buildPayload = (): any => {
-    const email = datos?.email;
+    const userEmail = datos?.email;
     if (firmaId) {
       return {
         campos: camposSeleccionados,
@@ -213,7 +356,7 @@ function GenerarReporte() {
     return {
       campos: camposSeleccionados,
       usar_firma_predeterminada: true, // fallback al flujo del MD
-      email,
+      email: userEmail,
     };
   };
 
@@ -386,20 +529,47 @@ function GenerarReporte() {
                 displayEmpty
                 renderValue={(selected) => {
                   if (!selected) return <em>Ninguna</em>;
-                  const sig = signatures.find((s) => s.id === selected);
-                  return sig?.name ?? selected;
+                  
+                  const numId = Number(selected);
+                  if (!isNaN(numId)) {
+                    const firma = firmasBackend.find((f) => f.id === numId);
+                    if (firma) {
+                      return `${firma.nombre_archivo}${firma.es_predeterminada ? ' ⭐' : ''}`;
+                    }
+                  }
+                  
+                  return selected;
                 }}
               >
                 <MenuItem value="">
                   <em>Ninguna</em>
                 </MenuItem>
-                {signatures.map((sig) => (
-                  <MenuItem key={sig.id} value={sig.id}>
-                    {sig.name || sig.id}
+                
+                {firmasBackend.map((firma) => (
+                  <MenuItem key={firma.id} value={String(firma.id)}>
+                    {firma.nombre_archivo}
+                    {firma.es_predeterminada ? ' ⭐' : ''}
+                    {' '}
+                    <Typography variant="caption" color="text.secondary">
+                      ({firma.formato}, {Math.round(firma.tamano_bytes / 1024)}KB)
+                    </Typography>
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
+
+            {/* Botón para establecer como predeterminada */}
+            {isSelectedSignatureFromBackend() && (
+              <Button
+                variant={isSelectedSignatureDefault() ? 'outlined' : 'contained'}
+                color={isSelectedSignatureDefault() ? 'inherit' : 'primary'}
+                onClick={handleSetDefaultSignature}
+                disabled={isSelectedSignatureDefault()}
+                sx={{ minWidth: 180 }}
+              >
+                {isSelectedSignatureDefault() ? '⭐ Predeterminada' : 'Marcar predeterminada'}
+              </Button>
+            )}
 
             {selectedSignatureDataUrl ? (
               <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: { sm: 'auto' } }}>

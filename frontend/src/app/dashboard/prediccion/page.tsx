@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type -- tipo inferido */
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -11,7 +11,6 @@ import {
   InputLabel,
   FormControl,
   Grid,
-  CircularProgress,
 } from "@mui/material";
 import { Activity as ActivityIcon, AlertTriangle as AlertIcon } from "lucide-react";
 import { type Prediccion } from "@/types/prediccion";
@@ -20,10 +19,6 @@ import MetricCard from "@/components/dashboard/prediccion/MetricCard";
 import PrediccionCards from "@/components/dashboard/prediccion/PrediccionCards";
 import AlertasResumen from "@/components/dashboard/prediccion/AlertasResumen";
 import AnomalyChart from "@/components/dashboard/prediccion/AnomalyChart";
-import Services from "@/modules/Services";
-import { useUserToken } from "@/hooks/use-usertoken";
-
-const gs = new Services();
 
 // Tipos
 interface Activo {
@@ -33,48 +28,51 @@ interface Activo {
   ubicacion: string;
 }
 
+// Página principal
 export default function Page() {
-  const { user } = useUserToken();
-  const [activos, setActivos] = useState<Activo[]>([]);
-  const [predicciones, setPredicciones] = useState<Prediccion[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Datos de ejemplo
+  const activos: Activo[] = useMemo(() => [
+    { id: 1, nombre: "Bomba de agua", tipo: "Bomba", ubicacion: "Sótano" },
+    { id: 2, nombre: "Caldera", tipo: "Caldera", ubicacion: "Cuarto de máquinas" },
+  ], []);
 
-  // 🔹 Cargar datos desde backend
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (!user?.token) return;
+  const predicciones: Prediccion[] = useMemo(() => [
+    {
+      id: 1,
+      activoId: 1,
+      timestamp: "2025-10-14T10:00:00",
+      anomalyScore: 85,
+      anomalyLikelihood: 90,
+      severidad: "Alta",
+      descripcion: "Vibración fuera de rango",
+      threshold: 70,
+      is_anomaly: true,
+    },
+    {
+      id: 1,
+      activoId: 1,
+      timestamp: "2025-10-14T10:01:00",
+      anomalyScore: 80,
+      anomalyLikelihood: 75,
+      severidad: "Alta",
+      descripcion: "Vibración fuera de rango",
+      threshold: 70,
+      is_anomaly: true,
+    },
+    {
+      id: 2,
+      activoId: 2,
+      timestamp: "2025-10-14T11:00:00",
+      anomalyScore: 40,
+      anomalyLikelihood: 30,
+      severidad: "Media",
+      descripcion: "Temperatura alta intermitente",
+      threshold: 50,
+      is_anomaly: false,
+    },
+  ], []);
 
-        // 1️⃣ Obtener activos
-        const activosData = await gs.authorizedGet("/obtener-todos-activos", user.token) as { data?: Activo[] };
-        const activosList = activosData?.data || [];
-        setActivos(activosList);
-
-        // 2️⃣ Obtener predicciones (en paralelo por activo)
-        const results = await Promise.all(
-          activosList.map(async (activo: Activo) => {
-            try {
-              const res = await gs.get(`/anomalies/activo/${activo.id}`, user.token) as { data?: Prediccion[] };
-              return Array.isArray(res.data)
-                ? res.data.map((p: Prediccion) => ({ ...p, activoId: activo.id }))
-                : [];
-            } catch {
-              return [];
-            }
-          })
-        );
-
-        const allPreds = results.flat();
-        setPredicciones(allPreds);
-      } catch (error) { /* empty */ } finally {
-        setLoading(false);
-      }
-    };
-
-    void fetchData();
-  }, [user]);
-
-  // 🔹 Filtros
+  // Filtros
   const [filtroActivo, setFiltroActivo] = useState<string>("Todos");
   const [filtroSeveridad, setFiltroSeveridad] = useState<string>("Todos");
   const [filtroKeyword, setFiltroKeyword] = useState<string>("");
@@ -84,23 +82,14 @@ export default function Page() {
       const activoMatch =
         filtroActivo === "Todos" || activos.find((a) => a.id === p.activoId)?.nombre === filtroActivo;
       const severidadMatch = filtroSeveridad === "Todos" || p.severidad === filtroSeveridad;
-      const keywordMatch = p.descripcion?.toLowerCase().includes(filtroKeyword.toLowerCase());
+      const keywordMatch = p.descripcion.toLowerCase().includes(filtroKeyword.toLowerCase());
       return activoMatch && severidadMatch && keywordMatch;
     });
   }, [predicciones, filtroActivo, filtroSeveridad, filtroKeyword, activos]);
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="50vh">
-        <CircularProgress />
-        <Typography ml={2}>Cargando datos...</Typography>
-      </Box>
-    );
-  }
-
   return (
     <Box p={2}>
-      {/* 🔹 Filtros superiores */}
+      {/* Filtros */}
       <Grid container spacing={2} mb={2}>
         <Grid size={{ xs: 12, sm: 4 }}>
           <FormControl fullWidth>
@@ -119,7 +108,6 @@ export default function Page() {
             </Select>
           </FormControl>
         </Grid>
-
         <Grid size={{ xs: 12, sm: 4 }}>
           <FormControl fullWidth>
             <InputLabel>Severidad</InputLabel>
@@ -135,7 +123,6 @@ export default function Page() {
             </Select>
           </FormControl>
         </Grid>
-
         <Grid size={{ xs: 12, sm: 4 }}>
           <TextField
             fullWidth
@@ -146,66 +133,51 @@ export default function Page() {
         </Grid>
       </Grid>
 
-      {/* 🔹 Resumen general de alertas */}
+      {/* Resumen de alertas */}
       <AlertasResumen predicciones={prediccionesFiltradas} />
 
-      {/* 🔹 Dashboard por activo */}
+      {/* Dashboard por activo */}
       {activos.map((activo) => {
-        // Todas las predicciones del activo (sin depender de filtro global)
-        const predActivo = predicciones.filter((p) => p.activoId === activo.id);
+        const predActivo = prediccionesFiltradas.filter((p) => p.activoId === activo.id);
+        if (predActivo.length === 0) return null;
+
         const ultimaPred = predActivo[predActivo.length - 1];
+        const color = getColorBySeverity(ultimaPred.severidad);
 
         return (
-          <Box
-            key={activo.id}
-            mb={5}
-            p={2}
-            sx={{
-              borderBottom: "1px solid #ddd",
-              backgroundColor: "#fafafa",
-              borderRadius: 2,
-            }}
-          >
-            <Typography variant="h6" mb={2}>
+          <Box key={activo.id} mb={4}>
+            <Typography variant="h6" mb={1}>
               {activo.nombre}
             </Typography>
 
-            {predActivo.length > 0 ? (
-              <>
-                {/* 🔹 Métricas y alertas lado a lado */}
-                <Grid container spacing={3} mb={3}>
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <MetricCard
-                      title="Anomaly Score"
-                      value={ultimaPred.anomalyScore}
-                      color={getColorBySeverity(ultimaPred.severidad)}
-                      icon={<ActivityIcon />}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <MetricCard
-                      title="Anomaly Likelihood"
-                      value={ultimaPred.anomalyLikelihood}
-                      color={getColorBySeverity(ultimaPred.severidad)}
-                      icon={<AlertIcon />}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 12 }}>
-                    <AlertasResumen predicciones={predActivo} />
-                  </Grid>
-                </Grid>
-
-                {/* 🔹 Gráfico + tarjetas detalladas */}
-                <AnomalyChart predicciones={predActivo} activoNombre={activo.nombre} />
-                <Box mt={2}>
+            {/* Métricas principales */}
+            <Grid container spacing={3} mb={3}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                <MetricCard
+                  title="Último Anomaly Score"
+                  value={ultimaPred.anomalyScore}
+                  color={color}
+                  icon={<ActivityIcon />}
+                  suffix=""
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                <MetricCard
+                  title="Último Anomaly Likelihood"
+                  value={ultimaPred.anomalyLikelihood}
+                  color={color}
+                  icon={<AlertIcon />}
+                  suffix=""
+                />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
                   <PrediccionCards predicciones={predActivo} />
-                </Box>
-              </>
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                No hay datos de predicción para este activo.
-              </Typography>
-            )}
+              </Grid>
+            </Grid>
+
+            {/* Gráfico y cards */}
+            <AnomalyChart predicciones={predActivo} activoNombre={activo.nombre} />
+            
           </Box>
         );
       })}

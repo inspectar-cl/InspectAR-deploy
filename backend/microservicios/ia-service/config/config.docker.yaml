@@ -12,6 +12,9 @@ database:
 parser_service:
   url: "http://iot-service:8090"
 
+ml_engine:
+  url: "http://ml_engine_python:8085"
+
 scheduler:
   fetch_interval_minutes: 5
   default_activo_id: 2

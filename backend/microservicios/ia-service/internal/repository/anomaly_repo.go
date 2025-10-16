@@ -32,7 +32,7 @@ func NewAnomalyRepository(connectionString string) (*AnomalyRepository, error) {
 }
 
 // SaveAnomaly guarda una nueva anomalía en la base de datos
-func (r *AnomalyRepository) SaveAnomaly(anomaly *models.AnomalyInput) (*models.Anomaly, error) {
+func (r *AnomalyRepository) SaveAnomaly(anomaly *models.StoreAnomalyRequest) (*models.Anomaly, error) {
 	query := `
 		INSERT INTO anomalias (
 			activo_id, sensor_id, timestamp, anomaly_score, anomaly_likelihood,
@@ -124,7 +124,7 @@ func (r *AnomalyRepository) GetAnomaliesBySensor(sensorID string, limit int) ([]
 			id, activo_id, sensor_id, timestamp, anomaly_score, anomaly_likelihood,
 			severidad, descripcion, threshold, is_anomaly, created_at, updated_at
 		FROM anomalias
-		WHERE sensor_id = $1 AND is_anomaly = true
+		WHERE sensor_id = $1 AND is_anomaly = 1
 		ORDER BY timestamp DESC
 		LIMIT $2
 	`
@@ -132,6 +132,50 @@ func (r *AnomalyRepository) GetAnomaliesBySensor(sensorID string, limit int) ([]
 	rows, err := r.db.Query(query, sensorID, limit)
 	if err != nil {
 		return nil, fmt.Errorf("error consultando anomalías por sensor: %w", err)
+	}
+	defer rows.Close()
+
+	var anomalies []models.Anomaly
+	for rows.Next() {
+		var anomaly models.Anomaly
+		err := rows.Scan(
+			&anomaly.ID,
+			&anomaly.ActivoID,
+			&anomaly.SensorID,
+			&anomaly.Timestamp,
+			&anomaly.AnomalyScore,
+			&anomaly.AnomalyLikelihood,
+			&anomaly.Severidad,
+			&anomaly.Descripcion,
+			&anomaly.Threshold,
+			&anomaly.IsAnomaly,
+			&anomaly.CreatedAt,
+			&anomaly.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error escaneando anomalía: %w", err)
+		}
+		anomalies = append(anomalies, anomaly)
+	}
+
+	return anomalies, nil
+}
+
+// GetAnomaliesByActivo obtiene todas las anomalías de un activo específico
+func (r *AnomalyRepository) GetAnomaliesByActivo(activoID, limit, offset int) ([]models.Anomaly, error) {
+	query := `
+		SELECT 
+			id, activo_id, sensor_id, timestamp, anomaly_score, anomaly_likelihood,
+			severidad, descripcion, threshold, is_anomaly, created_at, updated_at
+		FROM anomalias
+		WHERE activo_id = $1 AND is_anomaly = 1
+		ORDER BY timestamp DESC
+		LIMIT $2 OFFSET $3
+	`
+
+	rows, err := r.db.Query(query, activoID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("error consultando anomalías por activo: %w", err)
 	}
 	defer rows.Close()
 

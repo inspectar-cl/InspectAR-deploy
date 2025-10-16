@@ -5,6 +5,7 @@ import (
 	"ia-service/internal/services"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,13 +27,13 @@ func NewAnomalyHandler(service *services.AnomalyService) *AnomalyHandler {
 // @Tags anomalies
 // @Accept json
 // @Produce json
-// @Param anomaly body models.AnomalyInput true "Datos de la anomalía"
+// @Param anomaly body models.StoreAnomalyRequest true "Datos de la anomalía"
 // @Success 201 {object} models.Anomaly
 // @Failure 400 {object} gin.H
 // @Failure 500 {object} gin.H
 // @Router /anomalies/store [post]
 func (h *AnomalyHandler) StoreAnomaly(c *gin.Context) {
-	var input models.AnomalyInput
+	var input models.StoreAnomalyRequest
 
 	// Validar JSON de entrada
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -160,5 +161,67 @@ func (h *AnomalyHandler) HealthCheck(c *gin.Context) {
 		"status":  "healthy",
 		"service": "ia-service",
 		"message": "Servicio de IA funcionando correctamente",
+	})
+}
+
+// GetAnomaliesByActivo maneja GET /anomalies/activo/:activo_id
+// @Summary Obtener anomalías por activo
+// @Description Retorna las anomalías de un activo específico con paginación
+// @Tags anomalies
+// @Produce json
+// @Param activo_id path int true "ID del activo"
+// @Param limit query int false "Límite de resultados" default(50)
+// @Param offset query int false "Offset para paginación" default(0)
+// @Success 200 {array} models.Anomaly
+// @Failure 400 {object} gin.H
+// @Failure 500 {object} gin.H
+// @Router /anomalies/activo/{activo_id} [get]
+func (h *AnomalyHandler) GetAnomaliesByActivo(c *gin.Context) {
+	activoIDStr := c.Param("activo_id")
+	activoID, err := strconv.Atoi(activoIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "activo_id inválido",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	limit := 50
+	offset := 0
+
+	if limitParam := c.Query("limit"); limitParam != "" {
+		if parsedLimit, err := strconv.Atoi(limitParam); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+		}
+	}
+
+	if offsetParam := c.Query("offset"); offsetParam != "" {
+		if parsedOffset, err := strconv.Atoi(offsetParam); err == nil && parsedOffset >= 0 {
+			offset = parsedOffset
+		}
+	}
+
+	log.Printf("🔍 Consultando anomalías para activo: %d (limit=%d, offset=%d)", activoID, limit, offset)
+
+	anomalies, err := h.service.GetAnomaliesByActivo(activoID, limit, offset)
+	if err != nil {
+		log.Printf("❌ Error obteniendo anomalías por activo: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Error al obtener anomalías",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	log.Printf("✅ Encontradas %d anomalías para activo %d", len(anomalies), activoID)
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":   "Anomalías obtenidas exitosamente",
+		"count":     len(anomalies),
+		"activo_id": activoID,
+		"limit":     limit,
+		"offset":    offset,
+		"data":      anomalies,
 	})
 }

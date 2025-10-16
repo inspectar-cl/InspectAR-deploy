@@ -2,6 +2,7 @@
 CREATE TABLE IF NOT EXISTS anomalias (
     id SERIAL PRIMARY KEY,
     activo_id INTEGER NOT NULL,
+    sensor_id VARCHAR(100),
     timestamp TIMESTAMP NOT NULL,
     anomaly_score FLOAT NOT NULL,
     anomaly_likelihood FLOAT NOT NULL,
@@ -44,10 +45,3 @@ $$ language 'plpgsql';
 
 CREATE TRIGGER update_anomalias_updated_at BEFORE UPDATE ON anomalias
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- -- Insertar datos de ejemplo (opcional)
--- INSERT INTO anomalias (activo_id, sensor_id, timestamp, anomaly_score, anomaly_likelihood, severidad, descripcion, threshold, is_anomaly)
--- VALUES 
---     (2, 'A_Temp.PV', NOW() - INTERVAL '2 hours', 0.85, 0.92, 'alta', 'Temperatura anormalmente alta detectada', 0.75, true),
---     (2, 'A_Pres.PV', NOW() - INTERVAL '1 hour', 0.65, 0.70, 'media', 'Variación de presión fuera del rango normal', 0.60, true),
---     (1, 'TEMP_001', NOW() - INTERVAL '30 minutes', 0.45, 0.50, 'baja', 'Pequeña desviación detectada', 0.60, false);

@@ -45,6 +45,7 @@ func main() {
 	dbSSLMode := viper.GetString("database.sslmode")
 
 	parserServiceURL := viper.GetString("parser_service.url")
+	mlEngineURL := viper.GetString("ml_engine.url")
 	serverPort := viper.GetString("server.port")
 	fetchInterval := viper.GetInt("scheduler.fetch_interval_minutes")
 	defaultActivoID := viper.GetInt("scheduler.default_activo_id")
@@ -55,8 +56,8 @@ func main() {
 		dbHost, dbPort, dbUser, dbPassword, dbName, dbSSLMode,
 	)
 
-	log.Printf("✅ Configuración cargada: Puerto=%s, DB=%s@%s:%s, ParserURL=%s",
-		serverPort, dbName, dbHost, dbPort, parserServiceURL)
+	log.Printf("✅ Configuración cargada: Puerto=%s, DB=%s@%s:%s, ParserURL=%s, MLEngine=%s",
+		serverPort, dbName, dbHost, dbPort, parserServiceURL, mlEngineURL)
 
 	// 4. Conectar a la base de datos
 	repo, err := repository.NewAnomalyRepository(connString)
@@ -66,7 +67,7 @@ func main() {
 	defer repo.Close()
 
 	// 5. Crear servicio
-	anomalyService := services.NewAnomalyService(repo, parserServiceURL, fetchInterval, defaultActivoID)
+	anomalyService := services.NewAnomalyService(repo, parserServiceURL, mlEngineURL, fetchInterval, defaultActivoID)
 
 	// 6. Iniciar scheduler en background
 	anomalyService.StartScheduler()
@@ -84,6 +85,7 @@ func main() {
 	log.Println("   POST   /anomalies/store")
 	log.Println("   GET    /status/")
 	log.Println("   GET    /anomalies/sensor/:sensor_id")
+	log.Println("   GET    /anomalies/activo/:activo_id")
 	log.Println("   GET    /health")
 
 	if err := router.Run(serverAddr); err != nil {

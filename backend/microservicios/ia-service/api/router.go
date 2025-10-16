@@ -25,6 +25,9 @@ func SetupRouter(anomalyHandler *handler.AnomalyHandler) *gin.Engine {
 
 		// GET /anomalies/sensor/:sensor_id - Obtener anomalías por sensor
 		anomalies.GET("/sensor/:sensor_id", anomalyHandler.GetAnomaliesBySensor)
+
+		// GET /anomalies/activo/:activo_id - Obtener anomalías por activo
+		anomalies.GET("/activo/:activo_id", anomalyHandler.GetAnomaliesByActivo)
 	}
 
 	// Ruta de status

@@ -6,16 +6,32 @@ Microservicio de Inteligencia Artificial para detección de anomalías en datos 
 
 Este servicio se encarga de:
 - **Monitoreo automático**: Obtiene datos periódicamente del ParserService (cada 5 minutos por defecto)
-- **Detección de anomalías**: Procesa 1000 datos por consulta buscando patrones anómalos
-- **Almacenamiento**: Guarda resultados de predicción en la base de datos IA-db
+- **Detección de anomalías con ML**: Procesa 1000 datos por consulta usando el motor de ML Python (HTM)
+- **Transformación de datos**: Convierte datos agrupados por sensor a formato temporal para análisis ML
+- **Almacenamiento inteligente**: Guarda solo las anomalías detectadas por el modelo en IA-db
 - **API REST**: Expone endpoints para almacenar y consultar anomalías
+
+## 🎯 Flujo de Datos
+
+```
+ParserService (1000 registros)
+        ↓
+IA-Service (transformación)
+        ↓
+ML Engine Python (análisis HTM)
+        ↓
+IA-Service (guardar resultados)
+        ↓
+IA-db (almacenamiento)
+```
 
 ## 📊 Estadísticas de Implementación
 
-- **4 rutas totales** configuradas
-- **4 rutas funcionando** (100% operativas)
+- **5 rutas totales** configuradas
+- **5 rutas funcionando** (100% operativas)
 - **0 rutas pendientes** de implementación
 - **Scheduler automático** ejecutándose en background
+- **Integración ML Engine** completamente funcional
 
 ## 📋 Tabla de Rutas - Vista Rápida
 
@@ -32,12 +48,13 @@ Este servicio se encarga de:
 | `POST` | `/anomalies/store` | Guardar nueva anomalía detectada | ✅ Funcionando |
 | `GET` | `/status/` | Obtener última anomalía detectada | ✅ Funcionando |
 | `GET` | `/anomalies/sensor/:sensor_id` | Obtener anomalías por sensor | ✅ Funcionando |
+| `GET` | `/anomalies/activo/:activo_id` | **NUEVO:** Obtener anomalías por activo con paginación | ✅ Funcionando |
 
 ### ⚙️ Procesos en Background
 
 | Proceso | Descripción | Frecuencia | Estado |
 |---------|-------------|------------|---------|
-| 🔄 Scheduler | Obtiene 1000 datos del ParserService y procesa anomalías | Cada 5 min (configurable) | ✅ Activo |
+| 🔄 Scheduler | Obtiene 1000 datos, los envía al ML Engine y guarda anomalías | Cada 5 min (configurable) | ✅ Activo |
 
 ## 🏗️ Arquitectura
 
@@ -45,7 +62,8 @@ Este servicio se encarga de:
 IA-Service (Puerto 8095)
     ↓
     ├─→ PostgreSQL (ia-db:5432) - Almacenamiento de anomalías
-    └─→ IoT-Service (8090) - Obtención de datos de sensores
+    ├─→ IoT-Service (8090) - Obtención de datos de sensores
+    └─→ ML Engine Python (8085) - Detección de anomalías con HTM
 ```
 
 ## 🔌 Configuración
@@ -61,6 +79,7 @@ IA-Service (Puerto 8095)
 | `DB_PASSWORD` | Contraseña de BD | `ia_pass` |
 | `DB_NAME` | Nombre de BD | `ia_db` |
 | `PARSER_SERVICE_URL` | URL del ParserService | `http://iot-service:8090` |
+| `ML_ENGINE_URL` | **NUEVO:** URL del ML Engine Python | `http://ml_engine_python:8085` |
 | `FETCH_INTERVAL_MINUTES` | Intervalo de consulta (minutos) | `5` |
 | `DEFAULT_ACTIVO_ID` | ID del activo a monitorear | `2` |
 
@@ -252,15 +271,177 @@ curl http://localhost:8095/anomalies/sensor/sensor_001?limit=20
 
 ---
 
+### 5. **NUEVO:** Obtener Anomalías por Activo
+
+Retorna todas las anomalías de un activo específico con paginación.
+
+```http
+GET /anomalies/activo/:activo_id?limit=50&offset=0
+```
+
+**Parámetros:**
+- `activo_id` (path, requerido): ID del activo
+- `limit` (query, opcional): Límite de resultados (default: 50)
+- `offset` (query, opcional): Offset para paginación (default: 0)
+
+**Respuesta exitosa (200):**
+```json
+{
+  "message": "Anomalías obtenidas exitosamente",
+  "count": 25,
+  "activo_id": 2,
+  "limit": 50,
+  "offset": 0,
+  "data": [
+    {
+      "id": 456,
+      "activo_id": 2,
+      "sensor_id": "combined",
+      "timestamp": "2025-10-14T16:45:00Z",
+      "anomaly_score": 0.92,
+      "anomaly_likelihood": 0.88,
+      "severidad": "critica",
+      "descripcion": "Patrón anómalo detectado en múltiples sensores",
+      "threshold": 0.75,
+      "is_anomaly": 1,
+      "created_at": "2025-10-14T16:50:00Z",
+      "updated_at": "2025-10-14T16:50:00Z"
+    },
+    {
+      "id": 455,
+      "activo_id": 2,
+      "sensor_id": "combined",
+      "timestamp": "2025-10-14T16:40:00Z",
+      "anomaly_score": 0.78,
+      "anomaly_likelihood": 0.82,
+      "severidad": "alta",
+      "descripcion": "Desviación significativa en valores de sensores",
+      "threshold": 0.75,
+      "is_anomaly": 1,
+      "created_at": "2025-10-14T16:45:00Z",
+      "updated_at": "2025-10-14T16:45:00Z"
+    }
+  ]
+}
+```
+
+**Ejemplo:**
+```bash
+# Obtener las primeras 50 anomalías
+curl http://localhost:8095/anomalies/activo/2?limit=50&offset=0 | jq '.'
+
+# Paginación: obtener anomalías 51-100
+curl http://localhost:8095/anomalies/activo/2?limit=50&offset=50 | jq '.'
+
+# Obtener solo las últimas 10 anomalías
+curl http://localhost:8095/anomalies/activo/2?limit=10 | jq '.'
+```
+
+---
+
+## 🤖 Integración con ML Engine
+
+### Proceso de Detección de Anomalías
+
+El servicio utiliza el **ML Engine Python** con algoritmo HTM (Hierarchical Temporal Memory) para detectar anomalías:
+
+1. **Obtención de datos:** El scheduler consulta 1000 registros del ParserService
+2. **Transformación:** Los datos se transforman de formato por-sensor a formato temporal
+3. **Análisis ML:** Los datos se envían al ML Engine vía POST `/predict_anomaly`
+4. **Procesamiento de resultados:** Solo las anomalías detectadas (`is_anomaly=1`) se guardan
+5. **Almacenamiento:** Las anomalías se guardan con metadata completa (score, likelihood, severity)
+
+### Formato de Datos para ML Engine
+
+**Entrada (ParserService):**
+```json
+{
+  "activo_id": 2,
+  "sensores": [
+    {
+      "id_sensor": "A_ACR_Mot.PV",
+      "datos": [
+        {"timestamp": "2025-10-14T10:00:00Z", "valor": 45.2},
+        {"timestamp": "2025-10-14T10:01:00Z", "valor": 45.8}
+      ]
+    },
+    {
+      "id_sensor": "Temp_Agua",
+      "datos": [
+        {"timestamp": "2025-10-14T10:00:00Z", "valor": 22.5},
+        {"timestamp": "2025-10-14T10:01:00Z", "valor": 22.7}
+      ]
+    }
+  ]
+}
+```
+
+**Transformado (para ML Engine):**
+```json
+{
+  "pump": "activo_2",
+  "records": [
+    {
+      "timestamp": "2025-10-14T10:00:00Z",
+      "A_ACR_Mot.PV": 45.2,
+      "A_ACR_Mot.SV": 0.0,
+      "A_Desc_Bom.PV": 0.0,
+      "A_Desc_Bom.SV": 0.0,
+      "Flujo_Caudal": 0.0,
+      "Nivel_Presion": 0.0,
+      "Potencia_Activa": 0.0,
+      "Temp_Agua": 22.5,
+      "Temp_Ambiente": 0.0,
+      "Vibracion": 0.0
+    },
+    {
+      "timestamp": "2025-10-14T10:01:00Z",
+      "A_ACR_Mot.PV": 45.8,
+      "Temp_Agua": 22.7,
+      ...
+    }
+  ]
+}
+```
+
+**Salida (ML Engine):**
+```json
+{
+  "pump": "activo_2",
+  "results": [
+    {
+      "timestamp": "2025-10-14T10:05:00Z",
+      "anomaly_score": 0.92,
+      "anomaly_likelihood": 0.88,
+      "threshold": 0.75,
+      "is_anomaly": 1,
+      "severity": "critica",
+      "description": "Patrón anómalo detectado en múltiples sensores"
+    }
+  ]
+}
+```
+
+### Requisitos del ML Engine
+
+- **Mínimo 180 registros**: El modelo HTM requiere al menos 180 registros para análisis
+- **10 campos de sensores**: El formato espera valores para 10 tipos de sensores
+- **Timeout**: 60 segundos para el análisis completo
+- **Endpoint**: `POST http://ml_engine_python:8085/predict_anomaly`
+
+---
+
 ## 🔄 Funcionamiento del Scheduler
 
-El servicio incluye un **scheduler automático** que:
+El servicio incluye un **scheduler automático con integración ML** que:
 
 1. Se ejecuta cada `FETCH_INTERVAL_MINUTES` minutos (default: 5 minutos)
 2. Consulta al ParserService: `GET /lectura/{activo_id}/window?page=1&limit=1000`
-3. Procesa los 1000 datos obtenidos
-4. Detecta anomalías usando el algoritmo configurado
-5. Guarda automáticamente las anomalías detectadas en IA-db
+3. Transforma los datos de formato por-sensor a formato temporal
+4. Valida que haya al menos 180 registros (requerido por el modelo HTM)
+5. Envía los datos al ML Engine: `POST /predict_anomaly`
+6. Procesa las predicciones del modelo
+7. Guarda automáticamente solo las anomalías detectadas (`is_anomaly=1`) en IA-db
 
 ### Logs del Scheduler
 
@@ -268,7 +449,11 @@ El servicio incluye un **scheduler automático** que:
 🔄 Scheduler iniciado: Obteniendo datos cada 5 minutos para activo_id=2
 📡 Solicitando datos del ParserService: http://iot-service:8090/lectura/2/window?page=1&limit=1000
 ✅ Datos recibidos: 10 sensores, 1000 lecturas totales
-✅ Anomalía guardada: ID=45, Sensor=sensor_003, Score=0.7854, Severidad=alta
+📊 Transformados 856 registros agrupados por timestamp
+🤖 Enviando 856 registros al ML Engine: http://ml_engine_python:8085/predict_anomaly
+✅ ML Engine procesó 856 registros, detectó 12 anomalías
+✅ Anomalía guardada: ID=45, Sensor=combined, Score=0.9234, Severidad=critica
+✅ Anomalía guardada: ID=46, Sensor=combined, Score=0.8567, Severidad=alta
 ```
 
 ---
@@ -326,7 +511,7 @@ curl -X POST http://localhost:8095/anomalies/store \
     "severidad": "critica",
     "descripcion": "Test de anomalía crítica",
     "threshold": 100.0,
-    "is_anomaly": true
+    "is_anomaly": 1
   }'
 ```
 
@@ -338,6 +523,15 @@ curl http://localhost:8095/status/ | jq '.'
 ### Test de Consultar por Sensor
 ```bash
 curl http://localhost:8095/anomalies/sensor/test_sensor?limit=5 | jq '.'
+```
+
+### **NUEVO:** Test de Consultar por Activo
+```bash
+# Obtener anomalías del activo 2 con paginación
+curl http://localhost:8095/anomalies/activo/2?limit=10&offset=0 | jq '.'
+
+# Obtener todas las anomalías (máximo 100)
+curl http://localhost:8095/anomalies/activo/2?limit=100 | jq '.'
 ```
 
 ---
@@ -409,16 +603,38 @@ ia-service/
 
 ## 📝 Notas Importantes
 
-### Detección de Anomalías
+### Detección de Anomalías con ML Engine
 
-La implementación actual incluye un **algoritmo simple de detección** basado en umbrales. Para producción, se recomienda:
+El servicio está **completamente integrado con el ML Engine Python** que utiliza:
 
-1. Integrar modelos de ML entrenados (TensorFlow, PyTorch, scikit-learn)
-2. Usar algoritmos avanzados como:
-   - Isolation Forest
-   - LSTM para series temporales
-   - Autoencoders
-   - Prophet de Facebook
+- **Algoritmo HTM** (Hierarchical Temporal Memory): Modelo avanzado para detección de anomalías en series temporales
+- **Análisis multivariado**: Procesa 10 sensores simultáneamente para detectar patrones anómalos
+- **Requisito mínimo**: 180 registros temporales para análisis efectivo
+- **Clasificación automática**: El modelo asigna severidad (baja, media, alta, crítica) basado en la desviación
+
+**Características del modelo HTM:**
+- Aprende patrones temporales automáticamente
+- No requiere entrenamiento previo con datos etiquetados
+- Detecta anomalías contextuales (valores normales en contexto anómalo)
+- Proporciona scores de confianza (likelihood) para cada predicción
+
+### Transformación de Datos
+
+El servicio realiza una **transformación crítica** de datos:
+
+**Antes (ParserService):** Datos agrupados por sensor
+```
+sensor1: [timestamp1: valor1, timestamp2: valor2, ...]
+sensor2: [timestamp1: valor3, timestamp2: valor4, ...]
+```
+
+**Después (ML Engine):** Datos agrupados por timestamp
+```
+timestamp1: {sensor1: valor1, sensor2: valor3, ...}
+timestamp2: {sensor1: valor2, sensor2: valor4, ...}
+```
+
+Esta transformación es necesaria porque el modelo HTM analiza **todos los sensores en cada instante** para detectar correlaciones anómalas entre sensores.
 
 ### Configuración del Scheduler
 

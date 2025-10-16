@@ -12,6 +12,9 @@ database:
 parser_service:
   url: "http://localhost:8090"
 
+ml_engine:
+  url: "http://localhost:8085"
+
 scheduler:
   fetch_interval_minutes: 5
   default_activo_id: 2

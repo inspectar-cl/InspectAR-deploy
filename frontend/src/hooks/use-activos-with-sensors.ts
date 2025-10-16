@@ -110,10 +110,7 @@ export function useActivosWithSensors() {
     try {
       // Usar el nuevo endpoint con autenticación
       const response = await gs.authorizedGet('/obtener-todos-activos?sensores=true', user.token) as ApiResponse;
-<<<<<<< HEAD
       console.log('📊 Respuesta completa de activos y sensores:', response);
-=======
->>>>>>> f261526d84692b9615293635720a7117fc68b474
       
       if (!response.activos || response.activos.length === 0) {
         setActivos([]);

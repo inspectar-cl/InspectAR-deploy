@@ -127,6 +127,7 @@ function GenerarReporte() {
   const [selectedSignatureId, setSelectedSignatureId] = useState<string>('');
   const [firmaId, setFirmaId] = useState<number | null>(null);
   const [firmasBackend, setFirmasBackend] = useState<FirmaBackend[]>([]); // <- NUEVO
+  const [firmasCargadas, setFirmasCargadas] = useState(false); // Para controlar la carga inicial
 
   // cargar activos
   useEffect(() => {
@@ -167,6 +168,15 @@ function GenerarReporte() {
 
         if (data && Array.isArray(data.firmas)) {
           setFirmasBackend(data.firmas);
+          
+          // Seleccionar automáticamente la firma predeterminada si existe (solo la primera vez)
+          if (!firmasCargadas) {
+            const firmaPredeterminada = data.firmas.find((f) => f.es_predeterminada);
+            if (firmaPredeterminada) {
+              setSelectedSignatureId(String(firmaPredeterminada.id));
+            }
+            setFirmasCargadas(true);
+          }
         } else {
           setFirmasBackend([]);
         }
@@ -270,10 +280,54 @@ function GenerarReporte() {
     }
   };
 
-  const handleRemoveSelectedSignature = () => {
-    setSelectedSignatureId('');
-    setSelectedSignatureDataUrl(null);
-    setFirmaId(null);
+  const handleRemoveSelectedSignature = async () => {
+    if (!selectedSignatureId || !user?.token) return;
+
+    const numId = Number(selectedSignatureId);
+    if (isNaN(numId)) {
+      setMensaje('Solo se pueden eliminar firmas del servidor');
+      return;
+    }
+
+    const firma = firmasBackend.find((f) => f.id === numId);
+    if (!firma) return;
+
+    // Confirmar eliminación
+    if (!confirm(`¿Estás seguro de que deseas eliminar "${firma.nombre_archivo}"? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+
+    try {
+      console.log(`Eliminando firma ${numId} del sistema`);
+
+      const response = await fetch(`${BASE_URL}/gestion/firmas/${numId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${user.token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      setMensaje(`Firma "${firma.nombre_archivo}" eliminada del sistema`);
+
+      // Limpiar selección actual
+      setSelectedSignatureId('');
+      setSelectedSignatureDataUrl(null);
+      setFirmaId(null);
+
+      // Recargar lista de firmas
+      const userEmail = (datos?.email as string) || 'usuario@example.com';
+      const data = await gs.authorizedGet(`/gestion/firmas/usuario/${userEmail}`, user.token) as FirmasResponse;
+      if (data && Array.isArray(data.firmas)) {
+        setFirmasBackend(data.firmas);
+      }
+    } catch (error) {
+      console.error('Error al eliminar firma:', error);
+      setMensaje('No se pudo eliminar la firma del sistema');
+    }
   };
 
   /** Establece una firma como predeterminada */
@@ -587,8 +641,13 @@ function GenerarReporte() {
                     background: '#fff',
                   }}
                 />
-                <Button color="error" variant="outlined" onClick={handleRemoveSelectedSignature}>
-                  Quitar
+                <Button 
+                  color="error" 
+                  variant="outlined" 
+                  onClick={handleRemoveSelectedSignature}
+                  disabled={!isSelectedSignatureFromBackend()}
+                >
+                  Eliminar del sistema
                 </Button>
               </Stack>
             ) : null}

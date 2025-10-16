@@ -200,6 +200,10 @@ async def predict_anomaly(payload: PumpWindow):
         # Convertir a DataFrame
         df = pd.DataFrame(payload.records)
         
+        # Debug: mostrar los primeros timestamps recibidos
+        if len(df) > 0 and 'timestamp' in df.columns:
+            logger.info(f"🔍 Primeros timestamps recibidos (tipo: {type(df['timestamp'].iloc[0])}): {df['timestamp'].head(3).tolist()}")
+        
         # Validar que tenga timestamp
         if 'timestamp' not in df.columns:
             raise HTTPException(

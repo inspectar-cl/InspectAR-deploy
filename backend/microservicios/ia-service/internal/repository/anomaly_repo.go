@@ -53,6 +53,9 @@ func (r *AnomalyRepository) SaveAnomaly(anomaly *models.StoreAnomalyRequest) (*m
 	savedAnomaly.Threshold = anomaly.Threshold
 	savedAnomaly.IsAnomaly = anomaly.IsAnomaly
 
+	log.Printf("💾 Intentando guardar en BD: Activo=%d, IsAnomaly=%d, Score=%.2f, Severity=%s, Timestamp=%s",
+		anomaly.ActivoID, anomaly.IsAnomaly, anomaly.AnomalyScore, anomaly.Severidad, anomaly.Timestamp.Format(time.RFC3339))
+
 	err := r.db.QueryRow(
 		query,
 		anomaly.ActivoID,
@@ -69,11 +72,12 @@ func (r *AnomalyRepository) SaveAnomaly(anomaly *models.StoreAnomalyRequest) (*m
 	).Scan(&savedAnomaly.ID, &savedAnomaly.CreatedAt, &savedAnomaly.UpdatedAt)
 
 	if err != nil {
+		log.Printf("❌ ERROR en INSERT: %v", err)
 		return nil, fmt.Errorf("error guardando anomalía: %w", err)
 	}
 
-	log.Printf("✅ Anomalía guardada: ID=%d, Sensor=%s, Score=%.4f, Severidad=%s",
-		savedAnomaly.ID, savedAnomaly.SensorID, savedAnomaly.AnomalyScore, savedAnomaly.Severidad)
+	log.Printf("✅ Registro guardado en BD: ID=%d, Activo=%d, IsAnomaly=%d, Score=%.4f, Severidad=%s",
+		savedAnomaly.ID, savedAnomaly.ActivoID, savedAnomaly.IsAnomaly, savedAnomaly.AnomalyScore, savedAnomaly.Severidad)
 
 	return &savedAnomaly, nil
 }
@@ -122,9 +126,9 @@ func (r *AnomalyRepository) GetAnomaliesBySensor(sensorID string, limit int) ([]
 	query := `
 		SELECT 
 			id, activo_id, sensor_id, timestamp, anomaly_score, anomaly_likelihood,
-			severidad, descripcion, threshold, is_anomaly, created_at, updated_at
+			severidad, descripcion, threshold, is_anomaly::int, created_at, updated_at
 		FROM anomalias
-		WHERE sensor_id = $1 AND is_anomaly = 1
+		WHERE sensor_id = $1 AND is_anomaly = true
 		ORDER BY timestamp DESC
 		LIMIT $2
 	`
@@ -166,9 +170,9 @@ func (r *AnomalyRepository) GetAnomaliesByActivo(activoID, limit, offset int) ([
 	query := `
 		SELECT 
 			id, activo_id, sensor_id, timestamp, anomaly_score, anomaly_likelihood,
-			severidad, descripcion, threshold, is_anomaly, created_at, updated_at
+			severidad, descripcion, threshold, is_anomaly::int, created_at, updated_at
 		FROM anomalias
-		WHERE activo_id = $1 AND is_anomaly = 1
+		WHERE activo_id = $1
 		ORDER BY timestamp DESC
 		LIMIT $2 OFFSET $3
 	`

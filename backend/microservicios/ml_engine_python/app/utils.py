@@ -83,11 +83,21 @@ def clean_timestamps(df: pd.DataFrame, max_invalid_percent: float = 5.0) -> tupl
     if len(df) == 0:
         return df, stats
     
-    # Convertir timestamp a datetime
+    # Convertir timestamp a datetime - intentar múltiples formatos
     df = df.copy()
-    df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
     
-    # Contar timestamps inválidos
+    # Intentar parsear con formato ISO8601/RFC3339 primero
+    df['timestamp'] = pd.to_datetime(df['timestamp'], format='ISO8601', errors='coerce')
+    
+    # Si aún hay NaT, intentar con inferencia automática
+    invalid_mask = df['timestamp'].isna()
+    if invalid_mask.any():
+        still_invalid = df.loc[invalid_mask, 'timestamp']
+        parsed = pd.to_datetime(still_invalid, errors='coerce', utc=True)
+        # Convertir explícitamente a datetime64[ns] para evitar warnings de dtype
+        df.loc[invalid_mask, 'timestamp'] = parsed.astype('datetime64[ns]')
+    
+    # Contar timestamps inválidos finales
     invalid_mask = df['timestamp'].isna()
     stats["invalid_timestamps"] = int(invalid_mask.sum())
     stats["invalid_percent"] = (stats["invalid_timestamps"] / stats["total_records"]) * 100

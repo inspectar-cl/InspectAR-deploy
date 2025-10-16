@@ -71,7 +71,7 @@ def detectar_htm_multivar(df, prefix):
 
     # umbral adaptativo rolling (sobre AnomalyLikelihood)
     thr = rolling_threshold(res['AnomalyLikelihood'], window=W, k=k_adapt, min_periods=50)
-    res['Threshold'] = thr.fillna(method='ffill').fillna(1e6)  # si no hay threshold inicial, usar gran valor para evitar marcar anomaly temprana
+    res['Threshold'] = thr.ffill().fillna(1e6)  # si no hay threshold inicial, usar gran valor para evitar marcar anomaly temprana
 
     # decisión y texto
     res['is_anomaly'] = compute_is_anomaly(res['AnomalyLikelihood'], res['Threshold'])

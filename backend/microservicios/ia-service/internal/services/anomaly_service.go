@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -97,7 +98,8 @@ func (s *AnomalyService) transformToMLFormat(data models.ParserServiceResponse) 
 	// Agrupar datos por timestamp
 	for _, sensor := range data.Sensores {
 		for _, dataPoint := range sensor.Datos {
-			timestampStr := dataPoint.Timestamp.Format(time.RFC3339)
+			// Usar directamente el string de tiempo del ParserService
+			timestampStr := dataPoint.Tiempo
 
 			if _, exists := timestampMap[timestampStr]; !exists {
 				timestampMap[timestampStr] = make(map[string]float64)
@@ -149,39 +151,57 @@ func (s *AnomalyService) processDataWithMLEngine(data models.ParserServiceRespon
 		return
 	}
 
-	// Guardar anomalías detectadas
+	log.Printf("📋 ML Engine retornó %d resultados totales", len(predictions.Results))
+
+	// Guardar TODOS los resultados (no solo anomalías)
 	savedCount := 0
-	for _, result := range predictions.Results {
-		if result.IsAnomaly == 1 {
-			// Parse timestamp
-			timestamp, err := time.Parse(time.RFC3339, result.Timestamp)
-			if err != nil {
-				log.Printf("⚠️  Error parseando timestamp %s: %v", result.Timestamp, err)
-				continue
-			}
+	anomaliesCount := 0
 
-			anomaly := &models.StoreAnomalyRequest{
-				ActivoID:          data.ActivoID,
-				SensorID:          "combined", // Anomalía basada en múltiples sensores
-				Timestamp:         timestamp,
-				AnomalyScore:      result.AnomalyScore,
-				AnomalyLikelihood: result.AnomalyLikelihood,
-				Severidad:         result.Severity,
-				Descripcion:       result.Description,
-				Threshold:         result.Threshold,
-				IsAnomaly:         result.IsAnomaly,
-			}
+	for i, result := range predictions.Results {
+		// Log para cada resultado
+		if i < 3 || result.IsAnomaly == 1 {
+			log.Printf("🔍 Resultado #%d: IsAnomaly=%d, Score=%.2f, Likelihood=%.2f, Severity=%s, Timestamp=%s",
+				i+1, result.IsAnomaly, result.AnomalyScore, result.AnomalyLikelihood, result.Severity, result.Timestamp)
+		}
 
-			if _, err := s.SaveAnomaly(anomaly); err != nil {
-				log.Printf("⚠️  Error guardando anomalía: %v", err)
-			} else {
-				savedCount++
+		// Parse timestamp
+		timestamp, err := time.Parse(time.RFC3339, result.Timestamp)
+		if err != nil {
+			log.Printf("⚠️  Error parseando timestamp %s: %v", result.Timestamp, err)
+			continue
+		}
+
+		// Normalizar severidad a minúsculas (la BD espera: 'baja', 'media', 'alta', 'critica')
+		severidad := strings.ToLower(result.Severity)
+
+		// Crear registro para guardar
+		anomaly := &models.StoreAnomalyRequest{
+			ActivoID:          data.ActivoID,
+			SensorID:          "combined", // Anomalía basada en múltiples sensores
+			Timestamp:         timestamp,
+			AnomalyScore:      result.AnomalyScore,
+			AnomalyLikelihood: result.AnomalyLikelihood,
+			Severidad:         severidad,
+			Descripcion:       result.Description,
+			Threshold:         result.Threshold,
+			IsAnomaly:         result.IsAnomaly,
+		}
+
+		// Guardar TODOS los resultados en la BD (no solo las anomalías)
+		saved, err := s.SaveAnomaly(anomaly)
+		if err != nil {
+			log.Printf("❌ Error guardando resultado #%d: %v", i+1, err)
+		} else {
+			savedCount++
+			if result.IsAnomaly == 1 {
+				anomaliesCount++
+				log.Printf("🚨 Anomalía guardada: ID=%d, Score=%.2f, Severity=%s", saved.ID, result.AnomalyScore, result.Severity)
 			}
 		}
 	}
 
-	log.Printf("✅ ML Engine procesó %d registros, detectó %d anomalías",
-		len(predictions.Results), savedCount)
+	log.Printf("✅ ML Engine procesó %d registros, guardados en BD: %d, anomalías detectadas: %d",
+		len(predictions.Results), savedCount, anomaliesCount)
 }
 
 // sendToMLEngine envía los datos al ML Engine y retorna las predicciones

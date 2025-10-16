@@ -39,8 +39,8 @@ type SensorData struct {
 
 // DataPoint representa un punto de dato desde ParserService
 type DataPoint struct {
-	Timestamp time.Time `json:"timestamp"`
-	Valor     float64   `json:"valor"`
+	Tiempo string  `json:"tiempo"` // El ParserService envía "tiempo" como string
+	Valor  float64 `json:"valor"`
 }
 
 // ParserServiceResponse representa la respuesta del endpoint /lectura/:activo_id/window

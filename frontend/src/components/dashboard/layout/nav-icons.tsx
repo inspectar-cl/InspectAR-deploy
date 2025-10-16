@@ -12,6 +12,7 @@ import { ChartLineIcon } from '@phosphor-icons/react/dist/ssr/ChartLine';
 import { FileTextIcon } from '@phosphor-icons/react/dist/ssr/FileText';
 import { BlueprintIcon } from '@phosphor-icons/react/dist/ssr/Blueprint';
 import { AddressBookIcon } from '@phosphor-icons/react/dist/ssr/AddressBook';
+import { SirenIcon } from '@phosphor-icons/react/dist/ssr/Siren';
 import { BrainIcon } from '@phosphor-icons/react/dist/ssr/Brain';
 
 export const navIcons = {
@@ -26,6 +27,7 @@ export const navIcons = {
   'blueprint': BlueprintIcon,
   'broadcast': BroadcastIcon,
   'adressBook': AddressBookIcon,
+  'siren': SirenIcon,
   'brain': BrainIcon,
   user: UserIcon,
   users: UsersIcon,

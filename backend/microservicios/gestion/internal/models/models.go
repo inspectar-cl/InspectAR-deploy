@@ -61,12 +61,26 @@ type Edificio struct {
 	CreadoEn  time.Time `json:"creado_en" db:"creado_en"`
 }
 
+// Usuario del sistema
+type Usuario struct {
+	ID       int       `json:"id" db:"id"`
+	Username string    `json:"username" db:"username"`
+	Email    string    `json:"email" db:"email"`
+	CreadoEn time.Time `json:"creado_en" db:"creado_en"`
+}
+
+// Relación muchos a muchos entre usuarios y edificios
+type UsuarioEdificio struct {
+	UsuarioID  int       `json:"usuario_id" db:"usuario_id"`
+	EdificioID int       `json:"edificio_id" db:"edificio_id"`
+	AsignadoEn time.Time `json:"asignado_en" db:"asignado_en"`
+}
+
 // Activo gestionado
 type Activo struct {
 	ID         int       `json:"id" db:"id"`
 	Nombre     string    `json:"nombre" db:"nombre"`
 	Tipo       string    `json:"tipo" db:"tipo"`
-	Estado     string    `json:"estado" db:"estado"`
 	Ubicacion  string    `json:"ubicacion" db:"ubicacion"`
 	EdificioID int       `json:"edificio_id" db:"edificio_id"`
 	CreadoEn   time.Time `json:"creado_en" db:"creado_en"`
@@ -173,7 +187,7 @@ type CreateActivoRequest struct {
 }
 
 type UpdateAutorizadoTecnicoRequest struct {
-	Autorizado bool `json:"autorizado" binding:"required"`
+	Autorizado *bool `json:"autorizado" binding:"required"`
 }
 
 type AsignarTecnicoActivoRequest struct {
@@ -199,7 +213,10 @@ type CreateReporteRequest struct {
 
 // DTO para generar reporte por activo con campos solicitados
 type GenerarReporteRequest struct {
-	Campos []string `json:"campos" binding:"required"` // e.g. ["ubicacion","historico_mantenimientos","ultima_acciones","datos_sensores"]
+	Campos                  []string `json:"campos" binding:"required"` // e.g. ["ubicacion","historico_mantenimientos","ultima_acciones","datos_sensores"]
+	FirmaID                 *int     `json:"firma_id,omitempty"`        // ID de la firma digital a incluir (opcional)
+	UsarFirmaPredeterminada bool     `json:"usar_firma_predeterminada"` // Si true, usa la firma predeterminada del usuario
+	Email                   string   `json:"email,omitempty"`           // Email del usuario que genera el reporte (para obtener firma predeterminada)
 }
 
 type UpdateObservacionesRequest struct {
@@ -228,6 +245,108 @@ type EstructuraInformeReporte struct {
 	Conclusiones       string                 `json:"conclusiones"`
 }
 
+// Modelos para reportes de fallas de usuarios
+
+type TipoFalla struct {
+	IDFalla          int       `json:"id_falla" db:"id_falla"`
+	Tipo             string    `json:"tipo" db:"tipo"`
+	Descripcion      string    `json:"descripcion" db:"descripcion"`
+	FechaPublicacion time.Time `json:"fecha_publicacion" db:"fecha_publicacion"`
+	IDUsuario        int       `json:"id_usuario" db:"id_usuario"`
+	IDEdificio       int       `json:"id_edificio" db:"id_edificio"`
+	Estado           string    `json:"estado" db:"estado"`
+}
+
+type Comentario struct {
+	IDComentario    int       `json:"id_comentario" db:"id_comentario"`
+	IDFalla         int       `json:"id_falla" db:"id_falla"`
+	IDUsuario       int       `json:"id_usuario" db:"id_usuario"`
+	Comentario      string    `json:"comentario" db:"comentario"`
+	FechaComentario time.Time `json:"fecha_comentario" db:"fecha_comentario"`
+}
+
+// DTOs para las APIs
+
+type CreateTipoFallaRequest struct {
+	Email       string `json:"email" binding:"required"`
+	Tipo        string `json:"tipo" binding:"required"`
+	Descripcion string `json:"descripcion"`
+	IDEdificio  int    `json:"id_edificio" binding:"required"`
+}
+
+type CreateComentarioRequest struct {
+	Email      string `json:"email" binding:"required"`
+	IDFalla    int    `json:"id_falla" binding:"required"`
+	Comentario string `json:"comentario" binding:"required"`
+}
+
+// DTO para respuesta con username en lugar de id_usuario
+type TipoFallaResponse struct {
+	IDFalla          int                  `json:"id_falla"`
+	Tipo             string               `json:"tipo"`
+	Descripcion      string               `json:"descripcion"`
+	FechaPublicacion time.Time            `json:"fecha_publicacion"`
+	Username         string               `json:"username"`
+	IDEdificio       int                  `json:"id_edificio"`
+	Estado           string               `json:"estado"`
+	Comentarios      []ComentarioResponse `json:"comentarios"`
+}
+
+type ComentarioResponse struct {
+	IDComentario    int       `json:"id_comentario"`
+	Username        string    `json:"username"`
+	Comentario      string    `json:"comentario"`
+	FechaComentario time.Time `json:"fecha_comentario"`
+}
+
 type UpdateEstadoAccionRequest struct {
 	Estado string `json:"estado" binding:"required"`
+}
+
+// Firma Digital para usuarios
+type FirmaDigital struct {
+	ID               int       `json:"id" db:"id"`
+	UsuarioID        int       `json:"usuario_id" db:"usuario_id"`
+	NombreArchivo    string    `json:"nombre_archivo" db:"nombre_archivo"`
+	RutaArchivo      string    `json:"ruta_archivo" db:"ruta_archivo"`
+	TipoMime         string    `json:"tipo_mime" db:"tipo_mime"`               // image/png, image/jpeg, image/svg+xml
+	Formato          string    `json:"formato" db:"formato"`                   // png, jpeg, jpg, svg
+	DatosFirma       []byte    `json:"datos_firma,omitempty" db:"datos_firma"` // Para SVG o datos binarios
+	TamanoBytes      int64     `json:"tamano_bytes" db:"tamano_bytes"`
+	EsPredeterminada bool      `json:"es_predeterminada" db:"es_predeterminada"`
+	CreadoEn         time.Time `json:"creado_en" db:"creado_en"`
+	ActualizadoEn    time.Time `json:"actualizado_en" db:"actualizado_en"`
+}
+
+// DTOs para firmas digitales
+type CreateFirmaRequest struct {
+	Email            string `form:"email" binding:"required,email"`
+	NombreArchivo    string `form:"nombre_archivo"`
+	EsPredeterminada bool   `form:"es_predeterminada"`
+	// El archivo se maneja por separado en el handler mediante c.FormFile()
+}
+
+type CreateFirmaSVGRequest struct {
+	Email            string `json:"email" binding:"required,email"`
+	NombreArchivo    string `json:"nombre_archivo" binding:"required"`
+	DatosSVG         string `json:"datos_svg" binding:"required"` // SVG como string
+	EsPredeterminada bool   `json:"es_predeterminada"`
+}
+
+type UpdateFirmaRequest struct {
+	NombreArchivo    string `json:"nombre_archivo"`
+	EsPredeterminada bool   `json:"es_predeterminada"`
+}
+
+type FirmaResponse struct {
+	ID               int       `json:"id"`
+	UsuarioID        int       `json:"usuario_id"`
+	NombreArchivo    string    `json:"nombre_archivo"`
+	RutaArchivo      string    `json:"ruta_archivo"`
+	TipoMime         string    `json:"tipo_mime"`
+	Formato          string    `json:"formato"`
+	TamanoBytes      int64     `json:"tamano_bytes"`
+	EsPredeterminada bool      `json:"es_predeterminada"`
+	CreadoEn         time.Time `json:"creado_en"`
+	ActualizadoEn    time.Time `json:"actualizado_en"`
 }

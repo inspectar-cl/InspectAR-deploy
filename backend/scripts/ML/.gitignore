@@ -1,2 +1,4 @@
 __pycache__/
 __pycache__
+modelo_gaussian_nb.pkl
+*.pkl

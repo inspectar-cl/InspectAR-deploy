@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 
+import { useEffect, useState } from 'react';
 import type { User } from '@/types/user';
 import { authClient } from '@/lib/auth/client';
 import { logger } from '@/lib/default-logger';
@@ -52,6 +53,22 @@ export function UserProvider({ children }: UserProviderProps): React.JSX.Element
   }, []);
 
   return <UserContext.Provider value={{ ...state, checkSession }}>{children}</UserContext.Provider>;
+}
+
+export function useAuthUser(): User | null {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    authClient.getUser().then((res) => {
+      if (res.data) setUser(res.data);
+    })
+    .catch((err: unknown) => { 
+        logger.error('Error fetching user in useAuthUser:', err);
+        // Optionally handle state here, but logging is sufficient to satisfy the linter.
+    });
+  }, []);
+
+  return user;
 }
 
 export const UserConsumer = UserContext.Consumer;

@@ -1,20 +1,40 @@
 'use client';
 
 import type { User } from '@/types/user';
+import Services from '@/modules/Services';
+import {decodeJwtToken} from '@/hooks/use-auth'
 
-function generateToken(): string {
-  const arr = new Uint8Array(12);
-  window.crypto.getRandomValues(arr);
-  return Array.from(arr, (v) => v.toString(16).padStart(2, '0')).join('');
+type Role = 'analista' | 'tecnico' | 'residente' | 'admin';
+
+interface Edificio {
+  id: number;
+  nombre: string;
+  direccion: string;
+  creado_en: string;
 }
 
-const user = {
+interface StoredPayload {
+  token: string;
+  edificio: Edificio[] | undefined;
+  role: Role;
+}
+
+interface SessionUser extends User {
+  edificio: Edificio[] | undefined;
+  role: Role;
+}
+
+const gs = new Services();
+
+const STORAGE_KEY = 'custom-auth-token';
+
+const baseUser: User = {
   id: 'USR-000',
   avatar: '/assets/avatar.png',
   firstName: 'Sofia',
   lastName: 'Rivers',
   email: 'sofia@devias.io',
-} satisfies User;
+};
 
 export interface SignUpParams {
   firstName: string;
@@ -36,15 +56,62 @@ export interface ResetPasswordParams {
   email: string;
 }
 
+function isRole(v: unknown): v is Role {
+  return v === 'analista' || v === 'tecnico' || v === 'residente' || v === 'admin';
+}
+
+function isEdificio(v: unknown): v is Edificio {
+  if (typeof v !== 'object' || v === null) return false;
+  const obj = v as Record<string, unknown>;
+  // Una comprobación mínima para un Edificio
+  return (
+    typeof obj.id === 'number' &&
+    typeof obj.nombre === 'string'
+  );
+}
+
+function isStoredPayload(v: unknown): v is StoredPayload {
+  if (typeof v !== 'object' || v === null) return false;
+  const obj = v as Record<string, unknown>;
+  
+  // 1. Validar el token y el rol (sin cambios)
+  if (!(typeof obj.token === 'string' && isRole(obj.role))) {
+    return false;
+  }
+
+  // 2. Validar el campo 'edificio' (el array)
+  const edificios = obj.edificio;
+  if (edificios === undefined) {
+    // Es válido si es 'undefined'
+    return true;
+  }
+
+  if (Array.isArray(edificios)) {
+    // Si es un array, todos sus elementos deben ser Edificio
+    return edificios.every(isEdificio);
+  }
+
+  // Si no es undefined y no es un array, es inválido
+  return false;
+}
+
+function extractRole(scope: string): Role | undefined {
+  // Ejemplo de scope: "user-type:Analista"
+  const parts = scope.split(':');
+  if (parts.length === 2 && parts[0] === 'user-type') {
+    // Capitaliza la primera letra y conviértela a minúsculas
+    const roleString = parts[1].toLowerCase();
+    // Verifica si es un rol válido
+    if (isRole(roleString)) {
+      return roleString;
+    }
+  }
+  return undefined;
+}
+
 class AuthClient {
   async signUp(_: SignUpParams): Promise<{ error?: string }> {
-    // Make API request
-
-    // We do not handle the API, so we'll just generate a token and store it in localStorage.
-    const token = generateToken();
-    localStorage.setItem('custom-auth-token', token);
-
-    return {};
+    return { error: 'Sign up not implemented' };
   }
 
   async signInWithOAuth(_: SignInWithOAuthParams): Promise<{ error?: string }> {
@@ -53,44 +120,88 @@ class AuthClient {
 
   async signInWithPassword(params: SignInWithPasswordParams): Promise<{ error?: string }> {
     const { email, password } = params;
+    const API_URL = '/login'
 
-    // Make API request
+    const requestBody = {
+      email,
+      password,
+      device_id: '1',
+    };
 
-    // We do not handle the API, so we'll check if the credentials match with the hardcoded ones.
-    if (email !== 'sofia@devias.io' || password !== 'Secret1') {
-      return { error: 'Invalid credentials' };
-    }
+    try {
+        const loginRes = await gs.post(API_URL, requestBody) as { access_token?: string; edificios?: Edificio[] };
 
-    const token = generateToken();
-    localStorage.setItem('custom-auth-token', token);
+        const accessToken = loginRes.access_token;
+        const edificios = loginRes.edificios;
 
-    return {};
+        if (!accessToken || !edificios) {
+          return {error: 'Error de autenticación: Email o contraseña invalida'};
+        }
+
+        const decodedPayload = decodeJwtToken(accessToken);
+
+        if (!decodedPayload) {
+            return { error: 'Token JWT inválido o malformado.' };
+        }
+
+        const rawRole = decodedPayload.scope; 
+
+        let role: Role | undefined;
+        if (typeof rawRole === 'string') {
+            role = extractRole(rawRole) || (isRole(rawRole.toLowerCase()) ? rawRole.toLowerCase() as Role : undefined);
+        }
+
+        if (!role) {
+          return {error: 'Rol de ususairo invalido o no reconocido en el token.'};
+        }
+
+        const payload: StoredPayload = {
+          token: accessToken,
+          edificio: edificios.length > 0 ? edificios : undefined,
+          role,
+        };
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        return {};
+      } catch(error) {
+        return  { error: 'Credenciales invalidas' };
+      }
   }
 
   async resetPassword(_: ResetPasswordParams): Promise<{ error?: string }> {
-    return { error: 'Password reset not implemented' };
+    return { error: 'No implementado aun' };
   }
 
   async updatePassword(_: ResetPasswordParams): Promise<{ error?: string }> {
-    return { error: 'Update reset not implemented' };
+    return { error: 'No implementado aun' };
   }
 
-  async getUser(): Promise<{ data?: User | null; error?: string }> {
-    // Make API request
+  async getUser(): Promise<{ data?: SessionUser | null; error?: string }> {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { data: null };
 
-    // We do not handle the API, so just check if we have a token in localStorage.
-    const token = localStorage.getItem('custom-auth-token');
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (!isStoredPayload(parsed)) {
+        localStorage.removeItem(STORAGE_KEY);
+        return { data: null, error: 'Invalid session payload' };
+      }
 
-    if (!token) {
-      return { data: null };
+      const data: SessionUser = {
+        ...baseUser,
+        edificio: parsed.edificio,
+        role: parsed.role,
+      };
+
+      return { data };
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
+      return { data: null, error: 'Invalid session payload' };
     }
-
-    return { data: user };
   }
 
   async signOut(): Promise<{ error?: string }> {
-    localStorage.removeItem('custom-auth-token');
-
+    localStorage.removeItem(STORAGE_KEY);
     return {};
   }
 }

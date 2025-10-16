@@ -1,15 +1,13 @@
 services:
+  # API Gateway
   apigateway:
     build: ./apigateway
     container_name: apigateway
     ports:
       - "3500:3500"
-    environment:
-      - GATEWAY_PORT=3500
-      - GESTION_URL=http://gestion-service:8092
-      - NOTIFICATION_URL=http://notification-service:8091
-      - PARSER_URL=http://iot-service:8090
-      - DOCUMENTATION_URL=http://documentacion-service:8093
+    env_file:
+      - ./apigateway/.env
+    
   # Microservicio
   iot-service:
     build:
@@ -27,6 +25,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
+    restart: on-failure
 
   # Base de datos PostgreSQL para documentación
   documentacion-db:
@@ -106,6 +105,9 @@ services:
       - "8092:8092"
     depends_on:
       - gestion-db
+    volumes:
+      - ./database/gestion/firmas_iniciales:/docker-entrypoint-initdb.d/firmas_iniciales:ro
+      - gestion_firmas:/app/storage/firmas
     environment:
       - PARSER_URL=http://iot-service:8090
     healthcheck:
@@ -148,6 +150,32 @@ services:
       start_period: 20s
       retries: 3
     restart: on-failure
+
+  oauth2:
+    image: oauth2
+    container_name: oauth2
+    build:
+      context: ./microservicios/oauth2
+      dockerfile: Dockerfile
+    ports:
+      - "8094:8094"
+    depends_on:
+      - database1
+    restart: on-failure
+
+  database1:
+    container_name: oauth2DB
+    build:
+      context: ./database/oauth2
+      dockerfile: Dockerfile
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: joytan
+      POSTGRES_DB: db-oauth
+    volumes:
+      - pgdata1:/var/lib/postgresql/data
 
   emqx:
     image: emqx/emqx:latest
@@ -233,15 +261,17 @@ services:
       - gestion-db
       - notification-db
       - documentacion-db
+      - influxdb
     volumes:
       - ./scripts:/scripts
     working_dir: /scripts
     command: >
       bash -c "
         echo '🔄 Iniciando sincronización automática de datos...';
-        apt-get update -qq && apt-get install -y netcat-traditional > /dev/null 2>&1;
+        apt-get update -qq && apt-get install -y netcat-traditional python3 python3-pip > /dev/null 2>&1;
         echo '📋 Herramientas instaladas...';
         chmod +x /scripts/simple_data_init.sh;
+        chmod +x /scripts/load_csv_to_influx.py;
         /scripts/simple_data_init.sh;
         echo '🎉 Proceso de inicialización automática finalizado.';
       "
@@ -253,3 +283,5 @@ volumes:
   notification_data:
   documentacion_data:
   gestion_data:
+  gestion_firmas:  # Volumen para persistir firmas digitales
+  pgdata1:

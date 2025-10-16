@@ -16,6 +16,27 @@ INSERT INTO edificios (nombre, direccion) VALUES
 ('Centro de Distribución', 'Ruta 68 Km 15, Melipilla')
 ON CONFLICT DO NOTHING;
 
+-- Insertar usuarios del sistema (basados en los usuarios de OAuth2)
+INSERT INTO usuarios (username, email) VALUES
+('analista', 'analista@example.com'),
+('tecnico', 'tecnico@example.com'),
+('residente', 'residente@example.com'),
+('admin', 'admin@example.com')
+ON CONFLICT (username) DO NOTHING;
+
+-- Crear relaciones usuarios-edificios
+-- Los primeros 3 usuarios tienen acceso a todos los edificios
+INSERT INTO usuarios_edificios (usuario_id, edificio_id) VALUES
+-- admin tiene acceso a todos los edificios
+(1, 1), (1, 2), (1, 3), (1, 4),
+-- tecnico tiene acceso a todos los edificios
+(2, 1), (2, 2), (2, 3), (2, 4),
+-- usuario tiene acceso a todos los edificios
+(3, 1), (3, 2), (3, 3), (3, 4),
+-- residente_especial solo tiene acceso al edificio 1
+(4, 1)
+ON CONFLICT DO NOTHING;
+
 -- Insertar técnicos especializados con empresas
 INSERT INTO tecnicos (nombre, apellido, email, telefono, especialidad, empresa_id, autorizado, activo) VALUES
 ('Juan', 'Pérez', 'juan.perez@mantencion.cl', '+56912345678', 'Sistemas Hidráulicos', 1, true, true),
@@ -29,15 +50,15 @@ INSERT INTO tecnicos (nombre, apellido, email, telefono, especialidad, empresa_i
 ON CONFLICT (email) DO NOTHING;
 
 -- Insertar activos industriales (solo tipos permitidos: caldera, bomba de agua, ascensor, transformador)
-INSERT INTO activos (nombre, tipo, estado, ubicacion, edificio_id) VALUES
-('BombaDeAgua #1 ML', 'bomba de agua', 'operativo', 'Planta B', 1),
-('Bomba Centrífuga A', 'bomba de agua', 'operativo', 'Sala de Bombas', 1),
-('Bomba Hidráulica 1', 'bomba de agua', 'operativo', 'Sala de Bombas', 2),
-('Ascensor Norte', 'ascensor', 'operativo', 'Torre Norte - Piso 1', 2),
-('Transformador Secundario', 'transformador', 'mantenimiento', 'Subestación Secundaria', 3),
-('Transformador Principal', 'transformador', 'operativo', 'Subestación Eléctrica', 3),
-('Ascensor Central', 'ascensor', 'operativo', 'Edificio Central - Hall', 1),
-('Bomba de Emergencia', 'bomba de agua', 'stand_by', 'Planta de Emergencia', 4)
+INSERT INTO activos (nombre, tipo, ubicacion, edificio_id) VALUES
+('BombaDeAgua #1 ML', 'bomba de agua', 'Planta B', 1),
+('Bomba Centrífuga A', 'bomba de agua', 'Sala de Bombas', 1),
+('Bomba Hidráulica 1', 'bomba de agua', 'Sala de Bombas', 2),
+('Ascensor Norte', 'ascensor', 'Torre Norte - Piso 1', 2),
+('Transformador Secundario', 'transformador', 'Subestación Secundaria', 3),
+('Transformador Principal', 'transformador', 'Subestación Eléctrica', 3),
+('Ascensor Central', 'ascensor', 'Edificio Central - Hall', 1),
+('Bomba de Emergencia', 'bomba de agua', 'Planta de Emergencia', 4)
 ON CONFLICT (id) DO NOTHING;
 
 -- Autorizar técnicos para activos específicos
@@ -205,3 +226,81 @@ WHERE tipo_reporte = 'semanal';
 UPDATE reportes 
 SET generado_en = CURRENT_TIMESTAMP - INTERVAL '30 days'
 WHERE tipo_reporte = 'mensual';
+
+-- Insertar catálogo de fallos por tipo de activo
+INSERT INTO fallos (tipo_activo, descripcion, prioridad, probabilidad_ocurrencia) VALUES
+-- Fallos de CALDERA
+('caldera', 'Fuga de agua en tubería principal', 'alta', 15.50),
+('caldera', 'Presión irregular o fluctuante', 'media', 25.00),
+('caldera', 'Fallo en válvula de seguridad', 'alta', 8.75),
+('caldera', 'Corrosión en intercambiador de calor', 'media', 18.20),
+('caldera', 'Obstrucción en sistema de combustión', 'alta', 12.30),
+('caldera', 'Sensor de temperatura defectuoso', 'media', 22.40),
+('caldera', 'Ruido anormal durante operación', 'media', 20.15),
+('caldera', 'Pérdida de eficiencia energética', 'media', 28.60),
+
+-- Fallos de BOMBA DE AGUA
+('bomba_de_agua', 'Fuga en sello mecánico', 'alta', 32.50),
+('bomba_de_agua', 'Cavitación en impulsores', 'media', 24.80),
+('bomba_de_agua', 'Vibración excesiva', 'alta', 19.40),
+('bomba_de_agua', 'Sobrecalentamiento del motor', 'alta', 16.70),
+('bomba_de_agua', 'Desgaste de rodamientos', 'media', 35.20),
+('bomba_de_agua', 'Bajo caudal o presión', 'media', 27.90),
+('bomba_de_agua', 'Ruido anormal en operación', 'media', 21.50),
+('bomba_de_agua', 'Fuga en conexiones de tuberías', 'alta', 18.30),
+('bomba_de_agua', 'Fallo en sistema de control', 'media', 14.60),
+
+-- Fallos de ASCENSOR
+('ascensor', 'Fallo en puertas (no cierran correctamente)', 'alta', 38.70),
+('ascensor', 'Ruido excesivo durante movimiento', 'media', 29.40),
+('ascensor', 'Paradas bruscas o irregulares', 'alta', 15.80),
+('ascensor', 'Fallo en botones o panel de control', 'media', 26.50),
+('ascensor', 'Iluminación defectuosa en cabina', 'media', 22.10),
+('ascensor', 'Desnivelación en paradas', 'alta', 17.30),
+('ascensor', 'Fallo en sistema de emergencia', 'alta', 6.20),
+('ascensor', 'Desgaste en cables de tracción', 'alta', 11.40),
+('ascensor', 'Sobrecalentamiento del motor', 'alta', 9.80),
+
+-- Fallos de TRANSFORMADOR
+('transformador', 'Sobrecalentamiento del núcleo', 'alta', 14.20),
+('transformador', 'Pérdida de aceite dieléctrico', 'alta', 18.50),
+('transformador', 'Ruido anormal de operación', 'media', 24.30),
+('transformador', 'Cortocircuito en bobinados', 'alta', 7.60),
+('transformador', 'Degradación del aislamiento', 'alta', 12.90),
+('transformador', 'Vibración excesiva', 'media', 19.70),
+('transformador', 'Fallo en sistema de refrigeración', 'alta', 16.40),
+('transformador', 'Desbalance de voltaje en fases', 'alta', 11.80),
+('transformador', 'Corrosión en terminales', 'media', 22.60)
+ON CONFLICT DO NOTHING;
+
+-- Insertar fallos detectados en activos específicos (historial)
+INSERT INTO activos_fallos (activo_id, fallo_id, estado, notas) VALUES
+-- Activo 1: BombaDeAgua #1 ML
+(1, 9, 'resuelto', 'Fuga detectada en sello mecánico durante inspección rutinaria. Reemplazado el 15/09/2025.'),
+(1, 13, 'en_revision', 'Desgaste leve en rodamientos. Programado para mantenimiento preventivo.'),
+
+-- Activo 2: Bomba Centrífuga A
+(2, 11, 'resuelto', 'Vibración excesiva corregida mediante balanceo de impulsores.'),
+(2, 15, 'detectado', 'Se detectó bajo caudal. Requiere inspección de filtros y válvulas.'),
+
+-- Activo 3: Bomba Hidráulica 1
+(3, 10, 'en_revision', 'Cavitación detectada. Verificando presión de succión.'),
+
+-- Activo 4: Ascensor Norte
+(4, 19, 'resuelto', 'Fallo en puertas corregido mediante ajuste de sensores.'),
+(4, 20, 'detectado', 'Ruido leve durante movimiento. Programada lubricación de guías.'),
+
+-- Activo 5: Transformador Secundario
+(5, 30, 'en_revision', 'Sobrecalentamiento detectado. Verificando sistema de refrigeración.'),
+
+-- Activo 6: Transformador Principal
+(6, 31, 'resuelto', 'Pérdida menor de aceite dieléctrico. Nivel restaurado y sellado verificado.'),
+
+-- Activo 7: Ascensor Central
+(7, 22, 'detectado', 'Paradas con ligera irregularidad. Requiere calibración del sistema de control.'),
+
+-- Activo 8: Bomba de Emergencia
+(8, 14, 'resuelto', 'Verificación de funcionamiento completada. Sin fallos detectados.')
+ON CONFLICT DO NOTHING;
+
+-- NOTA: Los datos de tipos_falla y comentarios se encuentran en 004_insert_tipos_falla.sql

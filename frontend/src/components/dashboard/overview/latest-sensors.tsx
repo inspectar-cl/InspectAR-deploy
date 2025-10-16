@@ -212,7 +212,7 @@ export function LatestSensors({ assetName, imageUrl, sensors = [], sx }: LatestS
       {/* Detalle del sensor seleccionado */}
       <Dialog fullWidth maxWidth="md" open={open} onClose={() => { setOpen(false); }}>
         <DialogTitle>
-          {selected ? `${selected.name} — últimas 24 horas` : 'Sensor'}
+          {selected ? `${selected.name} — últimos 100 datos` : 'Sensor'}
         </DialogTitle>
         <DialogContent dividers>
           {selected?.history24h && selected.history24h.length > 0 ? (
@@ -228,7 +228,7 @@ export function LatestSensors({ assetName, imageUrl, sensors = [], sx }: LatestS
                 <TableBody>
                   {selected.history24h.map((p) => (
                     <TableRow key={p.ts.toString()}>
-                      <TableCell>{dayjs(p.ts).format('MMM D, HH:mm')}</TableCell>
+                        <TableCell>{dayjs(p.ts).format('MMM D, HH:mm:ss')}</TableCell>
                       <TableCell align="right">{p.value}</TableCell>
                       <TableCell>{p.unit}</TableCell>
                     </TableRow>

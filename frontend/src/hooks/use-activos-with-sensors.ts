@@ -101,7 +101,6 @@ export function useActivosWithSensors() {
 
   const fetchActivosWithSensors = useCallback(async () => {
     if (authLoading || !user) {
-      console.log('user/token no disponibles para activos con sensores', { authLoading, user });
       return;
     }
 
@@ -111,7 +110,10 @@ export function useActivosWithSensors() {
     try {
       // Usar el nuevo endpoint con autenticación
       const response = await gs.authorizedGet('/obtener-todos-activos?sensores=true', user.token) as ApiResponse;
+<<<<<<< HEAD
       console.log('📊 Respuesta completa de activos y sensores:', response);
+=======
+>>>>>>> f261526d84692b9615293635720a7117fc68b474
       
       if (!response.activos || response.activos.length === 0) {
         setActivos([]);
@@ -187,11 +189,9 @@ export function useActivosWithSensors() {
         } as ActivoWithSensors;
       });
 
-      // console.log(`✅ Activos procesados:`, activosTransformados.length, activosTransformados);
       setActivos(activosTransformados);
 
     } catch (err) {
-      // console.error('Error fetching activos with sensors:', err);
       setError('Error al cargar los datos de activos y sensores');
     } finally {
       setLoading(false);

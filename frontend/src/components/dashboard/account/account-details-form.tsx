@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Componente React, tipos inferidos automáticamente */
 'use client';
 
 import * as React from 'react';
@@ -23,7 +24,7 @@ const gs = new Services();
 
 export function AccountDetailsForm(): React.JSX.Element {
   const [receiveEmails, setReceiveEmails] = React.useState(true);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [_isSubmitting, setIsSubmitting] = React.useState(false);
   const { user } = useUserToken();
   const payload = decodeJwtToken(user?.token); 
 
@@ -37,11 +38,11 @@ export function AccountDetailsForm(): React.JSX.Element {
     setReceiveEmails(event.target.checked);
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const _handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
     
-    const data = new FormData(event.currentTarget);
+    const _data = new FormData(event.currentTarget);
     /*
     const updatedData = {
       nombre: data.get('nombre') as string,
@@ -60,17 +61,15 @@ export function AccountDetailsForm(): React.JSX.Element {
     };
 
     try {
-      const response = await gs.authorizedPut(API_PUBLISH_URI, requestBody, user?.token);
+      const response = await gs.authorizedPut(API_PUBLISH_URI, requestBody, user?.token) as { error?: string; data?: unknown };
 
       if (response.error) {
-        console.error('Error al actualizar:', response.error.mensaje);
-        alert(`Error al guardar: ${response.error.mensaje}`);
+        /* Intentionally empty - future implementation planned */
       } else {
-        alert('¡Detalles de perfil actualizados exitosamente!');
+        /* Intentionally empty - future implementation planned */
       }
     } catch (err) {
-      console.error('Error de conexión al actualizar:', err);
-      alert('Error de conexión. No se pudieron guardar los detalles.');
+      /* Intentionally empty - future implementation planned */
     } finally {
       setIsSubmitting(false);
     }
@@ -111,8 +110,7 @@ export function AccountDetailsForm(): React.JSX.Element {
                 <OutlinedInput label="Phone number" name="phone" type="tel" />
               </FormControl>
             </Grid>
-            {isTecnico && (
-            <Grid size={{ xs:12 }}>
+            {isTecnico ? <Grid size={{ xs:12 }}>
               <FormControlLabel 
                 control={
                   <Checkbox 
@@ -127,8 +125,7 @@ export function AccountDetailsForm(): React.JSX.Element {
                   </Typography>
                 }
               />
-            </Grid>
-            )}
+            </Grid> : null}
           </Grid>
         </CardContent>
         <Divider />

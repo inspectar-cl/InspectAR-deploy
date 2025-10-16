@@ -20,7 +20,7 @@ import {
 import { esES } from '@mui/x-data-grid/locales';
 
 import { useUserToken } from '@/hooks/use-usertoken';
-import { renderStatus, STATUS_OPTIONS } from './status';
+import { renderStatus, STATUS_OPTIONS, type Activo as ActivoStatus } from './status';
 import Services from '@/modules/Services';
 
 
@@ -70,8 +70,8 @@ const columns: GridColDef<Activo>[] = [
     valueOptions: STATUS_OPTIONS,
     flex: 1,
     minWidth: 100,
-    renderCell: (params: GridRenderCellParams<Activo>) => {
-      return renderStatus(params as any);
+    renderCell: (params: GridRenderCellParams<Activo, Activo['estado']>) => {
+      return renderStatus(params as GridRenderCellParams<ActivoStatus, ActivoStatus['estado']>);
     },
   },
   {
@@ -96,12 +96,10 @@ export default function DataGridDemo({
 
   const getActivos = async (authToken: string) => {
     if (!authToken) {
-      console.error("Token no disponible para getActivos.");
       return;
     }
 
     try {
-      console.log(authToken)
       const response = await gs.authorizedGet('/obtener-todos-activos', authToken) as ApiActivosResponse;
 
       if (response.error) {
@@ -121,7 +119,7 @@ export default function DataGridDemo({
         edificio_id: typeof item.edificio_id === 'number' ? item.edificio_id : Number(item.edificio_id) || 0,
         creado_en: item.creado_en || new Date().toISOString(),
         nombre: item.nombre || 'Activo sin nombre',
-        estado: (item.estado || 'NN') as Activo['estado'],
+        estado: (item.estado || 'NN'),
         tipo: item.tipo || 'Desconocido',
         ubicacion: item.ubicacion || 'Ubicación no especificada',
       }));
@@ -129,7 +127,6 @@ export default function DataGridDemo({
       setActivosList(transformados);
       setError(null);
     } catch (err) {
-      console.error('Error al obtener activos:', err);
       setError('Error de conexión. No se mostrarán activos.');
       setActivosList([]);
     }
@@ -140,7 +137,6 @@ export default function DataGridDemo({
     if (authToken) {
       void getActivos(authToken);
     } else {
-      console.log("Esperando token de usuario...");
       setActivosList([]); 
       setError("Autenticación pendiente o fallida.");
     }
@@ -174,7 +170,7 @@ export default function DataGridDemo({
         <Box sx={{ height: 600, width: '100%' }}>
           <DataGrid
             columnVisibilityModel={columnVisibilityModel}
-            onColumnVisibilityModelChange={(newModel) => setColumnVisibilityModel(newModel)}
+            onColumnVisibilityModelChange={(newModel) => { setColumnVisibilityModel(newModel); }}
             onRowClick={(params: GridRowParams<Activo>) => {
               window.location.href = paths.dashboard.activoDetail(params.row.id.toString());
             }}
@@ -187,7 +183,7 @@ export default function DataGridDemo({
             pageSizeOptions={[9]}
             disableRowSelectionOnClick
             filterModel={filterModel}
-            onFilterModelChange={(newModel) => setFilterModel(newModel)}
+            onFilterModelChange={(newModel) => { setFilterModel(newModel); }}
             localeText={{
               ...esES.components.MuiDataGrid.defaultProps.localeText,
               filterPanelInputLabel: 'Valor a filtrar',

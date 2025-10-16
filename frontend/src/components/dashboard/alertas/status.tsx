@@ -77,3 +77,5 @@ export function renderStatus(params: GridRenderCellParams<Activo, Activo['estado
 
   return <Status status={params.value ?? ''} />;
 }
+
+export type { Activo };

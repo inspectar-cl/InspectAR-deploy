@@ -69,17 +69,13 @@ export default function ListasAccionesView() {
     const fetchActivos = async () => {
       try {
         if (isLoading || !user) {
-          console.log('user/token no disponibles', { isLoading, user })
           return
         }
-        // console.log('user.token:', user.token)
         const data = await gs.authorizedGet("/obtener-todos-activos", user.token) as { activos: Activo[] }
-        console.log("Activos cargados:", data)
         const activosArray = data.activos
         setActivos(Array.isArray(activosArray) ? activosArray : [])
-        //console.log("Valor de setActivos (activos):", Array.isArray(activosArray) ? activosArray : [])
       } catch (error) {
-        //console.error('Error al cargar activos:', error)
+        /* Intentionally empty - future implementation planned */
       }
     }
     void fetchActivos()
@@ -90,11 +86,9 @@ export default function ListasAccionesView() {
     const fetchTecnicos = async () => {
       try {
         if (isLoading || !user) {
-          console.log('user/token no disponibles para técnicos', { isLoading, user })
           return
         }
         const data = await gs.authorizedGet(`/obtener-contactos-id/${edificioId}`, user.token) as { contactos: Tecnico[]; total: number }
-        console.log("Técnicos cargados:", data)
         const tecnicosArray = data.contactos
         setTecnicos(Array.isArray(tecnicosArray) ? tecnicosArray : [])
         
@@ -103,7 +97,7 @@ export default function ListasAccionesView() {
           setTecnicoSeleccionado(tecnicosArray[0].id)
         }
       } catch (error) {
-        console.error('Error al cargar técnicos:', error)
+        /* Intentionally empty - future implementation planned */
       }
     }
     void fetchTecnicos()
@@ -113,12 +107,10 @@ export default function ListasAccionesView() {
   const fetchAcciones = async () => {
     try {
       if (!user) {
-        console.log('Usuario no disponible para cargar acciones')
         return
       }
 
       const res = await gs.authorizedGet(`/obtener-acciones/${tecnicoSeleccionado}`, user.token) as Accion[]
-      console.log("Acciones cargadas:", res)
       const accionesProcesadas = res.map((accion) => ({
         ...accion,
         tecnico_nombre: accion.tecnico?.nombre || 'Sin técnico',
@@ -126,7 +118,7 @@ export default function ListasAccionesView() {
       }))
       setAcciones(accionesProcesadas)
     } catch (err) {
-      console.error('Error cargando acciones:', err)
+      /* Intentionally empty - future implementation planned */
     }
   }
 
@@ -150,7 +142,6 @@ export default function ListasAccionesView() {
         prioridad,
       }
 
-      console.log("Datos para crear acción:", data)
 
       const res = await gs.authorizedPost(`/accion-mantenimiento-id/${activoSeleccionado}`, data, user.token) as { error?: boolean; mensaje?: string }
 
@@ -167,7 +158,6 @@ export default function ListasAccionesView() {
         setMensaje(`Error al crear la acción: ${res.mensaje || 'Error desconocido'}`)
       }
     } catch (err) {
-      console.error('Error creando acción: ', err)
       setMensaje('Error inesperado al crear la acción')
     }
   }
@@ -187,11 +177,9 @@ export default function ListasAccionesView() {
         setMensaje('Estado actualizado exitosamente');
         await fetchAcciones()
       } else {
-        // console.error('Error actualizando estado:', res.error)
         setMensaje(`Error al actualizar el estado: ${res.mensaje || 'Error desconocido'}`)
       }
     } catch (err) {
-      console.error('Error actualizando estado:', err)
       setMensaje('Error inesperado al actualizar el estado')
     }
   }

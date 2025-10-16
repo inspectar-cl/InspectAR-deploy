@@ -58,25 +58,20 @@ function DocumentosAsociados() {
     const fetchActivos = async () => {
       try {
         if (isLoading || !user) {
-          console.log('user/token no disponibles para activos', { isLoading, user })
           return
         }
 
         const data = await gs.authorizedGet("/obtener-todos-activos", user.token) as ActivosDocResponse;
         
-        console.log("Activos cargados:", data);
-
         // Si la API devuelve un objeto con la propiedad 'activos'
         if (data && Array.isArray(data.activos)) {
           setActivos(data.activos);
         } 
         // Si no devuelve nada útil
         else {
-          console.warn("La respuesta no tiene activos válidos");
           setActivos([]);
         }
       } catch (error) {
-        console.error("Error al cargar activos:", error);
         setActivos([]);
       }
     };
@@ -88,7 +83,6 @@ function DocumentosAsociados() {
     const fetchCategorias = async () => {
       try {
         const data = await gs.get("/documentacion/documentos") as DocumentosResponse;
-        //console.log("Respuesta documentos:", data);
 
         const docsData = data.documentos || [];
 
@@ -99,7 +93,6 @@ function DocumentosAsociados() {
 
         setCategorias(categoriasUnicas.filter(c => typeof c === "string"));
       } catch (error) {
-        //console.error("Error al conectar con API Gateway:", error);
         setCategorias([]);
       }
     };
@@ -131,7 +124,7 @@ function DocumentosAsociados() {
         const cats = Array.from(new Set(docsArray.map((d) => d.categoria)));
         setCategorias(cats.filter(c => typeof c === "string"));
         } catch (error) {
-          //console.error("Error al cargar documentos:", error);
+          /* Intentionally empty - future implementation planned */
         }
     };
     if (activos.length > 0) void fetchDocumentos(); // 🔹 Solo corre cuando ya hay activos

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Componente React, tipos inferidos automáticamente */
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -21,13 +22,7 @@ interface ActivoReporte {
   nombre: string;
 }
 interface ActivosResponse {
-  activos?: ActivoReporte[];n
-}
-
-interface ReportePayload {
-    campos: string[];
-    observaciones?: string;
-    firmaDataUrl?: string;
+  activos?: ActivoReporte[];
 }
 
 function GenerarReporte() {
@@ -60,22 +55,18 @@ function GenerarReporte() {
     const fetchActivos = async () => {
       try {
         if (isLoading || !user) {
-          console.log('user/token no disponibles para activos', { isLoading, user })
           return
         }
 
         const data = await gs.authorizedGet('/obtener-todos-activos', user.token) as ActivosResponse;
         
-        console.log("Activos cargados:", data);
 
         if (data && Array.isArray(data.activos)) {
           setActivos(data.activos);
         } else {
-          console.warn("La respuesta no tiene activos válidos");
           setActivos([]);
         }
       } catch (error) {
-        console.error("Error al cargar activos:", error);
         setActivos([]);
       }
     };
@@ -138,9 +129,6 @@ function GenerarReporte() {
         campos: camposSeleccionados,
       };
 
-      console.log('=== EXPORTAR PDF ===');
-      console.log('Activo:', activo);
-      console.log('Payload:', payload);
 
       // Hacer petición con fetch para obtener el blob
       const response = await fetch(`${BASE_URL}/pdf-reporte/${activo}`, {
@@ -152,8 +140,6 @@ function GenerarReporte() {
         body: JSON.stringify(payload),
       });
 
-      console.log('Status de respuesta:', response.status);
-      console.log('Content-Type:', response.headers.get('content-type'));
 
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -161,7 +147,6 @@ function GenerarReporte() {
 
       // Obtener el PDF como blob
       const blob = await response.blob();
-      // console.log('Blob recibido:', blob.size, 'bytes');
 
       // Crear URL local para el blob
       const url = window.URL.createObjectURL(blob);
@@ -184,7 +169,6 @@ function GenerarReporte() {
       }, 10000);
 
     } catch (error) {
-      console.error('Error al exportar PDF:', error);
       setMensaje('No se pudo exportar el PDF');
     }
   };
@@ -202,10 +186,6 @@ function GenerarReporte() {
         campos: camposSeleccionados,
       };
 
-      // console.log('=== VISTA PREVIA PDF ===');
-      // console.log('Activo:', activo);
-      // console.log('Payload:', payload);
-
       // Hacer petición con fetch para obtener el blob
       const response = await fetch(`${BASE_URL}/pdf-reporte/${activo}`, {
         method: 'POST',
@@ -216,26 +196,20 @@ function GenerarReporte() {
         body: JSON.stringify(payload),
       });
 
-      console.log('Status de respuesta:', response.status);
-      // console.log('Content-Type:', response.headers.get('content-type'));
-
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
       // Obtener el PDF como blob
       const blob = await response.blob();
-      console.log('Blob recibido:', blob.size, 'bytes');
 
       // Crear URL local para el blob
       const url = window.URL.createObjectURL(blob);
-      // console.log('URL local creada:', url);
 
       // Establecer la URL para la vista previa
       setPdfUrl(url);
 
     } catch (error) {
-      console.error('Error al generar vista previa:', error);
       setMensaje('No se pudo generar la vista previa');
     }
   };
@@ -320,8 +294,7 @@ function GenerarReporte() {
               </Select>
             </FormControl>
 
-            {selectedSignatureDataUrl && (
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: { sm: 'auto' } }}>
+            {selectedSignatureDataUrl ? <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: { sm: 'auto' } }}>
                 <Box
                   component="img"
                   src={selectedSignatureDataUrl}
@@ -339,8 +312,7 @@ function GenerarReporte() {
                 <Button color="error" variant="outlined" onClick={handleRemoveSelectedSignature}>
                   Quitar
                 </Button>
-              </Stack>
-            )}
+              </Stack> : null}
           </Stack>
         </CardContent>
         <CardActions sx={{ pt: 0 }} />

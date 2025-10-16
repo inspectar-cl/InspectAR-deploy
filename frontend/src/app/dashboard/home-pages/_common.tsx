@@ -36,7 +36,11 @@ const estadoColor: Record<string, 'success' | 'warning' | 'error' | 'default'> =
 const fallbackImg = 'https://via.placeholder.com/640x360?text=Activo';
 
 /** Hook que trae activos del usuario y los ordena por criticidad*/
-export function useActivosDelUsuario() {
+export function useActivosDelUsuario(): {
+  activos: Activo[] | null;
+  loading: boolean;
+  err: string | null;
+} {
   const { user, isLoading } = useUserToken();
   const [activos, setActivos] = React.useState<Activo[] | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -52,17 +56,16 @@ export function useActivosDelUsuario() {
       setLoading(true);
       setErr(null);
       try {
-        // edificios del usuario
-        const edificiosIds = new Set((user.edificio || []).map((e: any) => e.id));
+        const edificiosIds = new Set(user.edificio?.map((e) => e.id) ?? []);
         const severity: Record<Estado, number> = { Crítico: 3, Medio: 2, OK: 1, NN: 0 };
 
-        // Obtener los activos
         const resp = await gs.authorizedGet('/obtener-activos-id/1', user.token) as ApiActivosResponse;
         if (resp?.error) {
           setErr(resp.error.mensaje || 'Error al obtener activos.');
           setActivos(null);
           return;
         }
+
         const filtrados = (resp?.activos ?? [])
           .filter(a => edificiosIds.has(a.edificio_id))
           .sort((a, b) => severity[b.estado] - severity[a.estado]);
@@ -174,7 +177,6 @@ export function ActivosGrid({ title }: { title: string }) {
                         color={estadoColor[a.estado] ?? 'default'}
                         size="small"
                         sx={{ fontWeight: 600 }}
-                        onClick={() => {}}
                         />
                     </Stack>
                     <Typography

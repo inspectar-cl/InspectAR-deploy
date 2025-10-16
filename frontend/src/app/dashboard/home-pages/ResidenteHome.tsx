@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Box, Typography } from '@mui/material';
 import { ActivosGrid } from './_common';
 
-export default function ResidenteHome() {
+export default function ResidenteHome(): React.JSX.Element {
   return (
     <Box>
       <Typography variant="h5" sx={{ mb: 1 }}>

@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Box, Typography, Stack, Button } from '@mui/material';
 import { ActivosGrid } from './_common';
 
-export default function TecnicoHome() {
+export default function TecnicoHome(): React.JSX.Element {
   return (
     <Box>
       <Typography variant="h5" sx={{ mb: 1 }}>

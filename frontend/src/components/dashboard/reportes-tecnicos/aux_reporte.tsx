@@ -5,8 +5,9 @@ import { useEffect, useState } from 'react';
 import {
   Box, Button, TextField, Select, MenuItem, Snackbar, Alert,
   FormControl, InputLabel, Checkbox, ListItemText, OutlinedInput,
-  Stack, Typography, Card, CardContent, CardActions
+  Stack, Typography, Card, CardContent, CardActions, CircularProgress, IconButton
 } from '@mui/material';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import type { SelectChangeEvent } from '@mui/material';
 import Services from '@/modules/Services';
 import type { SavedSignature } from '@/components/dashboard/reportes-tecnicos/SignatureDialog';
@@ -76,10 +77,94 @@ async function uploadSignatureFile({
   }
 
   const json = await resp.json();
-  // esperado: { firma: { id, ... } } o { id, ... }
   const id = json?.firma?.id ?? json?.id;
   if (!id) throw new Error('El backend no devolvió firma_id');
   return Number(id);
+}
+
+/** Obtiene firmas guardadas del usuario (lista) */
+async function fetchUserSignatures({
+  baseUrl,
+  token,
+  email,
+}: {
+  baseUrl: string;
+  token: string;
+  email: string;
+}): Promise<Array<{ id: number; nombre_archivo: string; tipo_mime?: string; formato?: string }>> {
+  const resp = await fetch(`${baseUrl}/gestion/firmas/usuario/${encodeURIComponent(email)}`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  console.log(baseUrl, token, email);
+  if (!resp.ok) {
+    let msg = `Error obteniendo firmas (${resp.status})`;
+    console.log("ola2");
+    try {
+      const j = await resp.json();
+      msg = j?.error || msg;
+    } catch {}
+    throw new Error(msg);
+  }
+  console.log("ola");
+  console.log(resp);
+  const json = await resp.json();
+  // esperado: array de firmas
+  return Array.isArray(json) ? json : (json?.firmas || []);
+}
+
+/** Descarga imagen de una firma guardada y devuelve un ObjectURL para preview */
+async function fetchSignatureImageObjectUrl({
+  baseUrl,
+  token,
+  firmaId,
+}: {
+  baseUrl: string;
+  token: string;
+  firmaId: number;
+}): Promise<string> {
+  const resp = await fetch(`${baseUrl}/gestion/firmas/${firmaId}/imagen`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!resp.ok) {
+    throw new Error(`No se pudo descargar la imagen de la firma (${resp.status})`);
+  }
+  const blob = await resp.blob();
+  return URL.createObjectURL(blob);
+}
+
+/** Marca una firma como predeterminada (PUT) */
+async function setSignatureAsDefault({
+  baseUrl,
+  token,
+  firmaId,
+  nombreArchivo = '',
+}: {
+  baseUrl: string;
+  token: string;
+  firmaId: number;
+  nombreArchivo?: string; // si envías "", el backend no lo cambia (según tu handler)
+}) {
+  const resp = await fetch(`${baseUrl}/gestion/firmas/${firmaId}`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      nombre_archivo: nombreArchivo,
+      es_predeterminada: true,
+    }),
+  });
+  if (!resp.ok) {
+    let msg = `No se pudo marcar como predeterminada (${resp.status})`;
+    try {
+      const j = await resp.json();
+      msg = j?.error || msg;
+    } catch {}
+    throw new Error(msg);
+  }
+  return resp.json();
 }
 
 function GenerarReporte() {
@@ -103,11 +188,24 @@ function GenerarReporte() {
   ];
 
   const datos = decodeJwtToken(user?.token);
+  const email = (datos?.email as string) || '';
   const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
+
+  // LOCAL (dibujadas/temporales) – las conservamos para tu canvas
   const { signatures, addSignature, removeSignature } = useSignatures();
-  const [selectedSignatureDataUrl, setSelectedSignatureDataUrl] = useState<string | null>(null);
-  const [selectedSignatureId, setSelectedSignatureId] = useState<string>('');
-  const [firmaId, setFirmaId] = useState<number | null>(null); // <- NUEVO
+
+  // BACKEND: firmas guardadas en la cuenta
+  const [savedSignatures, setSavedSignatures] = useState<
+    Array<{ id: number; nombre_archivo: string; tipo_mime?: string; formato?: string }>
+  >([]);
+  const [loadingSaved, setLoadingSaved] = useState(false);
+
+  // selección actual
+  const [selectedSignaturePreviewUrl, setSelectedSignaturePreviewUrl] = useState<string | null>(null);
+  const [selectedSavedSignatureId, setSelectedSavedSignatureId] = useState<number | null>(null);
+
+  // id de firma a usar en el PDF
+  const [firmaId, setFirmaId] = useState<number | null>(null);
 
   // cargar activos
   useEffect(() => {
@@ -129,29 +227,100 @@ function GenerarReporte() {
     void fetchActivos();
   }, [isLoading, user]);
 
-  // actualizar dataUrl al elegir una firma guardada
+  // limpiar selección al cambiar de activo
   useEffect(() => {
-    if (!selectedSignatureId) {
+    setSelectedSavedSignatureId(null);
+    setSelectedSignaturePreviewUrl(null);
+    setFirmaId(null);
+  }, [activo]);
+
+  // === FIRMAS GUARDADAS (backend) ===
+  const handleOpenSavedSignatures = async () => {
+    if (!user?.token || !email) {
+      setMensaje('Usuario no autenticado o sin email');
+      return;
+    }
+    try {
+      setLoadingSaved(true);
+      const list = await fetchUserSignatures({
+        baseUrl: BASE_URL,
+        token: user.token,
+        email,
+      });
+      setSavedSignatures(list);
+    } catch (err: any) {
+      console.error(err);
+      setMensaje(err?.message || 'No se pudieron cargar las firmas');
+    } finally {
+      setLoadingSaved(false);
+    }
+  };
+
+  const handleRefreshSavedSignatures = async () => {
+    await handleOpenSavedSignatures();
+  };
+
+  const handleSelectSavedSignature = async (val: string | number) => {
+    const idNum = typeof val === 'string' ? Number(val) : val;
+    setSelectedSavedSignatureId(idNum);
+    setFirmaId(null); // aún no la "usamos", solo seleccionamos para ver preview
+    setSelectedSignaturePreviewUrl(null);
+
+    if (!user?.token) return;
+    try {
+      const url = await fetchSignatureImageObjectUrl({
+        baseUrl: BASE_URL,
+        token: user.token,
+        firmaId: idNum,
+      });
+      setSelectedSignaturePreviewUrl(url);
+    } catch (err: any) {
+      console.error(err);
+      setMensaje(err?.message || 'No se pudo mostrar la imagen de la firma');
+    }
+  };
+
+  const handleUseSavedSignature = async () => {
+    if (!selectedSavedSignatureId || !user?.token) return;
+    try {
+      // 1) marcar como predeterminada (según pediste)
+      await setSignatureAsDefault({
+        baseUrl: BASE_URL,
+        token: user.token,
+        firmaId: selectedSavedSignatureId,
+        nombreArchivo: '', // deja el nombre igual
+      });
+
+      // 2) setearla como firma a usar en este reporte
+      setFirmaId(selectedSavedSignatureId);
+      setMensaje(`Firma #${selectedSavedSignatureId} marcada como predeterminada y lista para usar`);
+
+    } catch (err: any) {
+      console.error(err);
+      setMensaje(err?.message || 'No se pudo usar la firma seleccionada');
+    }
+  };
+
+  // === FIRMAS DIBUJADAS/TEMPORALES (canvas) ===
+  const [selectedSignatureDataUrl, setSelectedSignatureDataUrl] = useState<string | null>(null);
+  const [selectedLocalId, setSelectedLocalId] = useState<string>('');
+
+  // actualizar preview al elegir una firma local guardada (hook local)
+  useEffect(() => {
+    if (!selectedLocalId) {
       setSelectedSignatureDataUrl(null);
       return;
     }
-    const found = signatures.find((s) => s.id === selectedSignatureId);
+    const found = signatures.find((s) => s.id === selectedLocalId);
     setSelectedSignatureDataUrl(found?.dataUrl ?? null);
-  }, [selectedSignatureId, signatures]);
+  }, [selectedLocalId, signatures]);
 
-  // limpiar firma al cambiar de activo
-  useEffect(() => {
-    setSelectedSignatureId('');
-    setSelectedSignatureDataUrl(null);
-    setFirmaId(null); // <- limpia firma subida para este nuevo activo
-  }, [activo]);
-
-  // callback del diálogo: recibe dataUrl (ya sea de canvas o archivo leído como dataURL)
+  // callback del diálogo: recibe dataUrl (canvas o archivo leído como dataURL)
   const handleUseSignature = async (dataUrl: string, persist?: boolean) => {
     try {
-      // 1) Mostrar en UI
+      // preview local
       const id = crypto.randomUUID();
-      setSelectedSignatureId(id);
+      setSelectedLocalId(id);
       setSelectedSignatureDataUrl(dataUrl);
 
       if (persist) {
@@ -165,13 +334,10 @@ function GenerarReporte() {
         addSignature(item);
       }
 
-      // 2) Subir a backend de gestión para obtener firma_id
-      if (!user?.token) throw new Error('Usuario no autenticado');
-      const email = (datos?.email as string) || 'usuario@example.com';
-
+      // subir para obtener firma_id
+      if (!user?.token || !email) throw new Error('Usuario no autenticado');
       const blob = dataUrlToBlob(dataUrl);
-      const fileName =
-        blob.type.includes('jpeg') || blob.type.includes('jpg') ? 'firma.jpg' : 'firma.png';
+      const fileName = blob.type.includes('jpeg') || blob.type.includes('jpg') ? 'firma.jpg' : 'firma.png';
 
       const newFirmaId = await uploadSignatureFile({
         baseUrl: BASE_URL,
@@ -179,7 +345,7 @@ function GenerarReporte() {
         email,
         fileBlob: blob,
         fileName,
-        esPredeterminada: true, // cámbialo a true si quieres marcarla por defecto
+        esPredeterminada: false, // o true si quieres que quede por defecto
       });
 
       setFirmaId(newFirmaId);
@@ -193,28 +359,23 @@ function GenerarReporte() {
   };
 
   const handleRemoveSelectedSignature = () => {
-    if (selectedSignatureId) {
-      removeSignature(selectedSignatureId);
-      setSelectedSignatureId('');
+    if (selectedLocalId) {
+      removeSignature(selectedLocalId);
+      setSelectedLocalId('');
     }
+    // limpiamos ambas previews
     setSelectedSignatureDataUrl(null);
+    setSelectedSignaturePreviewUrl(null);
+    setSelectedSavedSignatureId(null);
     setFirmaId(null);
   };
 
   /** Arma el payload de reporte según haya firma_id o no */
   const buildPayload = (): any => {
-    const email = datos?.email;
     if (firmaId) {
-      return {
-        campos: camposSeleccionados,
-        firma_id: firmaId, // prioridad si hay firma subida en esta sesión
-      };
+      return { campos: camposSeleccionados, firma_id: firmaId };
     }
-    return {
-      campos: camposSeleccionados,
-      usar_firma_predeterminada: true, // fallback al flujo del MD
-      email,
-    };
+    return { campos: camposSeleccionados, usar_firma_predeterminada: true, email };
   };
 
   // exportar PDF
@@ -228,38 +389,21 @@ function GenerarReporte() {
     try {
       const payload = buildPayload();
 
-      console.log('=== EXPORTAR PDF ===');
-      console.log('Activo seleccionado:', activo);
-      console.log('Payload a enviar:', payload);
-      console.log('URL completa:', `${BASE_URL}/gestion/reportes/activo/${activo}`);
-
       const response = await fetch(`${BASE_URL}/gestion/reportes/activo/${activo}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
         body: JSON.stringify(payload),
       });
 
-      console.log('Status de respuesta:', response.status);
-      console.log('Content-Type:', response.headers.get('content-type'));
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
+      if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
 
       const blob = await response.blob();
-      console.log('Blob recibido:', blob.size, 'bytes, tipo:', blob.type);
-
       const url = window.URL.createObjectURL(blob);
 
       const activoSeleccionado = activos.find((a) => a.id === activo);
       const nombreActivo = activoSeleccionado ? activoSeleccionado.nombre.replace(/\s+/g, '_') : 'Reporte';
       const fecha = new Date().toISOString().split('T')[0].replace(/-/g, '');
       const nombreArchivo = `Reporte_${nombreActivo}_${fecha}.pdf`;
-
-      console.log('Descargando como:', nombreArchivo);
 
       const link = document.createElement('a');
       link.href = url;
@@ -268,9 +412,7 @@ function GenerarReporte() {
       link.click();
       document.body.removeChild(link);
 
-      setTimeout(() => {
-        window.URL.revokeObjectURL(url);
-      }, 10000);
+      setTimeout(() => window.URL.revokeObjectURL(url), 10000);
     } catch (error) {
       console.error('Error al exportar PDF:', error);
       setMensaje('No se pudo exportar el PDF');
@@ -288,32 +430,16 @@ function GenerarReporte() {
     try {
       const payload = buildPayload();
 
-      console.log('=== VISTA PREVIA PDF ===');
-      console.log('Activo seleccionado:', activo);
-      console.log('Payload a enviar:', payload);
-
       const response = await fetch(`${BASE_URL}/gestion/reportes/activo/${activo}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
         body: JSON.stringify(payload),
       });
 
-      console.log('Status de respuesta:', response.status);
-      console.log('Content-Type:', response.headers.get('content-type'));
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
+      if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
 
       const blob = await response.blob();
-      console.log('Blob recibido:', blob.size, 'bytes, tipo:', blob.type);
-
       const url = window.URL.createObjectURL(blob);
-      console.log('URL local creada:', url);
-
       setPdfUrl(url);
     } catch (error) {
       console.error('Error al generar vista previa:', error);
@@ -331,9 +457,7 @@ function GenerarReporte() {
             labelId="activo-label"
             value={activo}
             label="Seleccionar Activo"
-            onChange={(e) => {
-              setActivo(e.target.value);
-            }}
+            onChange={(e) => setActivo(e.target.value)}
             input={<OutlinedInput label="Seleccionar Activo" />}
             displayEmpty
             renderValue={(selected) => {
@@ -365,47 +489,72 @@ function GenerarReporte() {
       {/* Firma del técnico */}
       <Card variant="outlined" sx={{ mb: 2 }}>
         <CardContent>
-          <Typography variant="h6" sx={{ mb: 1 }}>
-            Firma del técnico
-          </Typography>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography variant="h6" sx={{ mb: 1 }}>
+              Firma del técnico
+            </Typography>
+            <Button variant="outlined" onClick={() => setSignatureDialogOpen(true)}>
+              Agregar firma (dibujar/subir)
+            </Button>
+          </Stack>
 
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
-            <Button variant="outlined" onClick={() => { setSignatureDialogOpen(true); }}>
-              Agregar firma
-            </Button>
+            {/* Selector de firmas guardadas (backend) */}
+            <FormControl sx={{ minWidth: 280 }}>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
+                <InputLabel id="firmas-guardadas-label" shrink>
+                  Firmas guardadas
+                </InputLabel>
+                <IconButton
+                  aria-label="refrescar"
+                  size="small"
+                  onClick={handleRefreshSavedSignatures}
+                  title="Refrescar"
+                  sx={{ mt: 0.5 }}
+                >
+                  <RefreshIcon fontSize="inherit" />
+                </IconButton>
+              </Stack>
 
-            <FormControl sx={{ minWidth: 240 }}>
-              <InputLabel id="firmas-guardadas-label" shrink>
-                Firmas guardadas
-              </InputLabel>
               <Select
                 labelId="firmas-guardadas-label"
-                value={selectedSignatureId}
-                onChange={(e) => { setSelectedSignatureId(e.target.value); }}
+                value={selectedSavedSignatureId ?? ''}
+                onOpen={handleOpenSavedSignatures}
+                onChange={(e) => handleSelectSavedSignature(e.target.value)}
                 input={<OutlinedInput label="Firmas guardadas" />}
                 displayEmpty
                 renderValue={(selected) => {
                   if (!selected) return <em>Ninguna</em>;
-                  const sig = signatures.find((s) => s.id === selected);
-                  return sig?.name ?? selected;
+                  const idSel = Number(selected);
+                  const sig = savedSignatures.find((s) => s.id === idSel);
+                  return sig?.nombre_archivo ? `${sig.nombre_archivo} (#${idSel})` : `#${idSel}`;
                 }}
               >
                 <MenuItem value="">
                   <em>Ninguna</em>
                 </MenuItem>
-                {signatures.map((sig) => (
-                  <MenuItem key={sig.id} value={sig.id}>
-                    {sig.name || sig.id}
+                {loadingSaved ? (
+                  <MenuItem disabled>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <CircularProgress size={16} /> <span>Cargando...</span>
+                    </Stack>
                   </MenuItem>
-                ))}
+                ) : (
+                  savedSignatures.map((sig) => (
+                    <MenuItem key={sig.id} value={sig.id}>
+                      {sig.nombre_archivo || `Firma #${sig.id}`}
+                    </MenuItem>
+                  ))
+                )}
               </Select>
             </FormControl>
 
-            {selectedSignatureDataUrl ? (
+            {/* Preview: puede venir de local (canvas) o de backend */}
+            {(selectedSignatureDataUrl || selectedSignaturePreviewUrl) ? (
               <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: { sm: 'auto' } }}>
                 <Box
                   component="img"
-                  src={selectedSignatureDataUrl}
+                  src={selectedSignatureDataUrl || selectedSignaturePreviewUrl || undefined}
                   alt="Firma seleccionada"
                   sx={{
                     height: 60,
@@ -417,12 +566,20 @@ function GenerarReporte() {
                     background: '#fff',
                   }}
                 />
+                {/* Quitar limpia la selección y el firmaId */}
                 <Button color="error" variant="outlined" onClick={handleRemoveSelectedSignature}>
                   Quitar
                 </Button>
+                {/* Usar: solo visible si la firma es del backend */}
+                {selectedSavedSignatureId ? (
+                  <Button color="primary" variant="contained" onClick={handleUseSavedSignature}>
+                    Usar
+                  </Button>
+                ) : null}
               </Stack>
             ) : null}
           </Stack>
+
           {firmaId ? (
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
               Firma asociada al reporte: #{firmaId}
@@ -480,7 +637,7 @@ function GenerarReporte() {
           rows={3}
           fullWidth
           value={observaciones}
-          onChange={(e) => { setObservaciones(e.target.value); }}
+          onChange={(e) => setObservaciones(e.target.value)}
         />
         <Button variant="contained" sx={{ mt: 1 }}>
           Guardar Observaciones
@@ -491,19 +648,17 @@ function GenerarReporte() {
       <Snackbar
         open={Boolean(mensaje)}
         autoHideDuration={4000}
-        onClose={() => {
-          setMensaje(null);
-        }}
+        onClose={() => setMensaje(null)}
       >
-        <Alert severity="warning" onClose={() => { setMensaje(null); }}>
+        <Alert severity="warning" onClose={() => setMensaje(null)}>
           {mensaje}
         </Alert>
       </Snackbar>
 
-      {/* Diálogo de firma */}
+      {/* Diálogo de firma (dibujar/subir) */}
       <SignatureDialog
         open={signatureDialogOpen}
-        onClose={() => { setSignatureDialogOpen(false); }}
+        onClose={() => setSignatureDialogOpen(false)}
         onUseSignature={handleUseSignature}
       />
     </Box>

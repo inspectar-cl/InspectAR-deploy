@@ -3,4 +3,5 @@ export interface DecodedJwt {
     device: string;
     exp: number;
     scope: string;
+    email: string;
 }

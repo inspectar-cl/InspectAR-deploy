@@ -31,6 +31,7 @@ func SetupRouter(dataHandler *handlers.DataHandler, statusHandler *handlers.Sens
 	r.POST("/activo/:activo_id/sensores", dataHandler.AddSensorToActivo)
 	r.GET("/activo/edificio/:edificio_id", dataHandler.GetActivosByEdificio)
 	r.GET("/lectura/:activo_id/datos", dataHandler.GetSensorByActivo)
+	r.GET("/lectura/:activo_id/window", dataHandler.GetSensorByActivoWindow)
 	r.GET("/lectura/:activo_id/datos/ultimo", dataHandler.GetSensorLastData)
 	r.PUT("/activo/:activo_id/estado", dataHandler.UpdActivoEstado)
 

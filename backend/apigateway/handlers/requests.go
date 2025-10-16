@@ -727,6 +727,7 @@ func ObtenerActivosPorEdificio(c *gin.Context) {
     var wg sync.WaitGroup
     var mu sync.Mutex
     activos := []interface{}{}
+    estadosMap := make(map[int]string) // Agregar declaración del mapa de estados
     
     wg.Add(1)
     // Goroutine para obtener activos del edificio
@@ -757,9 +758,103 @@ func ObtenerActivosPorEdificio(c *gin.Context) {
 
     wg.Wait() // Esperar a que termine la goroutine de activos
 
+    // Obtener el estado de cada activo mediante el parser
+    wg.Add(1)
+    go func() {
+        defer wg.Done()
+        url := fmt.Sprintf("%s/activo/edificio/%s", parserURL, idEdificio)
+
+        resp, err := httpClient.Get(url)
+        if err != nil {
+            fmt.Println("Error obteniendo estados de activos: ", err)
+            return
+        }
+        defer resp.Body.Close()
+
+        // Primero intentar decodificar como objeto con clave "activos"
+        var responseData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+            fmt.Println("Error decodificando respuesta de estados: ", err)
+            return
+        }
+
+        // fmt.Printf("DEBUG: Respuesta completa del parser: %+v\n", responseData)
+
+        // Extraer el array de estados (puede estar en diferentes claves)
+        var estadosArray []interface{}
+        
+        // Intentar varias posibles claves
+        if activos, exists := responseData["activos"]; exists {
+            if arr, ok := activos.([]interface{}); ok {
+                estadosArray = arr
+            }
+        }
+
+        mu.Lock()
+        for _, estadoItem := range estadosArray {
+            if estadoData, ok := estadoItem.(map[string]interface{}); ok {
+                if activoID, exists := estadoData["activo_id"]; exists {
+                    // Convertir activo_id a int
+                    var id int
+                    switch v := activoID.(type) {
+                    case float64:
+                        id = int(v)
+                    case int:
+                        id = v
+                    default:
+                        fmt.Printf("Tipo inesperado para activo_id: %T\n", activoID)
+                        continue
+                    }
+                    
+                    // Guardar estado
+                    if estado, existsEstado := estadoData["estado"]; existsEstado {
+                        if estadoStr, ok := estado.(string); ok {
+                            estadosMap[id] = estadoStr
+                        }
+                    }
+                }
+            }
+        }
+        mu.Unlock()
+    }()
+
+    wg.Wait() // Esperar a que termine la goroutine de estados
+
+    // Agregar el estado a cada activo en la lista
+    activosConEstado := []interface{}{}
+    for _, activo := range activos {
+        if activoMap, ok := activo.(map[string]interface{}); ok {
+            // Obtener el ID del activo
+            if idInterface, exists := activoMap["id"]; exists {
+                var activoID int
+                
+                // Convertir el ID a int
+                switch v := idInterface.(type) {
+                case float64:
+                    activoID = int(v)
+                case int:
+                    activoID = v
+                default:
+                    fmt.Printf("Tipo inesperado para id de activo: %T\n", idInterface)
+                    activosConEstado = append(activosConEstado, activoMap)
+                    continue
+                }
+                
+                // Buscar el estado en el mapa
+                if estado, encontrado := estadosMap[activoID]; encontrado {
+                    activoMap["estado"] = estado
+                } else {
+                    // Si no se encuentra estado, poner "Desconocido"
+                    activoMap["estado"] = "Desconocido"
+                }
+            }
+            activosConEstado = append(activosConEstado, activoMap)
+        }
+    }
+
     result := map[string]interface{}{
-        "activos": activos,
-        "total": len(activos),
+        "activos": activosConEstado,
+        "total": len(activosConEstado),
     }
 
     c.JSON(http.StatusOK, result)
@@ -1511,7 +1606,7 @@ func ObtenerAcciones(c *gin.Context) {
 
     // Hacer GET al microservicio de gestión
     // url := fmt.Sprintf("%s/acciones/tecnico/%s", gestionURL, email)
-    url := fmt.Sprintf("%s/acciones/tecnico/%s", gestionURL, 1) // TODO: Hay que cambiarlo por el id, ya que le llegaría, en teoría desde la url
+    url := fmt.Sprintf("%s/acciones/tecnico/%s", gestionURL, id)
     resp, err := httpClient.Get(url)
     if err != nil {
         fmt.Println("Error obteniendo acciones: ", err)
@@ -1730,8 +1825,7 @@ func ActualizarEstadoContactoHandler(c *gin.Context) {
     req.Header.Set("Content-Type", "application/json")
 
     // Ejecutar la petición
-    client := &http.Client{Timeout: 15 * time.Second}
-    resp, err := client.Do(req)
+    resp, err := httpClient.Do(req)
     if err != nil {
         fmt.Println("Error enviando la actualización de estado: ", err)
         c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al actualizar el estado del contacto"})
@@ -1749,6 +1843,472 @@ func ActualizarEstadoContactoHandler(c *gin.Context) {
             return
         }
         c.JSON(resp.StatusCode, gin.H{"error": "Error al actualizar el estado del contacto"})
+        return
+    }
+
+    // Leer la respuesta exitosa
+    var responseData map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+        fmt.Println("Error decodificando respuesta: ", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando respuesta"})
+        return
+    }
+
+    // Retornar la respuesta del microservicio
+    c.JSON(http.StatusOK, responseData)
+}
+
+func ObtenerTodosActivos(c *gin.Context) {
+    var wg sync.WaitGroup
+    var mu sync.Mutex
+    activos := []interface{}{}
+    estadosMap := make(map[int]string)
+    sensoresMap := make(map[int]interface{})
+
+    // Verificar si se solicitan sensores
+    incluirSensores := c.Query("sensores") == "true"
+
+    wg.Add(1)
+    // Goroutine para obtener todos los activos desde Gestión
+    go func() {
+        defer wg.Done()
+        url := fmt.Sprintf("%s/activos", gestionURL)
+        
+        resp, err := httpClient.Get(url)
+        if err != nil {
+            fmt.Println("Error obteniendo todos los activos: ", err)
+            return
+        }
+        defer resp.Body.Close()
+        
+        var data map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+            fmt.Println("Error decodificando activos: ", err)
+            return
+        }
+        
+        if activosData, exists := data["activos"]; exists {
+            if activosArray, ok := activosData.([]interface{}); ok {
+                mu.Lock()
+                activos = activosArray
+                mu.Unlock()
+            }
+        }
+    }()
+
+    wg.Wait() // Esperar a que termine la goroutine de activos
+
+    // Si se solicitan sensores, consultar individualmente cada activo en el parser
+    if incluirSensores {
+        fmt.Println("DEBUG: Consultando sensores para cada activo")
+        
+        for _, activo := range activos {
+            if activoMap, ok := activo.(map[string]interface{}); ok {
+                if idInterface, exists := activoMap["id"]; exists {
+                    var activoID int
+                    
+                    // Convertir el ID a int
+                    switch v := idInterface.(type) {
+                    case float64:
+                        activoID = int(v)
+                    case int:
+                        activoID = v
+                    default:
+                        fmt.Printf("Tipo inesperado para id de activo: %T\n", idInterface)
+                        continue
+                    }
+
+                    // Consultar sensores y datos para este activo específico
+                    wg.Add(1)
+                    go func(aID int) {
+                        defer wg.Done()
+                        
+                        // Consultar información de sensores (estado, tipo, unidad, etc.)
+                        url := fmt.Sprintf("%s/activo/%d", parserURL, aID)
+                        resp, err := httpClient.Get(url)
+                        if err != nil {
+                            fmt.Printf("Error obteniendo sensores para activo %d: %v\n", aID, err)
+                            return
+                        }
+                        defer resp.Body.Close()
+
+                        var activoData map[string]interface{}
+                        if err := json.NewDecoder(resp.Body).Decode(&activoData); err != nil {
+                            fmt.Printf("Error decodificando datos del activo %d: %v\n", aID, err)
+                            return
+                        }
+
+                        mu.Lock()
+                        // Guardar estado si existe
+                        if estado, exists := activoData["estado"]; exists {
+                            if estadoStr, ok := estado.(string); ok {
+                                estadosMap[aID] = estadoStr
+                            }
+                        }
+
+                        // Obtener sensores
+                        var sensoresArray []interface{}
+                        if sensores, exists := activoData["sensores"]; exists {
+                            if sensoresArr, ok := sensores.([]interface{}); ok {
+                                sensoresArray = sensoresArr
+                            }
+                        }
+                        mu.Unlock()
+
+                        // Consultar datos históricos de sensores
+                        urlDatos := fmt.Sprintf("%s/lectura/%d/datos", parserURL, aID)
+                        respDatos, err := httpClient.Get(urlDatos)
+                        if err != nil {
+                            fmt.Printf("Error obteniendo datos para activo %d: %v\n", aID, err)
+                            // Guardar sensores sin datos
+                            mu.Lock()
+                            sensoresMap[aID] = sensoresArray
+                            mu.Unlock()
+                            return
+                        }
+                        defer respDatos.Body.Close()
+
+                        var datosResponse map[string]interface{}
+                        if err := json.NewDecoder(respDatos.Body).Decode(&datosResponse); err != nil {
+                            fmt.Printf("Error decodificando datos históricos del activo %d: %v\n", aID, err)
+                            // Guardar sensores sin datos
+                            mu.Lock()
+                            sensoresMap[aID] = sensoresArray
+                            mu.Unlock()
+                            return
+                        }
+
+                        // Crear un mapa de datos por sensor_id
+                        datosMap := make(map[string]interface{})
+                        if sensoresDatos, exists := datosResponse["sensores"]; exists {
+                            if sensoresDatosArray, ok := sensoresDatos.([]interface{}); ok {
+                                for _, sensorDato := range sensoresDatosArray {
+                                    if sensorDatoMap, ok := sensorDato.(map[string]interface{}); ok {
+                                        if sensorID, exists := sensorDatoMap["sensor_id"]; exists {
+                                            if datos, existsDatos := sensorDatoMap["datos"]; existsDatos {
+                                                datosMap[fmt.Sprintf("%v", sensorID)] = datos
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Agregar los datos a cada sensor
+                        for _, sensor := range sensoresArray {
+                            if sensorMap, ok := sensor.(map[string]interface{}); ok {
+                                if sensorID, exists := sensorMap["sensor_id"]; exists {
+                                    sensorIDStr := fmt.Sprintf("%v", sensorID)
+                                    if datos, encontrado := datosMap[sensorIDStr]; encontrado {
+                                        sensorMap["datos"] = datos
+                                    } else {
+                                        sensorMap["datos"] = nil
+                                    }
+                                }
+                            }
+                        }
+
+                        // Guardar sensores con datos
+                        mu.Lock()
+                        sensoresMap[aID] = sensoresArray
+                        mu.Unlock()
+
+                    }(activoID)
+                }
+            }
+        }
+
+        wg.Wait() // Esperar a que terminen todas las consultas de sensores
+    } else {
+        // Si NO se solicitan sensores, usar el endpoint global para estados
+        wg.Add(1)
+        go func() {
+            defer wg.Done()
+            url := fmt.Sprintf("%s/activo", parserURL)
+
+            resp, err := httpClient.Get(url)
+            if err != nil {
+                fmt.Println("Error obteniendo estados de activos: ", err)
+                return
+            }
+            defer resp.Body.Close()
+
+            // Extraer el array de estados
+            var estadosArray []interface{}
+
+            // Intentar decodificar primero como array directo
+            if err := json.NewDecoder(resp.Body).Decode(&estadosArray); err != nil {
+                // Si falla, intentar como objeto con clave "activos"
+                resp.Body.Close()
+                resp, err = httpClient.Get(url)
+                if err != nil {
+                    fmt.Println("Error obteniendo estados de activos (segundo intento): ", err)
+                    return
+                }
+                defer resp.Body.Close()
+
+                var responseData map[string]interface{}
+                if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+                    fmt.Println("Error decodificando respuesta de estados: ", err)
+                    return
+                }
+
+                if activos, exists := responseData["activos"]; exists {
+                    if arr, ok := activos.([]interface{}); ok {
+                        estadosArray = arr
+                    }
+                }
+            }
+
+            mu.Lock()
+            for _, estadoItem := range estadosArray {
+                if estadoData, ok := estadoItem.(map[string]interface{}); ok {
+                    if activoID, exists := estadoData["activo_id"]; exists {
+                        // Convertir activo_id a int
+                        var id int
+                        switch v := activoID.(type) {
+                        case float64:
+                            id = int(v)
+                        case int:
+                            id = v
+                        default:
+                            fmt.Printf("Tipo inesperado para activo_id: %T\n", activoID)
+                            continue
+                        }
+                        
+                        // Guardar estado
+                        if estado, existsEstado := estadoData["estado"]; existsEstado {
+                            if estadoStr, ok := estado.(string); ok {
+                                estadosMap[id] = estadoStr
+                            }
+                        }
+                    }
+                }
+            }
+            mu.Unlock()
+        }()
+
+        wg.Wait() // Esperar a que termine la goroutine de estados
+    }
+
+    // Agregar el estado (y sensores si se solicitaron) a cada activo en la lista
+    activosConEstado := []interface{}{}
+    for _, activo := range activos {
+        if activoMap, ok := activo.(map[string]interface{}); ok {
+            // Obtener el ID del activo
+            if idInterface, exists := activoMap["id"]; exists {
+                var activoID int
+                
+                // Convertir el ID a int
+                switch v := idInterface.(type) {
+                case float64:
+                    activoID = int(v)
+                case int:
+                    activoID = v
+                default:
+                    fmt.Printf("Tipo inesperado para id de activo: %T\n", idInterface)
+                    activosConEstado = append(activosConEstado, activoMap)
+                    continue
+                }
+                
+                // Buscar el estado en el mapa
+                if estado, encontrado := estadosMap[activoID]; encontrado {
+                    activoMap["estado"] = estado
+                } else {
+                    // Si no se encuentra estado, poner "Desconocido"
+                    activoMap["estado"] = "Desconocido"
+                }
+
+                // Si se solicitaron sensores, agregarlos
+                if incluirSensores {
+                    if sensores, encontrado := sensoresMap[activoID]; encontrado {
+                        activoMap["sensores"] = sensores
+                    } else {
+                        activoMap["sensores"] = []interface{}{} // Array vacío si no hay sensores
+                    }
+                }
+            }
+            activosConEstado = append(activosConEstado, activoMap)
+        }
+    }
+
+    result := map[string]interface{}{
+        "activos": activosConEstado,
+        "total": len(activosConEstado),
+    }
+
+    c.JSON(http.StatusOK, result)
+}
+
+func AccionMantenimientoHandler(c *gin.Context) {
+    id := c.Param("id_activo")
+    if id == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID del activo es requerido"})
+        return
+    }
+
+    // Leer el body de la request
+    var accionData map[string]interface{}
+    if err := c.ShouldBindJSON(&accionData); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+        return
+    }
+
+    // Validar que vengan los campos requeridos
+    if _, exists := accionData["titulo"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'titulo' es requerido"})
+        return
+    }
+
+    if _, exists := accionData["tecnico_id"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'tecnico_id' es requerido"})
+        return
+    }
+
+    if _, exists := accionData["tipo"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'tipo' es requerido"})
+        return
+    }
+
+    if _, exists := accionData["descripcion"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'descripcion' es requerido"})
+        return
+    }
+
+    if _, exists := accionData["prioridad"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'prioridad' es requerido"})
+        return
+    }
+
+    fmt.Printf("Acción recibida para activo %s: %+v\n", id, accionData)
+
+    // Convertir id_activo a int
+    idActivoInt := 0
+    if _, err := fmt.Sscanf(id, "%d", &idActivoInt); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID del activo inválido"})
+        return
+    }
+
+    // Construir el body para el microservicio de gestión
+    bodyData := map[string]interface{}{
+        "titulo":      accionData["titulo"],
+        "descripcion": accionData["descripcion"],
+        "tipo":        accionData["tipo"],
+        "prioridad":   accionData["prioridad"],
+        "activo_id":   idActivoInt,
+        "tecnico_id":  accionData["tecnico_id"],
+    }
+
+    // Convertir a JSON
+    jsonData, err := json.Marshal(bodyData)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando datos"})
+        return
+    }
+
+    fmt.Printf("DEBUG: Enviando acción de mantenimiento: %+v\n", bodyData)
+
+    // Hacer POST al microservicio de gestión
+    url := fmt.Sprintf("%s/acciones", gestionURL)
+    resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+    if err != nil {
+        fmt.Println("Error creando acción de mantenimiento: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al crear la acción de mantenimiento"})
+        return
+    }
+    defer resp.Body.Close()
+
+    fmt.Printf("DEBUG: Status code de respuesta: %d\n", resp.StatusCode)
+
+    // Verificar si la respuesta es exitosa
+    if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+        var errorData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&errorData); err == nil {
+            c.JSON(resp.StatusCode, errorData)
+            return
+        }
+        c.JSON(resp.StatusCode, gin.H{"error": "Error al crear la acción de mantenimiento"})
+        return
+    }
+
+    // Leer la respuesta exitosa
+    var responseData map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+        fmt.Println("Error decodificando respuesta: ", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando respuesta"})
+        return
+    }
+
+    // Retornar la respuesta del microservicio
+    c.JSON(resp.StatusCode, responseData)
+}
+
+func ActualizarEstadoAccionHandler(c *gin.Context) {
+    id := c.Param("id_accion")
+    if id == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID de la acción es requerido"})
+        return
+    }
+
+    // Leer el body de la request
+    var estadoData map[string]interface{}
+    if err := c.ShouldBindJSON(&estadoData); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+        return
+    }
+
+    // Validar que venga el campo requerido
+    if _, exists := estadoData["estado"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'estado' es requerido"})
+        return
+    }
+
+    fmt.Printf("Actualización de estado recibida para acción %s: %+v\n", id, estadoData)
+
+    // Body para el microservicio
+    bodyData := map[string]interface{}{
+        "estado": estadoData["estado"],
+    }
+
+    // Convertir a JSON
+    jsonData, err := json.Marshal(bodyData)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando datos"})
+        return
+    }
+
+    fmt.Printf("DEBUG: Enviando actualización de estado: %+v\n", bodyData)
+
+    // Hacer PUT al microservicio de gestión
+    url := fmt.Sprintf("%s/acciones/%s/estado", gestionURL, id)
+    req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creando request"})
+        return
+    }
+
+    // Establecer headers
+    req.Header.Set("Content-Type", "application/json")
+
+    // Ejecutar la petición
+    resp, err := httpClient.Do(req)
+    if err != nil {
+        fmt.Println("Error actualizando estado de acción: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al actualizar el estado de la acción"})
+        return
+    }
+    defer resp.Body.Close()
+
+    fmt.Printf("DEBUG: Status code de actualización estado: %d\n", resp.StatusCode)
+
+    // Verificar si la respuesta es exitosa
+    if resp.StatusCode != http.StatusOK {
+        var errorData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&errorData); err == nil {
+            c.JSON(resp.StatusCode, errorData)
+            return
+        }
+        c.JSON(resp.StatusCode, gin.H{"error": "Error al actualizar el estado de la acción"})
         return
     }
 

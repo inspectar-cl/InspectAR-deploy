@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Componente React, tipos inferidos automáticamente */
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -8,10 +9,10 @@ import {
 } from '@mui/material';
 import type {SelectChangeEvent} from '@mui/material'
 import Services from '@/modules/Services';
-import axios from 'axios';
 import type { SavedSignature } from '@/components/dashboard/reportes-tecnicos/SignatureDialog'; 
 import SignatureDialog from '@/components/dashboard/reportes-tecnicos/SignatureDialog';
 import { useSignatures } from '@/hooks/use-signatures';
+import { useUserToken } from '@/hooks/use-usertoken';
 
 const gs = new Services();
 const BASE_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL || '/api';
@@ -24,13 +25,8 @@ interface ActivosResponse {
   activos?: ActivoReporte[];
 }
 
-interface ReportePayload {
-    campos: string[];
-    observaciones?: string;
-    firmaDataUrl?: string;
-}
-
 function GenerarReporte() {
+  const {user, isLoading} = useUserToken();
   const [activos, setActivos] = useState<ActivoReporte[]>([]);
   const [activo, setActivo] = useState<string>('');
   const [observaciones, setObservaciones] = useState<string>('');
@@ -58,20 +54,24 @@ function GenerarReporte() {
   useEffect(() => {
     const fetchActivos = async () => {
       try {
-        const data = (await gs.get('/obtener-activos')) as ActivosResponse | ActivoReporte[];
-        if (Array.isArray(data)) {
-          setActivos(data);
-        } else if (data && Array.isArray(data.activos)) {
+        if (isLoading || !user) {
+          return
+        }
+
+        const data = await gs.authorizedGet('/obtener-todos-activos', user.token) as ActivosResponse;
+        
+
+        if (data && Array.isArray(data.activos)) {
           setActivos(data.activos);
         } else {
           setActivos([]);
         }
-      } catch {
+      } catch (error) {
         setActivos([]);
       }
     };
     void fetchActivos();
-  }, []);
+  }, [isLoading, user]);
 
   // actualizar dataUrl al elegir una firma guardada
   useEffect(() => {
@@ -119,20 +119,36 @@ function GenerarReporte() {
   // exportar PDF
   const handleExportarPDF = async () => {
     if (!activo) return;
+    if (isLoading || !user) {
+      setMensaje('Usuario no autenticado');
+      return;
+    }
+    
     try {
-      const payload: ReportePayload = {
+      const payload = {
         campos: camposSeleccionados,
-        observaciones: observaciones || undefined,
-        firmaDataUrl: selectedSignatureDataUrl || undefined,
       };
 
-      const response = await axios.post(
-        `${BASE_URL}/gestion/reportes/activo/${activo}`,
-        payload,
-        { responseType: 'blob' }
-      );
 
-      const blob = new Blob([response.data], { type: 'application/pdf' });
+      // Hacer petición con fetch para obtener el blob
+      const response = await fetch(`${BASE_URL}/pdf-reporte/${activo}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      // Obtener el PDF como blob
+      const blob = await response.blob();
+
+      // Crear URL local para el blob
       const url = window.URL.createObjectURL(blob);
 
       const activoSeleccionado = activos.find((a) => a.id === activo);
@@ -147,9 +163,11 @@ function GenerarReporte() {
       link.click();
       document.body.removeChild(link);
 
+      // Limpiar la URL después de un tiempo
       setTimeout(() => {
         window.URL.revokeObjectURL(url);
       }, 10000);
+
     } catch (error) {
       setMensaje('No se pudo exportar el PDF');
     }
@@ -158,23 +176,40 @@ function GenerarReporte() {
   // vista previa PDF
   const handleVistaPreviaPDF = async () => {
     if (!activo) return;
+    if (isLoading || !user) {
+      setMensaje('Usuario no autenticado');
+      return;
+    }
+    
     try {
-      const payload: ReportePayload = {
+      const payload = {
         campos: camposSeleccionados,
-        observaciones: observaciones || undefined,
-        firmaDataUrl: selectedSignatureDataUrl || undefined,
       };
 
-      const response = await axios.post(
-        `${BASE_URL}/gestion/reportes/activo/${activo}`,
-        payload,
-        { responseType: 'blob' }
-      );
+      // Hacer petición con fetch para obtener el blob
+      const response = await fetch(`${BASE_URL}/pdf-reporte/${activo}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`,
+        },
+        body: JSON.stringify(payload),
+      });
 
-      const blob = new Blob([response.data], { type: 'application/pdf' });
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      // Obtener el PDF como blob
+      const blob = await response.blob();
+
+      // Crear URL local para el blob
       const url = window.URL.createObjectURL(blob);
+
+      // Establecer la URL para la vista previa
       setPdfUrl(url);
-    } catch {
+
+    } catch (error) {
       setMensaje('No se pudo generar la vista previa');
     }
   };
@@ -259,8 +294,7 @@ function GenerarReporte() {
               </Select>
             </FormControl>
 
-            {selectedSignatureDataUrl && (
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: { sm: 'auto' } }}>
+            {selectedSignatureDataUrl ? <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: { sm: 'auto' } }}>
                 <Box
                   component="img"
                   src={selectedSignatureDataUrl}
@@ -278,8 +312,7 @@ function GenerarReporte() {
                 <Button color="error" variant="outlined" onClick={handleRemoveSelectedSignature}>
                   Quitar
                 </Button>
-              </Stack>
-            )}
+              </Stack> : null}
           </Stack>
         </CardContent>
         <CardActions sx={{ pt: 0 }} />

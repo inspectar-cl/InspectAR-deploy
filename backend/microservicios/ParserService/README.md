@@ -12,13 +12,13 @@ Microservicio encargado de la gestión de activos industriales, sensores IoT y a
 - Detección de desconexión de sensores
 
 **📊 Estadísticas de Implementación:**
-- **16 rutas totales** configuradas
-- **16 rutas funcionando** (100% operativas)
+- **17 rutas totales** configuradas
+- **17 rutas funcionando** (100% operativas)
 - **0 rutas pendientes** de implementación
 - **Sistema de monitoreo automático** activo (cada 2 minutos)
 - **Detección de desconexión** (timeout de 5 minutos)
 
-**🚀 Última Actualización:** 12 de Octubre 2025 - **Información de Sensores en Ruta de Activo Individual** 🆕
+**🚀 Última Actualización:** 15 de Octubre 2025 - **Paginación en Ruta de Datos Históricos** 🆕
 
 ## Funcionalidades
 
@@ -33,7 +33,8 @@ Microservicio encargado de la gestión de activos industriales, sensores IoT y a
 
 ### Sistema de Gestión de Lecturas
 - ✅ Registrar lecturas de sensores
-- ✅ Obtener datos históricos por activo
+- ✅ Obtener datos históricos por activo (últimos 100 registros)
+- ✅ **🆕 Obtener datos históricos paginados (ventana configurable hasta 5000 registros)**
 - ✅ Obtener última lectura de sensores
 - ✅ Almacenamiento persistente en InfluxDB
 
@@ -70,7 +71,8 @@ Microservicio encargado de la gestión de activos industriales, sensores IoT y a
 | Método | Endpoint | Descripción | Estado |
 |--------|----------|-------------|---------|
 | `POST` | `/lectura` | Registrar nueva lectura de sensor | ✅ Funcionando |
-| `GET` | `/lectura/:activo_id/datos` | Obtener datos históricos de activo | ✅ Funcionando |
+| `GET` | `/lectura/:activo_id/datos` | Obtener datos históricos (últimos 100) | ✅ Funcionando |
+| `GET` | `/lectura/:activo_id/window` | **Obtener datos paginados (1000 por defecto)** | ✅ **NUEVO** |
 | `GET` | `/lectura/:activo_id/datos/ultimo` | Obtener última lectura de sensores | ✅ Funcionando |
 
 ### 🔔 Rutas de Monitoreo de Sensores
@@ -85,9 +87,9 @@ Microservicio encargado de la gestión de activos industriales, sensores IoT y a
 
 ### 🎯 Resumen de Estado
 
-- **✅ Funcionando**: 16 rutas operativas (100% IMPLEMENTADAS)
+- **✅ Funcionando**: 17 rutas operativas (100% IMPLEMENTADAS)
 - **🔧 No implementado**: 0 rutas pendientes
-- **Total**: 16 rutas configuradas
+- **Total**: 17 rutas configuradas
 
 ### ⚡ Tests Rápidos
 
@@ -134,8 +136,11 @@ curl -X POST http://localhost:8090/lectura \
     "timestamp": "2025-10-10T10:30:00Z"
   }'
 
-# Obtener datos históricos
+# Obtener datos históricos de activo
 curl http://localhost:8090/lectura/1/datos
+
+# 🆕 Obtener datos paginados (ventana de tiempo)
+curl "http://localhost:8090/lectura/2/window?page=1&limit=1000"
 
 # Obtener última lectura
 curl http://localhost:8090/lectura/1/datos/ultimo
@@ -528,6 +533,99 @@ curl -X GET http://localhost:8090/lectura/1/datos
 ```
 
 **Nota:** Por defecto retorna datos de los últimos 30 minutos.
+
+#### 🆕 Obtener datos paginados con ventana de tiempo
+```bash
+# Página 1 con límite por defecto (1000 registros)
+curl -X GET "http://localhost:8090/lectura/2/window?page=1"
+
+# Página 2 con límite por defecto
+curl -X GET "http://localhost:8090/lectura/2/window?page=2"
+
+# Página 1 con límite personalizado de 500 registros
+curl -X GET "http://localhost:8090/lectura/2/window?page=1&limit=500"
+
+# Página 3 con límite de 500 (offset = 1000)
+curl -X GET "http://localhost:8090/lectura/2/window?page=3&limit=500"
+```
+
+**Parámetros de Query:**
+- `page` (opcional, default: `1`): Número de página (debe ser >= 1)
+- `limit` (opcional, default: `1000`): Cantidad de registros por página (entre 1 y 5000)
+
+**Cálculo del Offset:**
+```
+offset = (page - 1) × limit
+```
+
+**Ejemplos:**
+- `page=1, limit=1000` → offset=0 (registros 1-1000)
+- `page=2, limit=1000` → offset=1000 (registros 1001-2000)
+- `page=3, limit=500` → offset=1000 (registros 1001-1500)
+
+**Respuesta:**
+```json
+{
+  "activo_id": 2,
+  "estado": "Medio",
+  "edificio_id": 1,
+  "page": 1,
+  "limit": 1000,
+  "offset": 0,
+  "sensores": [
+    {
+      "sensor_id": "A_ACR_Mot.PV",
+      "datos": [
+        {
+          "tiempo": "2024-06-11T15:59:59Z",
+          "valor": 0.001735421
+        },
+        {
+          "tiempo": "2024-06-11T15:59:54Z",
+          "valor": 0.001735421
+        }
+        // ... hasta 1000 registros
+      ]
+    },
+    {
+      "sensor_id": "A_ACR_Mot.SV",
+      "datos": [
+        {
+          "tiempo": "2024-06-11T15:59:59Z",
+          "valor": 0.002145678
+        }
+        // ... hasta 1000 registros
+      ]
+    }
+    // ... 10 sensores en total
+  ]
+}
+```
+
+**Validaciones:**
+- ✅ `page` debe ser un entero mayor a 0 (400 si es inválido)
+- ✅ `limit` debe ser un entero entre 1 y 5000 (400 si es inválido)
+- ✅ El activo debe existir (404 si no existe)
+
+**Características:**
+- Retorna datos ordenados por timestamp descendente (más recientes primero)
+- Límite máximo de 5000 registros por página para evitar sobrecarga
+- Incluye metadatos de paginación en la respuesta (`page`, `limit`, `offset`)
+- Útil para cargar grandes volúmenes de datos históricos de forma eficiente
+
+**Caso de Uso:**
+```bash
+# Obtener los primeros 1000 registros más recientes
+curl "http://localhost:8090/lectura/2/window?page=1&limit=1000"
+
+# Obtener los siguientes 1000 registros
+curl "http://localhost:8090/lectura/2/window?page=2&limit=1000"
+
+# Obtener los siguientes 1000 registros
+curl "http://localhost:8090/lectura/2/window?page=3&limit=1000"
+
+# Y así sucesivamente...
+```
 
 #### Obtener última lectura de sensores
 ```bash
@@ -953,6 +1051,10 @@ curl http://localhost:8090/activo/edificio/1
 
 # 6. Obtener datos históricos
 curl http://localhost:8090/lectura/1/datos
+
+# 6b. 🆕 Obtener datos históricos paginados (más eficiente para grandes volúmenes)
+curl "http://localhost:8090/lectura/1/window?page=1&limit=1000"
+curl "http://localhost:8090/lectura/1/window?page=2&limit=1000"
 
 # 7. Obtener última lectura
 curl http://localhost:8090/lectura/1/datos/ultimo

@@ -24,14 +24,14 @@ func getSpecialHandlers() []SpecialHandler {
             Pattern: "/api/activos-completos",
             Handler: ActivosCompletosHandler,
             Protected: true,
-            RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente"},
+            RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente", "user-type:Admin"},
         },
         {
             Method:  "GET",
             Pattern: "/api/activos-y-sensores",
             Handler: ActivosYSensores,
             Protected: true,
-            RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente"},
+            RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente", "user-type:Admin"},
         },
         {
             Method: "GET",
@@ -45,7 +45,7 @@ func getSpecialHandlers() []SpecialHandler {
             Pattern: "/api/generar-reporte/:id_reporte",
             Handler: GenerarReporte,   
             Protected: true,
-            RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente"},
+            RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente", "user-type:Admin"},
         },
         { 
             Method:  "POST",
@@ -88,7 +88,7 @@ func getSpecialHandlers() []SpecialHandler {
             Pattern: "/api/obtener-contactos-id/:id_edificio",
             Handler: ObtenerContactosPorEdificio,
             Protected: true,
-            RequiredScopes: []string{"user-type:Residente", "user-type:Admin"},
+            RequiredScopes: []string{"user-type:Residente", "user-type:Tecnico", "user-type:Analista", "user-type:Admin"},
         },
         { 
             Method:  "GET",
@@ -123,7 +123,7 @@ func getSpecialHandlers() []SpecialHandler {
             Pattern: "/api/obtener-activo-id/:id_activo",
             Handler: ObtenerActivoPorID,
             Protected: true,
-            RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente"},
+            RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente", "user-type:Admin"},
         },
         { 
             Method:  "POST",
@@ -152,6 +152,27 @@ func getSpecialHandlers() []SpecialHandler {
             Handler: ActualizarEstadoContactoHandler,
             Protected: true,
             RequiredScopes: []string{"user-type:Analista", "user-type:Tecnico", "user-type:Admin"},
+        },
+        {
+            Method: "GET",
+            Pattern: "/api/obtener-todos-activos",
+            Handler: ObtenerTodosActivos,
+            Protected: true,
+            RequiredScopes: []string{"user-type:Tecnico", "user-type:Analista", "user-type:Admin"},
+        },
+        { 
+            Method:  "POST",
+            Pattern: "/api/accion-mantenimiento-id/:id_activo",
+            Handler: AccionMantenimientoHandler,
+            Protected: true,
+            RequiredScopes: []string{"user-type:Tecnico", "user-type:Analista", "user-type:Admin"},
+        },
+        { 
+            Method:  "PUT",
+            Pattern: "/api/actualizar-estado-accion/:id_accion",
+            Handler: ActualizarEstadoAccionHandler,
+            Protected: true,
+            RequiredScopes: []string{"user-type:Tecnico", "user-type:Analista", "user-type:Admin"},
         },
         // Aquí se agregan más handlers de manera fácil
         // {

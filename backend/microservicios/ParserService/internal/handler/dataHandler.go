@@ -209,6 +209,81 @@ func (h *DataHandler) GetSensorByActivo(c *gin.Context) {
 	c.JSON(http.StatusOK, respuesta)
 }
 
+// GET /lectura/:activo_id/window - Obtiene datos paginados por sensor
+// Parámetros query: page (default: 1), limit (default: 1000)
+func (h *DataHandler) GetSensorByActivoWindow(c *gin.Context) {
+	idStr := c.Param("activo_id")
+	activoID, errConv := strconv.Atoi(idStr)
+	if errConv != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "activo_id debe ser entero"})
+		return
+	}
+
+	// Leer parámetros de paginación
+	pageStr := c.DefaultQuery("page", "1")
+	limitStr := c.DefaultQuery("limit", "1000")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "page debe ser un entero mayor a 0"})
+		return
+	}
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 || limit > 5000 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "limit debe ser un entero entre 1 y 5000"})
+		return
+	}
+
+	// Calcular offset: (page - 1) * limit
+	offset := (page - 1) * limit
+
+	activo, err := h.activoService.ObtenerActivo(c.Request.Context(), activoID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Activo no encontrado"})
+		return
+	}
+
+	// Obtener sensores desde el servicio de activos
+	sensores, err := h.activoService.ObtenerSensoresPorActivo(c.Request.Context(), activoID)
+	if err != nil {
+		log.Printf("❌ ERROR: No se pudieron obtener los sensores: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudieron obtener los sensores"})
+		return
+	}
+	log.Printf("✅ Sensores obtenidos exitosamente para window: %d sensores (page: %d, limit: %d)", len(sensores), page, limit)
+
+	var allLecturas []models.SensorDataset
+
+	log.Printf("🔄 Iniciando loop window para %d sensores (página: %d, límite: %d, offset: %d)", len(sensores), page, limit, offset)
+
+	for _, sensor := range sensores {
+		log.Printf("📡 Procesando sensor window: %s", sensor.SensorID)
+		datos, err := h.sensorService.GetDatosSensorWindow(c.Request.Context(), sensor.SensorID, limit, offset)
+		if err != nil {
+			log.Printf("❌ Error obteniendo datos window para sensor %s: %v", sensor.SensorID, err)
+			continue
+		}
+		log.Printf("✅ Datos window recibidos para sensor %s: %d registros", sensor.SensorID, len(datos))
+		allLecturas = append(allLecturas, models.SensorDataset{
+			SensorID: sensor.SensorID,
+			Datos:    datos,
+		})
+	}
+
+	respuesta := gin.H{
+		"activo_id":   activo.ActivoID,
+		"estado":      activo.Estado,
+		"edificio_id": activo.EdificioID,
+		"page":        page,
+		"limit":       limit,
+		"offset":      offset,
+		"sensores":    allLecturas,
+	}
+
+	c.JSON(http.StatusOK, respuesta)
+}
+
 // GET /activo
 func (h *DataHandler) GetAllActivos(c *gin.Context) {
 	activos, err := h.activoService.GetAllActivos(c.Request.Context())

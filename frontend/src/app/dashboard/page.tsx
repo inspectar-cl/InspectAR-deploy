@@ -97,7 +97,7 @@ export default function Page(): React.JSX.Element {
         const severity: Record<Estado, number> = { Crítico: 3, Medio: 2, OK: 1, NN: 0 };
         
         // LLAMADA ASÍNCRONA CORREGIDA (usando await)
-        const responseActivo = await gs.authorizedGet('/obtener-activos', user.token) as ApiActivosResponse;
+        const responseActivo = await gs.authorizedGet('/obtener-activos-id/1', user.token) as ApiActivosResponse;
         if (responseActivo.error) {
           setActivosError(responseActivo.error.mensaje || 'Error al obtener activos.');
           setActivosDelUsuario(null);

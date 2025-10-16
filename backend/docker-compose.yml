@@ -21,7 +21,7 @@ services:
       - influxdb
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8090/healthz"]
-      interval: 10s
+      interval: 60s
       timeout: 5s
       retries: 3
       start_period: 20s
@@ -43,7 +43,7 @@ services:
       - POSTGRES_DB=documentacion_db
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U documentacion_user -d documentacion_db"]
-      interval: 10s
+      interval: 60s
       timeout: 5s
       retries: 5
       start_period: 30s
@@ -79,6 +79,77 @@ services:
       - POSTGRES_PASSWORD=notification_pass
       - POSTGRES_DB=notification_db
 
+  # Base de datos PostgreSQL para IA/ML
+  ia-db:
+    build:
+      context: ./database/ia
+      dockerfile: Dockerfile
+    container_name: ia-db
+    ports:
+      - "5436:5432"
+    volumes:
+      - ia_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=ia_user
+      - POSTGRES_PASSWORD=ia_pass
+      - POSTGRES_DB=ia_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ia_user -d ia_db"]
+      interval: 60s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: on-failure
+
+  # Motor ML Python para detección de anomalías
+  ml_engine_python:
+    build:
+      context: ./microservicios/ml_engine_python
+      dockerfile: DockerFile
+    container_name: ml_engine_python
+    ports:
+      - "8085:9999"
+    environment:
+      - HTM_WINDOW_SIZE=180
+      - HTM_ALPHA=0.01
+      - HTM_K_ADAPT=2.0
+      - HTM_SCORE_SCALE=50.0
+      - HTM_MIN_PERIODS=50
+      - HTM_ROLLING_WINDOW=300
+      - HTM_MODE=offline
+      - LOG_LEVEL=INFO
+      - API_PORT=9999
+      - RANDOM_SEED=42
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9999/healthz"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: on-failure
+
+  # Microservicio de IA/ML para detección de anomalías
+  ia-service:
+    build:
+      context: ./microservicios/ia-service
+      dockerfile: Dockerfile
+    container_name: ia-service
+    ports:
+      - "8095:8095"
+    depends_on:
+      - ia-db
+      - iot-service
+      - ml_engine_python
+    environment:
+      - CONFIG_FILE=config.docker
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8095/health"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: on-failure
+
   # Microservicio de Notificaciones
   notification-service:
     build:
@@ -112,7 +183,7 @@ services:
       - PARSER_URL=http://iot-service:8090
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8092/health"]
-      interval: 10s
+      interval: 60s
       timeout: 5s
       retries: 3
       start_period: 20s
@@ -145,7 +216,7 @@ services:
       - ./microservicios/documentacion/config:/app/config:ro
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8093/health || exit 1"]
-      interval: 30s
+      interval: 60s
       timeout: 10s
       start_period: 20s
       retries: 3
@@ -191,7 +262,7 @@ services:
       - EMQX_LOADED_PLUGINS=emqx_management,emqx_recon,emqx_retainer,emqx_dashboard,emqx_rule_engine,emqx_bridge_rabbitmq
     healthcheck:
       test: ["CMD", "emqx", "ctl", "status"]
-      interval: 10s
+      interval: 60s
       timeout: 5s
       retries: 5
       start_period: 30s
@@ -261,6 +332,7 @@ services:
       - gestion-db
       - notification-db
       - documentacion-db
+      - ia-db
       - influxdb
     volumes:
       - ./scripts:/scripts
@@ -284,4 +356,5 @@ volumes:
   documentacion_data:
   gestion_data:
   gestion_firmas:  # Volumen para persistir firmas digitales
+  ia_data:  # Volumen para base de datos de IA/ML
   pgdata1:

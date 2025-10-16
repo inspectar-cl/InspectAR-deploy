@@ -5,6 +5,7 @@ export const rolePermissions: Record<string, string[]> = {
     paths.dashboard.inicio,
     paths.dashboard.activos,
     paths.dashboard.reportesTecnicos,
+    paths.dashboard.ml,
     paths.dashboard.account,
     paths.dashboard.settings,
   ],

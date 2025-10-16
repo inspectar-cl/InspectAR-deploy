@@ -1,0 +1,29 @@
+server:
+  port: "8095"
+
+database:
+  host: "localhost"
+  port: "5436"
+  user: "ia_user"
+  password: "ia_pass"
+  dbname: "ia_db"
+  sslmode: "disable"
+
+parser_service:
+  url: "http://localhost:8090"
+
+scheduler:
+  fetch_interval_minutes: 5
+  default_activo_id: 2
+
+# Para conexión en Docker (descomentar cuando se use docker-compose)
+# database:
+#   host: "ia-db"
+#   port: "5432"
+#   user: "ia_user"
+#   password: "ia_pass"
+#   dbname: "ia_db"
+#   sslmode: "disable"
+
+# parser_service:
+#   url: "http://iot-service:8090"

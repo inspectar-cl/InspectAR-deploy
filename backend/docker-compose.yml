@@ -79,6 +79,49 @@ services:
       - POSTGRES_PASSWORD=notification_pass
       - POSTGRES_DB=notification_db
 
+  # Base de datos PostgreSQL para IA/ML
+  ia-db:
+    build:
+      context: ./database/ia
+      dockerfile: Dockerfile
+    container_name: ia-db
+    ports:
+      - "5436:5432"
+    volumes:
+      - ia_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=ia_user
+      - POSTGRES_PASSWORD=ia_pass
+      - POSTGRES_DB=ia_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ia_user -d ia_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: on-failure
+
+  # Microservicio de IA/ML para detección de anomalías
+  ia-service:
+    build:
+      context: ./microservicios/ia-service
+      dockerfile: Dockerfile
+    container_name: ia-service
+    ports:
+      - "8095:8095"
+    depends_on:
+      - ia-db
+      - iot-service
+    environment:
+      - CONFIG_FILE=config.docker
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8095/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: on-failure
+
   # Microservicio de Notificaciones
   notification-service:
     build:
@@ -261,6 +304,7 @@ services:
       - gestion-db
       - notification-db
       - documentacion-db
+      - ia-db
       - influxdb
     volumes:
       - ./scripts:/scripts
@@ -284,4 +328,5 @@ volumes:
   documentacion_data:
   gestion_data:
   gestion_firmas:  # Volumen para persistir firmas digitales
+  ia_data:  # Volumen para base de datos de IA/ML
   pgdata1:

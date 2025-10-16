@@ -134,10 +134,7 @@ func (s *AnomalyService) processDataWithMLEngine(data models.ParserServiceRespon
 	// Transformar datos al formato del ML Engine
 	mlRecords := s.transformToMLFormat(data)
 
-	if len(mlRecords) < 180 {
-		log.Printf("⚠️  Insuficientes registros (%d). El ML Engine requiere al menos 180", len(mlRecords))
-		return
-	}
+	log.Printf("📊 Enviando %d registros al ML Engine", len(mlRecords))
 
 	// Crear la petición para el ML Engine
 	mlRequest := models.MLPredictionRequest{

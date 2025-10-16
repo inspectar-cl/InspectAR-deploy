@@ -39,7 +39,7 @@ OUTPUT_PATH = os.getenv("OUTPUT_PATH", "/app/results")  # Carpeta donde guardar 
 
 API_TITLE = "Microservicio ML - Detección de Anomalías HTM-like"
 API_VERSION = "1.0.0"
-API_PORT = int(os.getenv("API_PORT", 8085))
+API_PORT = int(os.getenv("API_PORT", 8086))
 
 # ============================================================
 # CONFIGURACIÓN DE SEED Y REPRODUCIBILIDAD

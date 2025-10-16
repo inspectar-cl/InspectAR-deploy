@@ -17,7 +17,7 @@ import time
 # Configuración
 # ============================================================
 
-BASE_URL = "http://localhost:8085"  # Ajusta el puerto según tu config
+BASE_URL = "http://localhost:8086"  # Ajusta el puerto según tu config
 PUMP_ID = "bomba_test_1"
 NUM_RECORDS = 200  # Más del mínimo requerido (180)
 

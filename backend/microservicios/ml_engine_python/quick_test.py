@@ -7,7 +7,7 @@ import json
 from datetime import datetime, timedelta
 import numpy as np
 
-BASE_URL = "http://localhost:8085"
+BASE_URL = "http://localhost:8086"
 
 # Generar datos rápidos
 print("Generando datos sintéticos...")

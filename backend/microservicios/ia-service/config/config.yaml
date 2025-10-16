@@ -16,7 +16,7 @@ ml_engine:
   url: "http://localhost:8085"
 
 scheduler:
-  fetch_interval_minutes: 5
+  fetch_interval_minutes: 2
   default_activo_id: 2
 
 # Para conexión en Docker (descomentar cuando se use docker-compose)

@@ -152,12 +152,12 @@ export default function Page(): React.JSX.Element {
       </Grid>
 
       {/* Información de última actualización */}
-      <Box sx={{ mt: 3, textAlign: 'center' }}>
+      {/* <Box sx={{ mt: 3, textAlign: 'center' }}>
         <Typography variant="caption" color="text.secondary">
           Última actualización: {dayjs().format('DD/MM/YYYY HH:mm:ss')} • 
           Actualización automática cada 30 segundos
         </Typography>
-      </Box>
+      </Box> */}
     </Box>
   );
 }

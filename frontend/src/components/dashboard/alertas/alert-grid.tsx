@@ -20,7 +20,7 @@ import {
 import { esES } from '@mui/x-data-grid/locales';
 
 import { useUserToken } from '@/hooks/use-usertoken';
-import { renderStatus, STATUS_OPTIONS, type Activo as ActivoStatus } from './status';
+import { renderStatus, STATUS_OPTIONS } from './status';
 import Services from '@/modules/Services';
 
 
@@ -70,8 +70,9 @@ const columns: GridColDef<Activo>[] = [
     valueOptions: STATUS_OPTIONS,
     flex: 1,
     minWidth: 100,
-    renderCell: (params: GridRenderCellParams<Activo, Activo['estado']>) => {
-      return renderStatus(params as GridRenderCellParams<ActivoStatus, ActivoStatus['estado']>);
+    renderCell: (params: GridRenderCellParams<Activo>) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any -- renderStatus expects a different param type, type casting required for compatibility
+      return renderStatus(params as any);
     },
   },
   {

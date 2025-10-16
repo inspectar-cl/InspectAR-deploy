@@ -493,12 +493,33 @@ go build -o ia-service cmd/main.go
 
 ## 🧪 Testing
 
-### Test de Health Check
+### Colección de Postman 📮
+
+Se incluye una **colección completa de Postman** en el archivo `IA-Service.postman_collection.json` con:
+
+- ✅ Todos los 5 endpoints documentados
+- ✅ Tests automáticos para validación
+- ✅ Variables de entorno configurables
+- ✅ Ejemplos de respuestas (éxito y errores)
+- ✅ Scripts pre-request y post-request
+- ✅ Documentación detallada de cada endpoint
+
+**Importar en Postman:**
+1. Abrir Postman
+2. Click en "Import"
+3. Seleccionar `IA-Service.postman_collection.json`
+4. Configurar variables de entorno:
+   - `base_url`: http://localhost:8095
+   - `ml_engine_host`: localhost
+
+### Tests con cURL
+
+#### Test de Health Check
 ```bash
 curl http://localhost:8095/health
 ```
 
-### Test de Guardar Anomalía
+#### Test de Guardar Anomalía
 ```bash
 curl -X POST http://localhost:8095/anomalies/store \
   -H "Content-Type: application/json" \
@@ -515,17 +536,17 @@ curl -X POST http://localhost:8095/anomalies/store \
   }'
 ```
 
-### Test de Consultar Última Anomalía
+#### Test de Consultar Última Anomalía
 ```bash
 curl http://localhost:8095/status/ | jq '.'
 ```
 
-### Test de Consultar por Sensor
+#### Test de Consultar por Sensor
 ```bash
 curl http://localhost:8095/anomalies/sensor/test_sensor?limit=5 | jq '.'
 ```
 
-### **NUEVO:** Test de Consultar por Activo
+#### **NUEVO:** Test de Consultar por Activo
 ```bash
 # Obtener anomalías del activo 2 con paginación
 curl http://localhost:8095/anomalies/activo/2?limit=10&offset=0 | jq '.'
@@ -584,18 +605,20 @@ ia-service/
 ├── cmd/
 │   └── main.go            # Punto de entrada
 ├── config/
-│   └── config.go          # Configuración y variables de entorno
+│   ├── config.yaml        # Configuración local
+│   └── config.docker.yaml # Configuración Docker
 ├── internal/
 │   ├── handler/
 │   │   └── anomaly_handler.go    # Handlers HTTP
 │   ├── models/
-│   │   └── anomaly.go     # Modelos de datos
+│   │   └── anomaly.go     # Modelos de datos (+ ML Engine)
 │   ├── repository/
 │   │   └── anomaly_repo.go        # Acceso a BD
 │   └── services/
-│       └── anomaly_service.go     # Lógica de negocio y scheduler
+│       └── anomaly_service.go     # Lógica de negocio, ML y scheduler
 ├── Dockerfile
 ├── go.mod
+├── IA-Service.postman_collection.json  # 📮 Colección Postman
 └── README.md
 ```
 

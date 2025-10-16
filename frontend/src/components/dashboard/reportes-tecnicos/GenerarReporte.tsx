@@ -44,15 +44,31 @@ interface FirmasResponse {
   total: number;
 }
 
+interface ReportePayload {
+  campos: unknown[];
+  firma_id?: number | string;
+  usar_firma_predeterminada?: boolean;
+  email?: string;
+}
+
+/** Convierte un dataURL (p.ej., canvas.toDataURL()) a Blob */
 /** Convierte un dataURL (p.ej., canvas.toDataURL()) a Blob */
 function dataUrlToBlob(dataUrl: string): Blob {
-  const [meta, base64] = dataUrl.split(',');
-  const mimeMatch = meta.match(/^data:(.*);base64$/);
-  const mime = mimeMatch ? mimeMatch[1] : 'image/png';
+  const [meta = '', base64 = ''] = dataUrl.split(',');
+
+  // Usa exec (regla prefer-regexp-exec) y un grupo normal (sin nombre)
+  // Evita .* por seguridad: capturamos solo hasta el ';'
+  const regex = /^data:(?:[^;]+);base64$/;
+  const match = regex.exec(meta);
+
+  // Fallback razonable si no reconoce el MIME
+  const mime = match?.[1];
+
   const binStr = atob(base64);
   const len = binStr.length;
   const arr = new Uint8Array(len);
   for (let i = 0; i < len; i++) arr[i] = binStr.charCodeAt(i);
+
   return new Blob([arr], { type: mime });
 }
 
@@ -84,20 +100,37 @@ async function uploadSignatureFile({
     body: form,
   });
 
-  if (!resp.ok) {
-    let msg = `Error subiendo firma (${resp.status})`;
-    try {
-      const j = await resp.json();
-      msg = j?.error || msg;
-    } catch {}
-    throw new Error(msg);
+  // Type guards seguros
+  interface FirmaObj {
+    id?: number | string;
+  }
+  interface SuccessResponse {
+    firma?: FirmaObj;
+    id?: number | string;
+  }
+  const isSuccessResponse = (x: unknown): x is SuccessResponse =>
+    typeof x === 'object' && x !== null && ('firma' in x || 'id' in x);
+  const jsonUnknown: unknown = await resp.json();
+  if (!isSuccessResponse(jsonUnknown)) {
+    throw new Error('Respuesta inesperada del servidor al subir firma.');
   }
 
-  const json = await resp.json();
-  // esperado: { firma: { id, ... } } o { id, ... }
-  const id = json?.firma?.id ?? json?.id;
-  if (!id) throw new Error('El backend no devolvió firma_id');
-  return Number(id);
+  const maybeId =
+    jsonUnknown.firma?.id ?? jsonUnknown.id;
+
+  // Normaliza a number seguro
+  const id =
+    typeof maybeId === 'number'
+      ? maybeId
+      : typeof maybeId === 'string'
+        ? Number.parseInt(maybeId, 10)
+        : NaN;
+
+  if (!Number.isFinite(id)) {
+    throw new Error('El backend no devolvió firma_id válido');
+  }
+
+  return id;
 }
 
 function GenerarReporte() {
@@ -122,12 +155,13 @@ function GenerarReporte() {
 
   const datos = decodeJwtToken(user?.token);
   const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
-  const { signatures, addSignature, removeSignature } = useSignatures();
+  const { signatures, addSignature} = useSignatures();
   const [selectedSignatureDataUrl, setSelectedSignatureDataUrl] = useState<string | null>(null);
   const [selectedSignatureId, setSelectedSignatureId] = useState<string>('');
   const [firmaId, setFirmaId] = useState<number | null>(null);
   const [firmasBackend, setFirmasBackend] = useState<FirmaBackend[]>([]); // <- NUEVO
   const [firmasCargadas, setFirmasCargadas] = useState(false); // Para controlar la carga inicial
+  
 
   // cargar activos
   useEffect(() => {
@@ -155,17 +189,11 @@ function GenerarReporte() {
       try {
         if (isLoading || !user) return;
 
-        const email = datos?.email as string;
+        const email = datos?.email;
         if (!email) {
-          console.warn('No se pudo obtener el email del usuario');
           return;
         }
-
-        console.log('Obteniendo firmas para usuario:', email);
         const data = await gs.authorizedGet(`/gestion/firmas/usuario/${email}`, user.token) as FirmasResponse;
-
-        console.log('Firmas del backend:', data);
-
         if (data && Array.isArray(data.firmas)) {
           setFirmasBackend(data.firmas);
           
@@ -181,12 +209,11 @@ function GenerarReporte() {
           setFirmasBackend([]);
         }
       } catch (error) {
-        console.error('Error al cargar firmas:', error);
         setFirmasBackend([]);
       }
     };
     void fetchFirmas();
-  }, [isLoading, user, datos?.email]);
+  }, [isLoading, user, datos?.email, firmasCargadas]);
 
   // actualizar dataUrl al elegir una firma guardada del backend
   useEffect(() => {
@@ -243,8 +270,7 @@ function GenerarReporte() {
 
       // 2) Subir a backend de gestión para obtener firma_id
       if (!user?.token) throw new Error('Usuario no autenticado');
-      const userEmail = (datos?.email as string) || 'usuario@example.com';
-
+      const userEmail = (datos?.email) || 'usuario@example.com';
       const blob = dataUrlToBlob(dataUrl);
       
       // Usar el nombre proporcionado o uno por defecto
@@ -272,9 +298,6 @@ function GenerarReporte() {
       if (data && Array.isArray(data.firmas)) {
         setFirmasBackend(data.firmas);
       }
-    } catch (err: any) {
-      console.error('Error al usar/subir firma:', err);
-      setMensaje(err?.message || 'No se pudo subir la firma');
     } finally {
       setSignatureDialogOpen(false);
     }
@@ -291,15 +314,7 @@ function GenerarReporte() {
 
     const firma = firmasBackend.find((f) => f.id === numId);
     if (!firma) return;
-
-    // Confirmar eliminación
-    if (!confirm(`¿Estás seguro de que deseas eliminar "${firma.nombre_archivo}"? Esta acción no se puede deshacer.`)) {
-      return;
-    }
-
     try {
-      console.log(`Eliminando firma ${numId} del sistema`);
-
       const response = await fetch(`${BASE_URL}/gestion/firmas/${numId}`, {
         method: 'DELETE',
         headers: {
@@ -319,13 +334,12 @@ function GenerarReporte() {
       setFirmaId(null);
 
       // Recargar lista de firmas
-      const userEmail = (datos?.email as string) || 'usuario@example.com';
+      const userEmail = (datos?.email) || 'usuario@example.com';
       const data = await gs.authorizedGet(`/gestion/firmas/usuario/${userEmail}`, user.token) as FirmasResponse;
       if (data && Array.isArray(data.firmas)) {
         setFirmasBackend(data.firmas);
       }
     } catch (error) {
-      console.error('Error al eliminar firma:', error);
       setMensaje('No se pudo eliminar la firma del sistema');
     }
   };
@@ -350,8 +364,6 @@ function GenerarReporte() {
     }
 
     try {
-      console.log(`Estableciendo firma ${numId} como predeterminada`);
-
       const response = await fetch(`${BASE_URL}/gestion/firmas/${numId}`, {
         method: 'PUT',
         headers: {
@@ -371,13 +383,12 @@ function GenerarReporte() {
       setMensaje('Firma establecida como predeterminada');
 
       // Recargar lista de firmas
-      const userEmail = (datos?.email as string) || 'usuario@example.com';
+      const userEmail = (datos?.email) || 'usuario@example.com';
       const data = await gs.authorizedGet(`/gestion/firmas/usuario/${userEmail}`, user.token) as FirmasResponse;
       if (data && Array.isArray(data.firmas)) {
         setFirmasBackend(data.firmas);
       }
     } catch (error) {
-      console.error('Error al establecer firma predeterminada:', error);
       setMensaje('No se pudo establecer la firma como predeterminada');
     }
   };
@@ -399,7 +410,7 @@ function GenerarReporte() {
   };
 
   /** Arma el payload de reporte según haya firma_id o no */
-  const buildPayload = (): any => {
+  const buildPayload = (): ReportePayload => {
     const userEmail = datos?.email;
     if (firmaId) {
       return {
@@ -424,12 +435,6 @@ function GenerarReporte() {
 
     try {
       const payload = buildPayload();
-
-      console.log('=== EXPORTAR PDF ===');
-      console.log('Activo seleccionado:', activo);
-      console.log('Payload a enviar:', payload);
-      console.log('URL completa:', `${BASE_URL}/gestion/reportes/activo/${activo}`);
-
       const response = await fetch(`${BASE_URL}/gestion/reportes/activo/${activo}`, {
         method: 'POST',
         headers: {
@@ -438,26 +443,15 @@ function GenerarReporte() {
         },
         body: JSON.stringify(payload),
       });
-
-      console.log('Status de respuesta:', response.status);
-      console.log('Content-Type:', response.headers.get('content-type'));
-
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
-
       const blob = await response.blob();
-      console.log('Blob recibido:', blob.size, 'bytes, tipo:', blob.type);
-
       const url = window.URL.createObjectURL(blob);
-
       const activoSeleccionado = activos.find((a) => a.id === activo);
       const nombreActivo = activoSeleccionado ? activoSeleccionado.nombre.replace(/\s+/g, '_') : 'Reporte';
       const fecha = new Date().toISOString().split('T')[0].replace(/-/g, '');
       const nombreArchivo = `Reporte_${nombreActivo}_${fecha}.pdf`;
-
-      console.log('Descargando como:', nombreArchivo);
-
       const link = document.createElement('a');
       link.href = url;
       link.download = nombreArchivo;
@@ -469,7 +463,6 @@ function GenerarReporte() {
         window.URL.revokeObjectURL(url);
       }, 10000);
     } catch (error) {
-      console.error('Error al exportar PDF:', error);
       setMensaje('No se pudo exportar el PDF');
     }
   };
@@ -484,11 +477,6 @@ function GenerarReporte() {
 
     try {
       const payload = buildPayload();
-
-      console.log('=== VISTA PREVIA PDF ===');
-      console.log('Activo seleccionado:', activo);
-      console.log('Payload a enviar:', payload);
-
       const response = await fetch(`${BASE_URL}/gestion/reportes/activo/${activo}`, {
         method: 'POST',
         headers: {
@@ -497,23 +485,15 @@ function GenerarReporte() {
         },
         body: JSON.stringify(payload),
       });
-
-      console.log('Status de respuesta:', response.status);
-      console.log('Content-Type:', response.headers.get('content-type'));
-
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
       const blob = await response.blob();
-      console.log('Blob recibido:', blob.size, 'bytes, tipo:', blob.type);
-
       const url = window.URL.createObjectURL(blob);
-      console.log('URL local creada:', url);
 
       setPdfUrl(url);
     } catch (error) {
-      console.error('Error al generar vista previa:', error);
       setMensaje('No se pudo generar la vista previa');
     }
   };

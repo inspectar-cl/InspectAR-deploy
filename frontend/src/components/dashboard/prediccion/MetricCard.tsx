@@ -10,7 +10,7 @@ interface MetricCardProps {
   suffix?: string;
 }
 
-function MetricCard({ title, value, icon, color, suffix = "" }: MetricCardProps) {
+function MetricCard({ title, value, icon, color, suffix = "" }: MetricCardProps): React.ReactElement {
   return <Card
     sx={{
       display: "flex",

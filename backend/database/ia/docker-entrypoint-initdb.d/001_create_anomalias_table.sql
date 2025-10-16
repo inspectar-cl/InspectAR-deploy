@@ -2,7 +2,6 @@
 CREATE TABLE IF NOT EXISTS anomalias (
     id SERIAL PRIMARY KEY,
     activo_id INTEGER NOT NULL,
-    sensor_id VARCHAR(100) NOT NULL,
     timestamp TIMESTAMP NOT NULL,
     anomaly_score FLOAT NOT NULL,
     anomaly_likelihood FLOAT NOT NULL,

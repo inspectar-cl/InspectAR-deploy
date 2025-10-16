@@ -103,7 +103,7 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
         setLoading(true);
         
         // Intentar obtener datos reales
-        const response = await gs.get(
+        const response = await gs.authorizedGet(
           `/ML/anomalies/activo/${activoId}?page=1&limit=50`
         ) as AnomaliasPaginadas;
 
@@ -251,7 +251,6 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
             sx={{
               p: 2,
               borderRadius: 2,
-              backgroundColor: '#fff',
               boxShadow: 1,
               display: 'flex',
               flexDirection: 'column',

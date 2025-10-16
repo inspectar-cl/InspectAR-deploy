@@ -49,6 +49,17 @@ interface AnomaliasDashboardProps {
   activoNombre: string;
 }
 
+// Función para calcular severidad desde likelihood (igual que el API)
+const severityFromLikelihood = (likelihood: number): "Baja" | "Media" | "Alta" => {
+  if (likelihood < 40) {
+    return "Baja";
+  } else if (likelihood < 70) {
+    return "Media";
+  } else {
+    return "Alta";
+  }
+};
+
 // Función para obtener descripción según severidad (igual que el API)
 const getDescripcionPorSeveridad = (severidad: "Baja" | "Media" | "Alta"): string => {
   const descripciones = {
@@ -59,22 +70,26 @@ const getDescripcionPorSeveridad = (severidad: "Baja" | "Media" | "Alta"): strin
   return descripciones[severidad];
 };
 
-// Función para generar datos mock
+// Función para generar datos mock (lógica del API)
 const generateMockData = (activoId: number): Prediccion[] => {
-  const severidades: ("Baja" | "Media" | "Alta")[] = ["Baja", "Media", "Alta"];
-
   const now = new Date();
   const predicciones: Prediccion[] = [];
 
   // Generar 50 registros de ejemplo
   for (let i = 0; i < 50; i++) {
     const timestamp = new Date(now.getTime() - i * 60000); // Cada minuto hacia atrás
-    const severidad = severidades[Math.floor(Math.random() * severidades.length)];
     
-    // Mayor probabilidad de scores altos para severidad alta
-    const baseScore = severidad === "Alta" ? 70 : severidad === "Media" ? 40 : 20;
-    const anomalyScore = baseScore + Math.floor(Math.random() * 30);
-    const anomalyLikelihood = anomalyScore + Math.floor(Math.random() * 10);
+    // 1. Generar anomaly_score (0-100)
+    const anomalyScore = Math.floor(Math.random() * 101); // 0-100
+    
+    // 2. anomaly_likelihood >= anomaly_score (como en el modelo real)
+    const anomalyLikelihood = anomalyScore + Math.floor(Math.random() * (101 - anomalyScore));
+    
+    // 3. Calcular severidad basándose en likelihood (lógica del API)
+    const severidad = severityFromLikelihood(anomalyLikelihood);
+    
+    // 4. Threshold aleatorio entre 0-100
+    const threshold = Math.floor(Math.random() * 101);
     
     predicciones.push({
       id: i + 1,
@@ -83,9 +98,9 @@ const generateMockData = (activoId: number): Prediccion[] => {
       anomalyScore,
       anomalyLikelihood,
       severidad,
-      descripcion: getDescripcionPorSeveridad(severidad), // ✅ Descripción del API
-      threshold: 50 + Math.floor(Math.random() * 20),
-      is_anomaly: anomalyScore > 50,
+      descripcion: getDescripcionPorSeveridad(severidad),
+      threshold,
+      is_anomaly: anomalyLikelihood > threshold, // Compara likelihood con threshold
     });
   }
 
@@ -98,17 +113,18 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
   const [usingMockData, setUsingMockData] = useState(false);
 
   useEffect(() => {
-    const fetchAnomalias = async () => {
+    const fetchAnomalias = async (retryCount = 0, maxRetries = 3) => {
       try {
         setLoading(true);
-        
+                
         // Intentar obtener datos reales
-        const response = await gs.get(
+        const response = await gs.authorizedGet(
           `/ML/anomalies/activo/${activoId}?page=1&limit=50`
         ) as AnomaliasPaginadas;
 
         if (response && Array.isArray(response.anomalies) && response.anomalies.length > 0) {
           // Si hay datos reales, usarlos
+          
           const prediccionesMapeadas = response.anomalies.map((anomalia) => ({
             id: anomalia.id,
             activoId: anomalia.activo_id,
@@ -131,12 +147,22 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
           setPredicciones(prediccionesMapeadas);
           setUsingMockData(false);
         } else {
-          // Si no hay datos reales, usar mock
-          throw new Error('No hay datos disponibles');
+          // Si no hay datos, lanzar error para reintentar
+          throw new Error('Respuesta vacía del servidor');
         }
       } catch (err) {
         
-        // Usar datos mock
+        // Si aún quedan reintentos, esperar y volver a intentar
+        if (retryCount < maxRetries) {
+          const delayMs = 1000 * (retryCount + 1); // Espera incremental: 1s, 2s, 3s
+          
+          setTimeout(() => {
+            void fetchAnomalias(retryCount + 1, maxRetries);
+          }, delayMs);
+          return; // No ejecutar el finally todavía
+        }
+        
+        // Si se agotaron los reintentos, usar datos mock        
         const mockData = generateMockData(activoId);
         mockData.sort((a, b) => 
           new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
@@ -145,15 +171,18 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
         setPredicciones(mockData);
         setUsingMockData(true);
       } finally {
-        setLoading(false);
+        // Solo quitar loading cuando termine completamente (o se agoten reintentos)
+        if (retryCount >= maxRetries || predicciones.length > 0) {
+          setLoading(false);
+        }
       }
     };
 
     void fetchAnomalias();
 
-    // Actualizar anomalías cada 30 segundos
+    // Actualizar anomalías cada 30 segundos (sin reintentos en el polling)
     const interval = setInterval(() => {
-      void fetchAnomalias();
+      void fetchAnomalias(0, 0); // Sin reintentos en el polling automático
     }, 30000);
 
     return () => { clearInterval(interval); };
@@ -251,7 +280,6 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
             sx={{
               p: 2,
               borderRadius: 2,
-              backgroundColor: '#fff',
               boxShadow: 1,
               display: 'flex',
               flexDirection: 'column',

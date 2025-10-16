@@ -1863,6 +1863,10 @@ func ObtenerTodosActivos(c *gin.Context) {
     var mu sync.Mutex
     activos := []interface{}{}
     estadosMap := make(map[int]string)
+    sensoresMap := make(map[int]interface{})
+
+    // Verificar si se solicitan sensores
+    incluirSensores := c.Query("sensores") == "true"
 
     wg.Add(1)
     // Goroutine para obtener todos los activos desde Gestión
@@ -1894,77 +1898,137 @@ func ObtenerTodosActivos(c *gin.Context) {
 
     wg.Wait() // Esperar a que termine la goroutine de activos
 
-    // Obtener el estado de cada activo mediante el parser
-    wg.Add(1)
-    go func() {
-        defer wg.Done()
-        url := fmt.Sprintf("%s/activo", parserURL)
+    // Si se solicitan sensores, consultar individualmente cada activo en el parser
+    if incluirSensores {
+        fmt.Println("DEBUG: Consultando sensores para cada activo")
+        
+        for _, activo := range activos {
+            if activoMap, ok := activo.(map[string]interface{}); ok {
+                if idInterface, exists := activoMap["id"]; exists {
+                    var activoID int
+                    
+                    // Convertir el ID a int
+                    switch v := idInterface.(type) {
+                    case float64:
+                        activoID = int(v)
+                    case int:
+                        activoID = v
+                    default:
+                        fmt.Printf("Tipo inesperado para id de activo: %T\n", idInterface)
+                        continue
+                    }
 
-        resp, err := httpClient.Get(url)
-        if err != nil {
-            fmt.Println("Error obteniendo estados de activos: ", err)
-            return
+                    // Consultar sensores para este activo específico
+                    wg.Add(1)
+                    go func(aID int) {
+                        defer wg.Done()
+                        
+                        url := fmt.Sprintf("%s/activo/%d", parserURL, aID)
+                        resp, err := httpClient.Get(url)
+                        if err != nil {
+                            fmt.Printf("Error obteniendo sensores para activo %d: %v\n", aID, err)
+                            return
+                        }
+                        defer resp.Body.Close()
+
+                        var activoData map[string]interface{}
+                        if err := json.NewDecoder(resp.Body).Decode(&activoData); err != nil {
+                            fmt.Printf("Error decodificando datos del activo %d: %v\n", aID, err)
+                            return
+                        }
+
+                        mu.Lock()
+                        // Guardar estado si existe
+                        if estado, exists := activoData["estado"]; exists {
+                            if estadoStr, ok := estado.(string); ok {
+                                estadosMap[aID] = estadoStr
+                            }
+                        }
+
+                        // Guardar sensores si existen
+                        if sensores, exists := activoData["sensores"]; exists {
+                            sensoresMap[aID] = sensores
+                        }
+                        mu.Unlock()
+                    }(activoID)
+                }
+            }
         }
-        defer resp.Body.Close()
 
-        // Extraer el array de estados
-        var estadosArray []interface{}
+        wg.Wait() // Esperar a que terminen todas las consultas de sensores
+    } else {
+        // Si NO se solicitan sensores, usar el endpoint global para estados
+        wg.Add(1)
+        go func() {
+            defer wg.Done()
+            url := fmt.Sprintf("%s/activo", parserURL)
 
-        // Intentar decodificar primero como array directo
-        if err := json.NewDecoder(resp.Body).Decode(&estadosArray); err != nil {
-            // Si falla, intentar como objeto con clave "activos"
-            resp.Body.Close()
-            resp, err = httpClient.Get(url)
+            resp, err := httpClient.Get(url)
             if err != nil {
-                fmt.Println("Error obteniendo estados de activos (segundo intento): ", err)
+                fmt.Println("Error obteniendo estados de activos: ", err)
                 return
             }
             defer resp.Body.Close()
 
-            var responseData map[string]interface{}
-            if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
-                fmt.Println("Error decodificando respuesta de estados: ", err)
-                return
-            }
+            // Extraer el array de estados
+            var estadosArray []interface{}
 
-            if activos, exists := responseData["activos"]; exists {
-                if arr, ok := activos.([]interface{}); ok {
-                    estadosArray = arr
+            // Intentar decodificar primero como array directo
+            if err := json.NewDecoder(resp.Body).Decode(&estadosArray); err != nil {
+                // Si falla, intentar como objeto con clave "activos"
+                resp.Body.Close()
+                resp, err = httpClient.Get(url)
+                if err != nil {
+                    fmt.Println("Error obteniendo estados de activos (segundo intento): ", err)
+                    return
+                }
+                defer resp.Body.Close()
+
+                var responseData map[string]interface{}
+                if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+                    fmt.Println("Error decodificando respuesta de estados: ", err)
+                    return
+                }
+
+                if activos, exists := responseData["activos"]; exists {
+                    if arr, ok := activos.([]interface{}); ok {
+                        estadosArray = arr
+                    }
                 }
             }
-        }
 
-        mu.Lock()
-        for _, estadoItem := range estadosArray {
-            if estadoData, ok := estadoItem.(map[string]interface{}); ok {
-                if activoID, exists := estadoData["activo_id"]; exists {
-                    // Convertir activo_id a int
-                    var id int
-                    switch v := activoID.(type) {
-                    case float64:
-                        id = int(v)
-                    case int:
-                        id = v
-                    default:
-                        fmt.Printf("Tipo inesperado para activo_id: %T\n", activoID)
-                        continue
-                    }
-                    
-                    // Guardar estado
-                    if estado, existsEstado := estadoData["estado"]; existsEstado {
-                        if estadoStr, ok := estado.(string); ok {
-                            estadosMap[id] = estadoStr
+            mu.Lock()
+            for _, estadoItem := range estadosArray {
+                if estadoData, ok := estadoItem.(map[string]interface{}); ok {
+                    if activoID, exists := estadoData["activo_id"]; exists {
+                        // Convertir activo_id a int
+                        var id int
+                        switch v := activoID.(type) {
+                        case float64:
+                            id = int(v)
+                        case int:
+                            id = v
+                        default:
+                            fmt.Printf("Tipo inesperado para activo_id: %T\n", activoID)
+                            continue
+                        }
+                        
+                        // Guardar estado
+                        if estado, existsEstado := estadoData["estado"]; existsEstado {
+                            if estadoStr, ok := estado.(string); ok {
+                                estadosMap[id] = estadoStr
+                            }
                         }
                     }
                 }
             }
-        }
-        mu.Unlock()
-    }()
+            mu.Unlock()
+        }()
 
-    wg.Wait() // Esperar a que termine la goroutine de estados
+        wg.Wait() // Esperar a que termine la goroutine de estados
+    }
 
-    // Agregar el estado a cada activo en la lista
+    // Agregar el estado (y sensores si se solicitaron) a cada activo en la lista
     activosConEstado := []interface{}{}
     for _, activo := range activos {
         if activoMap, ok := activo.(map[string]interface{}); ok {
@@ -1990,6 +2054,15 @@ func ObtenerTodosActivos(c *gin.Context) {
                 } else {
                     // Si no se encuentra estado, poner "Desconocido"
                     activoMap["estado"] = "Desconocido"
+                }
+
+                // Si se solicitaron sensores, agregarlos
+                if incluirSensores {
+                    if sensores, encontrado := sensoresMap[activoID]; encontrado {
+                        activoMap["sensores"] = sensores
+                    } else {
+                        activoMap["sensores"] = []interface{}{} // Array vacío si no hay sensores
+                    }
                 }
             }
             activosConEstado = append(activosConEstado, activoMap)

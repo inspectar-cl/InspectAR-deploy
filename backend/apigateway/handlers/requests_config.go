@@ -24,14 +24,14 @@ func getSpecialHandlers() []SpecialHandler {
             Pattern: "/api/activos-completos",
             Handler: ActivosCompletosHandler,
             Protected: true,
-            RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente"},
+            RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente", "user-type:Admin"},
         },
         {
             Method:  "GET",
             Pattern: "/api/activos-y-sensores",
             Handler: ActivosYSensores,
             Protected: true,
-            RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente"},
+            RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente", "user-type:Admin"},
         },
         {
             Method: "GET",
@@ -45,7 +45,7 @@ func getSpecialHandlers() []SpecialHandler {
             Pattern: "/api/generar-reporte/:id_reporte",
             Handler: GenerarReporte,   
             Protected: true,
-            RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente"},
+            RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente", "user-type:Admin"},
         },
         { 
             Method:  "POST",
@@ -123,7 +123,7 @@ func getSpecialHandlers() []SpecialHandler {
             Pattern: "/api/obtener-activo-id/:id_activo",
             Handler: ObtenerActivoPorID,
             Protected: true,
-            RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente"},
+            RequiredScopes: []string{"user-type:Tecnico", "user-type:Residente", "user-type:Admin"},
         },
         { 
             Method:  "POST",

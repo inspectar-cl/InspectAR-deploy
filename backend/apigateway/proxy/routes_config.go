@@ -33,5 +33,10 @@ var ProxyRoutes = []ProxyRoute{
         TargetEnvVar: "DOCUMENTATION_URL",
         PrependPath:  "/api/v1",
     },
+    {
+        PathPrefix:  "/api/ML",
+        TargetEnvVar: "ML_URL",
+        PrependPath:  "",
+    },
 }
 

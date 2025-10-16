@@ -13,6 +13,8 @@ import type { SavedSignature } from '@/components/dashboard/reportes-tecnicos/Si
 import SignatureDialog from '@/components/dashboard/reportes-tecnicos/SignatureDialog';
 import { useSignatures } from '@/hooks/use-signatures';
 import { useUserToken } from '@/hooks/use-usertoken';
+import { decodeJwtToken } from '@/hooks/use-auth';
+import { decode } from 'punycode';
 
 const gs = new Services();
 const BASE_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL || '/api';
@@ -45,6 +47,7 @@ function GenerarReporte() {
     { value: 'datos_sensores', label: 'Datos de Sensores' },
   ];
 
+  const datos = decodeJwtToken(user?.token);
   const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
   const { signatures, addSignature, removeSignature } = useSignatures();
   const [selectedSignatureDataUrl, setSelectedSignatureDataUrl] = useState<string | null>(null);
@@ -127,19 +130,28 @@ function GenerarReporte() {
     try {
       const payload = {
         campos: camposSeleccionados,
+        "usar_firma_predeterminada": true,
+        "email": datos?.email,
       };
 
+      console.log('=== EXPORTAR PDF ===');
+      console.log('Activo seleccionado:', activo);
+      console.log('Payload a enviar:', payload);
+      console.log('URL completa:', `${BASE_URL}/gestion/reportes/activo/${activo}`);
 
       // Hacer petición con fetch para obtener el blob
-      const response = await fetch(`${BASE_URL}/pdf-reporte/${activo}`, {
+      const response = await fetch(`${BASE_URL}/gestion/reportes/activo/${activo}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${user.token}`,
         },
         body: JSON.stringify(payload),
+
       });
 
+      console.log('Status de respuesta:', response.status);
+      console.log('Content-Type:', response.headers.get('content-type'));
 
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -147,6 +159,7 @@ function GenerarReporte() {
 
       // Obtener el PDF como blob
       const blob = await response.blob();
+      console.log('Blob recibido:', blob.size, 'bytes, tipo:', blob.type);
 
       // Crear URL local para el blob
       const url = window.URL.createObjectURL(blob);
@@ -155,6 +168,8 @@ function GenerarReporte() {
       const nombreActivo = activoSeleccionado ? activoSeleccionado.nombre.replace(/\s+/g, '_') : 'Reporte';
       const fecha = new Date().toISOString().split('T')[0].replace(/-/g, '');
       const nombreArchivo = `Reporte_${nombreActivo}_${fecha}.pdf`;
+
+      console.log('Descargando como:', nombreArchivo);
 
       const link = document.createElement('a');
       link.href = url;
@@ -169,6 +184,7 @@ function GenerarReporte() {
       }, 10000);
 
     } catch (error) {
+      console.error('Error al exportar PDF:', error);
       setMensaje('No se pudo exportar el PDF');
     }
   };
@@ -184,10 +200,16 @@ function GenerarReporte() {
     try {
       const payload = {
         campos: camposSeleccionados,
+        "usar_firma_predeterminada": true,
+        "email": datos?.email,
       };
 
+      console.log('=== VISTA PREVIA PDF ===');
+      console.log('Activo seleccionado:', activo);
+      console.log('Payload a enviar:', payload);
+
       // Hacer petición con fetch para obtener el blob
-      const response = await fetch(`${BASE_URL}/pdf-reporte/${activo}`, {
+      const response = await fetch(`${BASE_URL}/gestion/reportes/activo/${activo}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -196,20 +218,26 @@ function GenerarReporte() {
         body: JSON.stringify(payload),
       });
 
+      console.log('Status de respuesta:', response.status);
+      console.log('Content-Type:', response.headers.get('content-type'));
+
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
       // Obtener el PDF como blob
       const blob = await response.blob();
+      console.log('Blob recibido:', blob.size, 'bytes, tipo:', blob.type);
 
       // Crear URL local para el blob
       const url = window.URL.createObjectURL(blob);
+      console.log('URL local creada:', url);
 
       // Establecer la URL para la vista previa
       setPdfUrl(url);
 
     } catch (error) {
+      console.error('Error al generar vista previa:', error);
       setMensaje('No se pudo generar la vista previa');
     }
   };

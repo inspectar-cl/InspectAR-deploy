@@ -81,7 +81,7 @@ func getSpecialHandlers() []SpecialHandler {
             Pattern: "/api/obtener-activos-id/:id_edificio",
             Handler: ObtenerActivosPorEdificio,
             Protected: true,
-            RequiredScopes: []string{"user-type:Residente", "user-type:Admin"},
+            RequiredScopes: []string{"user-type:Residente", "user-type:Tecnico", "user-type:Analista", "user-type:Admin"},
         },
         {
             Method:  "GET",

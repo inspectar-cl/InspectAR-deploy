@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 import { useState, useEffect, useCallback } from 'react';
 import Services from '@/modules/Services';
+import { useUserToken } from '@/hooks/use-usertoken';
 
 // Tipos del backend (actualizados para el nuevo endpoint)
 interface ActivoBackend {
@@ -93,17 +94,23 @@ function generarNombreSensor(tipo: string, sensor_id: string): string {
 }
 
 export function useActivosWithSensors() {
+  const { user, isLoading: authLoading } = useUserToken();
   const [activos, setActivos] = useState<ActivoWithSensors[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchActivosWithSensors = useCallback(async () => {
+    if (authLoading || !user) {
+      console.log('user/token no disponibles para activos con sensores', { authLoading, user });
+      return;
+    }
+
     setLoading(true);
     setError(null);
     
     try {
-      // Una sola petición para obtener todos los activos con sensores y datos
-      const response = await gs.get('/activos-y-sensores') as ApiResponse;
+      // Usar el nuevo endpoint con autenticación
+      const response = await gs.authorizedGet('/obtener-todos-activos?sensores=true', user.token) as ApiResponse;
       // console.log('📊 Respuesta completa de activos y sensores:', response);
       
       if (!response.activos || response.activos.length === 0) {
@@ -170,7 +177,7 @@ export function useActivosWithSensors() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [authLoading, user]);
 
   // Refresh automático cada 30 segundos
   useEffect(() => {

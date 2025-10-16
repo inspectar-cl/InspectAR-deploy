@@ -1918,11 +1918,12 @@ func ObtenerTodosActivos(c *gin.Context) {
                         continue
                     }
 
-                    // Consultar sensores para este activo específico
+                    // Consultar sensores y datos para este activo específico
                     wg.Add(1)
                     go func(aID int) {
                         defer wg.Done()
                         
+                        // Consultar información de sensores (estado, tipo, unidad, etc.)
                         url := fmt.Sprintf("%s/activo/%d", parserURL, aID)
                         resp, err := httpClient.Get(url)
                         if err != nil {
@@ -1945,11 +1946,73 @@ func ObtenerTodosActivos(c *gin.Context) {
                             }
                         }
 
-                        // Guardar sensores si existen
+                        // Obtener sensores
+                        var sensoresArray []interface{}
                         if sensores, exists := activoData["sensores"]; exists {
-                            sensoresMap[aID] = sensores
+                            if sensoresArr, ok := sensores.([]interface{}); ok {
+                                sensoresArray = sensoresArr
+                            }
                         }
                         mu.Unlock()
+
+                        // Consultar datos históricos de sensores
+                        urlDatos := fmt.Sprintf("%s/lectura/%d/datos", parserURL, aID)
+                        respDatos, err := httpClient.Get(urlDatos)
+                        if err != nil {
+                            fmt.Printf("Error obteniendo datos para activo %d: %v\n", aID, err)
+                            // Guardar sensores sin datos
+                            mu.Lock()
+                            sensoresMap[aID] = sensoresArray
+                            mu.Unlock()
+                            return
+                        }
+                        defer respDatos.Body.Close()
+
+                        var datosResponse map[string]interface{}
+                        if err := json.NewDecoder(respDatos.Body).Decode(&datosResponse); err != nil {
+                            fmt.Printf("Error decodificando datos históricos del activo %d: %v\n", aID, err)
+                            // Guardar sensores sin datos
+                            mu.Lock()
+                            sensoresMap[aID] = sensoresArray
+                            mu.Unlock()
+                            return
+                        }
+
+                        // Crear un mapa de datos por sensor_id
+                        datosMap := make(map[string]interface{})
+                        if sensoresDatos, exists := datosResponse["sensores"]; exists {
+                            if sensoresDatosArray, ok := sensoresDatos.([]interface{}); ok {
+                                for _, sensorDato := range sensoresDatosArray {
+                                    if sensorDatoMap, ok := sensorDato.(map[string]interface{}); ok {
+                                        if sensorID, exists := sensorDatoMap["sensor_id"]; exists {
+                                            if datos, existsDatos := sensorDatoMap["datos"]; existsDatos {
+                                                datosMap[fmt.Sprintf("%v", sensorID)] = datos
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Agregar los datos a cada sensor
+                        for _, sensor := range sensoresArray {
+                            if sensorMap, ok := sensor.(map[string]interface{}); ok {
+                                if sensorID, exists := sensorMap["sensor_id"]; exists {
+                                    sensorIDStr := fmt.Sprintf("%v", sensorID)
+                                    if datos, encontrado := datosMap[sensorIDStr]; encontrado {
+                                        sensorMap["datos"] = datos
+                                    } else {
+                                        sensorMap["datos"] = nil
+                                    }
+                                }
+                            }
+                        }
+
+                        // Guardar sensores con datos
+                        mu.Lock()
+                        sensoresMap[aID] = sensoresArray
+                        mu.Unlock()
+
                     }(activoID)
                 }
             }

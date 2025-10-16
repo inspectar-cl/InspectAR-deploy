@@ -1,4 +1,3 @@
- 
 "use client";
 import React from "react";
 import dynamic from "next/dynamic";
@@ -16,7 +15,11 @@ function AnomalyChart({ predicciones, activoNombre }: { predicciones: Prediccion
     chart: { type: "line" as const, zoom: { enabled: true } },
     xaxis: { type: "datetime" as const },
     yaxis: [{ title: { text: "Anomaly Score" } }, { opposite: true, title: { text: "Likelihood" } }],
-    tooltip: { shared: true, intersect: false },
+    tooltip: { 
+      shared: true, 
+      intersect: false,
+      theme: 'dark'
+    },
     title: { text: `Predicciones para ${activoNombre}`, align: "left" as const },
   };
 

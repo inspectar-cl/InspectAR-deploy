@@ -1,13 +1,13 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import pandas as pd
 import logging
 
 from . import config, logger
 from .model_htm import detectar_htm_multivar
-from .utils import clean_timestamps
+from .utils import clean_timestamps, transform_sensores_to_records
 
 # ============================================================
 # Inicialización de FastAPI con configuración
@@ -22,6 +22,53 @@ app = FastAPI(
 # ============================================================
 # Modelos de entrada
 # ============================================================
+
+class SensorDato(BaseModel):
+    """Dato individual de un sensor"""
+    tiempo: str
+    valor: float
+
+class SensorData(BaseModel):
+    """Datos de un sensor específico"""
+    sensor_id: str
+    datos: List[SensorDato]
+
+class ActivoSensoresPayload(BaseModel):
+    """
+    Formato de entrada desde el backend (formato agrupado por sensor)
+    """
+    activo_id: int
+    edificio_id: Optional[int] = None
+    estado: Optional[str] = None
+    limit: Optional[int] = None
+    offset: Optional[int] = None
+    page: Optional[int] = None
+    sensores: List[SensorData]
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "activo_id": 2,
+                "edificio_id": 1,
+                "estado": "Medio",
+                "sensores": [
+                    {
+                        "sensor_id": "A_ACR_Mot.PV",
+                        "datos": [
+                            {"tiempo": "2024-06-11T15:59:59Z", "valor": 0.001735421},
+                            {"tiempo": "2024-06-11T15:59:58Z", "valor": 0.001735421}
+                        ]
+                    },
+                    {
+                        "sensor_id": "A_Temp.PV",
+                        "datos": [
+                            {"tiempo": "2024-06-11T15:59:59Z", "valor": 31.99942017},
+                            {"tiempo": "2024-06-11T15:59:58Z", "valor": 31.99942017}
+                        ]
+                    }
+                ]
+            }
+        }
 
 class SensorRecord(BaseModel):
     """Registro individual de sensor con timestamp y features"""
@@ -121,7 +168,7 @@ def get_config():
 @app.post("/predict_anomaly")
 async def predict_anomaly(payload: PumpWindow):
     """
-    Recibe un bloque de datos históricos y devuelve análisis de anomalías.
+    Recibe un bloque de datos históricos en formato flat y devuelve análisis de anomalías.
     
     - **pump**: Identificador del activo/bomba
     - **records**: Lista de registros con timestamp y features de sensores
@@ -226,6 +273,58 @@ async def predict_anomaly(payload: PumpWindow):
         )
 
 
+@app.post("/predict_anomaly_from_sensors")
+async def predict_anomaly_from_sensors(payload: ActivoSensoresPayload):
+    """
+    Recibe datos en formato agrupado por sensor (formato del backend) y devuelve análisis de anomalías.
+    
+    - **activo_id**: ID del activo
+    - **sensores**: Lista de sensores con sus datos temporales
+    
+    **Retorna**:
+    - pump: Identificador del activo
+    - n_rows: Número de filas analizadas
+    - n_anomalies: Número de anomalías detectadas
+    - results: Array con cada punto analizado
+    - last: Último resultado
+    """
+    try:
+        logger.info(f"Procesando predicción para activo_id: {payload.activo_id}")
+        logger.debug(f"Número de sensores recibidos: {len(payload.sensores)}")
+        
+        # Convertir sensores a formato dict para la función de utils
+        sensores_dict = [sensor.dict() for sensor in payload.sensores]
+        
+        # Transformar formato agrupado por sensor a formato flat por timestamp
+        records = transform_sensores_to_records(sensores_dict)
+        
+        logger.debug(f"Registros transformados: {len(records)}")
+        
+        if len(records) == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="No se pudieron generar registros a partir de los datos de sensores"
+            )
+        
+        # Crear payload en formato PumpWindow
+        pump_payload = PumpWindow(
+            pump=f"activo_{payload.activo_id}",
+            records=records
+        )
+        
+        # Delegar al endpoint principal
+        return await predict_anomaly(pump_payload)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error en predict_anomaly_from_sensors: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error procesando datos de sensores: {str(e)}"
+        )
+
+
 # ============================================================
 # Middleware de logging
 # ============================================================
@@ -255,4 +354,4 @@ async def startup_event():
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    logger.info("🚀 Servicio ML Engine detenido")
+    logger.info("🛑 Servicio ML Engine detenido")

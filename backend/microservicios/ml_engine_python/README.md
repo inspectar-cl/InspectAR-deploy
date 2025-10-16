@@ -9,6 +9,7 @@ Este microservicio analiza datos de sensores en tiempo real y detecta anomalías
 - **Suavizado exponencial (EMA)** para reducir ruido
 - **Umbrales adaptativos** que se ajustan automáticamente
 - **Clasificación de severidad** (Baja, Media, Alta)
+- **Transformación automática** de formatos de entrada
 
 ### Características principales
 
@@ -18,6 +19,8 @@ Este microservicio analiza datos de sensores en tiempo real y detecta anomalías
 - ✅ API REST con FastAPI
 - ✅ Manejo robusto de datos incompletos/inválidos
 - ✅ Configuración flexible mediante variables de entorno
+- ✅ **Soporta múltiples formatos de entrada** (flat y sensor-agrupado)
+- ✅ **Transformación automática** de datos del backend
 
 ## 🏗️ Arquitectura
 
@@ -33,12 +36,12 @@ Este microservicio analiza datos de sensores en tiempo real y detecta anomalías
 │   (FastAPI)     │
 └────────┬────────┘
          │
-    ┌────┴─────┐
-    ▼          ▼
-┌────────┐  ┌──────────┐
-│ HTM    │  │ Cleaning │
-│ Model  │  │ Utils    │
-└────────┘  └──────────┘
+    ┌────┴─────┬──────────────┐
+    ▼          ▼              ▼
+┌────────┐  ┌──────────┐  ┌─────────────┐
+│ HTM    │  │ Cleaning │  │ Transform   │
+│ Model  │  │ Utils    │  │ Sensores    │
+└────────┘  └──────────┘  └─────────────┘
 ```
 
 ## 🐳 Despliegue con Docker (Producción)
@@ -186,6 +189,18 @@ python test_ml_service.py
 5. ✅ Insufficient Data - Valida rechazo de datos insuficientes
 6. ✅ Invalid Timestamps - Manejo de timestamps inválidos
 
+#### Test de transformación de datos
+
+```powershell
+python test_transform.py
+```
+
+**Valida:**
+- ✅ Conversión de formato sensor-agrupado a flat
+- ✅ Manejo de datos faltantes (sparse data)
+- ✅ Ordenamiento correcto de timestamps
+- ✅ Casos extremos (valores cero, negativos, etc.)
+
 ### 4. Pruebas manuales con curl
 
 ```bash
@@ -195,13 +210,18 @@ curl http://localhost:8085/healthz
 # Ver configuración
 curl http://localhost:8085/config
 
-# Predicción (usar archivo JSON)
+# Predicción (formato flat - usar archivo JSON)
 curl -X POST http://localhost:8085/predict_anomaly \
   -H "Content-Type: application/json" \
   -d @test_payload.json
+
+# Predicción (formato backend - sensores agrupados)
+curl -X POST http://localhost:8085/predict_anomaly_from_sensors \
+  -H "Content-Type: application/json" \
+  -d @test_payload_backend.json
 ```
 
-Ejemplo `test_payload.json`:
+Ejemplo `test_payload.json` (formato flat):
 ```json
 {
   "pump": "bomba_1",
@@ -213,6 +233,32 @@ Ejemplo `test_payload.json`:
       "A_Pres.PV": 1.85
     }
     // ... más registros (mínimo 180)
+  ]
+}
+```
+
+Ejemplo `test_payload_backend.json` (formato backend):
+```json
+{
+  "activo_id": 2,
+  "edificio_id": 1,
+  "estado": "Medio",
+  "sensores": [
+    {
+      "sensor_id": "A_ACR_Mot.PV",
+      "datos": [
+        {"tiempo": "2024-06-11T15:59:59Z", "valor": 0.001735421},
+        {"tiempo": "2024-06-11T15:59:58Z", "valor": 0.001735421}
+      ]
+    },
+    {
+      "sensor_id": "A_Temp.PV",
+      "datos": [
+        {"tiempo": "2024-06-11T15:59:59Z", "valor": 31.99942017},
+        {"tiempo": "2024-06-11T15:59:58Z", "valor": 31.99942017}
+      ]
+    }
+    // ... más sensores (mínimo 180 timestamps únicos)
   ]
 }
 ```
@@ -276,7 +322,7 @@ Health check del servicio.
 Configuración actual del modelo.
 
 ### `POST /predict_anomaly`
-Predicción de anomalías.
+Predicción de anomalías usando formato **flat** (timestamp como índice).
 
 **Request Body:**
 ```json
@@ -328,6 +374,61 @@ Predicción de anomalías.
 }
 ```
 
+### `POST /predict_anomaly_from_sensors` 🆕
+Predicción de anomalías usando formato **sensor-agrupado** (formato nativo del backend).
+
+Este endpoint acepta datos en el formato que retorna el backend de InspectAR, donde cada sensor tiene su propia lista de datos temporales.
+
+**Request Body:**
+```json
+{
+  "activo_id": 2,
+  "edificio_id": 1,
+  "estado": "Medio",
+  "sensores": [
+    {
+      "sensor_id": "A_ACR_Mot.PV",
+      "datos": [
+        {"tiempo": "2024-06-11T15:59:59Z", "valor": 0.001735421},
+        {"tiempo": "2024-06-11T15:59:58Z", "valor": 0.001735421}
+      ]
+    },
+    {
+      "sensor_id": "A_Temp.PV",
+      "datos": [
+        {"tiempo": "2024-06-11T15:59:59Z", "valor": 31.99942017},
+        {"tiempo": "2024-06-11T15:59:58Z", "valor": 31.99942017}
+      ]
+    }
+    // ... más sensores (mínimo 180 timestamps únicos)
+  ]
+}
+```
+
+**Transformación automática:**
+El endpoint internamente transforma el formato sensor-agrupado a formato flat:
+
+```
+Entrada (sensor-agrupado):       →       Salida (flat por timestamp):
+┌──────────────────────┐                ┌──────────────────────────┐
+│ A_Temp.PV:           │                │ timestamp: 15:59:58      │
+│  - 15:59:58 → 31.98  │                │   A_Temp.PV: 31.98       │
+│  - 15:59:59 → 31.99  │    ────────→   │   A_Pres.PV: 0.488       │
+│ A_Pres.PV:           │                ├──────────────────────────┤
+│  - 15:59:58 → 0.488  │                │ timestamp: 15:59:59      │
+│  - 15:59:59 → 0.490  │                │   A_Temp.PV: 31.99       │
+└──────────────────────┘                │   A_Pres.PV: 0.490       │
+                                        └──────────────────────────┘
+```
+
+**Response:** Mismo formato que `/predict_anomaly`
+
+**Características:**
+- ✅ Maneja datos faltantes (algunos sensores pueden no tener todos los timestamps)
+- ✅ Ordena automáticamente por timestamp (más antiguos primero)
+- ✅ Valida calidad de datos antes del análisis
+- ✅ Usa el mismo motor de detección HTM-like
+
 ## 🔧 Estructura del Proyecto
 
 ```
@@ -337,11 +438,12 @@ ml_engine_python/
 │   ├── config.py            # Configuración con variables de entorno
 │   ├── main.py              # FastAPI app + endpoints
 │   ├── model_htm.py         # Modelo HTM-like
-│   └── utils.py             # Utilidades (limpieza, cálculos)
+│   └── utils.py             # Utilidades (limpieza, transformación, cálculos)
 ├── Dockerfile               # Imagen Docker
 ├── requirements.txt         # Dependencias Python
 ├── quick_test.py           # Prueba rápida
 ├── test_ml_service.py      # Suite de tests
+├── test_transform.py       # Tests de transformación 🆕
 └── README.md               # Este archivo
 ```
 
@@ -349,20 +451,55 @@ ml_engine_python/
 
 ### Flujo de procesamiento
 
-1. **Entrada:** Ventana de W registros históricos
-2. **Preprocesamiento:** Limpieza de timestamps inválidos
-3. **Codificación temporal:** Uso de SGDRegressor incremental
-4. **Cálculo de error normalizado:** Comparación con media/std móvil
-5. **Suavizado EMA:** `likelihood = (1-α) * likelihood + α * score`
-6. **Umbral adaptativo:** `threshold = mean + k * std`
-7. **Clasificación:** Comparación likelihood vs threshold
-8. **Salida:** Score, likelihood, severidad, descripción
+1. **Entrada:** Ventana de W registros históricos (formato flat o sensor-agrupado)
+2. **Transformación:** Si es formato backend, convierte a formato flat
+3. **Preprocesamiento:** Limpieza de timestamps inválidos
+4. **Codificación temporal:** Uso de SGDRegressor incremental
+5. **Cálculo de error normalizado:** Comparación con media/std móvil
+6. **Suavizado EMA:** `likelihood = (1-α) * likelihood + α * score`
+7. **Umbral adaptativo:** `threshold = mean + k * std`
+8. **Clasificación:** Comparación likelihood vs threshold
+9. **Salida:** Score, likelihood, severidad, descripción
 
 ### Parámetros clave
 
 - **W (window_size):** Mayor = más contexto, menor = más reactivo
 - **α (alpha):** Mayor = más reactivo, menor = más estable
 - **k (k_adapt):** Mayor = menos sensible, menor = más sensible
+
+## 🔄 Transformación de Datos
+
+### Función: `transform_sensores_to_records`
+
+Ubicada en `app/utils.py`, esta función convierte el formato sensor-agrupado del backend al formato flat requerido por el modelo HTM.
+
+**Características:**
+- Pivotea datos de sensor-centric a timestamp-centric
+- Maneja datos faltantes (sparse data)
+- Ordena cronológicamente (más antiguos primero)
+- Preserva valores especiales (cero, negativos)
+- Valida integridad de datos
+
+**Uso programático:**
+```python
+from app.utils import transform_sensores_to_records
+
+sensores = [
+    {
+        "sensor_id": "A_Temp.PV",
+        "datos": [
+            {"tiempo": "2024-06-11T15:59:59Z", "valor": 31.99},
+            {"tiempo": "2024-06-11T15:59:58Z", "valor": 31.98}
+        ]
+    }
+]
+
+records = transform_sensores_to_records(sensores)
+# [
+#   {"timestamp": "2024-06-11T15:59:58Z", "A_Temp.PV": 31.98},
+#   {"timestamp": "2024-06-11T15:59:59Z", "A_Temp.PV": 31.99}
+# ]
+```
 
 ## 🐛 Troubleshooting
 
@@ -383,7 +520,9 @@ lsof -i :8085                 # Linux/WSL
 Error: Se requieren al menos 180 registros para el análisis
 ```
 
-**Solución:** Envía al menos 180 registros en el campo `records`.
+**Solución:** 
+- Para `/predict_anomaly`: Envía al menos 180 registros en el campo `records`
+- Para `/predict_anomaly_from_sensors`: Asegúrate de que haya al menos 180 timestamps únicos entre todos los sensores
 
 ### Error: "Invalid timestamps"
 
@@ -395,6 +534,17 @@ Error: Calidad de datos insuficiente: 25% de timestamps inválidos
 - Verifica formato ISO 8601: `YYYY-MM-DDTHH:MM:SSZ`
 - Máximo 20% de timestamps inválidos permitido
 - Entre 5-20% se intentará interpolación automática
+
+### Error: "No se pudieron generar registros"
+
+```
+Error: No se pudieron generar registros a partir de los datos de sensores
+```
+
+**Solución:**
+- Verifica que cada sensor tenga el campo `sensor_id`
+- Verifica que cada dato tenga `tiempo` y `valor`
+- Asegúrate de que al menos un sensor tenga datos válidos
 
 ### No detecta anomalías
 
@@ -408,6 +558,22 @@ Error: Calidad de datos insuficiente: 25% de timestamps inválidos
 # Más sensible
 HTM_K_ADAPT=1.5
 HTM_ALPHA=0.02
+```
+
+### Datos faltantes en algunos timestamps
+
+**Comportamiento esperado:** El servicio maneja automáticamente datos faltantes (sparse data). Si un sensor no tiene valor para cierto timestamp, simplemente no aparecerá en ese registro.
+
+**Ejemplo:**
+```json
+// Sensor A_Temp tiene datos en 3 timestamps
+// Sensor A_Pres solo tiene datos en 2 timestamps
+// Resultado: 3 registros, el segundo solo tendrá A_Temp
+[
+  {"timestamp": "...", "A_Temp": 31.99, "A_Pres": 0.49},
+  {"timestamp": "...", "A_Temp": 32.00},  // ← A_Pres faltante
+  {"timestamp": "...", "A_Temp": 32.01, "A_Pres": 0.51}
+]
 ```
 
 ## 📈 Monitoreo y Logs
@@ -438,22 +604,35 @@ docker logs --tail 100 ml_engine
 docker logs -t ml_engine
 ```
 
+### Logs relevantes
+
+```
+INFO: Procesando predicción para activo_id: 2
+DEBUG: Número de sensores recibidos: 10
+DEBUG: Registros transformados: 180
+INFO: Limpieza de datos aplicada - Estrategia: drop_invalid, Calidad: 98.5%
+DEBUG: Features detectadas: 10 columnas
+INFO: ✅ Predicción completada para activo_2: 5 anomalías detectadas de 180 puntos
+```
+
 ## 🔐 Seguridad
 
 - ✅ Validación de entrada con Pydantic
 - ✅ Límites de tamaño en requests
 - ✅ Sanitización de timestamps
 - ✅ Manejo seguro de errores
+- ✅ Validación de estructura de datos
 - ⚠️ **Nota:** Este servicio debe estar detrás del API Gateway, no expuesto directamente
 
 ## 🚀 Próximas mejoras
 
 - [ ] Caché de modelos entrenados
-- [ ] Soporte para múltiples activos simultáneos
+- [ ] Soporte para múltiples activos simultáneos en batch
 - [ ] Métricas de Prometheus
 - [ ] Reentrenamiento automático
 - [ ] Soporte para datos streaming (MQTT)
 - [ ] Tests de integración con InfluxDB
+- [ ] Endpoint para análisis histórico de tendencias
 
 ## 📝 Licencia
 

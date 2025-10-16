@@ -1,6 +1,8 @@
 # app/utils.py
 import numpy as np
 import pandas as pd
+from typing import Dict, List, Any
+from collections import defaultdict
 from .config import WINDOW_SIZE as W, K_ADAPT as k_adapt
 
 def rolling_threshold(series: pd.Series, window: int = W, k: float = k_adapt, min_periods: int = 50) -> pd.Series:
@@ -186,3 +188,75 @@ def clean_timestamps(df: pd.DataFrame, max_invalid_percent: float = 5.0) -> tupl
     )
     
     return df_clean, stats
+
+
+def transform_sensores_to_records(sensores: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Transforma el formato agrupado por sensor a formato flat por timestamp.
+    
+    Args:
+        sensores: Lista de sensores con estructura:
+            [
+                {
+                    "sensor_id": "A_Temp.PV",
+                    "datos": [
+                        {"tiempo": "2024-06-11T15:59:59Z", "valor": 31.99},
+                        {"tiempo": "2024-06-11T15:59:58Z", "valor": 31.98}
+                    ]
+                },
+                {
+                    "sensor_id": "A_Pres.PV",
+                    "datos": [
+                        {"tiempo": "2024-06-11T15:59:59Z", "valor": 0.49},
+                        {"tiempo": "2024-06-11T15:59:58Z", "valor": 0.48}
+                    ]
+                }
+            ]
+    
+    Returns:
+        Lista de registros en formato flat:
+            [
+                {
+                    "timestamp": "2024-06-11T15:59:59Z",
+                    "A_Temp.PV": 31.99,
+                    "A_Pres.PV": 0.49
+                },
+                {
+                    "timestamp": "2024-06-11T15:59:58Z",
+                    "A_Temp.PV": 31.98,
+                    "A_Pres.PV": 0.48
+                }
+            ]
+    """
+    # Diccionario para agrupar por timestamp
+    records_by_time: Dict[str, Dict[str, Any]] = defaultdict(dict)
+    
+    # Iterar sobre cada sensor y sus datos
+    for sensor in sensores:
+        sensor_id = sensor.get("sensor_id", "")
+        datos = sensor.get("datos", [])
+        
+        if not sensor_id:
+            continue
+        
+        for dato in datos:
+            timestamp = dato.get("tiempo", "")
+            valor = dato.get("valor", None)
+            
+            if not timestamp or valor is None:
+                continue
+            
+            # Agregar valor del sensor al timestamp correspondiente
+            records_by_time[timestamp][sensor_id] = valor
+    
+    # Convertir a lista de registros con timestamp
+    records = []
+    for timestamp, features in records_by_time.items():
+        record = {"timestamp": timestamp}
+        record.update(features)
+        records.append(record)
+    
+    # Ordenar por timestamp (más antiguos primero)
+    records.sort(key=lambda x: x["timestamp"])
+    
+    return records

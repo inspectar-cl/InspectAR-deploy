@@ -52,17 +52,15 @@ interface ReportePayload {
 }
 
 /** Convierte un dataURL (p.ej., canvas.toDataURL()) a Blob */
-/** Convierte un dataURL (p.ej., canvas.toDataURL()) a Blob */
 function dataUrlToBlob(dataUrl: string): Blob {
   const [meta = '', base64 = ''] = dataUrl.split(',');
 
-  // Usa exec (regla prefer-regexp-exec) y un grupo normal (sin nombre)
-  // Evita .* por seguridad: capturamos solo hasta el ';'
-  const regex = /^data:(?:[^;]+);base64$/;
+  // Regex con grupo de captura para extraer el MIME type
+  const regex = /^data:([^;]+);base64$/;
   const match = regex.exec(meta);
-
-  // Fallback razonable si no reconoce el MIME
-  const mime = match?.[1];
+  
+  // Extraer MIME type o usar fallback
+  const mime = match?.[1] || 'image/png';
 
   const binStr = atob(base64);
   const len = binStr.length;
@@ -99,6 +97,17 @@ async function uploadSignatureFile({
     headers: { Authorization: `Bearer ${token}` },
     body: form,
   });
+
+  if (!resp.ok) {
+    let msg = `Error subiendo firma (${resp.status})`;
+    try {
+      const j = await resp.json();
+      msg = j?.error || j?.message || msg;
+    } catch {
+      // Si no hay JSON válido, usar mensaje por defecto
+    }
+    throw new Error(msg);
+  }
 
   // Type guards seguros
   interface FirmaObj {

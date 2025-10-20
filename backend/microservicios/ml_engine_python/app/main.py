@@ -40,7 +40,7 @@ class UnifiedPayload(BaseModel):
     1. Formato flat (records): [{"timestamp": "...", "sensor1": val, ...}, ...]
     2. Formato agrupado (sensores): [{"sensor_id": "...", "datos": [...]}, ...]
     """
-    activo_id: Union[int, str]
+    pump: Union[int, str]
     edificio_id: Optional[int] = None
     estado: Optional[str] = None
     limit: Optional[int] = None
@@ -56,7 +56,7 @@ class UnifiedPayload(BaseModel):
     class Config:
         schema_extra = {
             "example_flat": {
-                "activo_id": "A",
+                "pump": "A",
                 "records": [
                     {
                         "timestamp": "2025-10-09T22:40:00Z",
@@ -66,7 +66,7 @@ class UnifiedPayload(BaseModel):
                 ]
             },
             "example_grouped": {
-                "activo_id": 2,
+                "pump": 2,
                 "sensores": [
                     {
                         "sensor_id": "A_ACR_Mot.PV",
@@ -133,7 +133,7 @@ async def predict_anomaly(payload: UnifiedPayload):
     1. **Formato flat** (records):
     ```json
     {
-        "activo_id": "A",
+        "pump": "A",
         "records": [
             {"timestamp": "2025-10-09T22:40:00Z", "A_ACR_Mot.PV": 0.012, "A_Temp.PV": 22.7},
             ...
@@ -144,7 +144,7 @@ async def predict_anomaly(payload: UnifiedPayload):
     2. **Formato agrupado por sensor** (sensores):
     ```json
     {
-        "activo_id": 2,
+        "pump": 2,
         "sensores": [
             {
                 "sensor_id": "A_ACR_Mot.PV",
@@ -155,14 +155,14 @@ async def predict_anomaly(payload: UnifiedPayload):
     ```
     
     **Retorna**:
-    - activo_id: Identificador del activo
+    - pump: Identificador del activo
     - n_rows: Número de filas analizadas
     - n_anomalies: Número de anomalías detectadas
     - results: Array con cada punto analizado (AnomalyScore, AnomalyLikelihood, Threshold, Severity, etc.)
     - last: Último resultado (más reciente)
     """
     try:
-        logger.info(f"Procesando predicción para activo: {payload.activo_id}")
+        logger.info(f"Procesando predicción para activo: {payload.pump}")
         
         # ============================================================
         # 1. DETECTAR Y TRANSFORMAR FORMATO DE ENTRADA
@@ -176,7 +176,7 @@ async def predict_anomaly(payload: UnifiedPayload):
             
             # Convertir a diccionario para transform_sensores_to_records
             data_dict = {
-                "activo_id": payload.activo_id,
+                "pump": payload.pump,
                 "sensores": [sensor.dict() for sensor in payload.sensores]
             }
             
@@ -285,7 +285,7 @@ async def predict_anomaly(payload: UnifiedPayload):
         # 4. EJECUTAR MODELO HTM-like
         # ============================================================
         
-        result = detectar_htm_multivar(df_clean, str(payload.activo_id))
+        result = detectar_htm_multivar(df_clean, str(payload.pump))
         
         if isinstance(result, ValueError):
             raise HTTPException(
@@ -294,7 +294,7 @@ async def predict_anomaly(payload: UnifiedPayload):
             )
         
         logger.info(
-            f"✅ Predicción completada para {payload.activo_id}: "
+            f"✅ Predicción completada para {payload.pump}: "
             f"{result['n_anomalies']} anomalías detectadas de {result['n_rows']} puntos"
         )
         

@@ -5,7 +5,7 @@ from sklearn.preprocessing import StandardScaler
 from .utils import rolling_threshold, severity_from_likelihood, description_from_severity, normalize_score_0_100, compute_is_anomaly, preprocess_timeseries
 from .config import WINDOW_SIZE as W, ALPHA as alpha, K_ADAPT as k_adapt
 
-def detectar_htm_multivar(df, activo_id):
+def detectar_htm_multivar(df, pump):
     """
     Recibe un DataFrame con columnas de sensores y devuelve
     los resultados del análisis de anomalías.
@@ -15,7 +15,7 @@ def detectar_htm_multivar(df, activo_id):
     d = preprocess_timeseries(df, timestamp_col="Timestamp", method="linear")
 
     if len(d) <= W:
-        return ValueError(f"Datos insuficientes ({len(d)}) para bomba {activo_id}")
+        return ValueError(f"Datos insuficientes ({len(d)}) para bomba {pump}")
 
     scaler_X = StandardScaler()
     scaler_y = StandardScaler()
@@ -82,7 +82,7 @@ def detectar_htm_multivar(df, activo_id):
                        'Threshold', 'is_anomaly', 'Severity', 'Description']].to_dict(orient='records')
 
     return {
-        "activo_id": activo_id,
+        "pump": pump,
         "n_rows": len(res),
         "n_anomalies": int(res['is_anomaly'].sum()),
         "results": resultados,

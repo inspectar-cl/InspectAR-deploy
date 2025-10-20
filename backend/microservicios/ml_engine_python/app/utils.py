@@ -203,12 +203,12 @@ def clean_timestamps(df: pd.DataFrame, max_invalid_percent: float = 5.0) -> tupl
 def transform_sensores_to_records(data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Transforma el JSON de sensores agrupados a formato plano por timestamp,
-    y agrega la clave 'activo_id' con el valor de 'activo_id'.
+    y agrega la clave 'pump' con el valor de 'pump'.
     
     Args:
         data: Diccionario con estructura:
             {
-                "activo_id": 2,
+                "pump": 2,
                 "sensores": [
                     {"sensor_id": "...", "datos": [{"tiempo": "...", "valor": ...}, ...]},
                     ...
@@ -218,7 +218,7 @@ def transform_sensores_to_records(data: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Diccionario con formato:
             {
-                "activo_id": activo_id,
+                "pump": pump,
                 "records": [
                     {"timestamp": "...", "sensor1": val, ...},
                     ...
@@ -226,7 +226,7 @@ def transform_sensores_to_records(data: Dict[str, Any]) -> Dict[str, Any]:
             }
     """
     sensores = data.get("sensores", [])
-    activo_id = data.get("activo_id", "UNKNOWN")
+    pump = data.get("pump", "UNKNOWN")
     
     # Diccionario temporal agrupado por timestamp
     records_by_time: Dict[str, Dict[str, Any]] = defaultdict(dict)
@@ -250,7 +250,7 @@ def transform_sensores_to_records(data: Dict[str, Any]) -> Dict[str, Any]:
     records.sort(key=lambda x: x["Timestamp"])
     
     return {
-        "activo_id": activo_id,
+        "pump": pump,
         "records": records
     }
 

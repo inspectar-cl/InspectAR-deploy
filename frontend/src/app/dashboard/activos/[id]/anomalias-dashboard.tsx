@@ -10,6 +10,7 @@ import {
   Divider,
   Chip,
 } from '@mui/material';
+import { useUserToken } from '@/hooks/use-usertoken';
 import { Activity as ActivityIcon, AlertTriangle as AlertIcon } from 'lucide-react';
 import { type Prediccion } from '@/types/prediccion';
 import { getColorBySeverity } from '@/utils/SeverityUtils';
@@ -111,15 +112,17 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
   const [predicciones, setPredicciones] = useState<Prediccion[]>([]);
   const [loading, setLoading] = useState(true);
   const [usingMockData, setUsingMockData] = useState(false);
+  const { user, isLoading} = useUserToken();
 
   useEffect(() => {
     const fetchAnomalias = async (retryCount = 0, maxRetries = 3) => {
       try {
         setLoading(true);
+        if (isLoading || !user) {return;}
                 
         // Intentar obtener datos reales
         const response = await gs.authorizedGet(
-          `/ML/anomalies/activo/${activoId}?page=1&limit=50`
+          `/ML/anomalies/activo/${activoId}?page=1&limit=50`, user.token
         ) as AnomaliasPaginadas;
 
         if (response && Array.isArray(response.anomalies) && response.anomalies.length > 0) {

@@ -59,7 +59,7 @@ def clean_timestamps(df: pd.DataFrame, max_invalid_percent: float = 5.0) -> tupl
     - Si >= 20%: Lanza excepción (calidad de datos muy baja)
     
     Args:
-        df: DataFrame con columna 'timestamp' (ya debe estar como string)
+        df: DataFrame con columna 'Timestamp' (ya debe estar como string)
         max_invalid_percent: Porcentaje máximo permitido para eliminar registros (default: 5%)
     
     Returns:
@@ -87,18 +87,18 @@ def clean_timestamps(df: pd.DataFrame, max_invalid_percent: float = 5.0) -> tupl
     df = df.copy()
     
     # Intentar parsear con formato ISO8601/RFC3339 primero
-    df['timestamp'] = pd.to_datetime(df['timestamp'], format='ISO8601', errors='coerce')
-    
+    df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='ISO8601', errors='coerce')
+
     # Si aún hay NaT, intentar con inferencia automática
-    invalid_mask = df['timestamp'].isna()
+    invalid_mask = df['Timestamp'].isna()
     if invalid_mask.any():
-        still_invalid = df.loc[invalid_mask, 'timestamp']
+        still_invalid = df.loc[invalid_mask, 'Timestamp']
         parsed = pd.to_datetime(still_invalid, errors='coerce', utc=True)
         # Convertir explícitamente a datetime64[ns] para evitar warnings de dtype
-        df.loc[invalid_mask, 'timestamp'] = parsed.astype('datetime64[ns]')
+        df.loc[invalid_mask, 'Timestamp'] = parsed.astype('datetime64[ns]')
     
     # Contar timestamps inválidos finales
-    invalid_mask = df['timestamp'].isna()
+    invalid_mask = df['Timestamp'].isna()
     stats["invalid_timestamps"] = int(invalid_mask.sum())
     stats["invalid_percent"] = (stats["invalid_timestamps"] / stats["total_records"]) * 100
     
@@ -140,7 +140,7 @@ def clean_timestamps(df: pd.DataFrame, max_invalid_percent: float = 5.0) -> tupl
     df = df.sort_index()
     
     # Verificar si hay suficientes timestamps válidos para interpolar
-    valid_timestamps = df.loc[~invalid_mask, 'timestamp']
+    valid_timestamps = df.loc[~invalid_mask, 'Timestamp']
     
     if len(valid_timestamps) < 2:
         stats["strategy"] = "insufficient_valid_data"
@@ -161,19 +161,19 @@ def clean_timestamps(df: pd.DataFrame, max_invalid_percent: float = 5.0) -> tupl
         )
         
         # Usar forward fill y backward fill para rellenar gaps pequeños
-        df['timestamp'] = df['timestamp'].fillna(method='ffill').fillna(method='bfill')
+        df['Timestamp'] = df['Timestamp'].fillna(method='ffill').fillna(method='bfill')
         
         # Verificar si aún quedan NaN (gaps muy grandes al inicio/fin)
-        remaining_nan = df['timestamp'].isna().sum()
+        remaining_nan = df['Timestamp'].isna().sum()
         
         if remaining_nan > 0:
             # Si quedan NaN, eliminarlos
-            df_clean = df[~df['timestamp'].isna()].copy().reset_index(drop=True)
+            df_clean = df[~df['Timestamp'].isna()].copy().reset_index(drop=True)
             stats["interpolated_records"] = stats["invalid_timestamps"] - remaining_nan
             stats["dropped_records"] = remaining_nan
             stats["strategy"] = "interpolate_and_drop"
             logger.info(
-                f"✓ Estrategia: Interpolar + eliminar extremos "
+                f" Estrategia: Interpolar + eliminar extremos "
                 f"(interpolados: {stats['interpolated_records']}, "
                 f"eliminados: {stats['dropped_records']})"
             )
@@ -182,7 +182,7 @@ def clean_timestamps(df: pd.DataFrame, max_invalid_percent: float = 5.0) -> tupl
             stats["interpolated_records"] = stats["invalid_timestamps"]
             stats["strategy"] = "interpolate"
             logger.info(
-                f"✓ Estrategia: Interpolar todos "
+                f" Estrategia: Interpolar todos "
                 f"({stats['interpolated_records']} timestamps interpolados)"
             )
         
@@ -193,80 +193,90 @@ def clean_timestamps(df: pd.DataFrame, max_invalid_percent: float = 5.0) -> tupl
     stats["dropped_records"] = stats["invalid_timestamps"]
     stats["strategy"] = "drop_fallback"
     logger.warning(
-        f"⚠ No se pudo interpolar. Eliminando registros inválidos "
+        f"No se pudo interpolar. Eliminando registros inválidos "
         f"({stats['dropped_records']} registros)"
     )
     
     return df_clean, stats
 
 
-def transform_sensores_to_records(sensores: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def transform_sensores_to_records(data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Transforma el formato agrupado por sensor a formato flat por timestamp.
+    Transforma el JSON de sensores agrupados a formato plano por timestamp,
+    y agrega la clave 'activo_id' con el valor de 'activo_id'.
     
     Args:
-        sensores: Lista de sensores con estructura:
-            [
-                {
-                    "sensor_id": "A_Temp.PV",
-                    "datos": [
-                        {"tiempo": "2024-06-11T15:59:59Z", "valor": 31.99},
-                        {"tiempo": "2024-06-11T15:59:58Z", "valor": 31.98}
-                    ]
-                },
-                {
-                    "sensor_id": "A_Pres.PV",
-                    "datos": [
-                        {"tiempo": "2024-06-11T15:59:59Z", "valor": 0.49},
-                        {"tiempo": "2024-06-11T15:59:58Z", "valor": 0.48}
-                    ]
-                }
-            ]
+        data: Diccionario con estructura:
+            {
+                "activo_id": 2,
+                "sensores": [
+                    {"sensor_id": "...", "datos": [{"tiempo": "...", "valor": ...}, ...]},
+                    ...
+                ]
+            }
     
     Returns:
-        Lista de registros en formato flat:
-            [
-                {
-                    "timestamp": "2024-06-11T15:59:59Z",
-                    "A_Temp.PV": 31.99,
-                    "A_Pres.PV": 0.49
-                },
-                {
-                    "timestamp": "2024-06-11T15:59:58Z",
-                    "A_Temp.PV": 31.98,
-                    "A_Pres.PV": 0.48
-                }
-            ]
+        Diccionario con formato:
+            {
+                "activo_id": activo_id,
+                "records": [
+                    {"timestamp": "...", "sensor1": val, ...},
+                    ...
+                ]
+            }
     """
-    # Diccionario para agrupar por timestamp
+    sensores = data.get("sensores", [])
+    activo_id = data.get("activo_id", "UNKNOWN")
+    
+    # Diccionario temporal agrupado por timestamp
     records_by_time: Dict[str, Dict[str, Any]] = defaultdict(dict)
     
-    # Iterar sobre cada sensor y sus datos
     for sensor in sensores:
-        sensor_id = sensor.get("sensor_id", "")
-        datos = sensor.get("datos", [])
-        
-        if not sensor_id:
-            continue
-        
-        for dato in datos:
-            timestamp = dato.get("tiempo", "")
-            valor = dato.get("valor", None)
-            
-            if not timestamp or valor is None:
-                continue
-            
-            # Agregar valor del sensor al timestamp correspondiente
-            records_by_time[timestamp][sensor_id] = valor
+        sensor_id = sensor.get("sensor_id")
+        for dato in sensor.get("datos", []):
+            timestamp = dato.get("tiempo")
+            valor = dato.get("valor")
+            if timestamp is not None and valor is not None:
+                records_by_time[timestamp][sensor_id] = valor
     
-    # Convertir a lista de registros con timestamp
+    # Convertir a lista de dicts con timestamp
     records = []
     for timestamp, features in records_by_time.items():
-        record = {"timestamp": timestamp}
+        record = {"Timestamp": timestamp}
         record.update(features)
         records.append(record)
     
-    # Ordenar por timestamp (más antiguos primero)
-    records.sort(key=lambda x: x["timestamp"])
+    # Ordenar por timestamp
+    records.sort(key=lambda x: x["Timestamp"])
     
-    return records
+    return {
+        "activo_id": activo_id,
+        "records": records
+    }
+
+def preprocess_timeseries(df: pd.DataFrame, timestamp_col: str = "Timestamp", method: str = "linear") -> pd.DataFrame:
+    """
+    Preprocesa un DataFrame de sensores para análisis de series de tiempo:
+      - Ordena por timestamp
+      - Interpola valores faltantes (NaN)
+      - Opcionalmente rellena los extremos con forward/backward fill si es necesario
+    
+    Args:
+        df: DataFrame con columna de timestamp y columnas de sensores.
+        timestamp_col: Nombre de la columna de tiempo.
+        method: Método de interpolación ('linear', 'time', 'polynomial', etc.)
+        
+    Returns:
+        DataFrame limpio, ordenado y sin NaN intermedios.
+    """
+    # Asegurarse de que la columna timestamp sea datetime
+    df = df.copy()
+    df[timestamp_col] = pd.to_datetime(df[timestamp_col], utc=True)
+    
+    # Ordenar por tiempo
+    df = df.sort_values(timestamp_col).reset_index(drop=True)
+    
+    # Interpolación de NaNs
+    df_interpolated = df.interpolate(method=method, limit_direction='both', axis=0)
+    
+    return df_interpolated

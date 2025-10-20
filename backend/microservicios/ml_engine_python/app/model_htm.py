@@ -2,21 +2,20 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import SGDRegressor
 from sklearn.preprocessing import StandardScaler
-from .utils import rolling_threshold, severity_from_likelihood, description_from_severity, normalize_score_0_100, compute_is_anomaly
+from .utils import rolling_threshold, severity_from_likelihood, description_from_severity, normalize_score_0_100, compute_is_anomaly, preprocess_timeseries
 from .config import WINDOW_SIZE as W, ALPHA as alpha, K_ADAPT as k_adapt
 
-def detectar_htm_multivar(df, prefix):
+def detectar_htm_multivar(df, activo_id):
     """
     Recibe un DataFrame con columnas de sensores y devuelve
     los resultados del análisis de anomalías.
     """
-    if 'timestamp' in df.columns:
-        df = df.sort_values('timestamp').reset_index(drop=True)
-    features = [c for c in df.columns if c != "timestamp"]
-    d = df.dropna(subset=features).sort_values("timestamp").reset_index(drop=True)
+    if 'Timestamp' in df.columns:
+        df = df.sort_values('Timestamp').reset_index(drop=True)
+    d = preprocess_timeseries(df, timestamp_col="Timestamp", method="linear")
 
     if len(d) <= W:
-        return ValueError(f"Datos insuficientes ({len(d)}) para bomba {prefix}")
+        return ValueError(f"Datos insuficientes ({len(d)}) para bomba {activo_id}")
 
     scaler_X = StandardScaler()
     scaler_y = StandardScaler()
@@ -64,7 +63,7 @@ def detectar_htm_multivar(df, prefix):
         scores.append(score)
         probs.append(likelihood)
 
-    # construir DataFrame de resultados alineados con timestamps desde W en adelante
+    # construir DataFrame de resultados alineados con Timestamps desde W en adelante
     res = d.iloc[W:].copy().reset_index(drop=True)
     res['AnomalyScore'] = normalize_score_0_100(pd.Series(scores))
     res['AnomalyLikelihood'] = normalize_score_0_100(pd.Series(probs))
@@ -79,11 +78,11 @@ def detectar_htm_multivar(df, prefix):
     res['Description'] = res['Severity'].apply(description_from_severity)
 
     # preparar salida: lista de dicts + summary (último)
-    resultados = res[['timestamp', 'AnomalyScore', 'AnomalyLikelihood',
+    resultados = res[['Timestamp', 'AnomalyScore', 'AnomalyLikelihood',
                        'Threshold', 'is_anomaly', 'Severity', 'Description']].to_dict(orient='records')
 
     return {
-        "pump": prefix,
+        "activo_id": activo_id,
         "n_rows": len(res),
         "n_anomalies": int(res['is_anomaly'].sum()),
         "results": resultados,

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 import pandas as pd
 import logging
 
@@ -33,89 +33,47 @@ class SensorData(BaseModel):
     sensor_id: str
     datos: List[SensorDato]
 
-class ActivoSensoresPayload(BaseModel):
+
+class UnifiedPayload(BaseModel):
     """
-    Formato de entrada desde el backend (formato agrupado por sensor)
+    Payload unificado que acepta ambos formatos:
+    1. Formato flat (records): [{"timestamp": "...", "sensor1": val, ...}, ...]
+    2. Formato agrupado (sensores): [{"sensor_id": "...", "datos": [...]}, ...]
     """
-    activo_id: int
+    activo_id: Union[int, str]
     edificio_id: Optional[int] = None
     estado: Optional[str] = None
     limit: Optional[int] = None
     offset: Optional[int] = None
     page: Optional[int] = None
-    sensores: List[SensorData]
+    
+    # Formato flat por timestamp
+    records: Optional[List[Dict[str, Any]]] = None
+    
+    # Formato agrupado por sensor
+    sensores: Optional[List[SensorData]] = None
     
     class Config:
         schema_extra = {
-            "example": {
-                "activo_id": 2,
-                "edificio_id": 1,
-                "estado": "Medio",
-                "sensores": [
-                    {
-                        "sensor_id": "A_ACR_Mot.PV",
-                        "datos": [
-                            {"tiempo": "2024-06-11T15:59:59Z", "valor": 0.001735421},
-                            {"tiempo": "2024-06-11T15:59:58Z", "valor": 0.001735421}
-                        ]
-                    },
-                    {
-                        "sensor_id": "A_Temp.PV",
-                        "datos": [
-                            {"tiempo": "2024-06-11T15:59:59Z", "valor": 31.99942017},
-                            {"tiempo": "2024-06-11T15:59:58Z", "valor": 31.99942017}
-                        ]
-                    }
-                ]
-            }
-        }
-
-class SensorRecord(BaseModel):
-    """Registro individual de sensor con timestamp y features"""
-    timestamp: str
-    # Los demás campos son dinámicos (temperatura, presion, vibration, etc.)
-    
-    class Config:
-        extra = "allow"  # Permite campos adicionales
-
-
-class PumpWindow(BaseModel):
-    """Ventana de datos para un activo/bomba"""
-    pump: str = Field(..., description="Identificador del activo/bomba")
-    records: List[Dict[str, Any]] = Field(..., description="Lista de registros de sensores")
-    
-    class Config:
-        schema_extra = {
-            "example": {
-                "pump": "A",
+            "example_flat": {
+                "activo_id": "A",
                 "records": [
                     {
                         "timestamp": "2025-10-09T22:40:00Z",
                         "A_ACR_Mot.PV": 0.012,
-                        "A_ACR_Mot.SV": 0.035,
-                        "A_ACR_Mot.TV": 41.2,
-                        "A_ACR_Pmp.PV": 0.009,
-                        "A_ACR_Pmp.SV": 0.031,
-                        "A_ACR_Pmp.TV": 42.0,
-                        "A_Pres.PV": 1.84,
-                        "A_Temp.PV": 22.7,
-                        "Barometer": 1013.3,
-                        "Temperature": 22.5
-                    },
-                    {
-                        "timestamp": "2025-10-09T22:40:01Z",
-                        "A_ACR_Mot.PV": 0.011,
-                        "A_ACR_Mot.SV": 0.034,
-                        "A_ACR_Mot.TV": 41.3,
-                        "A_ACR_Pmp.PV": 0.010,
-                        "A_ACR_Pmp.SV": 0.032,
-                        "A_ACR_Pmp.TV": 42.1,
-                        "A_Pres.PV": 1.86,
-                        "A_Temp.PV": 22.8,
-                        "Barometer": 1013.4,
-                        "Temperature": 22.6
+                        "A_Temp.PV": 22.7
                     }
-                    # Se requieren al menos 180 registros para análisis completo
+                ]
+            },
+            "example_grouped": {
+                "activo_id": 2,
+                "sensores": [
+                    {
+                        "sensor_id": "A_ACR_Mot.PV",
+                        "datos": [
+                            {"tiempo": "2024-06-11T15:59:59Z", "valor": 0.001735421}
+                        ]
+                    }
                 ]
             }
         }
@@ -166,52 +124,127 @@ def get_config():
 
 
 @app.post("/predict_anomaly")
-async def predict_anomaly(payload: PumpWindow):
+async def predict_anomaly(payload: UnifiedPayload):
     """
-    Recibe un bloque de datos históricos en formato flat y devuelve análisis de anomalías.
+    Recibe datos en cualquier formato (flat o agrupado) y devuelve análisis de anomalías.
     
-    - **pump**: Identificador del activo/bomba
-    - **records**: Lista de registros con timestamp y features de sensores
+    **Formatos soportados**:
+    
+    1. **Formato flat** (records):
+    ```json
+    {
+        "activo_id": "A",
+        "records": [
+            {"timestamp": "2025-10-09T22:40:00Z", "A_ACR_Mot.PV": 0.012, "A_Temp.PV": 22.7},
+            ...
+        ]
+    }
+    ```
+    
+    2. **Formato agrupado por sensor** (sensores):
+    ```json
+    {
+        "activo_id": 2,
+        "sensores": [
+            {
+                "sensor_id": "A_ACR_Mot.PV",
+                "datos": [{"tiempo": "2024-06-11T15:59:59Z", "valor": 0.001735421}]
+            }
+        ]
+    }
+    ```
     
     **Retorna**:
-    - pump: Identificador del activo
+    - activo_id: Identificador del activo
     - n_rows: Número de filas analizadas
     - n_anomalies: Número de anomalías detectadas
     - results: Array con cada punto analizado (AnomalyScore, AnomalyLikelihood, Threshold, Severity, etc.)
     - last: Último resultado (más reciente)
     """
     try:
-        logger.info(f"Procesando predicción para activo: {payload.pump}")
-        logger.debug(f"Número de registros recibidos: {len(payload.records)}")
+        logger.info(f"Procesando predicción para activo: {payload.activo_id}")
         
-        # Validación básica
-        if not payload.pump:
-            raise HTTPException(
-                status_code=400, 
-                detail="El campo 'pump' es requerido"
-            )
+        # ============================================================
+        # 1. DETECTAR Y TRANSFORMAR FORMATO DE ENTRADA
+        # ============================================================
         
-        if not payload.records or len(payload.records) == 0:
+        records = None
+        
+        # Caso 1: Formato agrupado por sensores (tiene 'sensores')
+        if payload.sensores is not None and len(payload.sensores) > 0:
+            logger.info(f"📦 Formato detectado: AGRUPADO POR SENSORES ({len(payload.sensores)} sensores)")
+            
+            # Convertir a diccionario para transform_sensores_to_records
+            data_dict = {
+                "activo_id": payload.activo_id,
+                "sensores": [sensor.dict() for sensor in payload.sensores]
+            }
+            
+            # Transformar a formato flat
+            transformed = transform_sensores_to_records(data_dict)
+            records = transformed.get("records", [])
+            
+            logger.debug(f"✓ Transformación completada: {len(records)} registros generados")
+        
+        # Caso 2: Formato flat (tiene 'records')
+        elif payload.records is not None and len(payload.records) > 0:
+            logger.info(f"📋 Formato detectado: FLAT ({len(payload.records)} registros)")
+            records = payload.records
+            
+            # Normalizar el nombre de la columna timestamp si es necesario
+            if len(records) > 0:
+                first_record = records[0]
+                # Buscar timestamp en minúsculas o variantes
+                timestamp_key = None
+                for key in first_record.keys():
+                    if key.lower() in ['timestamp', 'tiempo']:
+                        timestamp_key = key
+                        break
+                
+                if timestamp_key and timestamp_key != 'Timestamp':
+                    logger.debug(f"Normalizando clave de timestamp: '{timestamp_key}' → 'Timestamp'")
+                    records = [
+                        {('Timestamp' if k == timestamp_key else k): v for k, v in record.items()}
+                        for record in records
+                    ]
+        
+        # Caso 3: No se proporcionó ningún formato válido
+        else:
             raise HTTPException(
                 status_code=400,
-                detail="Se requiere al menos un registro en 'records'"
+                detail="Se requiere 'records' (formato flat) o 'sensores' (formato agrupado)"
             )
+        
+        # ============================================================
+        # 2. VALIDACIONES
+        # ============================================================
+        
+        if not records or len(records) == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="No se pudieron generar registros válidos a partir de los datos proporcionados"
+            )
+        
+        logger.debug(f"Número de registros a procesar: {len(records)}")
         
         # Convertir a DataFrame
-        df = pd.DataFrame(payload.records)
+        df = pd.DataFrame(records)
         
-        # Debug: mostrar los primeros timestamps recibidos
-        if len(df) > 0 and 'timestamp' in df.columns:
-            logger.info(f"🔍 Primeros timestamps recibidos (tipo: {type(df['timestamp'].iloc[0])}): {df['timestamp'].head(3).tolist()}")
+        # Debug: mostrar los primeros Timestamps recibidos
+        if len(df) > 0 and 'Timestamp' in df.columns:
+            logger.info(f"🔍 Primeros Timestamps recibidos (tipo: {type(df['Timestamp'].iloc[0])}): {df['Timestamp'].head(3).tolist()}")
         
-        # Validar que tenga timestamp
-        if 'timestamp' not in df.columns:
+        # Validar que tenga Timestamp
+        if 'Timestamp' not in df.columns:
             raise HTTPException(
                 status_code=400,
-                detail="Cada registro debe incluir un campo 'timestamp'"
+                detail="Cada registro debe incluir un campo 'Timestamp' o 'timestamp'"
             )
         
-        # Limpiar timestamps con estrategia adaptativa
+        # ============================================================
+        # 3. LIMPIEZA DE TIMESTAMPS
+        # ============================================================
+        
         try:
             df_clean, cleaning_stats = clean_timestamps(df, max_invalid_percent=5.0)
         except ValueError as ve:
@@ -221,10 +254,10 @@ async def predict_anomaly(payload: PumpWindow):
                 detail=str(ve)
             )
         
-        # Log de calidad de datos (solo interno)
+        # Log de calidad de datos
         if cleaning_stats['invalid_timestamps'] > 0:
             logger.info(
-                f"Limpieza de datos aplicada - Estrategia: {cleaning_stats['strategy']}, "
+                f"🧹 Limpieza de datos aplicada - Estrategia: {cleaning_stats['strategy']}, "
                 f"Eliminados: {cleaning_stats['dropped_records']}, "
                 f"Interpolados: {cleaning_stats['interpolated_records']}, "
                 f"Calidad: {100 - cleaning_stats['invalid_percent']:.1f}%"
@@ -239,17 +272,20 @@ async def predict_anomaly(payload: PumpWindow):
             )
         
         # Verificar que haya al menos una columna de features
-        feature_cols = [c for c in df_clean.columns if c != 'timestamp']
+        feature_cols = [c for c in df_clean.columns if c != 'Timestamp']
         if len(feature_cols) == 0:
             raise HTTPException(
                 status_code=400,
                 detail="Se requiere al menos una columna de features (A_ACR_Mot.PV, A_Temp.PV, etc.)"
             )
         
-        logger.debug(f"Features detectadas: {len(feature_cols)} columnas")
+        logger.debug(f"Features detectadas: {len(feature_cols)} columnas - {feature_cols[:5]}...")
         
-        # --- Ejecutar modelo HTM-like ---
-        result = detectar_htm_multivar(df_clean, payload.pump)
+        # ============================================================
+        # 4. EJECUTAR MODELO HTM-like
+        # ============================================================
+        
+        result = detectar_htm_multivar(df_clean, str(payload.activo_id))
         
         if isinstance(result, ValueError):
             raise HTTPException(
@@ -258,7 +294,7 @@ async def predict_anomaly(payload: PumpWindow):
             )
         
         logger.info(
-            f"✅ Predicción completada para {payload.pump}: "
+            f"✅ Predicción completada para {payload.activo_id}: "
             f"{result['n_anomalies']} anomalías detectadas de {result['n_rows']} puntos"
         )
         
@@ -278,55 +314,14 @@ async def predict_anomaly(payload: PumpWindow):
 
 
 @app.post("/predict_anomaly_from_sensors")
-async def predict_anomaly_from_sensors(payload: ActivoSensoresPayload):
+async def predict_anomaly_from_sensors(payload: UnifiedPayload):
     """
-    Recibe datos en formato agrupado por sensor (formato del backend) y devuelve análisis de anomalías.
+    [DEPRECATED] Usa /predict_anomaly que ahora soporta ambos formatos.
     
-    - **activo_id**: ID del activo
-    - **sensores**: Lista de sensores con sus datos temporales
-    
-    **Retorna**:
-    - pump: Identificador del activo
-    - n_rows: Número de filas analizadas
-    - n_anomalies: Número de anomalías detectadas
-    - results: Array con cada punto analizado
-    - last: Último resultado
+    Este endpoint se mantiene por compatibilidad retroactiva.
     """
-    try:
-        logger.info(f"Procesando predicción para activo_id: {payload.activo_id}")
-        logger.debug(f"Número de sensores recibidos: {len(payload.sensores)}")
-        
-        # Convertir sensores a formato dict para la función de utils
-        sensores_dict = [sensor.dict() for sensor in payload.sensores]
-        
-        # Transformar formato agrupado por sensor a formato flat por timestamp
-        records = transform_sensores_to_records(sensores_dict)
-        
-        logger.debug(f"Registros transformados: {len(records)}")
-        
-        if len(records) == 0:
-            raise HTTPException(
-                status_code=400,
-                detail="No se pudieron generar registros a partir de los datos de sensores"
-            )
-        
-        # Crear payload en formato PumpWindow
-        pump_payload = PumpWindow(
-            pump=f"activo_{payload.activo_id}",
-            records=records
-        )
-        
-        # Delegar al endpoint principal
-        return await predict_anomaly(pump_payload)
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error en predict_anomaly_from_sensors: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error procesando datos de sensores: {str(e)}"
-        )
+    logger.warning("⚠️ Endpoint deprecated: /predict_anomaly_from_sensors. Usa /predict_anomaly")
+    return await predict_anomaly(payload)
 
 
 # ============================================================

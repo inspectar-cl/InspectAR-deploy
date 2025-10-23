@@ -17,11 +17,13 @@ interface StoredPayload {
   token: string;
   edificio: Edificio[] | undefined;
   role: Role;
+  selected_edificio: Edificio;
 }
 
 interface SessionUser extends User {
   edificio: Edificio[] | undefined;
   role: Role;
+  selected_edificio: Edificio;
 }
 
 const gs = new Services();
@@ -158,6 +160,7 @@ class AuthClient {
         const payload: StoredPayload = {
           token: accessToken,
           edificio: edificios.length > 0 ? edificios : undefined,
+          selected_edificio: edificios[0],
           role,
         };
 
@@ -191,6 +194,7 @@ class AuthClient {
         ...baseUser,
         edificio: parsed.edificio,
         role: parsed.role,
+        selected_edificio: parsed.selected_edificio,
       };
 
       return { data };
@@ -203,6 +207,43 @@ class AuthClient {
   async signOut(): Promise<{ error?: string }> {
     localStorage.removeItem(STORAGE_KEY);
     return {};
+  }
+
+  async setSelectedEdificio(newEdificio: Edificio): Promise<{ error?: string }> {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      return { error: 'No hay sesión activa para actualizar.' };
+    }
+
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      
+      if (!isStoredPayload(parsed)) {
+        return { error: 'Payload de sesión inválido.' };
+      }
+      
+      const currentPayload = parsed as StoredPayload;
+
+      // Verifica que el newEdificio sea parte del array 'edificio'
+      const isAllowed = currentPayload.edificio?.some(e => e.id === newEdificio.id);
+      if (!isAllowed) {
+         return { error: 'El edificio seleccionado no está en la lista permitida.' };
+      }
+
+      // Actualiza el edificio seleccionado
+      currentPayload.selected_edificio = newEdificio;
+
+      // Guarda el payload actualizado
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(currentPayload));
+      
+      // Importante: Si estás usando un contexto de React para el estado, 
+      // la aplicación necesitará saber que esto cambió.
+
+      return {};
+    } catch (error) {
+      console.error('Error al actualizar el edificio seleccionado:', error);
+      return { error: 'Error al procesar la actualización del edificio.' };
+    }
   }
 }
 

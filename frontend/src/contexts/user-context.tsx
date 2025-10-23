@@ -7,11 +7,27 @@ import type { User } from '@/types/user';
 import { authClient } from '@/lib/auth/client';
 import { logger } from '@/lib/default-logger';
 
+type Role = 'analista' | 'tecnico' | 'residente' | 'admin';
+
+interface Edificio {
+  id: number;
+  nombre: string;
+  direccion: string;
+  creado_en: string;
+}
+
+interface SessionUser extends User {
+  edificio: Edificio[] | undefined;
+  role: Role;
+  selected_edificio: Edificio;
+}
+
 export interface UserContextValue {
-  user: User | null;
+  user: SessionUser | null;
   error: string | null;
   isLoading: boolean;
   checkSession?: () => Promise<void>;
+  changeSelectedEdificio: (newEdificio: Edificio) => Promise<void>;
 }
 
 export const UserContext = React.createContext<UserContextValue | undefined>(undefined);
@@ -21,7 +37,7 @@ export interface UserProviderProps {
 }
 
 export function UserProvider({ children }: UserProviderProps): React.JSX.Element {
-  const [state, setState] = React.useState<{ user: User | null; error: string | null; isLoading: boolean }>({
+  const [state, setState] = React.useState<{ user: SessionUser | null; error: string | null; isLoading: boolean }>({
     user: null,
     error: null,
     isLoading: true,
@@ -29,7 +45,7 @@ export function UserProvider({ children }: UserProviderProps): React.JSX.Element
 
   const checkSession = React.useCallback(async (): Promise<void> => {
     try {
-      const { data, error } = await authClient.getUser();
+      const { data, error } = await authClient.getUser(); 
 
       if (error) {
         logger.error(error);
@@ -44,6 +60,26 @@ export function UserProvider({ children }: UserProviderProps): React.JSX.Element
     }
   }, []);
 
+  const changeSelectedEdificio = React.useCallback(async (newEdificio: Edificio): Promise<void> => {
+    const { error } = await authClient.setSelectedEdificio(newEdificio); 
+    
+    if (error) {
+        logger.error('Error al cambiar edificio:', error);
+        return;
+    }
+
+    setState((prevState) => {
+        if (!prevState.user) return prevState;
+        return {
+            ...prevState,
+            user: {
+                ...prevState.user,
+                selected_edificio: newEdificio,
+            },
+        };
+    });
+  }, []);
+
   React.useEffect(() => {
     checkSession().catch((err: unknown) => {
       logger.error(err);
@@ -52,23 +88,23 @@ export function UserProvider({ children }: UserProviderProps): React.JSX.Element
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Expected
   }, []);
 
-  return <UserContext.Provider value={{ ...state, checkSession }}>{children}</UserContext.Provider>;
+  const contextValue = React.useMemo(() => ({
+    ...state,
+    checkSession,
+    changeSelectedEdificio,
+  }), [state, checkSession, changeSelectedEdificio]);
+
+  return <UserContext.Provider value={contextValue}>{children}</UserContext.Provider>;
 }
 
-export function useAuthUser(): User | null {
-  const [user, setUser] = useState<User | null>(null);
+export function useAuthUser(): UserContextValue {
+  const context = React.useContext(UserContext);
 
-  useEffect(() => {
-    authClient.getUser().then((res) => {
-      if (res.data) setUser(res.data);
-    })
-    .catch((err: unknown) => { 
-        logger.error('Error fetching user in useAuthUser:', err);
-        // Optionally handle state here, but logging is sufficient to satisfy the linter.
-    });
-  }, []);
+  if (context === undefined) {
+    throw new Error('useAuthUser must be used within a UserProvider');
+  }
 
-  return user;
+  return context;
 }
 
 export const UserConsumer = UserContext.Consumer;

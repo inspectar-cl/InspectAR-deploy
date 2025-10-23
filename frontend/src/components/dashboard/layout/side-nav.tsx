@@ -7,7 +7,10 @@ import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { CaretUpDown as CaretUpDownIcon } from '@phosphor-icons/react/dist/ssr/CaretUpDown';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import ButtonBase from '@mui/material/ButtonBase';
+import { CaretUpDownIcon } from '@phosphor-icons/react/dist/ssr/CaretUpDown';
 
 import type { NavItemConfig } from '@/types/nav';
 import { paths } from '@/paths';
@@ -20,16 +23,49 @@ import { navIcons } from './nav-icons';
 import { rolePermissions } from '@/role-permissions';
 import { useAuthUser } from '@/contexts/user-context';
 
+interface Edificio {
+  id: number;
+  nombre: string;
+  direccion: string;
+  creado_en: string;
+}
+
 export function SideNav(): React.JSX.Element {
   const pathname = usePathname();
-
-  const user = useAuthUser();
+  const { user, changeSelectedEdificio } = useAuthUser();
   const role = user?.role || 'residente';
   const allowedPaths = rolePermissions[role] || [];
 
   const filteredItems = navItems.filter((item) =>
     item.href ? allowedPaths.includes(item.href) : true
   );
+
+  //Para botón de seleccionar edificio + logica
+  const selectedEdificio = user?.selected_edificio;
+  const edificioNombre = selectedEdificio?.nombre ?? 'Cargando Edificio...';
+  const edificiosList = user?.edificio;
+
+  const isSelectable = edificiosList && edificiosList.length > 1;
+
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        if (edificiosList && edificiosList.length > 1) { 
+            setAnchorEl(event.currentTarget); 
+        }
+    };
+
+  const handleClose = () => {
+      setAnchorEl(null);
+  };
+
+  const handleSelect = (edificio: Edificio) => {
+      if (user?.selected_edificio?.id !== edificio.id) {
+          changeSelectedEdificio(edificio); 
+      }
+      handleClose();
+  }
 
   return (
     <Box
@@ -63,27 +99,121 @@ export function SideNav(): React.JSX.Element {
         <Box component={RouterLink} href={paths.home} sx={{ display: 'inline-flex' }}>
           <Logo color="light" height={32} width={122} />
         </Box>
-        <Box
+        <Box 
+          component={ButtonBase}
+          onClick={handleClick}
           sx={{
-            alignItems: 'center',
-            backgroundColor: 'var(--mui-palette-neutral-950)',
-            border: '1px solid var(--mui-palette-neutral-700)',
-            borderRadius: '12px',
-            cursor: 'pointer',
-            display: 'flex',
-            p: '4px 12px',
+              alignItems: 'center',
+              backgroundColor: 'var(--mui-palette-neutral-950)',
+              border: '1px solid var(--mui-palette-neutral-700)',
+              borderRadius: '12px',
+              cursor: isSelectable ? 'pointer' : 'default',
+              display: 'flex',
+              p: '4px 12px',
+              textAlign: 'left',
+              '&:hover': {
+                  backgroundColor: isSelectable ? 'rgba(255, 255, 255, 0.04)' : undefined,
+              }
           }}
+          aria-controls={open ? 'edificio-menu' : undefined}
+          aria-haspopup="true"
+          aria-expanded={open ? 'true' : undefined}
         >
           <Box sx={{ flex: '1 1 auto' }}>
-            <Typography color="var(--mui-palette-neutral-400)" variant="body2">
-              Edificios
-            </Typography>
-            <Typography color="inherit" variant="subtitle1">
-              Mall Florida Center
-            </Typography>
+              <Typography color="var(--mui-palette-neutral-400)" variant="body2">
+                  Edificio
+              </Typography>
+              <Typography color="inherit" variant="subtitle1"
+                sx={{
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                }}
+              >
+                  {edificioNombre}
+              </Typography>
           </Box>
-          <CaretUpDownIcon />
-        </Box>
+          {isSelectable && <CaretUpDownIcon />} 
+      </Box>
+
+      {/* MENU DESPLEGABLE */}
+      <Menu
+          anchorEl={anchorEl}
+          id="edificio-menu"
+          open={open}
+          onClose={handleClose}
+          onClick={handleClose}
+          slotProps={{
+              paper: {
+                  style: {
+                    maxHeight: 240,
+                  },
+                  sx: {
+                      bgcolor: 'var(--mui-palette-neutral-950)',
+                      border: '1px solid var(--mui-palette-neutral-700)',
+                      color: 'var(--SideNav-color)',
+                      borderRadius: '8px',
+                      boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.4)'
+                  },
+              },
+              list: {
+                sx: {
+                    overflowY: 'auto',
+                    padding: 0,
+                },
+              },
+          }}
+          anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'left',
+          }}
+          transformOrigin={{
+              vertical: 'top',
+              horizontal: 'left',
+          }}
+      >
+          {edificiosList?.map((edificio) => (
+              <MenuItem 
+                  key={edificio.id} 
+                  onClick={() => handleSelect(edificio)}
+                  selected={selectedEdificio?.id === edificio.id}
+                  sx={{
+                      borderRadius: '6px',
+                      margin: '4px 4px',
+                      padding: '8px 16px',
+
+                      '&:first-of-type': {
+                          marginTop: '8px',
+                      },
+                      '&:last-child': {
+                          marginBottom: '8px',
+                      },
+                      '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                      },
+                      '&.Mui-selected': {
+                          backgroundColor: 'var(--mui-palette-primary-main)',
+                          color: 'var(--mui-palette-primary-contrastText)',
+                          '&:hover': {
+                              backgroundColor: 'var(--mui-palette-primary-main)',
+                          }
+                      },
+                      overflow: 'hidden',
+                      '& > div': {
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                      }
+                  }}
+              >
+                  {edificio.nombre}
+              </MenuItem>
+          ))}
+          {/* Mensaje de no edificios si la lista existe pero esta vacia */}
+          {edificiosList?.length === 0 && (
+              <MenuItem disabled>No hay edificios disponibles</MenuItem>
+          )}
+      </Menu>
       </Stack>
       <Divider sx={{ borderColor: 'var(--mui-palette-neutral-700)' }} />
       <Box component="nav" sx={{ flex: '1 1 auto', p: '12px' }}>

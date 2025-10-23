@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import Services from '@/modules/Services';
 import { useUserToken } from '@/hooks/use-usertoken';
+import { useAuthUser } from '@/contexts/user-context';
 
 const gs = new Services();
 
@@ -46,9 +47,12 @@ export function useActivosDelUsuario(): {
   const [loading, setLoading] = React.useState(true);
   const [err, setErr] = React.useState<string | null>(null);
 
+  const { user: userContext} = useAuthUser();
+  const selectedEdificioId = userContext?.selected_edificio?.id;
+
   React.useEffect(() => {
     const run = async () => {
-      if (isLoading || !user) {
+      if (isLoading || !user || !selectedEdificioId) {
         setLoading(false);
         return;
       }
@@ -59,7 +63,9 @@ export function useActivosDelUsuario(): {
         const edificiosIds = new Set(user.edificio?.map((e) => e.id) ?? []);
         const severity: Record<Estado, number> = { Crítico: 3, Medio: 2, OK: 1, NN: 0 };
 
-        const resp = await gs.authorizedGet('/obtener-activos-id/1', user.token) as ApiActivosResponse;
+        const apiUrl = `/obtener-activos-id/${selectedEdificioId}`;
+        
+        const resp = await gs.authorizedGet(apiUrl, user.token) as ApiActivosResponse;
         if (resp?.error) {
           setErr(resp.error.mensaje || 'Error al obtener activos.');
           setActivos(null);
@@ -67,7 +73,7 @@ export function useActivosDelUsuario(): {
         }
 
         const filtrados = (resp?.activos ?? [])
-          .filter(a => edificiosIds.has(a.edificio_id))
+          .filter(a => a.edificio_id === selectedEdificioId)
           .sort((a, b) => severity[b.estado] - severity[a.estado]);
 
         setActivos(filtrados);
@@ -80,7 +86,7 @@ export function useActivosDelUsuario(): {
     };
 
     void run();
-  }, [isLoading, user]);
+  }, [isLoading, user, selectedEdificioId]);
 
   return { activos, loading, err };
 }

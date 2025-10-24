@@ -25,6 +25,18 @@ ROLLING_WINDOW = int(os.getenv("HTM_ROLLING_WINDOW", 300))
 # Modo de operación: "offline" o "stream"
 MODE = os.getenv("HTM_MODE", "offline")
 
+# Guardar modelo después de entrenamiento
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_DIR = os.path.join(BASE_DIR, "models")
+
+MODEL_FILENAME = "sgd_model.pkl"
+SCALER_X_FILENAME = "scaler_X.pkl"
+SCALER_Y_FILENAME = "scaler_Y.pkl"
+
+MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILENAME)
+SCALER_X_PATH = os.path.join(MODEL_DIR, SCALER_X_FILENAME)
+SCALER_Y_PATH = os.path.join(MODEL_DIR, SCALER_Y_FILENAME)
+
 # ============================================================
 # CONFIGURACIÓN DE LOGS Y DEBUG
 # ============================================================

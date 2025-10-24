@@ -3,7 +3,9 @@ import numpy as np
 import pandas as pd
 from typing import Dict, List, Any
 from collections import defaultdict
-from .config import WINDOW_SIZE as W, K_ADAPT as k_adapt
+from .config import WINDOW_SIZE as W, K_ADAPT as k_adapt, MODEL_DIR, MODEL_PATH, SCALER_X_PATH, SCALER_Y_PATH
+import joblib
+import os
 
 def rolling_threshold(series: pd.Series, window: int = W, k: float = k_adapt, min_periods: int = 50) -> pd.Series:
     """
@@ -280,3 +282,23 @@ def preprocess_timeseries(df: pd.DataFrame, timestamp_col: str = "Timestamp", me
     df_interpolated = df.interpolate(method=method, limit_direction='both', axis=0)
     
     return df_interpolated
+
+def save_model(model, scaler_X, scaler_Y) -> None:
+    """
+    Guarda modelo y scalers usando las rutas definidas en config.
+    """
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    joblib.dump(model, MODEL_PATH)
+    joblib.dump(scaler_X, SCALER_X_PATH)
+    joblib.dump(scaler_Y, SCALER_Y_PATH)
+
+def load_model():
+    """
+    Carga modelo y scalers si existen las tres rutas; devuelve (None, None, None) si falta alguno.
+    """
+    if all(os.path.exists(p) for p in [MODEL_PATH, SCALER_X_PATH, SCALER_Y_PATH]):
+        model = joblib.load(MODEL_PATH)
+        scaler_X = joblib.load(SCALER_X_PATH)
+        scaler_Y = joblib.load(SCALER_Y_PATH)
+        return model, scaler_X, scaler_Y
+    return None, None, None

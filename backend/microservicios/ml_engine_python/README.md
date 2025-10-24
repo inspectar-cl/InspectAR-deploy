@@ -10,6 +10,7 @@ Este microservicio analiza datos de sensores en tiempo real y detecta anomalías
 - **Umbrales adaptativos** que se ajustan automáticamente
 - **Clasificación de severidad** (Baja, Media, Alta)
 - **Transformación automática** de formatos de entrada
+- **Modelo incremental (SGDRegressor)** con persistencia
 
 ### Características principales
 
@@ -21,6 +22,9 @@ Este microservicio analiza datos de sensores en tiempo real y detecta anomalías
 - ✅ Configuración flexible mediante variables de entorno
 - ✅ **Soporta múltiples formatos de entrada** (flat y sensor-agrupado)
 - ✅ **Transformación automática** de datos del backend
+- ✅ **Persistencia de modelo entrenado** entre sesiones
+- ✅ **Limpieza adaptativa de timestamps** con múltiples estrategias
+- ✅ **Interpolación automática** de datos faltantes
 
 ## 🏗️ Arquitectura
 
@@ -36,12 +40,12 @@ Este microservicio analiza datos de sensores en tiempo real y detecta anomalías
 │   (FastAPI)     │
 └────────┬────────┘
          │
-    ┌────┴─────┬──────────────┐
-    ▼          ▼              ▼
-┌────────┐  ┌──────────┐  ┌─────────────┐
-│ HTM    │  │ Cleaning │  │ Transform   │
-│ Model  │  │ Utils    │  │ Sensores    │
-└────────┘  └──────────┘  └─────────────┘
+    ┌────┴─────┬──────────────┬──────────────┐
+    ▼          ▼              ▼              ▼
+┌────────┐  ┌──────────┐  ┌─────────────┐  ┌──────────┐
+│ HTM    │  │ Cleaning │  │ Transform   │  │ Model    │
+│ Model  │  │ Utils    │  │ Sensores    │  │ Persist  │
+└────────┘  └──────────┘  └─────────────┘  └──────────┘
 ```
 
 ## 🐳 Despliegue con Docker (Producción)
@@ -70,13 +74,16 @@ docker build -t ml_engine_python:latest .
 # Ejecutar contenedor
 docker run -d \
   --name ml_engine \
-  -p 8085:8085 \
+  -p 8086:8086 \
+  -v $(pwd)/app/models:/app/app/models \
   -e HTM_WINDOW_SIZE=180 \
   -e HTM_ALPHA=0.01 \
   -e HTM_K_ADAPT=2.0 \
   -e LOG_LEVEL=INFO \
   ml_engine_python:latest
 ```
+
+**Nota:** El volumen `-v $(pwd)/app/models:/app/app/models` permite persistir el modelo entrenado entre reinicios del contenedor.
 
 ### 2. Verificar el servicio
 
@@ -85,10 +92,10 @@ docker run -d \
 docker logs -f ml_engine
 
 # Health check
-curl http://localhost:8085/healthz
+curl http://localhost:8086/healthz
 
 # Ver documentación
-# Navega a http://localhost:8085/docs
+# Navega a http://localhost:8086/docs
 ```
 
 ### 3. Detener el servicio
@@ -136,19 +143,20 @@ pip install -r requirements.txt
 
 ```powershell
 # Asegúrate de que el entorno virtual esté activo
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8085 --reload
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8086 --reload
 ```
 
 El servicio estará disponible en:
-- API: `http://localhost:8085`
-- Swagger UI: `http://localhost:8085/docs`
-- ReDoc: `http://localhost:8085/redoc`
+- API: `http://localhost:8086`
+- Swagger UI: `http://localhost:8086/docs`
+- ReDoc: `http://localhost:8086/redoc`
 
 ### 3. Ejecutar pruebas unitarias
 
 #### Prueba rápida (genera datos sintéticos y prueba predicción)
 
 ```powershell
+cd test
 python quick_test.py
 ```
 
@@ -178,6 +186,7 @@ Anomalías detectadas: 18 de 20
 #### Suite completa de pruebas
 
 ```powershell
+cd test
 python test_ml_service.py
 ```
 
@@ -189,34 +198,36 @@ python test_ml_service.py
 5. ✅ Insufficient Data - Valida rechazo de datos insuficientes
 6. ✅ Invalid Timestamps - Manejo de timestamps inválidos
 
-#### Test de transformación de datos
+#### Test con formato de sensores agrupados
 
 ```powershell
-python test_transform.py
+cd test
+python test_ml_sensors.py
 ```
 
 **Valida:**
 - ✅ Conversión de formato sensor-agrupado a flat
 - ✅ Manejo de datos faltantes (sparse data)
 - ✅ Ordenamiento correcto de timestamps
+- ✅ Persistencia del modelo entre llamadas
 - ✅ Casos extremos (valores cero, negativos, etc.)
 
 ### 4. Pruebas manuales con curl
 
 ```bash
 # Health check
-curl http://localhost:8085/healthz
+curl http://localhost:8086/healthz
 
 # Ver configuración
-curl http://localhost:8085/config
+curl http://localhost:8086/config
 
 # Predicción (formato flat - usar archivo JSON)
-curl -X POST http://localhost:8085/predict_anomaly \
+curl -X POST http://localhost:8086/predict_anomaly \
   -H "Content-Type: application/json" \
   -d @test_payload.json
 
 # Predicción (formato backend - sensores agrupados)
-curl -X POST http://localhost:8085/predict_anomaly_from_sensors \
+curl -X POST http://localhost:8086/predict_anomaly_from_sensors \
   -H "Content-Type: application/json" \
   -d @test_payload_backend.json
 ```
@@ -227,7 +238,7 @@ Ejemplo `test_payload.json` (formato flat):
   "pump": "bomba_1",
   "records": [
     {
-      "timestamp": "2025-10-15T10:00:00Z",
+      "Timestamp": "2025-10-15T10:00:00Z",
       "A_ACR_Mot.PV": 0.012,
       "A_Temp.PV": 75.2,
       "A_Pres.PV": 1.85
@@ -240,9 +251,7 @@ Ejemplo `test_payload.json` (formato flat):
 Ejemplo `test_payload_backend.json` (formato backend):
 ```json
 {
-  "activo_id": 2,
-  "edificio_id": 1,
-  "estado": "Medio",
+  "pump": 2,
   "sensores": [
     {
       "sensor_id": "A_ACR_Mot.PV",
@@ -275,9 +284,12 @@ Ejemplo `test_payload_backend.json` (formato backend):
 | `HTM_SCORE_SCALE` | Escala de normalización | `50.0` |
 | `HTM_MIN_PERIODS` | Períodos mínimos para threshold | `50` |
 | `HTM_ROLLING_WINDOW` | Ventana rolling para threshold | `300` |
-| `API_PORT` | Puerto del servicio | `8085` |
+| `HTM_MODE` | Modo de operación | `offline` |
+| `API_PORT` | Puerto del servicio | `8086` |
 | `LOG_LEVEL` | Nivel de logging | `INFO` |
 | `RANDOM_SEED` | Semilla para reproducibilidad | `42` |
+| `SAVE_RESULTS` | Guardar resultados en archivos | `false` |
+| `OUTPUT_PATH` | Carpeta para guardar resultados | `/app/results` |
 
 ### Ajustar parámetros
 
@@ -321,8 +333,12 @@ Health check del servicio.
 ### `GET /config`
 Configuración actual del modelo.
 
-### `POST /predict_anomaly`
-Predicción de anomalías usando formato **flat** (timestamp como índice).
+### `POST /predict_anomaly` ⭐ **[RECOMENDADO]**
+Predicción de anomalías con **detección automática de formato**.
+
+Este endpoint **unificado** acepta tanto formato **flat** como **sensor-agrupado** y detecta automáticamente cuál usar.
+
+#### Formato 1: Flat (timestamp como índice)
 
 **Request Body:**
 ```json
@@ -330,7 +346,7 @@ Predicción de anomalías usando formato **flat** (timestamp como índice).
   "pump": "bomba_centrifuga_1",
   "records": [
     {
-      "timestamp": "2025-10-15T10:00:00Z",
+      "Timestamp": "2025-10-15T10:00:00Z",
       "A_ACR_Mot.PV": 0.012,
       "A_ACR_Mot.SV": 0.035,
       "A_ACR_Mot.TV": 41.2,
@@ -344,47 +360,12 @@ Predicción de anomalías usando formato **flat** (timestamp como índice).
 }
 ```
 
-**Response:**
-```json
-{
-  "pump": "bomba_centrifuga_1",
-  "n_rows": 20,
-  "n_anomalies": 5,
-  "results": [
-    {
-      "timestamp": "2025-10-15T10:00:00Z",
-      "AnomalyScore": 45.32,
-      "AnomalyLikelihood": 48.15,
-      "Threshold": 65.40,
-      "is_anomaly": 0,
-      "Severity": "Baja",
-      "Description": "Funcionamiento dentro del rango esperado."
-    }
-    // ... más resultados
-  ],
-  "last": {
-    "timestamp": "2025-10-15T10:03:20Z",
-    "AnomalyScore": 85.32,
-    "AnomalyLikelihood": 92.15,
-    "Threshold": 65.40,
-    "is_anomaly": 1,
-    "Severity": "Alta",
-    "Description": "Anomalía crítica detectada. Atención prioritaria requerida."
-  }
-}
-```
-
-### `POST /predict_anomaly_from_sensors` 🆕
-Predicción de anomalías usando formato **sensor-agrupado** (formato nativo del backend).
-
-Este endpoint acepta datos en el formato que retorna el backend de InspectAR, donde cada sensor tiene su propia lista de datos temporales.
+#### Formato 2: Sensor-agrupado (formato backend)
 
 **Request Body:**
 ```json
 {
-  "activo_id": 2,
-  "edificio_id": 1,
-  "estado": "Medio",
+  "pump": 2,
   "sensores": [
     {
       "sensor_id": "A_ACR_Mot.PV",
@@ -406,28 +387,81 @@ Este endpoint acepta datos en el formato que retorna el backend de InspectAR, do
 ```
 
 **Transformación automática:**
-El endpoint internamente transforma el formato sensor-agrupado a formato flat:
-
 ```
 Entrada (sensor-agrupado):       →       Salida (flat por timestamp):
 ┌──────────────────────┐                ┌──────────────────────────┐
-│ A_Temp.PV:           │                │ timestamp: 15:59:58      │
+│ A_Temp.PV:           │                │ Timestamp: 15:59:58      │
 │  - 15:59:58 → 31.98  │                │   A_Temp.PV: 31.98       │
 │  - 15:59:59 → 31.99  │    ────────→   │   A_Pres.PV: 0.488       │
 │ A_Pres.PV:           │                ├──────────────────────────┤
-│  - 15:59:58 → 0.488  │                │ timestamp: 15:59:59      │
+│  - 15:59:58 → 0.488  │                │ Timestamp: 15:59:59      │
 │  - 15:59:59 → 0.490  │                │   A_Temp.PV: 31.99       │
 └──────────────────────┘                │   A_Pres.PV: 0.490       │
                                         └──────────────────────────┘
 ```
 
-**Response:** Mismo formato que `/predict_anomaly`
+**Response:**
+```json
+{
+  "pump": "bomba_centrifuga_1",
+  "n_rows": 20,
+  "n_anomalies": 5,
+  "results": [
+    {
+      "Timestamp": "2025-10-15T10:00:00Z",
+      "AnomalyScore": 45.32,
+      "AnomalyLikelihood": 48.15,
+      "Threshold": 65.40,
+      "is_anomaly": 0,
+      "Severity": "Baja",
+      "Description": "Funcionamiento dentro del rango esperado."
+    }
+    // ... más resultados
+  ],
+  "last": {
+    "Timestamp": "2025-10-15T10:03:20Z",
+    "AnomalyScore": 85.32,
+    "AnomalyLikelihood": 92.15,
+    "Threshold": 65.40,
+    "is_anomaly": 1,
+    "Severity": "Alta",
+    "Description": "Anomalía crítica detectada. Atención prioritaria requerida."
+  }
+}
+```
 
 **Características:**
+- ✅ **Detección automática** de formato (flat vs sensor-agrupado)
 - ✅ Maneja datos faltantes (algunos sensores pueden no tener todos los timestamps)
 - ✅ Ordena automáticamente por timestamp (más antiguos primero)
 - ✅ Valida calidad de datos antes del análisis
+- ✅ Limpieza adaptativa de timestamps inválidos
 - ✅ Usa el mismo motor de detección HTM-like
+
+---
+
+### `POST /predict_anomaly_from_sensors` ⚠️ **[DEPRECATED]**
+
+> **⚠️ DEPRECATED:** Este endpoint se mantiene solo por compatibilidad retroactiva.  
+> **Usa `/predict_anomaly`** que ahora soporta ambos formatos automáticamente.
+
+Este endpoint redirige internamente a `/predict_anomaly` y generará un warning en los logs:
+
+```
+WARNING: ⚠️ Endpoint deprecated: /predict_anomaly_from_sensors. Usa /predict_anomaly
+```
+
+**Migración recomendada:**
+
+```diff
+# Antes (deprecated)
+- POST /predict_anomaly_from_sensors
+
+# Ahora (recomendado)
++ POST /predict_anomaly
+```
+
+El payload es exactamente el mismo, solo cambia la URL.
 
 ## 🔧 Estructura del Proyecto
 
@@ -438,12 +472,17 @@ ml_engine_python/
 │   ├── config.py            # Configuración con variables de entorno
 │   ├── main.py              # FastAPI app + endpoints
 │   ├── model_htm.py         # Modelo HTM-like
-│   └── utils.py             # Utilidades (limpieza, transformación, cálculos)
+│   ├── utils.py             # Utilidades (limpieza, transformación, cálculos)
+│   └── models/              # Directorio para modelos persistentes
+│       ├── sgd_model.pkl    # Modelo SGDRegressor entrenado
+│       ├── scaler_X.pkl     # Scaler para features
+│       └── scaler_Y.pkl     # Scaler para targets
+├── test/
+│   ├── quick_test.py        # Prueba rápida
+│   ├── test_ml_service.py   # Suite de tests
+│   └── test_ml_sensors.py   # Tests de transformación
 ├── Dockerfile               # Imagen Docker
 ├── requirements.txt         # Dependencias Python
-├── quick_test.py           # Prueba rápida
-├── test_ml_service.py      # Suite de tests
-├── test_transform.py       # Tests de transformación 🆕
 └── README.md               # Este archivo
 ```
 
@@ -452,14 +491,17 @@ ml_engine_python/
 ### Flujo de procesamiento
 
 1. **Entrada:** Ventana de W registros históricos (formato flat o sensor-agrupado)
-2. **Transformación:** Si es formato backend, convierte a formato flat
-3. **Preprocesamiento:** Limpieza de timestamps inválidos
-4. **Codificación temporal:** Uso de SGDRegressor incremental
-5. **Cálculo de error normalizado:** Comparación con media/std móvil
-6. **Suavizado EMA:** `likelihood = (1-α) * likelihood + α * score`
-7. **Umbral adaptativo:** `threshold = mean + k * std`
-8. **Clasificación:** Comparación likelihood vs threshold
-9. **Salida:** Score, likelihood, severidad, descripción
+2. **Detección de formato:** Automática (flat si tiene `records`, agrupado si tiene `sensores`)
+3. **Transformación:** Si es formato backend, convierte a formato flat
+4. **Limpieza adaptativa:** Estrategias para manejar timestamps inválidos
+5. **Preprocesamiento:** Interpolación de valores faltantes
+6. **Codificación temporal:** Uso de SGDRegressor incremental con persistencia
+7. **Cálculo de error normalizado:** Comparación con media/std móvil
+8. **Suavizado EMA:** `likelihood = (1-α) * likelihood + α * score`
+9. **Umbral adaptativo:** `threshold = mean + k * std`
+10. **Clasificación:** Comparación likelihood vs threshold
+11. **Persistencia:** Guardado automático del modelo entrenado
+12. **Salida:** Score, likelihood, severidad, descripción
 
 ### Parámetros clave
 
@@ -467,7 +509,7 @@ ml_engine_python/
 - **α (alpha):** Mayor = más reactivo, menor = más estable
 - **k (k_adapt):** Mayor = menos sensible, menor = más sensible
 
-## 🔄 Transformación de Datos
+## 🔄 Transformación y Limpieza de Datos
 
 ### Función: `transform_sensores_to_records`
 
@@ -480,25 +522,75 @@ Ubicada en `app/utils.py`, esta función convierte el formato sensor-agrupado de
 - Preserva valores especiales (cero, negativos)
 - Valida integridad de datos
 
+### Función: `clean_timestamps`
+
+Limpieza adaptativa de timestamps con múltiples estrategias según calidad de datos:
+
+**Estrategias automáticas:**
+
+1. **< 5% inválidos:** Eliminar registros inválidos
+   ```
+   Calidad: 98% → Acción: Eliminar 2% de registros
+   ```
+
+2. **5-20% inválidos:** Interpolar timestamps
+   ```
+   Calidad: 85% → Acción: Forward/backward fill
+   ```
+
+3. **> 20% inválidos:** Rechazar datos
+   ```
+   Calidad: 75% → Error: Calidad insuficiente
+   ```
+
+**Características:**
+- ✅ Parseo flexible de formatos ISO8601/RFC3339
+- ✅ Detección automática de frecuencia de muestreo
+- ✅ Interpolación inteligente con forward/backward fill
+- ✅ Logging detallado de estrategia aplicada
+- ✅ Estadísticas de limpieza en respuesta
+
 **Uso programático:**
 ```python
-from app.utils import transform_sensores_to_records
+from app.utils import clean_timestamps
 
-sensores = [
-    {
-        "sensor_id": "A_Temp.PV",
-        "datos": [
-            {"tiempo": "2024-06-11T15:59:59Z", "valor": 31.99},
-            {"tiempo": "2024-06-11T15:59:58Z", "valor": 31.98}
-        ]
-    }
-]
+df, stats = clean_timestamps(df, max_invalid_percent=5.0)
 
-records = transform_sensores_to_records(sensores)
-# [
-#   {"timestamp": "2024-06-11T15:59:58Z", "A_Temp.PV": 31.98},
-#   {"timestamp": "2024-06-11T15:59:59Z", "A_Temp.PV": 31.99}
-# ]
+# stats = {
+#     "total_records": 200,
+#     "invalid_timestamps": 10,
+#     "dropped_records": 0,
+#     "interpolated_records": 10,
+#     "strategy": "interpolate",
+#     "invalid_percent": 5.0
+# }
+```
+
+### Función: `preprocess_timeseries`
+
+Preprocesamiento final de series temporales:
+- Ordenamiento por timestamp
+- Interpolación de valores faltantes (NaN)
+- Forward/backward fill en extremos
+
+## 💾 Persistencia del Modelo
+
+El servicio guarda automáticamente el modelo entrenado y los scalers después de cada análisis:
+
+**Archivos guardados:**
+- `app/models/sgd_model.pkl` - Modelo SGDRegressor entrenado
+- `app/models/scaler_X.pkl` - StandardScaler para features
+- `app/models/scaler_Y.pkl` - StandardScaler para targets
+
+**Ventajas:**
+- ✅ Continuidad entre reinicios del servicio
+- ✅ Mejora progresiva con más datos
+- ✅ Reducción de tiempo de warm-up
+- ✅ Mejor detección de patrones históricos
+
+**Nota:** En Docker, usa un volumen para persistir entre contenedores:
+```bash
+docker run -v $(pwd)/app/models:/app/app/models ml_engine_python:latest
 ```
 
 ## 🐛 Troubleshooting
@@ -510,8 +602,8 @@ records = transform_sensores_to_records(sensores)
 docker logs ml_engine
 
 # Verificar puerto
-netstat -ano | findstr :8085  # Windows
-lsof -i :8085                 # Linux/WSL
+netstat -ano | findstr :8086  # Windows
+lsof -i :8086                 # Linux/WSL
 ```
 
 ### Error: "Insufficient data"
@@ -521,10 +613,10 @@ Error: Se requieren al menos 180 registros para el análisis
 ```
 
 **Solución:** 
-- Para `/predict_anomaly`: Envía al menos 180 registros en el campo `records`
-- Para `/predict_anomaly_from_sensors`: Asegúrate de que haya al menos 180 timestamps únicos entre todos los sensores
+- Para formato flat (`records`): Envía al menos 180 registros
+- Para formato agrupado (`sensores`): Asegúrate de que haya al menos 180 timestamps únicos entre todos los sensores
 
-### Error: "Invalid timestamps"
+### Error: "Calidad de datos insuficiente"
 
 ```
 Error: Calidad de datos insuficiente: 25% de timestamps inválidos
@@ -538,13 +630,25 @@ Error: Calidad de datos insuficiente: 25% de timestamps inválidos
 ### Error: "No se pudieron generar registros"
 
 ```
-Error: No se pudieron generar registros a partir de los datos de sensores
+Error: No se pudieron generar registros válidos a partir de los datos proporcionados
 ```
 
 **Solución:**
-- Verifica que cada sensor tenga el campo `sensor_id`
-- Verifica que cada dato tenga `tiempo` y `valor`
+- Verifica que estés usando `records` (flat) o `sensores` (agrupado)
+- Para `sensores`: Cada sensor debe tener `sensor_id` y `datos`
+- Para `sensores`: Cada dato debe tener `tiempo` y `valor`
 - Asegúrate de que al menos un sensor tenga datos válidos
+
+### Warning: Endpoint deprecated
+
+```
+WARNING: ⚠️ Endpoint deprecated: /predict_anomaly_from_sensors. Usa /predict_anomaly
+```
+
+**Solución:**
+- Actualiza tu código para usar `/predict_anomaly` en lugar de `/predict_anomaly_from_sensors`
+- El formato del payload es idéntico, solo cambia la URL
+- El endpoint deprecated se eliminará en futuras versiones
 
 ### No detecta anomalías
 
@@ -552,6 +656,7 @@ Error: No se pudieron generar registros a partir de los datos de sensores
 - Datos muy estables (sin variación real)
 - Parámetro `k_adapt` muy alto (reduce sensibilidad)
 - Ventana muy corta
+- Modelo aún en fase de aprendizaje
 
 **Solución:** Ajusta parámetros:
 ```bash
@@ -570,10 +675,27 @@ HTM_ALPHA=0.02
 // Sensor A_Pres solo tiene datos en 2 timestamps
 // Resultado: 3 registros, el segundo solo tendrá A_Temp
 [
-  {"timestamp": "...", "A_Temp": 31.99, "A_Pres": 0.49},
-  {"timestamp": "...", "A_Temp": 32.00},  // ← A_Pres faltante
-  {"timestamp": "...", "A_Temp": 32.01, "A_Pres": 0.51}
+  {"Timestamp": "...", "A_Temp": 31.99, "A_Pres": 0.49},
+  {"Timestamp": "...", "A_Temp": 32.00},  // ← A_Pres faltante
+  {"Timestamp": "...", "A_Temp": 32.01, "A_Pres": 0.51}
 ]
+```
+
+### Modelo no mejora con más datos
+
+**Verificar:**
+1. ¿El modelo se está guardando? Revisa logs: `✓ Modelo guardado correctamente`
+2. ¿Existe el volumen en Docker? Usa `-v` para persistir
+3. ¿Los datos son consistentes? Variaciones grandes resetean el aprendizaje
+
+**Solución:**
+```bash
+# En Docker, verificar volumen
+docker inspect ml_engine | grep Mounts
+
+# Manualmente guardar modelo
+curl -X POST http://localhost:8086/predict_anomaly -d @data.json
+# Revisar logs: [INFO] Modelo guardado en /app/app/models/...
 ```
 
 ## 📈 Monitoreo y Logs
@@ -607,12 +729,35 @@ docker logs -t ml_engine
 ### Logs relevantes
 
 ```
-INFO: Procesando predicción para activo_id: 2
-DEBUG: Número de sensores recibidos: 10
-DEBUG: Registros transformados: 180
-INFO: Limpieza de datos aplicada - Estrategia: drop_invalid, Calidad: 98.5%
+INFO: Procesando predicción para activo: 2
+INFO: 📦 Formato detectado: AGRUPADO POR SENSORES (10 sensores)
+DEBUG: ✓ Transformación completada: 180 registros generados
+INFO: 🧹 Limpieza de datos - Estrategia: interpolate, Calidad: 98.5%
 DEBUG: Features detectadas: 10 columnas
-INFO: ✅ Predicción completada para activo_2: 5 anomalías detectadas de 180 puntos
+INFO: ✓ Modelo guardado correctamente en /app/app/models/
+INFO: ✅ Predicción completada para 2: 5 anomalías detectadas de 180 puntos
+```
+
+### Logs de limpieza de timestamps
+
+```
+WARNING: Timestamps inválidos: 10 de 200 (5.00%)
+INFO: ✓ Estrategia: Interpolar todos (10 timestamps interpolados)
+```
+
+```
+WARNING: Timestamps inválidos: 3 de 200 (1.50%)
+INFO: ✓ Estrategia: Eliminar registros inválidos (3 registros, 1.50%)
+```
+
+```
+ERROR: Calidad de datos insuficiente: 22.0% de timestamps inválidos
+```
+
+### Logs de endpoint deprecated
+
+```
+WARNING: ⚠️ Endpoint deprecated: /predict_anomaly_from_sensors. Usa /predict_anomaly
 ```
 
 ## 🔐 Seguridad
@@ -622,17 +767,24 @@ INFO: ✅ Predicción completada para activo_2: 5 anomalías detectadas de 180 p
 - ✅ Sanitización de timestamps
 - ✅ Manejo seguro de errores
 - ✅ Validación de estructura de datos
+- ✅ Validación de calidad de timestamps
 - ⚠️ **Nota:** Este servicio debe estar detrás del API Gateway, no expuesto directamente
 
 ## 🚀 Próximas mejoras
 
-- [ ] Caché de modelos entrenados
+- [x] Persistencia de modelos entrenados
+- [x] Limpieza adaptativa de timestamps
+- [x] Interpolación automática de datos
+- [x] Endpoint unificado con detección automática de formato
+- [ ] Caché de modelos por activo
 - [ ] Soporte para múltiples activos simultáneos en batch
 - [ ] Métricas de Prometheus
-- [ ] Reentrenamiento automático
+- [ ] Reentrenamiento automático periódico
 - [ ] Soporte para datos streaming (MQTT)
 - [ ] Tests de integración con InfluxDB
 - [ ] Endpoint para análisis histórico de tendencias
+- [ ] Dashboard de métricas del modelo
+- [ ] Eliminación completa de endpoint deprecated (v2.0.0)
 
 ## 📝 Licencia
 

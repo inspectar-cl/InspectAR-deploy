@@ -101,53 +101,35 @@ services:
       start_period: 30s
     restart: on-failure
 
-  # Motor ML Python para detección de anomalías
-  ml_engine_python:
+  # Microservicio de IA/ML Python con entrenamiento automático
+  ia-service-python:
     build:
-      context: ./microservicios/ml_engine_python
-      dockerfile: DockerFile
-    container_name: ml_engine_python
-    ports:
-      - "8085:9999"
-    environment:
-      - HTM_WINDOW_SIZE=180
-      - HTM_ALPHA=0.01
-      - HTM_K_ADAPT=2.0
-      - HTM_SCORE_SCALE=50.0
-      - HTM_MIN_PERIODS=50
-      - HTM_ROLLING_WINDOW=300
-      - HTM_MODE=offline
-      - LOG_LEVEL=INFO
-      - API_PORT=9999
-      - RANDOM_SEED=42
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9999/healthz"]
-      interval: 60s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
-    restart: on-failure
-
-  # Microservicio de IA/ML para detección de anomalías
-  ia-service:
-    build:
-      context: ./microservicios/ia-service
+      context: ./microservicios/ia-service-python
       dockerfile: Dockerfile
-    container_name: ia-service
+    container_name: ia-service-python
     ports:
       - "8095:8095"
     depends_on:
       - ia-db
       - iot-service
-      - ml_engine_python
+    volumes:
+      - ia_service_models:/app/models  # Persistir modelos entrenados
+      - ./microservicios/ia-service-python/config/config.docker.yaml:/app/config/config.yaml:ro  # Configuración
     environment:
-      - CONFIG_FILE=config.docker
+      - DATABASE_HOST=ia-db
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=ia_db
+      - DATABASE_USER=ia_user
+      - DATABASE_PASSWORD=ia_pass
+      - IOT_SERVICE_URL=http://iot-service:8090
+      - LOG_LEVEL=INFO
+      - CONFIG_FILE=/app/config/config.yaml
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8095/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8095/health"]
       interval: 60s
       timeout: 5s
       retries: 3
-      start_period: 20s
+      start_period: 30s
     restart: on-failure
 
   # Microservicio de Notificaciones
@@ -359,3 +341,4 @@ volumes:
   gestion_firmas:  # Volumen para persistir firmas digitales
   ia_data:  # Volumen para base de datos de IA/ML
   pgdata1:
+  ia_service_models:  # Volumen para modelos IA Service Python

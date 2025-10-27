@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS edificios (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
     direccion VARCHAR(255),
+    latitud DECIMAL(10, 8),
+    longitud DECIMAL(11, 8),
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

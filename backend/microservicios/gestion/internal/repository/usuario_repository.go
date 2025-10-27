@@ -16,7 +16,7 @@ func NewUsuarioRepository(db *sql.DB) *UsuarioRepository {
 // GetEdificiosByEmail obtiene todos los edificios asociados a un usuario por su email
 func (r *UsuarioRepository) GetEdificiosByEmail(email string) ([]models.Edificio, error) {
 	query := `
-		SELECT DISTINCT e.id, e.nombre, e.direccion, e.creado_en
+		SELECT DISTINCT e.id, e.nombre, e.direccion, e.latitud, e.longitud, e.creado_en
 		FROM edificios e
 		INNER JOIN usuarios_edificios ue ON e.id = ue.edificio_id
 		INNER JOIN usuarios u ON ue.usuario_id = u.id
@@ -33,7 +33,7 @@ func (r *UsuarioRepository) GetEdificiosByEmail(email string) ([]models.Edificio
 	var edificios []models.Edificio
 	for rows.Next() {
 		var edificio models.Edificio
-		err := rows.Scan(&edificio.ID, &edificio.Nombre, &edificio.Direccion, &edificio.CreadoEn)
+		err := rows.Scan(&edificio.ID, &edificio.Nombre, &edificio.Direccion, &edificio.Latitud, &edificio.Longitud, &edificio.CreadoEn)
 		if err != nil {
 			return nil, err
 		}

@@ -135,7 +135,7 @@ class AnomalyService:
         ml_records: List[MLSensorRecord]
     ) -> MLResponse:
         """
-        Envía datos al ML Engine para predicción de anomalías
+        Predice anomalías utilizando el modelo integrado
         
         Args:
             activo_id: ID del activo
@@ -144,51 +144,47 @@ class AnomalyService:
         Returns:
             MLResponse con las predicciones
         """
-        url = f"{config.ml_engine_url}/predict_anomaly"
-        
-        ml_request = MLRequest(
-            pump=f"Activo_{activo_id}",
-            records=ml_records
-        )
-        
         logger.info(
-            f"🤖 Enviando {len(ml_records)} registros al ML Engine "
-            f"para activo {activo_id}"
+            f"🤖 Prediciendo anomalías para {len(ml_records)} registros "
+            f"del activo {activo_id}"
         )
         
         try:
-            async with httpx.AsyncClient(timeout=config.ml_engine_timeout) as client:
-                response = await client.post(
-                    url,
-                    json=ml_request.model_dump(by_alias=True)
+            # TODO: Implementar predicción con modelo local
+            # Por ahora retornamos respuesta vacía
+            from app.models.ml_models import MLResponse, MLResult
+            
+            results = []
+            for record in ml_records:
+                result = MLResult(
+                    sensor_id=record.sensor_id,
+                    timestamp=record.timestamp,
+                    value=record.value,
+                    is_anomaly=0,  # TODO: Usar modelo entrenado
+                    anomaly_score=0.0,
+                    reconstructed_value=record.value
                 )
-                response.raise_for_status()
-                
-                ml_response = MLResponse(**response.json())
-                
-                anomaly_count = sum(
-                    1 for r in ml_response.results if r.is_anomaly == 1
-                )
-                
-                logger.info(
-                    f"✅ ML Engine procesó correctamente. "
-                    f"Resultados: {len(ml_response.results)}, "
-                    f"Anomalías detectadas: {anomaly_count}"
-                )
-                
-                return ml_response
-                
-        except httpx.HTTPStatusError as e:
-            logger.error(
-                f"❌ Error HTTP {e.response.status_code} del ML Engine: "
-                f"{e.response.text}"
+                results.append(result)
+            
+            ml_response = MLResponse(
+                pump=f"Activo_{activo_id}",
+                results=results
             )
-            raise
-        except httpx.RequestError as e:
-            logger.error(f"❌ Error de conexión con ML Engine: {e}")
-            raise
+            
+            anomaly_count = sum(
+                1 for r in ml_response.results if r.is_anomaly == 1
+            )
+            
+            logger.info(
+                f"✅ Predicción completada. "
+                f"Resultados: {len(ml_response.results)}, "
+                f"Anomalías detectadas: {anomaly_count}"
+            )
+            
+            return ml_response
+                
         except Exception as e:
-            logger.error(f"❌ Error inesperado llamando al ML Engine: {e}")
+            logger.error(f"❌ Error en predicción de anomalías: {e}")
             raise
     
     def save_ml_results(

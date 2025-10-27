@@ -9,19 +9,20 @@ INSERT INTO empresas (nombre, rut, telefono, email, direccion) VALUES
 ON CONFLICT (rut) DO NOTHING;
 
 -- Insertar edificios
-INSERT INTO edificios (nombre, direccion) VALUES
-('Edificio Central', 'Av. Providencia 123, Santiago'),
-('Torre Norte', 'Av. Las Condes 456, Las Condes'),
-('Complejo Industrial Sur', 'Av. Vicuña Mackenna 789, La Florida'),
-('Centro de Distribución', 'Ruta 68 Km 15, Melipilla')
+INSERT INTO edificios (nombre, direccion, latitud, longitud) VALUES
+('Edificio Central', 'Av. Providencia 123, Santiago', -33.438972, -70.653667),
+('Torre Norte', 'Av. Las Condes 456, Las Condes', -33.438972, -70.653667),
+('Complejo Industrial Sur', 'Av. Vicuña Mackenna 789, La Florida', -33.526278, -70.595222),
+('Centro de Distribución', 'Ruta 68 Km 15, Melipilla', -33.414111, -70.592639)
 ON CONFLICT DO NOTHING;
 
 -- Insertar usuarios del sistema (basados en los usuarios de OAuth2)
+-- Formato: nombre.apellido
 INSERT INTO usuarios (username, email) VALUES
-('analista', 'analista@example.com'),
-('tecnico', 'tecnico@example.com'),
-('residente', 'residente@example.com'),
-('admin', 'admin@example.com')
+('carlos.mendoza', 'analista@example.com'),
+('maria.gonzalez', 'tecnico@example.com'),
+('pedro.silva', 'residente@example.com'),
+('ana.rodriguez', 'admin@example.com')
 ON CONFLICT (username) DO NOTHING;
 
 -- Crear relaciones usuarios-edificios

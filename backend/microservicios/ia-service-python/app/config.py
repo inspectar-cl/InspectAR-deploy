@@ -26,10 +26,6 @@ class Settings(BaseSettings):
     database_user: str = "ia_user"
     database_password: str = "ia_pass"
     
-    # ML Engine
-    ml_engine_url: str = "http://ml_engine_python:9999"
-    ml_engine_timeout: int = 300
-    
     # IOT Service (ParserService)
     iot_service_url: str = "http://iot-service:8090"
     iot_service_timeout: int = 60
@@ -37,6 +33,31 @@ class Settings(BaseSettings):
     # Scheduler configuration
     scheduler_enabled: bool = True
     scheduler_interval_minutes: int = 2
+    
+    # Training configuration (se carga desde config.yaml)
+    training_enabled: bool = True
+    training_interval_minutes: int = 60  # Se sobrescribe desde YAML
+    
+    # Model storage (se carga desde config.yaml)
+    model_dir: str = "/app/models"
+    model_filename: str = "anomaly_model.pkl"
+    scaler_x_filename: str = "scaler_X.pkl"
+    scaler_y_filename: str = "scaler_Y.pkl"
+    
+    @property
+    def model_path(self) -> str:
+        """Ruta completa del modelo"""
+        return os.path.join(self.model_dir, self.model_filename)
+    
+    @property
+    def scaler_x_path(self) -> str:
+        """Ruta completa del scaler X"""
+        return os.path.join(self.model_dir, self.scaler_x_filename)
+    
+    @property
+    def scaler_y_path(self) -> str:
+        """Ruta completa del scaler Y"""
+        return os.path.join(self.model_dir, self.scaler_y_filename)
     
     # Configuración de ventana de datos
     window_size: int = 1000

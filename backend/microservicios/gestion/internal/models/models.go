@@ -58,6 +58,8 @@ type Edificio struct {
 	ID        int       `json:"id" db:"id"`
 	Nombre    string    `json:"nombre" db:"nombre"`
 	Direccion string    `json:"direccion" db:"direccion"`
+	Latitud   *float64  `json:"latitud,omitempty" db:"latitud"`
+	Longitud  *float64  `json:"longitud,omitempty" db:"longitud"`
 	CreadoEn  time.Time `json:"creado_en" db:"creado_en"`
 }
 

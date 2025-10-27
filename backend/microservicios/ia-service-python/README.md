@@ -86,19 +86,23 @@ ia-service-python/
 
 ## 🔧 Endpoints
 
-### Anomalías
-
-- `GET /anomalies/activo/{activo_id}` - Listar anomalías por activo
-- `GET /anomalies/sensor/{sensor_id}` - Listar anomalías por sensor
-- `GET /anomalies/{anomaly_id}` - Obtener anomalía específica
-- `POST /detect/{activo_id}` - Detectar anomalías manualmente
-
-### Sistema
-
-- `GET /health` - Health check
-- `GET /status` - Estado del servicio
-- `GET /docs` - Documentación Swagger
-- `GET /redoc` - Documentación ReDoc
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| **Anomalías** | | |
+| `GET` | `/anomalies/activo/{activo_id}` | Listar anomalías por activo (con paginación) |
+| `GET` | `/anomalies/sensor/{sensor_id}` | Listar anomalías por sensor |
+| `GET` | `/anomalies/{anomaly_id}` | Obtener anomalía específica |
+| `POST` | `/detect/{activo_id}` | Detectar anomalías manualmente (sync/async) |
+| **Entrenamiento** | | |
+| `GET` | `/training/status` | Estado del entrenamiento y scheduler |
+| `POST` | `/training/train` | Disparar entrenamiento manual |
+| `GET` | `/training/model` | Información del modelo actual |
+| **Sistema** | | |
+| `GET` | `/health` | Health check del servicio |
+| `GET` | `/status` | Estado y estadísticas del servicio |
+| `GET` | `/` | Información general del servicio |
+| `GET` | `/docs` | Documentación Swagger UI |
+| `GET` | `/redoc` | Documentación ReDoc |
 
 ## 🐳 Docker
 
@@ -118,8 +122,10 @@ docker run -d \
   -e DATABASE_NAME=ia_db \
   -e DATABASE_USER=ia_user \
   -e DATABASE_PASSWORD=ia_pass \
-  -e ML_ENGINE_URL=http://ml_engine_python:9999 \
   -e IOT_SERVICE_URL=http://iot-service:8090 \
+  -e CONFIG_FILE=/app/config/config.yaml \
+  -v $(pwd)/config:/app/config:ro \
+  -v ia_service_models:/app/models \
   --name ia-service-python \
   ia-service-python:latest
 ```
@@ -161,10 +167,11 @@ python -m app.main
 | `DATABASE_NAME` | Nombre de la BD | `ia_db` |
 | `DATABASE_USER` | Usuario de la BD | `ia_user` |
 | `DATABASE_PASSWORD` | Contraseña de la BD | `ia_pass` |
-| `ML_ENGINE_URL` | URL del ML Engine | `http://ml_engine_python:9999` |
 | `IOT_SERVICE_URL` | URL del IOT Service | `http://iot-service:8090` |
 | `LOG_LEVEL` | Nivel de logging | `INFO` |
 | `CONFIG_FILE` | Archivo de configuración YAML | `None` |
+
+**Nota:** La configuración de entrenamiento (`training_interval_minutes`) se maneja en `config/config.yaml`
 
 ## 🧪 Testing
 

@@ -12,6 +12,8 @@ import sys
 from app.config import config
 from app.database import check_db_connection, init_db
 from app.handlers.anomaly_handler import router as anomaly_router
+from app.models.model_manager import model_manager
+from app.services.training_service import training_service
 
 # Configurar logging
 logging.basicConfig(
@@ -35,8 +37,8 @@ async def lifespan(app: FastAPI):
     logger.info(f"   Versión: 1.0.0")
     logger.info(f"   Puerto: {config.port}")
     logger.info(f"   Base de datos: {config.database_host}:{config.database_port}")
-    logger.info(f"   ML Engine: {config.ml_engine_url}")
     logger.info(f"   IOT Service: {config.iot_service_url}")
+    logger.info(f"   Entrenamiento: {'Habilitado' if config.training_enabled else 'Deshabilitado'}")
     
     # Verificar conexión a BD
     if not check_db_connection():
@@ -46,12 +48,29 @@ async def lifespan(app: FastAPI):
     # Inicializar BD (solo verifica, no crea tablas)
     init_db()
     
+    # Cargar modelo de ML
+    logger.info("🤖 Cargando modelo de Machine Learning...")
+    success, message = model_manager.load_model()
+    logger.info(f"   └─ {message}")
+    
+    # Iniciar scheduler de entrenamiento
+    logger.info("⏰ Configurando scheduler de entrenamiento...")
+    logger.info(f"   └─ Intervalo: {config.training_interval_minutes} minutos")
+    training_service.start_scheduler()
+    
     logger.info("✅ IA Service Python iniciado correctamente")
     
     yield
     
     # Shutdown
     logger.info("🛑 Deteniendo IA Service Python...")
+    
+    # Detener scheduler
+    training_service.stop_scheduler()
+    
+    # Guardar modelo antes de cerrar
+    logger.info("💾 Guardando modelo antes de cerrar...")
+    model_manager.save_model()
 
 
 # Crear aplicación FastAPI
@@ -92,9 +111,31 @@ async def root():
             "docs": "/docs",
             "anomalies_by_activo": "/anomalies/activo/{activo_id}",
             "anomalies_by_sensor": "/anomalies/sensor/{sensor_id}",
-            "detect": "/detect/{activo_id}"
+            "detect": "/detect/{activo_id}",
+            "training_status": "/training/status",
+            "train_now": "/training/train",
+            "model_info": "/training/model"
         }
     }
+
+
+@app.get("/training/status")
+async def get_training_status():
+    """Obtiene el estado del entrenamiento y scheduler"""
+    return training_service.get_training_stats()
+
+
+@app.post("/training/train")
+async def trigger_training():
+    """Dispara un entrenamiento manual del modelo"""
+    result = await training_service.train_model()
+    return result
+
+
+@app.get("/training/model")
+async def get_model_info():
+    """Obtiene información sobre el modelo actual"""
+    return model_manager.get_model_info()
 
 
 if __name__ == "__main__":

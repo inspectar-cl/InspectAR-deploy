@@ -1110,33 +1110,13 @@ func PublicacionForoHandler(c *gin.Context) {
     }
 
     // Extraer el email desde el token JWT
-    var email string
     authHeader := c.GetHeader("Authorization")
-    if authHeader == "" {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+    email, _ := extractClaimFromToken(authHeader, "email")
+    if email == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
         return
     }
-    
-    // fmt.Printf("DEBUG: Authorization header: %s\n", authHeader)
-
-    //Bearer eydsdsdsd...
-    tokenParts := strings.Split(authHeader, " ")
-
-    emailInterface, err := extractClaimFromToken(tokenParts[1], "email")
-    if err != nil {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-        return
-    }
-    
-    // Type assertion para convertir interface{} a string
-    var ok bool
-    email, ok = emailInterface.(string)
-    if !ok {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid email format in token"})
-        return
-    }
-    
-    fmt.Printf("Email extraído del token: %s\n", email)
+    fmt.Printf("Email usuario: %s\n", email)
 
     // Leer el body de la request
     var publicacionData map[string]interface{}
@@ -1235,31 +1215,13 @@ func ComentariosForoHandler(c *gin.Context) {
     }
 
     // Extraer el email desde el token JWT
-    var email string
     authHeader := c.GetHeader("Authorization")
-    if authHeader == "" {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+    email, _ := extractClaimFromToken(authHeader, "email")
+    if email == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
         return
     }
-
-    //Bearer eydsdsdsd...
-    tokenParts := strings.Split(authHeader, " ")
-
-    emailInterface, err := extractClaimFromToken(tokenParts[1], "email")
-    if err != nil {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-        return
-    }
-    
-    // Type assertion para convertir interface{} a string
-    var ok bool
-    email, ok = emailInterface.(string)
-    if !ok {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid email format in token"})
-        return
-    }
-    
-    fmt.Printf("Email extraído del token: %s\n", email)
+    fmt.Printf("Usuario subiendo firma: %s\n", email)
 
     // Leer el body de la request
     var comentarioData map[string]interface{}
@@ -1637,30 +1599,13 @@ func GenerarPDFReporte(c *gin.Context) {
     }
 
     // Extraer el email desde el token JWT
-    var email string
     authHeader := c.GetHeader("Authorization")
-    if authHeader == "" {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+    email, _ := extractClaimFromToken(authHeader, "email")
+    if email == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
         return
     }
-
-    tokenParts := strings.Split(authHeader, " ")
-
-    emailInterface, err := extractClaimFromToken(tokenParts[1], "email")
-    if err != nil {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-        return
-    }
-    
-    // Type assertion para convertir interface{} a string
-    var ok bool
-    email, ok = emailInterface.(string)
-    if !ok {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid email format in token"})
-        return
-    }
-    
-    fmt.Printf("Email extraído del token: %s\n", email)
+    fmt.Printf("Usuario subiendo firma: %s\n", email)
 
     // Leer el body de la request
     var reporteData map[string]interface{}
@@ -2461,30 +2406,13 @@ func ActualizarEstadoAccionHandler(c *gin.Context) {
 
 func ObtenerFirmasUsuarioHandler(c *gin.Context) {
     // Extraer el email desde el token JWT
-    var email string
     authHeader := c.GetHeader("Authorization")
-    if authHeader == "" {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+    email, _ := extractClaimFromToken(authHeader, "email")
+    if email == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
         return
     }
-
-    tokenParts := strings.Split(authHeader, " ")
-
-    emailInterface, err := extractClaimFromToken(tokenParts[1], "email")
-    if err != nil {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-        return
-    }
-    
-    // Type assertion para convertir interface{} a string
-    var ok bool
-    email, ok = emailInterface.(string)
-    if !ok {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid email format in token"})
-        return
-    }
-    
-    fmt.Printf("Email extraído del token: %s\n", email)
+    fmt.Printf("Usuario subiendo firma: %s\n", email)
 
     // Hacer GET al microservicio de gestión
     url := fmt.Sprintf("%s/firmas/usuario/%s", gestionURL, email)
@@ -2517,4 +2445,16 @@ func ObtenerFirmasUsuarioHandler(c *gin.Context) {
 
     // Retornar la respuesta del microservicio directamente
     c.JSON(http.StatusOK, firmasData)
+}
+
+func SubirFirmaUsuarioHandler(c *gin.Context) {
+    // Extraer el email desde el token JWT
+    authHeader := c.GetHeader("Authorization")
+    email, _ := extractClaimFromToken(authHeader, "email")
+    if email == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
+        return
+    }
+    fmt.Printf("Usuario subiendo firma: %s\n", email)
+
 }

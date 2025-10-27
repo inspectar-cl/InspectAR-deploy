@@ -2667,3 +2667,100 @@ func EliminarFirmaUsuarioHandler(c *gin.Context) {
         c.JSON(http.StatusOK, gin.H{"message": "Firma eliminada exitosamente"})
     }
 }
+
+func ActualizarFirmaUsuarioHandler(c *gin.Context) {
+    // Extraer el email desde el token JWT
+    authHeader := c.GetHeader("Authorization")
+    email, _ := extractClaimFromToken(authHeader, "email")
+    if email == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
+        return
+    }
+    fmt.Printf("Usuario actualizando firma: %s\n", email)
+
+    // Obtener el ID de la firma desde los parámetros de la URL
+    idFirma := c.Param("id_firma")
+    if idFirma == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID de la firma es requerido"})
+        return
+    }
+
+    // Leer el body de la request
+    var firmaData map[string]interface{}
+    if err := c.ShouldBindJSON(&firmaData); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+        return
+    }
+
+    // Validar que vengan los campos requeridos
+    if _, exists := firmaData["nombre_archivo"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'nombre_archivo' es requerido"})
+        return
+    }
+
+    if _, exists := firmaData["es_predeterminada"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'es_predeterminada' es requerido"})
+        return
+    }
+
+    fmt.Printf("Actualizando firma ID: %s - datos: %+v\n", idFirma, firmaData)
+
+    // Construir el body para el microservicio
+    bodyData := map[string]interface{}{
+        "nombre_archivo": firmaData["nombre_archivo"],
+        "es_predeterminada": firmaData["es_predeterminada"],
+    }
+
+    // Convertir a JSON
+    jsonData, err := json.Marshal(bodyData)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando datos"})
+        return
+    }
+
+    fmt.Printf("DEBUG: Enviando actualización de firma: %+v\n", bodyData)
+
+    // Hacer PUT al microservicio de gestión
+    url := fmt.Sprintf("%s/firmas/%s", gestionURL, idFirma)
+    req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creando request"})
+        return
+    }
+
+    // Establecer headers
+    req.Header.Set("Content-Type", "application/json")
+
+    // Ejecutar la petición
+    resp, err := httpClient.Do(req)
+    if err != nil {
+        fmt.Println("Error actualizando firma: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al actualizar la firma"})
+        return
+    }
+    defer resp.Body.Close()
+
+    fmt.Printf("DEBUG: Status code de actualización de firma: %d\n", resp.StatusCode)
+
+    // Verificar si la respuesta es exitosa
+    if resp.StatusCode != http.StatusOK {
+        var errorData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&errorData); err == nil {
+            c.JSON(resp.StatusCode, errorData)
+            return
+        }
+        c.JSON(resp.StatusCode, gin.H{"error": "Error al actualizar la firma"})
+        return
+    }
+
+    // Leer la respuesta exitosa
+    var responseData map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+        fmt.Println("Error decodificando respuesta de actualización: ", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando respuesta"})
+        return
+    }
+
+    // Retornar la respuesta del microservicio
+    c.JSON(http.StatusOK, responseData)
+}

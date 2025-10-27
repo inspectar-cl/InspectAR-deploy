@@ -212,6 +212,13 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: userTypes("Tecnico", "Admin"),
         },
+        { 
+            Method:  "PUT",
+            Pattern: "/api/actualizar-firma-usuario/:id_firma",
+            Handler: ActualizarFirmaUsuarioHandler,
+            Protected: true,
+            RequiredScopes: userTypes("Tecnico", "Admin"),
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",

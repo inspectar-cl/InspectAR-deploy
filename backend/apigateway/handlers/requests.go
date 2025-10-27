@@ -728,12 +728,17 @@ func ObtenerActivosPorEdificio(c *gin.Context) {
     var mu sync.Mutex
     activos := []interface{}{}
     estadosMap := make(map[int]string) // Agregar declaración del mapa de estados
+    sensoresMap := make(map[int]interface{})
+
+    // Verificar si se solicitan sensores
+    incluirSensores := c.Query("sensores") == "true"
     
     wg.Add(1)
     // Goroutine para obtener activos del edificio
     go func() {
         defer wg.Done()
         url := fmt.Sprintf("%s/activos/edificio/%s", gestionURL, idEdificio)
+
         resp, err := httpClient.Get(url)
         if err != nil {
             fmt.Println("Error obteniendo activos por edificio: ", err)
@@ -758,69 +763,190 @@ func ObtenerActivosPorEdificio(c *gin.Context) {
 
     wg.Wait() // Esperar a que termine la goroutine de activos
 
-    // Obtener el estado de cada activo mediante el parser
-    wg.Add(1)
-    go func() {
-        defer wg.Done()
-        url := fmt.Sprintf("%s/activo/edificio/%s", parserURL, idEdificio)
-
-        resp, err := httpClient.Get(url)
-        if err != nil {
-            fmt.Println("Error obteniendo estados de activos: ", err)
-            return
-        }
-        defer resp.Body.Close()
-
-        // Primero intentar decodificar como objeto con clave "activos"
-        var responseData map[string]interface{}
-        if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
-            fmt.Println("Error decodificando respuesta de estados: ", err)
-            return
-        }
-
-        // fmt.Printf("DEBUG: Respuesta completa del parser: %+v\n", responseData)
-
-        // Extraer el array de estados (puede estar en diferentes claves)
-        var estadosArray []interface{}
+    // Si se solicitan sensores, consultar individualmente cada activo en el parser
+    if incluirSensores {
+        fmt.Println("DEBUG: Consultando sensores para cada activo")
         
-        // Intentar varias posibles claves
-        if activos, exists := responseData["activos"]; exists {
-            if arr, ok := activos.([]interface{}); ok {
-                estadosArray = arr
+        for _, activo := range activos {
+            if activoMap, ok := activo.(map[string]interface{}); ok {
+                if idInterface, exists := activoMap["id"]; exists {
+                    var activoID int
+                    
+                    // Convertir el ID a int
+                    switch v := idInterface.(type) {
+                    case float64:
+                        activoID = int(v)
+                    case int:
+                        activoID = v
+                    default:
+                        fmt.Printf("Tipo inesperado para id de activo: %T\n", idInterface)
+                        continue
+                    }
+
+                    // Consultar sensores y datos para este activo específico
+                    wg.Add(1)
+                    go func(aID int) {
+                        defer wg.Done()
+                        
+                        // Consultar información de sensores (estado, tipo, unidad, etc.)
+                        url := fmt.Sprintf("%s/activo/%d", parserURL, aID)
+                        resp, err := httpClient.Get(url)
+                        if err != nil {
+                            fmt.Printf("Error obteniendo sensores para activo %d: %v\n", aID, err)
+                            return
+                        }
+                        defer resp.Body.Close()
+
+                        var activoData map[string]interface{}
+                        if err := json.NewDecoder(resp.Body).Decode(&activoData); err != nil {
+                            fmt.Printf("Error decodificando datos del activo %d: %v\n", aID, err)
+                            return
+                        }
+
+                        mu.Lock()
+                        // Guardar estado si existe
+                        if estado, exists := activoData["estado"]; exists {
+                            if estadoStr, ok := estado.(string); ok {
+                                estadosMap[aID] = estadoStr
+                            }
+                        }
+
+                        // Obtener sensores
+                        var sensoresArray []interface{}
+                        if sensores, exists := activoData["sensores"]; exists {
+                            if sensoresArr, ok := sensores.([]interface{}); ok {
+                                sensoresArray = sensoresArr
+                            }
+                        }
+                        mu.Unlock()
+
+                        // Consultar datos históricos de sensores
+                        urlDatos := fmt.Sprintf("%s/lectura/%d/datos", parserURL, aID)
+                        respDatos, err := httpClient.Get(urlDatos)
+                        if err != nil {
+                            fmt.Printf("Error obteniendo datos para activo %d: %v\n", aID, err)
+                            // Guardar sensores sin datos
+                            mu.Lock()
+                            sensoresMap[aID] = sensoresArray
+                            mu.Unlock()
+                            return
+                        }
+                        defer respDatos.Body.Close()
+
+                        var datosResponse map[string]interface{}
+                        if err := json.NewDecoder(respDatos.Body).Decode(&datosResponse); err != nil {
+                            fmt.Printf("Error decodificando datos históricos del activo %d: %v\n", aID, err)
+                            // Guardar sensores sin datos
+                            mu.Lock()
+                            sensoresMap[aID] = sensoresArray
+                            mu.Unlock()
+                            return
+                        }
+
+                        // Crear un mapa de datos por sensor_id
+                        datosMap := make(map[string]interface{})
+                        if sensoresDatos, exists := datosResponse["sensores"]; exists {
+                            if sensoresDatosArray, ok := sensoresDatos.([]interface{}); ok {
+                                for _, sensorDato := range sensoresDatosArray {
+                                    if sensorDatoMap, ok := sensorDato.(map[string]interface{}); ok {
+                                        if sensorID, exists := sensorDatoMap["sensor_id"]; exists {
+                                            if datos, existsDatos := sensorDatoMap["datos"]; existsDatos {
+                                                datosMap[fmt.Sprintf("%v", sensorID)] = datos
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Agregar los datos a cada sensor
+                        for _, sensor := range sensoresArray {
+                            if sensorMap, ok := sensor.(map[string]interface{}); ok {
+                                if sensorID, exists := sensorMap["sensor_id"]; exists {
+                                    sensorIDStr := fmt.Sprintf("%v", sensorID)
+                                    if datos, encontrado := datosMap[sensorIDStr]; encontrado {
+                                        sensorMap["datos"] = datos
+                                    } else {
+                                        sensorMap["datos"] = nil
+                                    }
+                                }
+                            }
+                        }
+
+                        // Guardar sensores con datos
+                        mu.Lock()
+                        sensoresMap[aID] = sensoresArray
+                        mu.Unlock()
+
+                    }(activoID)
+                }
             }
         }
 
-        mu.Lock()
-        for _, estadoItem := range estadosArray {
-            if estadoData, ok := estadoItem.(map[string]interface{}); ok {
-                if activoID, exists := estadoData["activo_id"]; exists {
-                    // Convertir activo_id a int
-                    var id int
-                    switch v := activoID.(type) {
-                    case float64:
-                        id = int(v)
-                    case int:
-                        id = v
-                    default:
-                        fmt.Printf("Tipo inesperado para activo_id: %T\n", activoID)
-                        continue
-                    }
-                    
-                    // Guardar estado
-                    if estado, existsEstado := estadoData["estado"]; existsEstado {
-                        if estadoStr, ok := estado.(string); ok {
-                            estadosMap[id] = estadoStr
+        wg.Wait() // Esperar a que terminen todas las consultas de sensores
+    } else {
+        // Si NO se solicitan sensores, usar el endpoint para estados del edificio
+        wg.Add(1)
+        go func() {
+            defer wg.Done()
+            url := fmt.Sprintf("%s/activo/edificio/%s", parserURL, idEdificio)
+
+            resp, err := httpClient.Get(url)
+            if err != nil {
+                fmt.Println("Error obteniendo estados de activos: ", err)
+                return
+            }
+            defer resp.Body.Close()
+
+            // Primero intentar decodificar como objeto con clave "activos"
+            var responseData map[string]interface{}
+            if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+                fmt.Println("Error decodificando respuesta de estados: ", err)
+                return
+            }
+
+            // Extraer el array de estados (puede estar en diferentes claves)
+            var estadosArray []interface{}
+            
+            // Intentar varias posibles claves
+            if activos, exists := responseData["activos"]; exists {
+                if arr, ok := activos.([]interface{}); ok {
+                    estadosArray = arr
+                }
+            }
+
+            mu.Lock()
+            for _, estadoItem := range estadosArray {
+                if estadoData, ok := estadoItem.(map[string]interface{}); ok {
+                    if activoID, exists := estadoData["activo_id"]; exists {
+                        // Convertir activo_id a int
+                        var id int
+                        switch v := activoID.(type) {
+                        case float64:
+                            id = int(v)
+                        case int:
+                            id = v
+                        default:
+                            fmt.Printf("Tipo inesperado para activo_id: %T\n", activoID)
+                            continue
+                        }
+                        
+                        // Guardar estado
+                        if estado, existsEstado := estadoData["estado"]; existsEstado {
+                            if estadoStr, ok := estado.(string); ok {
+                                estadosMap[id] = estadoStr
+                            }
                         }
                     }
                 }
             }
-        }
-        mu.Unlock()
-    }()
+            mu.Unlock()
+        }()
 
-    wg.Wait() // Esperar a que termine la goroutine de estados
+        wg.Wait() // Esperar a que termine la goroutine de estados
+    }
 
-    // Agregar el estado a cada activo en la lista
+    // Agregar el estado (y sensores si se solicitaron) a cada activo en la lista
     activosConEstado := []interface{}{}
     for _, activo := range activos {
         if activoMap, ok := activo.(map[string]interface{}); ok {
@@ -846,6 +972,15 @@ func ObtenerActivosPorEdificio(c *gin.Context) {
                 } else {
                     // Si no se encuentra estado, poner "Desconocido"
                     activoMap["estado"] = "Desconocido"
+                }
+
+                // Si se solicitaron sensores, agregarlos
+                if incluirSensores {
+                    if sensores, encontrado := sensoresMap[activoID]; encontrado {
+                        activoMap["sensores"] = sensores
+                    } else {
+                        activoMap["sensores"] = []interface{}{}
+                    }
                 }
             }
             activosConEstado = append(activosConEstado, activoMap)

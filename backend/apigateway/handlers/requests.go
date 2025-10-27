@@ -2457,4 +2457,134 @@ func SubirFirmaUsuarioHandler(c *gin.Context) {
     }
     fmt.Printf("Usuario subiendo firma: %s\n", email)
 
+    // Parsear multipart/form-data
+    err := c.Request.ParseMultipartForm(10 << 20) // 10 MB
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Error parseando form-data"})
+        return
+    }
+
+    // Obtener el archivo
+    file, fileHeader, err := c.Request.FormFile("archivo")
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'archivo' es requerido"})
+        return
+    }
+    defer file.Close()
+
+    fmt.Printf("Archivo de firma recibido: %s, tamaño: %d bytes\n", fileHeader.Filename, fileHeader.Size)
+
+    // Obtener los demás campos del form
+    nombreArchivo := c.Request.FormValue("nombre_archivo")
+    esPredeterminadaStr := c.Request.FormValue("es_predeterminada")
+
+    // Validar campos requeridos
+    if nombreArchivo == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'nombre_archivo' es requerido"})
+        return
+    }
+
+    if esPredeterminadaStr == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'es_predeterminada' es requerido"})
+        return
+    }
+
+    fmt.Printf("Datos de la firma - nombre: %s, es_predeterminada: %s\n", nombreArchivo, esPredeterminadaStr)
+
+    // Crear el form-data para el microservicio de gestión
+    var requestBody bytes.Buffer
+    writer := multipart.NewWriter(&requestBody)
+
+    // Determinar el Content-Type basado en la extensión del archivo
+    contentType := fileHeader.Header.Get("Content-Type")
+    if contentType == "" {
+        // Si no viene el Content-Type, intentar determinarlo por extensión
+        ext := strings.ToLower(fileHeader.Filename[strings.LastIndex(fileHeader.Filename, ".")+1:])
+        switch ext {
+        case "png":
+            contentType = "image/png"
+        case "jpg", "jpeg":
+            contentType = "image/jpeg"
+        case "svg":
+            contentType = "image/svg+xml"
+        default:
+            contentType = "application/octet-stream"
+        }
+    }
+
+    fmt.Printf("Content-Type detectado: %s\n", contentType)
+
+    // Crear el campo del archivo con el Content-Type correcto
+    h := make(map[string][]string)
+    h["Content-Disposition"] = []string{fmt.Sprintf(`form-data; name="archivo"; filename="%s"`, fileHeader.Filename)}
+    h["Content-Type"] = []string{contentType}
+    
+    part, err := writer.CreatePart(h)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creando form file"})
+        return
+    }
+
+    // Copiar el contenido del archivo
+    _, err = io.Copy(part, file)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error copiando archivo"})
+        return
+    }
+
+    // Agregar los demás campos
+    writer.WriteField("email", fmt.Sprintf("%v", email))
+    writer.WriteField("nombre_archivo", nombreArchivo)
+    writer.WriteField("es_predeterminada", esPredeterminadaStr)
+
+    // Cerrar el writer
+    err = writer.Close()
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error cerrando writer"})
+        return
+    }
+
+    // Hacer POST al microservicio de gestión
+    url := fmt.Sprintf("%s/firmas/upload", gestionURL)
+    req, err := http.NewRequest("POST", url, &requestBody)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creando request"})
+        return
+    }
+
+    // Establecer el Content-Type con el boundary correcto
+    req.Header.Set("Content-Type", writer.FormDataContentType())
+
+    // Ejecutar la petición
+    client := &http.Client{Timeout: 30 * time.Second} // Mayor timeout para uploads
+    resp, err := client.Do(req)
+    if err != nil {
+        fmt.Println("Error subiendo firma: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al subir la firma"})
+        return
+    }
+    defer resp.Body.Close()
+
+    fmt.Printf("DEBUG: Status code de respuesta de subida de firma: %d\n", resp.StatusCode)
+
+    // Verificar si la respuesta es exitosa
+    if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+        var errorData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&errorData); err == nil {
+            c.JSON(resp.StatusCode, errorData)
+            return
+        }
+        c.JSON(resp.StatusCode, gin.H{"error": "Error al subir la firma"})
+        return
+    }
+
+    // Leer la respuesta exitosa
+    var responseData map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+        fmt.Println("Error decodificando respuesta de subida de firma: ", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando respuesta"})
+        return
+    }
+
+    c.JSON(resp.StatusCode, responseData)
 }

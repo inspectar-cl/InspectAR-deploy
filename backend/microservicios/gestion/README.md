@@ -1709,3 +1709,193 @@ curl "http://localhost:8092/tipos-falla/edificio/2?pagina=2"
 - `idx_comentarios_fecha` - Ordenamiento temporal
 
 ---
+
+## ✍️ Sistema de Firmas Digitales
+
+### Descripción
+
+Sistema completo de gestión de firmas digitales para usuarios, soportando:
+- Subida de firmas como archivos de imagen (PNG, JPEG, JPG)
+- Creación de firmas desde datos SVG (pizarra digital)
+- Gestión de múltiples firmas por usuario
+- Firma predeterminada por usuario
+- Validación de permisos para eliminación
+
+### Endpoints de Firmas
+
+#### 1. Subir firma como archivo
+```bash
+curl -X POST http://localhost:8092/firmas/upload \
+  -F "email=admin@example.com" \
+  -F "nombre_archivo=Mi Firma Oficial" \
+  -F "es_predeterminada=true" \
+  -F "archivo=@firma.png"
+```
+
+**Respuesta:**
+```json
+{
+  "message": "Firma subida exitosamente",
+  "firma": {
+    "id": 1,
+    "usuario_id": 1,
+    "nombre_archivo": "Mi Firma Oficial",
+    "ruta_archivo": "/app/storage/firmas/admin@example.com/firma_20251027.png",
+    "tipo_mime": "image/png",
+    "tamano": 15234,
+    "es_predeterminada": true,
+    "creado_en": "2025-10-27T10:30:00Z"
+  }
+}
+```
+
+#### 2. Crear firma desde SVG
+```bash
+curl -X POST http://localhost:8092/firmas/svg \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "tecnico@example.com",
+    "nombre_archivo": "Firma Digital",
+    "datos_svg": "<svg>...</svg>",
+    "es_predeterminada": false
+  }'
+```
+
+#### 3. Obtener firma por ID
+```bash
+curl http://localhost:8092/firmas/1
+```
+
+#### 4. Obtener imagen de firma
+```bash
+curl http://localhost:8092/firmas/1/imagen -o firma.png
+```
+
+#### 5. Obtener firmas de un usuario
+```bash
+curl http://localhost:8092/firmas/usuario/admin@example.com
+```
+
+**Respuesta:**
+```json
+{
+  "firmas": [
+    {
+      "id": 1,
+      "usuario_id": 1,
+      "nombre_archivo": "Mi Firma Oficial",
+      "ruta_archivo": "/app/storage/firmas/admin@example.com/firma_20251027.png",
+      "tipo_mime": "image/png",
+      "tamano": 15234,
+      "es_predeterminada": true,
+      "creado_en": "2025-10-27T10:30:00Z"
+    }
+  ],
+  "total": 1
+}
+```
+
+#### 6. Obtener firma predeterminada
+```bash
+curl http://localhost:8092/firmas/usuario/admin@example.com/predeterminada
+```
+
+#### 7. Actualizar firma
+```bash
+curl -X PUT http://localhost:8092/firmas/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre_archivo": "Firma Actualizada",
+    "es_predeterminada": true
+  }'
+```
+
+#### 8. Establecer firma como predeterminada
+```bash
+curl -X POST http://localhost:8092/firmas/1/predeterminada \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@example.com"
+  }'
+```
+
+#### 9. 🔒 Eliminar firma (con validación de permisos)
+```bash
+curl -X DELETE http://localhost:8092/firmas/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@example.com"
+  }'
+```
+
+**⚠️ Importante:** El endpoint de eliminación ahora requiere el `email` en el body para validar que la firma pertenezca al usuario. Si la firma no pertenece al usuario, retorna error 403.
+
+**Respuestas posibles:**
+
+✅ **200 OK** - Firma eliminada exitosamente
+```json
+{
+  "message": "Firma eliminada exitosamente"
+}
+```
+
+❌ **400 Bad Request** - Email no proporcionado
+```json
+{
+  "error": "email requerido en el body"
+}
+```
+
+❌ **403 Forbidden** - Usuario no tiene permisos
+```json
+{
+  "error": "No tiene permisos para eliminar esta firma"
+}
+```
+
+❌ **404 Not Found** - Firma no existe
+```json
+{
+  "error": "Firma no encontrada"
+}
+```
+
+### Formatos Soportados
+
+- ✅ **PNG** - `image/png`
+- ✅ **JPEG** - `image/jpeg`
+- ✅ **JPG** - `image/jpg`
+- ✅ **SVG** - `image/svg+xml`
+
+### Estructura de Base de Datos
+
+**Tabla `firmas`:**
+- `id` (PK) - Serial
+- `usuario_id` (FK) - INTEGER → usuarios(id)
+- `nombre_archivo` - VARCHAR(255)
+- `ruta_archivo` - TEXT (ruta física del archivo)
+- `tipo_mime` - VARCHAR(50)
+- `tamano` - INTEGER (bytes)
+- `es_predeterminada` - BOOLEAN (default false)
+- `creado_en` - TIMESTAMP (default CURRENT_TIMESTAMP)
+
+**Índices:**
+- `idx_firmas_usuario` - Búsqueda por usuario
+- `idx_firmas_predeterminada` - Filtrado por firma predeterminada
+
+### Almacenamiento
+
+Las firmas se almacenan en el sistema de archivos:
+- Ruta base: `/app/storage/firmas/`
+- Estructura: `/app/storage/firmas/{email}/{nombre_archivo}_{timestamp}.{ext}`
+- Ejemplo: `/app/storage/firmas/admin@example.com/firma_20251027_103045.png`
+
+### Seguridad
+
+- ✅ Validación de formatos permitidos
+- ✅ Validación de permisos para eliminación
+- ✅ Validación de usuario por email
+- ✅ Almacenamiento seguro en volumen Docker persistente
+- ✅ Solo un usuario puede eliminar sus propias firmas
+
+---

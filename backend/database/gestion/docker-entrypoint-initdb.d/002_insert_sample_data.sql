@@ -51,15 +51,15 @@ INSERT INTO tecnicos (nombre, apellido, email, telefono, especialidad, empresa_i
 ON CONFLICT (email) DO NOTHING;
 
 -- Insertar activos industriales (solo tipos permitidos: caldera, bomba de agua, ascensor, transformador)
-INSERT INTO activos (nombre, tipo, ubicacion, edificio_id) VALUES
-('BombaDeAgua #1 ML', 'bomba de agua', 'Planta B', 1),
-('Bomba Centrífuga A', 'bomba de agua', 'Sala de Bombas', 1),
-('Bomba Hidráulica 1', 'bomba de agua', 'Sala de Bombas', 2),
-('Ascensor Norte', 'ascensor', 'Torre Norte - Piso 1', 2),
-('Transformador Secundario', 'transformador', 'Subestación Secundaria', 3),
-('Transformador Principal', 'transformador', 'Subestación Eléctrica', 3),
-('Ascensor Central', 'ascensor', 'Edificio Central - Hall', 1),
-('Bomba de Emergencia', 'bomba de agua', 'Planta de Emergencia', 4)
+INSERT INTO activos (nombre, tipo, descripcion, ubicacion, edificio_id) VALUES
+('BombaDeAgua #1 ML', 'bomba de agua', 'Bomba centrífuga de alta eficiencia para distribución de agua potable. Caudal nominal 100 m³/h, presión 4 bar. Equipada con sensores IoT para monitoreo predictivo y control de vibraciones.', 'Planta B', 1),
+('Bomba Centrífuga A', 'bomba de agua', 'Bomba centrífuga horizontal para sistema de agua helada. Motor de 15 HP, rodete de bronce. Sistema de sellado mecánico con protección IP55. Incluye variador de frecuencia.', 'Sala de Bombas', 1),
+('Bomba Hidráulica 1', 'bomba de agua', 'Bomba de recirculación para sistema hidronico. Caudal variable controlado electrónicamente, autoajuste según demanda térmica. Eficiencia energética clase A+++.', 'Sala de Bombas', 2),
+('Ascensor Norte', 'ascensor', 'Ascensor de pasajeros de alta velocidad para 10 personas (800 kg). Velocidad 2.5 m/s, sistema de tracción sin sala de máquinas (MRL). Incluye sistema de rescate automático y regeneración de energía.', 'Torre Norte - Piso 1', 2),
+('Transformador Secundario', 'transformador', 'Transformador de distribución trifásico 315 kVA, 13.2/0.38 kV. Conexión Dyn11, refrigeración natural (ONAN). Protección IP23 para instalación interior/exterior. Bajo nivel de ruido < 50 dB.', 'Subestación Secundaria', 3),
+('Transformador Principal', 'transformador', 'Transformador de potencia 1000 kVA, 13.2/0.38 kV. Sistema de refrigeración forzada (ONAF), clase de aislamiento F. Equipado con protección Buchholz y termómetros digitales. Monitoreo remoto integrado.', 'Subestación Eléctrica', 3),
+('Ascensor Central', 'ascensor', 'Ascensor panorámico de cristal para 8 personas (630 kg). Velocidad 1.0 m/s, cabina con iluminación LED RGB. Sistema de control inteligente con destino anticipado. Diseño arquitectónico premium.', 'Edificio Central - Hall', 1),
+('Bomba de Emergencia', 'bomba de agua', 'Bomba sumergible para sistema contra incendios. Capacidad 500 l/min, presión 10 bar. Motor sumergible en acero inoxidable 316. Arranque automático por señal de alarma. Certificación UL/FM.', 'Planta de Emergencia', 4)
 ON CONFLICT (id) DO NOTHING;
 
 -- Autorizar técnicos para activos específicos

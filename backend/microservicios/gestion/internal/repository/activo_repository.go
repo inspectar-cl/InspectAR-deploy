@@ -15,7 +15,7 @@ func NewActivoRepository(db *sql.DB) *ActivoRepository {
 
 func (r *ActivoRepository) GetByID(id int) (*models.Activo, error) {
 	query := `
-		SELECT id, nombre, tipo, ubicacion, edificio_id, creado_en 
+		SELECT id, nombre, tipo, descripcion, ubicacion, edificio_id, creado_en 
 		FROM activos 
 		WHERE id = $1
 	`
@@ -25,6 +25,7 @@ func (r *ActivoRepository) GetByID(id int) (*models.Activo, error) {
 		&activo.ID,
 		&activo.Nombre,
 		&activo.Tipo,
+		&activo.Descripcion,
 		&activo.Ubicacion,
 		&activo.EdificioID,
 		&activo.CreadoEn,
@@ -39,7 +40,7 @@ func (r *ActivoRepository) GetByID(id int) (*models.Activo, error) {
 
 func (r *ActivoRepository) GetAll() ([]models.Activo, error) {
 	query := `
-		SELECT id, nombre, tipo, ubicacion, edificio_id, creado_en 
+		SELECT id, nombre, tipo, descripcion, ubicacion, edificio_id, creado_en 
 		FROM activos 
 		ORDER BY nombre
 	`
@@ -57,6 +58,7 @@ func (r *ActivoRepository) GetAll() ([]models.Activo, error) {
 			&activo.ID,
 			&activo.Nombre,
 			&activo.Tipo,
+			&activo.Descripcion,
 			&activo.Ubicacion,
 			&activo.EdificioID,
 			&activo.CreadoEn,
@@ -72,7 +74,7 @@ func (r *ActivoRepository) GetAll() ([]models.Activo, error) {
 
 func (r *ActivoRepository) GetByEdificio(edificioID int) ([]models.Activo, error) {
 	query := `
-		SELECT id, nombre, tipo, ubicacion, edificio_id, creado_en 
+		SELECT id, nombre, tipo, descripcion, ubicacion, edificio_id, creado_en 
 		FROM activos 
 		WHERE edificio_id = $1
 		ORDER BY nombre
@@ -91,6 +93,7 @@ func (r *ActivoRepository) GetByEdificio(edificioID int) ([]models.Activo, error
 			&activo.ID,
 			&activo.Nombre,
 			&activo.Tipo,
+			&activo.Descripcion,
 			&activo.Ubicacion,
 			&activo.EdificioID,
 			&activo.CreadoEn,
@@ -106,7 +109,7 @@ func (r *ActivoRepository) GetByEdificio(edificioID int) ([]models.Activo, error
 
 func (r *ActivoRepository) GetByTipo(tipo string) ([]models.Activo, error) {
 	query := `
-		SELECT id, nombre, tipo, ubicacion, edificio_id, creado_en 
+		SELECT id, nombre, tipo, descripcion, ubicacion, edificio_id, creado_en 
 		FROM activos 
 		WHERE tipo = $1
 		ORDER BY nombre
@@ -125,6 +128,7 @@ func (r *ActivoRepository) GetByTipo(tipo string) ([]models.Activo, error) {
 			&activo.ID,
 			&activo.Nombre,
 			&activo.Tipo,
+			&activo.Descripcion,
 			&activo.Ubicacion,
 			&activo.EdificioID,
 			&activo.CreadoEn,

@@ -224,6 +224,39 @@ func (s *FirmaService) EliminarFirma(id int) error {
 	return nil
 }
 
+// EliminarFirmaConValidacion elimina una firma validando que pertenezca al usuario
+func (s *FirmaService) EliminarFirmaConValidacion(id int, email string) error {
+	// Obtener firma para verificar propiedad
+	firma, err := s.firmaRepo.GetByID(id)
+	if err != nil {
+		return fmt.Errorf("firma no encontrada")
+	}
+
+	// Obtener usuario por email
+	usuario, err := s.usuarioRepo.GetUsuarioByEmail(email)
+	if err != nil {
+		return fmt.Errorf("usuario no encontrado: %v", err)
+	}
+
+	// Validar que la firma pertenezca al usuario
+	if firma.UsuarioID != usuario.ID {
+		return fmt.Errorf("no tiene permisos para eliminar esta firma")
+	}
+
+	// Eliminar de base de datos
+	err = s.firmaRepo.Delete(id)
+	if err != nil {
+		return err
+	}
+
+	// Eliminar archivo físico
+	if err := os.Remove(firma.RutaArchivo); err != nil {
+		fmt.Printf("Advertencia: no se pudo eliminar archivo físico: %v\n", err)
+	}
+
+	return nil
+}
+
 // EstablecerComoPredeterminada marca una firma como predeterminada
 func (s *FirmaService) EstablecerComoPredeterminada(id int, usuarioID int) error {
 	return s.firmaRepo.SetAsDefault(id, usuarioID)

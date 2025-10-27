@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS activos (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
     tipo VARCHAR(100) NOT NULL CHECK (tipo IN ('caldera', 'bomba de agua', 'ascensor', 'transformador')),
+    descripcion TEXT,
     ubicacion VARCHAR(255),
     edificio_id INTEGER REFERENCES edificios(id) ON DELETE SET NULL,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP

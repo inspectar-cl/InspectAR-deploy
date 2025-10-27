@@ -80,12 +80,13 @@ type UsuarioEdificio struct {
 
 // Activo gestionado
 type Activo struct {
-	ID         int       `json:"id" db:"id"`
-	Nombre     string    `json:"nombre" db:"nombre"`
-	Tipo       string    `json:"tipo" db:"tipo"`
-	Ubicacion  string    `json:"ubicacion" db:"ubicacion"`
-	EdificioID int       `json:"edificio_id" db:"edificio_id"`
-	CreadoEn   time.Time `json:"creado_en" db:"creado_en"`
+	ID          int       `json:"id" db:"id"`
+	Nombre      string    `json:"nombre" db:"nombre"`
+	Tipo        string    `json:"tipo" db:"tipo"`
+	Descripcion *string   `json:"descripcion,omitempty" db:"descripcion"`
+	Ubicacion   string    `json:"ubicacion" db:"ubicacion"`
+	EdificioID  int       `json:"edificio_id" db:"edificio_id"`
+	CreadoEn    time.Time `json:"creado_en" db:"creado_en"`
 }
 
 // Acción de mantenimiento colaborativa

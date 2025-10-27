@@ -205,6 +205,13 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: userTypes("Tecnico", "Admin"),
         },
+        { 
+            Method:  "DELETE",
+            Pattern: "/api/eliminar-firma-usuario/:id_firma",
+            Handler: EliminarFirmaUsuarioHandler,
+            Protected: true,
+            RequiredScopes: userTypes("Tecnico", "Admin"),
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",

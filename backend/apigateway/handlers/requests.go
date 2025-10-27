@@ -1221,7 +1221,7 @@ func ComentariosForoHandler(c *gin.Context) {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
         return
     }
-    fmt.Printf("Usuario subiendo firma: %s\n", email)
+    fmt.Printf("Email usuario: %s\n", email)
 
     // Leer el body de la request
     var comentarioData map[string]interface{}
@@ -1605,7 +1605,7 @@ func GenerarPDFReporte(c *gin.Context) {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
         return
     }
-    fmt.Printf("Usuario subiendo firma: %s\n", email)
+    fmt.Printf("Email usuario: %s\n", email)
 
     // Leer el body de la request
     var reporteData map[string]interface{}
@@ -2412,7 +2412,7 @@ func ObtenerFirmasUsuarioHandler(c *gin.Context) {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
         return
     }
-    fmt.Printf("Usuario subiendo firma: %s\n", email)
+    fmt.Printf("Email usuario: %s\n", email)
 
     // Hacer GET al microservicio de gestión
     url := fmt.Sprintf("%s/firmas/usuario/%s", gestionURL, email)
@@ -2587,4 +2587,83 @@ func SubirFirmaUsuarioHandler(c *gin.Context) {
     }
 
     c.JSON(resp.StatusCode, responseData)
+}
+
+func EliminarFirmaUsuarioHandler(c *gin.Context) {
+    // Extraer el email desde el token JWT
+    authHeader := c.GetHeader("Authorization")
+    email, _ := extractClaimFromToken(authHeader, "email")
+    if email == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
+        return
+    }
+    fmt.Printf("Usuario eliminando firma: %s\n", email)
+
+    // Obtener el ID de la firma desde los parámetros de la URL
+    idFirma := c.Param("id_firma")
+    if idFirma == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID de la firma es requerido"})
+        return
+    }
+
+    fmt.Printf("Eliminando firma ID: %s para usuario: %s\n", idFirma, email)
+
+    // Construir el body con el email
+    bodyData := map[string]interface{}{
+        "email": email,
+    }
+
+    // Convertir a JSON
+    jsonData, err := json.Marshal(bodyData)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando datos"})
+        return
+    }
+
+    // Hacer DELETE al microservicio de gestión
+    url := fmt.Sprintf("%s/firmas/%s", gestionURL, idFirma)
+    req, err := http.NewRequest("DELETE", url, bytes.NewBuffer(jsonData))
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creando request"})
+        return
+    }
+
+    // Establecer headers
+    req.Header.Set("Content-Type", "application/json")
+
+    // Ejecutar la petición
+    resp, err := httpClient.Do(req)
+    if err != nil {
+        fmt.Println("Error eliminando firma: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al eliminar la firma"})
+        return
+    }
+    defer resp.Body.Close()
+
+    fmt.Printf("DEBUG: Status code de eliminación de firma: %d\n", resp.StatusCode)
+
+    // Verificar si la respuesta es exitosa
+    if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+        var errorData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&errorData); err == nil {
+            c.JSON(resp.StatusCode, errorData)
+            return
+        }
+        c.JSON(resp.StatusCode, gin.H{"error": "Error al eliminar la firma"})
+        return
+    }
+
+    // Leer la respuesta exitosa (si existe)
+    var responseData map[string]interface{}
+    if resp.StatusCode == http.StatusOK {
+        if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+            fmt.Println("Error decodificando respuesta de eliminación: ", err)
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando respuesta"})
+            return
+        }
+        c.JSON(http.StatusOK, responseData)
+    } else {
+        // Si es 204 No Content, responder con mensaje de éxito
+        c.JSON(http.StatusOK, gin.H{"message": "Firma eliminada exitosamente"})
+    }
 }

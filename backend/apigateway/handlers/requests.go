@@ -2458,3 +2458,63 @@ func ActualizarEstadoAccionHandler(c *gin.Context) {
     // Retornar la respuesta del microservicio
     c.JSON(http.StatusOK, responseData)
 }
+
+func ObtenerFirmasUsuarioHandler(c *gin.Context) {
+    // Extraer el email desde el token JWT
+    var email string
+    authHeader := c.GetHeader("Authorization")
+    if authHeader == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+        return
+    }
+
+    tokenParts := strings.Split(authHeader, " ")
+
+    emailInterface, err := extractClaimFromToken(tokenParts[1], "email")
+    if err != nil {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+        return
+    }
+    
+    // Type assertion para convertir interface{} a string
+    var ok bool
+    email, ok = emailInterface.(string)
+    if !ok {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid email format in token"})
+        return
+    }
+    
+    fmt.Printf("Email extraído del token: %s\n", email)
+
+    // Hacer GET al microservicio de gestión
+    url := fmt.Sprintf("%s/firmas/usuario/%s", gestionURL, email)
+    resp, err := httpClient.Get(url)
+    if err != nil {
+        fmt.Println("Error obteniendo firmas del usuario: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al obtener las firmas"})
+        return
+    }
+    defer resp.Body.Close()
+
+    // Verificar si la respuesta es exitosa
+    if resp.StatusCode != http.StatusOK {
+        var errorData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&errorData); err == nil {
+            c.JSON(resp.StatusCode, errorData)
+            return
+        }
+        c.JSON(resp.StatusCode, gin.H{"error": "Error al obtener las firmas"})
+        return
+    }
+
+    // Leer la respuesta del microservicio
+    var firmasData interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&firmasData); err != nil {
+        fmt.Println("Error decodificando firmas: ", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando las firmas"})
+        return
+    }
+
+    // Retornar la respuesta del microservicio directamente
+    c.JSON(http.StatusOK, firmasData)
+}

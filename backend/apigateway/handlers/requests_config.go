@@ -191,6 +191,13 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: userTypes("Tecnico", "Analista", "Admin"),
         },
+        { 
+            Method:  "GET",
+            Pattern: "/api/obtener-firmas-usuario",
+            Handler: ObtenerFirmasUsuarioHandler,
+            Protected: true,
+            RequiredScopes: userTypes("Tecnico", "Analista", "Admin"),
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",
@@ -198,6 +205,7 @@ func getSpecialHandlers() []SpecialHandler {
         //     Handler: OtroHandler,
         //     Protected: true,
         //     RequiredScopes: userTypes("Residente"),
+        //     RequiredValidation: "edificio" o "activo"
         // }, // Importante la coma al final
         // { 
         //     Method:  "",

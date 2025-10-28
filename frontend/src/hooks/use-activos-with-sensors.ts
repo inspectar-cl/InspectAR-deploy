@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Services from '@/modules/Services';
 import { useUserToken } from '@/hooks/use-usertoken';
+import { useAuthUser } from '@/contexts/user-context';
 
 // Tipos del backend (actualizados para el nuevo endpoint)
 interface ActivoBackend {
@@ -95,12 +96,13 @@ function generarNombreSensor(tipo: string, sensor_id: string): string {
 
 export function useActivosWithSensors() {
   const { user, isLoading: authLoading } = useUserToken();
+  const { user: authUser } = useAuthUser();
   const [activos, setActivos] = useState<ActivoWithSensors[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchActivosWithSensors = useCallback(async () => {
-    if (authLoading || !user) {
+    if (authLoading || !user || !authUser?.selected_edificio?.id) {
       return;
     }
 
@@ -108,8 +110,9 @@ export function useActivosWithSensors() {
     setError(null);
     
     try {
-      // Usar el nuevo endpoint con autenticación
-      const response = await gs.authorizedGet('/obtener-todos-activos?sensores=true', user.token) as ApiResponse;
+      const idEdificio = authUser.selected_edificio.id;
+      // Usar el endpoint del edificio específico con sensores
+      const response = await gs.authorizedGet(`/obtener-activos-id/${idEdificio}?sensores=true`, user.token) as ApiResponse;
       
       if (!response.activos || response.activos.length === 0) {
         setActivos([]);
@@ -185,7 +188,7 @@ export function useActivosWithSensors() {
     } finally {
       setLoading(false);
     }
-  }, [authLoading, user]);
+  }, [authLoading, user, authUser]);
 
   // Refresh automático cada 30 segundos
   useEffect(() => {

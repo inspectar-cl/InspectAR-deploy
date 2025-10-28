@@ -28,7 +28,7 @@ class AnomalyDB(Base):
     severidad = Column(String(20), nullable=False, default='baja', index=True)
     descripcion = Column(Text, nullable=True)
     threshold = Column(Float, nullable=True)
-    is_anomaly = Column(Integer, nullable=False, default=0, index=True)
+    is_anomaly = Column(Boolean, nullable=False, default=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -47,7 +47,7 @@ class AnomalyBase(BaseModel):
     severidad: str = "baja"
     descripcion: Optional[str] = None
     threshold: Optional[float] = None
-    is_anomaly: int = 0
+    is_anomaly: bool = False
 
 
 class AnomalyCreate(AnomalyBase):
@@ -134,8 +134,10 @@ class DataPoint(BaseModel):
 
 class SensorData(BaseModel):
     """Datos de un sensor del ParserService"""
-    id_sensor: str
+    id_sensor: str = Field(alias="sensor_id")
     datos: List[DataPoint]
+    
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class ParserResponse(BaseModel):

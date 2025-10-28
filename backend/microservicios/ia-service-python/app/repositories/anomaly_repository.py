@@ -88,7 +88,7 @@ class AnomalyRepository:
             
             # Filtrar solo anomalías si se solicita
             if only_anomalies:
-                query = query.filter(AnomalyDB.is_anomaly == 1)
+                query = query.filter(AnomalyDB.is_anomaly == True)
             
             # Total de registros
             total = query.count()
@@ -153,7 +153,7 @@ class AnomalyRepository:
             query = self.db.query(AnomalyDB)
             
             if only_anomalies:
-                query = query.filter(AnomalyDB.is_anomaly == 1)
+                query = query.filter(AnomalyDB.is_anomaly == True)
             
             if activo_id:
                 query = query.filter(AnomalyDB.activo_id == activo_id)
@@ -179,7 +179,7 @@ class AnomalyRepository:
                 query = query.filter(AnomalyDB.activo_id == activo_id)
             
             if only_anomalies:
-                query = query.filter(AnomalyDB.is_anomaly == 1)
+                query = query.filter(AnomalyDB.is_anomaly == True)
             
             return query.scalar()
             
@@ -203,4 +203,30 @@ class AnomalyRepository:
         except Exception as e:
             self.db.rollback()
             logger.error(f"❌ Error eliminando anomalías: {e}")
+            raise
+    
+    def get_training_data(self, limit: int = 1000) -> List[AnomalyDB]:
+        """
+        Obtiene datos históricos para entrenamiento del modelo
+        
+        Args:
+            limit: Número máximo de registros a obtener
+            
+        Returns:
+            Lista de anomalías ordenadas por timestamp
+        """
+        try:
+            # Obtener registros con información completa
+            records = self.db.query(AnomalyDB).filter(
+                AnomalyDB.anomaly_score.isnot(None)
+            ).order_by(
+                desc(AnomalyDB.timestamp)
+            ).limit(limit).all()
+            
+            logger.info(f"📚 Obtenidos {len(records)} registros para entrenamiento")
+            
+            return records
+            
+        except Exception as e:
+            logger.error(f"❌ Error obteniendo datos de entrenamiento: {e}")
             raise

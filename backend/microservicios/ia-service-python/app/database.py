@@ -2,7 +2,7 @@
 Gestión de conexión a base de datos PostgreSQL
 """
 
-from sqlalchemy import create_engine, MetaData, event
+from sqlalchemy import create_engine, MetaData, event, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import Pool
@@ -93,7 +93,7 @@ def check_db_connection() -> bool:
     """Verifica la conexión a la base de datos"""
     try:
         with engine.connect() as conn:
-            conn.execute("SELECT 1")
+            conn.execute(text("SELECT 1"))
         logger.info("✅ Conexión a PostgreSQL exitosa")
         return True
     except Exception as e:

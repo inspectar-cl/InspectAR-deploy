@@ -175,28 +175,6 @@ CREATE TABLE IF NOT EXISTS usuarios_edificios (
     PRIMARY KEY (usuario_id, edificio_id)
 );
 
--- Tabla de fallos por tipo de activo
-CREATE TABLE IF NOT EXISTS fallos (
-    id SERIAL PRIMARY KEY,
-    tipo_activo VARCHAR(100) NOT NULL CHECK (tipo_activo IN ('caldera', 'bomba_de_agua', 'ascensor', 'transformador')),
-    descripcion TEXT NOT NULL,
-    prioridad VARCHAR(20) NOT NULL DEFAULT 'media' CHECK (prioridad IN ('media', 'alta')),
-    probabilidad_ocurrencia DECIMAL(5,2) NOT NULL CHECK (probabilidad_ocurrencia >= 0 AND probabilidad_ocurrencia <= 100),
-    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Tabla intermedia para relacionar activos con fallos específicos
-CREATE TABLE IF NOT EXISTS activos_fallos (
-    id SERIAL PRIMARY KEY,
-    activo_id INTEGER NOT NULL REFERENCES activos(id) ON DELETE CASCADE,
-    fallo_id INTEGER NOT NULL REFERENCES fallos(id) ON DELETE CASCADE,
-    fecha_deteccion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    estado VARCHAR(50) DEFAULT 'detectado' CHECK (estado IN ('detectado', 'en_revision', 'resuelto', 'pendiente')),
-    notas TEXT,
-    UNIQUE(activo_id, fallo_id, fecha_deteccion)
-);
-
 -- Tabla de reportes de fallas hechos por usuarios (tipos_falla)
 CREATE TABLE IF NOT EXISTS tipos_falla (
     id_falla SERIAL PRIMARY KEY,

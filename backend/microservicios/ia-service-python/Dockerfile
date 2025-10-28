@@ -37,8 +37,9 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY app/ ./app/
 COPY config/ ./config/
 
-# Crear usuario no-root
+# Crear usuario no-root y directorio de modelos
 RUN useradd -m -u 1000 iauser && \
+    mkdir -p /app/models && \
     chown -R iauser:iauser /app
 
 USER iauser

@@ -13,6 +13,7 @@ import type { SavedSignature } from '@/components/dashboard/reportes-tecnicos/Si
 import SignatureDialog from '@/components/dashboard/reportes-tecnicos/SignatureDialog';
 import { useSignatures } from '@/hooks/use-signatures';
 import { useUserToken } from '@/hooks/use-usertoken';
+import { useAuthUser } from '@/contexts/user-context';
 import { decodeJwtToken } from '@/hooks/use-auth';
 
 const gs = new Services();
@@ -48,7 +49,6 @@ interface ReportePayload {
   campos: unknown[];
   firma_id?: number | string;
   usar_firma_predeterminada?: boolean;
-  email?: string;
 }
 
 /** Convierte un dataURL (p.ej., canvas.toDataURL()) a Blob */
@@ -72,42 +72,22 @@ function dataUrlToBlob(dataUrl: string): Blob {
 
 /** Sube la firma como archivo al microservicio de gestión y devuelve firma_id */
 async function uploadSignatureFile({
-  baseUrl,
   token,
-  email,
   fileBlob,
   fileName = 'firma.png',
   esPredeterminada = false,
 }: {
-  baseUrl: string;
   token: string;
-  email: string;
   fileBlob: Blob;
   fileName?: string;
   esPredeterminada?: boolean;
 }): Promise<number> {
   const form = new FormData();
-  form.append('email', email);
   form.append('nombre_archivo', fileName);
   form.append('es_predeterminada', String(esPredeterminada));
   form.append('archivo', fileBlob, fileName);
 
-  const resp = await fetch(`${baseUrl}/gestion/firmas/upload`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-    body: form,
-  });
-
-  if (!resp.ok) {
-    let msg = `Error subiendo firma (${resp.status})`;
-    try {
-      const j = await resp.json();
-      msg = j?.error || j?.message || msg;
-    } catch {
-      // Si no hay JSON válido, usar mensaje por defecto
-    }
-    throw new Error(msg);
-  }
+  const response = await gs.authorizedPostFormData('/subir-firma-usuario', form, token);
 
   // Type guards seguros
   interface FirmaObj {
@@ -116,16 +96,22 @@ async function uploadSignatureFile({
   interface SuccessResponse {
     firma?: FirmaObj;
     id?: number | string;
+    error?: string;
+    mensaje?: string;
   }
   const isSuccessResponse = (x: unknown): x is SuccessResponse =>
-    typeof x === 'object' && x !== null && ('firma' in x || 'id' in x);
-  const jsonUnknown: unknown = await resp.json();
-  if (!isSuccessResponse(jsonUnknown)) {
+    typeof x === 'object' && x !== null;
+
+  if (!isSuccessResponse(response)) {
     throw new Error('Respuesta inesperada del servidor al subir firma.');
   }
 
-  const maybeId =
-    jsonUnknown.firma?.id ?? jsonUnknown.id;
+  // Verificar si hubo error
+  if (response.error || response.mensaje) {
+    throw new Error(response.error || response.mensaje || 'Error al subir firma');
+  }
+
+  const maybeId = response.firma?.id ?? response.id;
 
   // Normaliza a number seguro
   const id =
@@ -142,8 +128,23 @@ async function uploadSignatureFile({
   return id;
 }
 
+/** Función reutilizable para cargar firmas del backend */
+async function fetchFirmasFromBackend(token: string): Promise<FirmaBackend[]> {
+  try {
+    const data = await gs.authorizedGet('/obtener-firmas-usuario', token) as FirmasResponse;
+    if (data && Array.isArray(data.firmas)) {
+      return data.firmas;
+    }
+    return [];
+  } catch (error) {
+    console.error('Error cargando firmas:', error);
+    return [];
+  }
+}
+
 function GenerarReporte() {
   const { user, isLoading } = useUserToken();
+  const { user: userContext } = useAuthUser();
   const [activos, setActivos] = useState<ActivoReporte[]>([]);
   const [activo, setActivo] = useState<string>('');
   const [observaciones, setObservaciones] = useState<string>('');
@@ -178,7 +179,13 @@ function GenerarReporte() {
       try {
         if (isLoading || !user) return;
 
-        const data = await gs.authorizedGet('/obtener-todos-activos', user.token) as ActivosResponse;
+        const idEdificio = userContext?.selected_edificio?.id;
+        if (!idEdificio) {
+          setActivos([]);
+          return;
+        }
+
+        const data = await gs.authorizedGet(`/obtener-activos-id/${idEdificio}`, user.token) as ActivosResponse;
 
         if (data && Array.isArray(data.activos)) {
           setActivos(data.activos);
@@ -190,7 +197,7 @@ function GenerarReporte() {
       }
     };
     void fetchActivos();
-  }, [isLoading, user]);
+  }, [isLoading, user, userContext?.selected_edificio?.id]);
 
   // cargar firmas del backend
   useEffect(() => {
@@ -198,31 +205,23 @@ function GenerarReporte() {
       try {
         if (isLoading || !user) return;
 
-        const email = datos?.email;
-        if (!email) {
-          return;
-        }
-        const data = await gs.authorizedGet(`/gestion/firmas/usuario/${email}`, user.token) as FirmasResponse;
-        if (data && Array.isArray(data.firmas)) {
-          setFirmasBackend(data.firmas);
-          
-          // Seleccionar automáticamente la firma predeterminada si existe (solo la primera vez)
-          if (!firmasCargadas) {
-            const firmaPredeterminada = data.firmas.find((f) => f.es_predeterminada);
-            if (firmaPredeterminada) {
-              setSelectedSignatureId(String(firmaPredeterminada.id));
-            }
-            setFirmasCargadas(true);
+        const firmas = await fetchFirmasFromBackend(user.token);
+        setFirmasBackend(firmas);
+        
+        // Seleccionar automáticamente la firma predeterminada si existe (solo la primera vez)
+        if (!firmasCargadas) {
+          const firmaPredeterminada = firmas.find((f) => f.es_predeterminada);
+          if (firmaPredeterminada) {
+            setSelectedSignatureId(String(firmaPredeterminada.id));
           }
-        } else {
-          setFirmasBackend([]);
+          setFirmasCargadas(true);
         }
       } catch (error) {
         setFirmasBackend([]);
       }
     };
     void fetchFirmas();
-  }, [isLoading, user, datos?.email, firmasCargadas]);
+  }, [isLoading, user, firmasCargadas]);
 
   // actualizar dataUrl al elegir una firma guardada del backend
   useEffect(() => {
@@ -279,7 +278,6 @@ function GenerarReporte() {
 
       // 2) Subir a backend de gestión para obtener firma_id
       if (!user?.token) throw new Error('Usuario no autenticado');
-      const userEmail = (datos?.email) || 'usuario@example.com';
       const blob = dataUrlToBlob(dataUrl);
       
       // Usar el nombre proporcionado o uno por defecto
@@ -290,9 +288,7 @@ function GenerarReporte() {
         : `${baseFileName}${fileExtension}`;
 
       const newFirmaId = await uploadSignatureFile({
-        baseUrl: BASE_URL,
         token: user.token,
-        email: userEmail,
         fileBlob: blob,
         fileName: finalFileName,
         esPredeterminada: true,
@@ -303,10 +299,8 @@ function GenerarReporte() {
       setMensaje(`Firma guardada: ${finalFileName}`);
 
       // Recargar lista de firmas del backend
-      const data = await gs.authorizedGet(`/gestion/firmas/usuario/${userEmail}`, user.token) as FirmasResponse;
-      if (data && Array.isArray(data.firmas)) {
-        setFirmasBackend(data.firmas);
-      }
+      const firmas = await fetchFirmasFromBackend(user.token);
+      setFirmasBackend(firmas);
     } finally {
       setSignatureDialogOpen(false);
     }
@@ -324,16 +318,7 @@ function GenerarReporte() {
     const firma = firmasBackend.find((f) => f.id === numId);
     if (!firma) return;
     try {
-      const response = await fetch(`${BASE_URL}/gestion/firmas/${numId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${user.token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
+      await gs.authorizedDelete(`/eliminar-firma-usuario/${numId}`, user.token);
 
       setMensaje(`Firma "${firma.nombre_archivo}" eliminada del sistema`);
 
@@ -343,11 +328,8 @@ function GenerarReporte() {
       setFirmaId(null);
 
       // Recargar lista de firmas
-      const userEmail = (datos?.email) || 'usuario@example.com';
-      const data = await gs.authorizedGet(`/gestion/firmas/usuario/${userEmail}`, user.token) as FirmasResponse;
-      if (data && Array.isArray(data.firmas)) {
-        setFirmasBackend(data.firmas);
-      }
+      const firmas = await fetchFirmasFromBackend(user.token);
+      setFirmasBackend(firmas);
     } catch (error) {
       setMensaje('No se pudo eliminar la firma del sistema');
     }
@@ -373,30 +355,20 @@ function GenerarReporte() {
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/gestion/firmas/${numId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`,
-        },
-        body: JSON.stringify({
+      await gs.authorizedPut(
+        `/actualizar-firma-usuario/${numId}`,
+        {
           nombre_archivo: firma.nombre_archivo,
           es_predeterminada: true,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
+        },
+        user.token
+      );
 
       setMensaje('Firma establecida como predeterminada');
 
       // Recargar lista de firmas
-      const userEmail = (datos?.email) || 'usuario@example.com';
-      const data = await gs.authorizedGet(`/gestion/firmas/usuario/${userEmail}`, user.token) as FirmasResponse;
-      if (data && Array.isArray(data.firmas)) {
-        setFirmasBackend(data.firmas);
-      }
+      const firmas = await fetchFirmasFromBackend(user.token);
+      setFirmasBackend(firmas);
     } catch (error) {
       setMensaje('No se pudo establecer la firma como predeterminada');
     }
@@ -420,7 +392,6 @@ function GenerarReporte() {
 
   /** Arma el payload de reporte según haya firma_id o no */
   const buildPayload = (): ReportePayload => {
-    const userEmail = datos?.email;
     if (firmaId) {
       return {
         campos: camposSeleccionados,
@@ -430,7 +401,6 @@ function GenerarReporte() {
     return {
       campos: camposSeleccionados,
       usar_firma_predeterminada: true, // fallback al flujo del MD
-      email: userEmail,
     };
   };
 
@@ -444,18 +414,8 @@ function GenerarReporte() {
 
     try {
       const payload = buildPayload();
-      const response = await fetch(`${BASE_URL}/gestion/reportes/activo/${activo}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-      const blob = await response.blob();
+      const blob = await gs.authorizedPostBlob(`/pdf-reporte/${activo}`, payload, user.token);
+      
       const url = window.URL.createObjectURL(blob);
       const activoSeleccionado = activos.find((a) => a.id === activo);
       const nombreActivo = activoSeleccionado ? activoSeleccionado.nombre.replace(/\s+/g, '_') : 'Reporte';
@@ -486,21 +446,9 @@ function GenerarReporte() {
 
     try {
       const payload = buildPayload();
-      const response = await fetch(`${BASE_URL}/gestion/reportes/activo/${activo}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-
-      const blob = await response.blob();
+      const blob = await gs.authorizedPostBlob(`/pdf-reporte/${activo}`, payload, user.token);
+      
       const url = window.URL.createObjectURL(blob);
-
       setPdfUrl(url);
     } catch (error) {
       setMensaje('No se pudo generar la vista previa');
@@ -561,6 +509,9 @@ function GenerarReporte() {
             </Button>
 
             <FormControl sx={{ minWidth: 240 }}>
+              {/* <span style={{ marginLeft: 8, fontSize: '0.85em', opacity: 0.8 }}>
+                {selectedSignatureId || ''} {firmaId || ''}
+              </span> */}
               <InputLabel id="firmas-guardadas-label" shrink>
                 Firmas guardadas
               </InputLabel>

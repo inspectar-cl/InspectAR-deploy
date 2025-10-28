@@ -56,6 +56,40 @@ export default class Services {
         }))
     }
 
+    async authorizedPostBlob(uri, data, accessToken) {
+        // Configuración para recibir respuestas blob (archivos binarios como PDFs)
+        const config = {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            },
+            responseType: 'blob' // Indicar que esperamos una respuesta blob
+        };
+
+        return await apiClient.post(uri, data, config)
+            .then(res => res.data) // Devuelve directamente el blob
+            .catch(error => {
+                throw new Error(error.response?.statusText || "Error al obtener archivo");
+            })
+    }
+
+    async authorizedPostFormData(uri, formData, accessToken) {
+        // Configuración para enviar FormData (archivos)
+        const config = {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                // NO establecer Content-Type, axios lo hará automáticamente con el boundary correcto
+            }
+        };
+
+        return await apiClient.post(uri, formData, config)
+            .then(res => res.data)
+            .catch(error => ({
+                mensaje: "error inesperado",
+                error: error.response
+            }))
+    }
+
     async authorizedPut(uri, data, accessToken) {
     // Configuración de headers, incluyendo la autorización
         const config = {
@@ -96,6 +130,27 @@ export default class Services {
 
     async delete(uri) {
         return await apiClient.delete(uri)
+            .then(res => res.data)
+            .catch(error => ({
+                mensaje: "error inesperado",
+                error: error.response
+            }))
+    }
+
+    async authorizedDelete(uri, accessToken, data = null) {
+        const config = {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            }
+        };
+
+        // Si hay data, lo incluimos en el config
+        if (data) {
+            config.data = data;
+        }
+
+        return await apiClient.delete(uri, config)
             .then(res => res.data)
             .catch(error => ({
                 mensaje: "error inesperado",

@@ -1620,7 +1620,8 @@ func GenerarPDFReporte(c *gin.Context) {
     bodyData := map[string]interface{}{
         "campos": reporteData["campos"],
         "usar_firma_predeterminada": true,
-        "usuario_id": 1,
+        "email": email,
+        "firma_id": reporteData["firma_id"],
     }
 
     // Convertir a JSON

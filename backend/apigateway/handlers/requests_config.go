@@ -29,27 +29,6 @@ func userTypes(roles ...string) []string {
 func getSpecialHandlers() []SpecialHandler {
     return []SpecialHandler{
         {
-            Method:  "GET",
-            Pattern: "/api/activos-completos",
-            Handler: ActivosCompletosHandler,
-            Protected: true,
-            RequiredScopes: userTypes("Tecnico", "Residente", "Admin"),
-        },
-        {
-            Method:  "GET",
-            Pattern: "/api/activos-y-sensores",
-            Handler: ActivosYSensores,
-            Protected: true,
-            RequiredScopes: userTypes("Tecnico", "Residente", "Admin"),
-        },
-        {
-            Method: "GET",
-            Pattern: "/api/obtener-activos",
-            Handler: ObtenerActivos,
-            Protected: true,
-            RequiredScopes: userTypes("Tecnico", "Residente", "Analista", "Admin"),
-        },
-        {
             Method: "GET",
             Pattern: "/api/generar-reporte/:id_reporte",
             Handler: GenerarReporte,   

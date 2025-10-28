@@ -5,6 +5,7 @@ import { DataGrid, type GridColDef } from '@mui/x-data-grid'
 import { esES } from '@mui/x-data-grid/locales';
 import Services from '@/modules/Services';
 import { useUserToken } from '@/hooks/use-usertoken';
+import { useAuthUser } from '@/contexts/user-context';
 
 const gs = new Services();
 
@@ -33,16 +34,19 @@ interface ActivosDocResponse {
 
 function DocumentosAsociados() {
   const { user, isLoading } = useUserToken();
+  const { user: authUser } = useAuthUser();
   const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [activos, setActivos] = useState<ActivoDoc[]>([]);
   const [activo, setActivo] = useState("");
-  const [categorias, setCategorias] = useState<string[]>([]);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("");
   const [archivo, setArchivo] = useState<File | null>(null);
   const [nombreDocumento, setNombreDocumento] = useState("");
   const [descripcionDocumento, setDescripcionDocumento] = useState("");
   const [palabrasClave, setPalabrasClave] = useState("");
   const [mensaje, setMensaje] = useState<string | null>(null);
+
+  // Categorías fijas disponibles
+  const categorias = ["ficha_tecnica", "manual_fabricante", "certificacion"];
 
   const columns: GridColDef[] = [
     { field: 'id', headerName: 'ID', flex:0.5, filterable: false},
@@ -57,59 +61,52 @@ function DocumentosAsociados() {
   useEffect(() => {
     const fetchActivos = async () => {
       try {
-        if (isLoading || !user) {
+        if (isLoading || !user || !authUser?.selected_edificio?.id) {
           return
         }
 
-        const data = await gs.authorizedGet("/obtener-todos-activos", user.token) as ActivosDocResponse;
+        const idEdificio = authUser.selected_edificio.id;
+        const data = await gs.authorizedGet(`/obtener-activos-id/${idEdificio}`, user.token) as ActivosDocResponse;
         
         // Si la API devuelve un objeto con la propiedad 'activos'
         if (data && Array.isArray(data.activos)) {
           setActivos(data.activos);
+          // Resetear el activo seleccionado cuando cambien los activos del edificio
+          setActivo("");
         } 
         // Si no devuelve nada útil
         else {
           setActivos([]);
+          setActivo("");
         }
       } catch (error) {
         setActivos([]);
+        setActivo("");
       }
     };
     void fetchActivos();
-  }, [isLoading, user]);
+  }, [isLoading, user, authUser]);
 
-  // Cargar categorías al montar el componente
-  useEffect(() => {
-    const fetchCategorias = async () => {
-      try {
-        const data = await gs.get("/documentacion/documentos") as DocumentosResponse;
-
-        const docsData = data.documentos || [];
-
-        // Extraer categorías únicas
-        const categoriasUnicas = Array.from(
-          new Set(docsData.map((doc) => doc.categoria))
-        );
-
-        setCategorias(categoriasUnicas.filter(c => typeof c === "string"));
-      } catch (error) {
-        setCategorias([]);
-      }
-    };
-
-    void fetchCategorias();
-  }, []);
-
-  // Cargar documentos
+  // Cargar documentos basados en los activos del edificio
   useEffect(() => {
     const fetchDocumentos = async () => {
       try {
-        const data = await gs.get("/documentacion/documentos") as DocumentosResponse;
+        if (!user || activos.length === 0) {
+          return;
+        }
+
+        // Construir el body con la lista de activos
+        const requestBody = {
+          activos: activos.map((a) => ({ id: parseInt(a.id) })),
+          total: activos.length
+        };
+
+        const data = await gs.authorizedPost("/obtener-documentos", requestBody, user.token) as DocumentosResponse;
 
         const docsArray = data?.documentos || [];
         const documentosConFecha = docsArray.map((doc) => {
-          const fecha = new Date(doc.fecha_emision); // 🔹 usa tu campo real
-          const fechaFormateada = new Intl.DateTimeFormat('es-CL').format(fecha); // dd/mm/aaaa
+          const fecha = new Date(doc.fecha_emision);
+          const fechaFormateada = new Intl.DateTimeFormat('es-CL').format(fecha);
           return {
             ...doc,
             creado_en_formateado: fechaFormateada,
@@ -119,16 +116,12 @@ function DocumentosAsociados() {
         });
 
         setDocumentos(documentosConFecha);
-
-        // Extraer categorías únicas
-        const cats = Array.from(new Set(docsArray.map((d) => d.categoria)));
-        setCategorias(cats.filter(c => typeof c === "string"));
-        } catch (error) {
-          /* Intentionally empty - future implementation planned */
-        }
+      } catch (error) {
+        /* Intentionally empty - future implementation planned */
+      }
     };
-    if (activos.length > 0) void fetchDocumentos(); // 🔹 Solo corre cuando ya hay activos
-}, [activos]); // 🔹 Dependencia en activos
+    if (activos.length > 0) void fetchDocumentos();
+  }, [activos, user]);
 
   const handleGuardarDocumento = async () => {
     if (!archivo) { setMensaje("Debe seleccionar un archivo"); return; }
@@ -137,14 +130,8 @@ function DocumentosAsociados() {
     if (!nombreDocumento || !descripcionDocumento || !palabrasClave) {
       setMensaje("Debe completar todos los campos"); return;
     }
-    // const formData = {
-    //   archivo: archivo,
-    //   activo_id: activo,
-    //   categoria: categoriaSeleccionada,
-    //   nombre: nombreDocumento,
-    //   descripcion: descripcionDocumento,
-    //   palabras_clave: palabrasClave,
-    // }
+    if (!user) { setMensaje("Usuario no autenticado"); return; }
+
     const formData = new FormData();
     formData.append("archivo", archivo);
     formData.append("activo_id", activo);
@@ -152,14 +139,21 @@ function DocumentosAsociados() {
     formData.append("nombre", nombreDocumento);
     formData.append("descripcion", descripcionDocumento);
     formData.append("palabras_clave", palabrasClave);
+
     try {
-      await gs.post("/documentacion/documentos", formData);
-      // Subido correctamente, puedes recargar documentos
-      const data = await gs.get("/documentacion/documentos") as DocumentosResponse;
+      await gs.authorizedPostFormData("/subir-documento", formData, user.token);
+      
+      // Recargar documentos usando la nueva ruta
+      const requestBody = {
+        activos: activos.map((a) => ({ id: parseInt(a.id) })),
+        total: activos.length
+      };
+
+      const data = await gs.authorizedPost("/obtener-documentos", requestBody, user.token) as DocumentosResponse;
       const docsArray = data?.documentos || [];
       const documentosConFecha = docsArray.map((doc) => {
         const fecha = new Date(doc.fecha_emision); 
-        const fechaFormateada = new Intl.DateTimeFormat('es-CL').format(fecha); // dd/mm/aaaa
+        const fechaFormateada = new Intl.DateTimeFormat('es-CL').format(fecha);
         return {
           ...doc,
           creado_en_formateado: fechaFormateada,
@@ -176,6 +170,7 @@ function DocumentosAsociados() {
       setPalabrasClave("");
       setActivo("");
       setCategoriaSeleccionada("");
+      setMensaje("Documento subido exitosamente");
     } catch (error) {
       setMensaje("Error al subir documento");
     }
@@ -188,14 +183,21 @@ function DocumentosAsociados() {
 
       <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2, mb: 2 }}>
         {/* Selector de archivo */}
-        <Button variant="outlined" component="label">
-          Subir Archivo
-          <input
-            type="file"
-            hidden
-            onChange={(e) => { setArchivo(e.target.files ? e.target.files[0] : null); }}
-          />
-        </Button>
+        <Box>
+          <Button variant="outlined" component="label" fullWidth>
+            Subir Archivo
+            <input
+              type="file"
+              hidden
+              onChange={(e) => { setArchivo(e.target.files ? e.target.files[0] : null); }}
+            />
+          </Button>
+          {archivo && (
+            <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}>
+              📄 {archivo.name}
+            </Typography>
+          )}
+        </Box>
 
         {/* Selector de categoría */}
         <Select

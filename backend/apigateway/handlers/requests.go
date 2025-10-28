@@ -2765,3 +2765,90 @@ func ActualizarFirmaUsuarioHandler(c *gin.Context) {
     // Retornar la respuesta del microservicio
     c.JSON(http.StatusOK, responseData)
 }
+
+func ObtenerDocumentosHandler(c *gin.Context) {
+    // Leer el body con la lista de activos
+    var requestData map[string]interface{}
+    if err := c.ShouldBindJSON(&requestData); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+        return
+    }
+
+    // Validar que venga el array de activos
+    activosInterface, exists := requestData["activos"]
+    if !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'activos' es requerido"})
+        return
+    }
+
+    activos, ok := activosInterface.([]interface{})
+    if !ok {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'activos' debe ser un array"})
+        return
+    }
+
+    fmt.Printf("Obteniendo documentos para %d activos\n", len(activos))
+
+    var wg sync.WaitGroup
+    var mu sync.Mutex
+    todosLosDocumentos := []interface{}{}
+
+    // Hacer peticiones concurrentes para cada activo
+    for _, activo := range activos {
+        activoMap, ok := activo.(map[string]interface{})
+        if !ok {
+            continue
+        }
+
+        // Extraer el ID del activo
+        var activoID int
+        switch id := activoMap["id"].(type) {
+        case float64:
+            activoID = int(id)
+        case int:
+            activoID = id
+        default:
+            continue
+        }
+
+        wg.Add(1)
+        go func(id int) {
+            defer wg.Done()
+
+            url := fmt.Sprintf("%s/api/v1/documentos/activo/%d", documentacionURL, id)
+            resp, err := httpClient.Get(url)
+            if err != nil {
+                fmt.Printf("Error obteniendo documentos del activo %d: %v\n", id, err)
+                return
+            }
+            defer resp.Body.Close()
+
+            if resp.StatusCode != http.StatusOK {
+                fmt.Printf("Error en respuesta de documentos del activo %d: status %d\n", id, resp.StatusCode)
+                return
+            }
+
+            var data map[string]interface{}
+            if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+                fmt.Printf("Error decodificando documentos del activo %d: %v\n", id, err)
+                return
+            }
+
+            // Extraer solo el array de documentos
+            if documentos, exists := data["documentos"].([]interface{}); exists {
+                mu.Lock()
+                todosLosDocumentos = append(todosLosDocumentos, documentos...)
+                mu.Unlock()
+            }
+        }(activoID)
+    }
+
+    wg.Wait()
+
+    // Retornar la respuesta consolidada
+    result := map[string]interface{}{
+        "documentos": todosLosDocumentos,
+    }
+
+    c.JSON(http.StatusOK, result)
+}

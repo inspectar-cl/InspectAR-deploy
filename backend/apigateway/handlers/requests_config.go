@@ -162,6 +162,13 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: userTypes("Tecnico", "Admin"),
         },
+        { 
+            Method:  "POST",
+            Pattern: "/api/obtener-documentos",
+            Handler: ObtenerDocumentosHandler,
+            Protected: true,
+            RequiredScopes: userTypes("Analista", "Tecnico", "Admin"),
+        },
         {
             Method: "PUT",
             Pattern: "/api/actualizar-estado-contacto/:id_contacto",

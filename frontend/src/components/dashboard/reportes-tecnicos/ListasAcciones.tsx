@@ -10,6 +10,7 @@ import { esES } from '@mui/x-data-grid/locales'
 
 import Services from '@/modules/Services'
 import { useUserToken } from '@/hooks/use-usertoken';
+import { useAuthUser } from '@/contexts/user-context';
 
 const gs = new Services()
 
@@ -47,15 +48,13 @@ interface Tecnico {
   telefono: string
 }
 
-const tecnicoActualId = 1
-const edificioId = 1
-
 export default function ListasAccionesView() {
   const { user, isLoading} = useUserToken();
-  const [acciones, setAcciones] = useState<Accion[]>([])
+  const { user: userContext } = useAuthUser();
+  const [acciones, setAcciones] = useState<Accion[]>([]);
   const [activos, setActivos] = useState<Activo[]>([])
   const [tecnicos, setTecnicos] = useState<Tecnico[]>([])
-  const [tecnicoSeleccionado, setTecnicoSeleccionado] = useState<number>(tecnicoActualId)
+  const [tecnicoSeleccionado, setTecnicoSeleccionado] = useState<number>(0)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [mensaje, setMensaje] = useState<string | null>(null);
 
@@ -78,7 +77,14 @@ export default function ListasAccionesView() {
         if (isLoading || !user) {
           return
         }
-        const data = await gs.authorizedGet("/obtener-todos-activos", user.token) as { activos: Activo[] }
+
+        const idEdificio = userContext?.selected_edificio?.id;
+        if (!idEdificio) {
+          setActivos([]);
+          return;
+        }
+
+        const data = await gs.authorizedGet(`/obtener-activos-id/${idEdificio}`, user.token) as { activos: Activo[] }
         const activosArray = data.activos
         setActivos(Array.isArray(activosArray) ? activosArray : [])
       } catch (error) {
@@ -86,7 +92,7 @@ export default function ListasAccionesView() {
       }
     }
     void fetchActivos()
-  }, [isLoading, user])
+  }, [isLoading, user, userContext?.selected_edificio?.id])
 
   // --- Cargar técnicos desde API ---
   useEffect(() => {
@@ -95,7 +101,14 @@ export default function ListasAccionesView() {
         if (isLoading || !user) {
           return
         }
-        const data = await gs.authorizedGet(`/obtener-contactos-id/${edificioId}`, user.token) as { contactos: Tecnico[]; total: number }
+
+        const idEdificio = userContext?.selected_edificio?.id;
+        if (!idEdificio) {
+          setTecnicos([]);
+          return;
+        }
+
+        const data = await gs.authorizedGet(`/obtener-contactos-id/${idEdificio}`, user.token) as { contactos: Tecnico[]; total: number }
         const tecnicosArray = data.contactos
         setTecnicos(Array.isArray(tecnicosArray) ? tecnicosArray : [])
         
@@ -108,7 +121,7 @@ export default function ListasAccionesView() {
       }
     }
     void fetchTecnicos()
-  }, [isLoading, user])
+  }, [isLoading, user, userContext?.selected_edificio?.id])
 
   // --- API Acciones ---
   const fetchAcciones = async () => {
@@ -227,7 +240,9 @@ export default function ListasAccionesView() {
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="subtitle1">Acciones Asignadas</Typography>
-        
+        {/* <span style={{ marginLeft: 8, fontSize: '0.85em', opacity: 0.8 }}>
+          {tecnicoSeleccionado || ''}
+        </span> */}
         <TextField
           label="Filtrar por Técnico"
           select

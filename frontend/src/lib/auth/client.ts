@@ -187,7 +187,7 @@ class AuthClient {
       const parsed: unknown = JSON.parse(raw);
       if (!isStoredPayload(parsed)) {
         localStorage.removeItem(STORAGE_KEY);
-        return { data: null, error: 'Invalid session payload' };
+        return { data: null, error: 'Payload de la sesion invalido' };
       }
 
       const data: SessionUser = {
@@ -230,14 +230,9 @@ class AuthClient {
          return { error: 'El edificio seleccionado no está en la lista permitida.' };
       }
 
-      // Actualiza el edificio seleccionado
       currentPayload.selected_edificio = newEdificio;
 
-      // Guarda el payload actualizado
       localStorage.setItem(STORAGE_KEY, JSON.stringify(currentPayload));
-      
-      // Importante: Si estás usando un contexto de React para el estado, 
-      // la aplicación necesitará saber que esto cambió.
 
       return {};
     } catch (error) {

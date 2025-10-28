@@ -101,13 +101,13 @@ export function AccountDetailsForm(): React.JSX.Element {
             <Grid size={{ md:6, xs:12}}>
               <FormControl fullWidth required>
                 <InputLabel>Correo electrónico</InputLabel>
-                <OutlinedInput defaultValue={email} label="Email address" name="email" />
+                <OutlinedInput defaultValue={email} label="Correo electrónico" name="email" />
               </FormControl>
             </Grid>
             <Grid size={{ md:6, xs:12}}>
               <FormControl fullWidth>
                 <InputLabel>Número de telefono</InputLabel>
-                <OutlinedInput label="Phone number" name="phone" type="tel" />
+                <OutlinedInput label="Número de telefono" name="phone" type="tel" />
               </FormControl>
             </Grid>
             {isTecnico ? <Grid size={{ xs:12 }}>

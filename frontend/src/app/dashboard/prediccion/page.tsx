@@ -11,6 +11,9 @@ import {
   InputLabel,
   FormControl,
   Grid,
+  Button,
+  IconButton, 
+  Tooltip,
 } from "@mui/material";
 import { Activity as ActivityIcon, AlertTriangle as AlertIcon } from "lucide-react";
 import { type Prediccion } from "@/types/prediccion";
@@ -19,6 +22,10 @@ import MetricCard from "@/components/dashboard/prediccion/MetricCard";
 import PrediccionCards from "@/components/dashboard/prediccion/PrediccionCards";
 import AlertasResumen from "@/components/dashboard/prediccion/AlertasResumen";
 import AnomalyChart from "@/components/dashboard/prediccion/AnomalyChart";
+import { HelpCircle as HelpIcon } from "lucide-react";
+
+import { useDriverTour } from "@/components/tutorial/use-driver-tour";
+import { TourKey } from "@/components/tutorial/tour-config";
 
 // Tipos
 interface Activo {
@@ -111,6 +118,10 @@ export default function Page() {
   // Predicciones mock generadas dinámicamente
   const predicciones: Prediccion[] = useMemo(() => generateMockPredicciones(), []);
 
+  // Configurar tutorial/tour
+  const tourKey: TourKey = 'predicciones-filtros';
+  const { startTour } = useDriverTour(tourKey);
+
   // Filtros
   const [filtroActivo, setFiltroActivo] = useState<string>("Todos");
   const [filtroSeveridad, setFiltroSeveridad] = useState<string>("Todos");
@@ -128,14 +139,39 @@ export default function Page() {
 
   return (
     <Box p={2}>
-      <Typography variant="h4" mb={3}>
-        Predicciones de Anomalías
-      </Typography>
+      <Box 
+          display="flex" 
+          justifyContent="space-between" 
+          alignItems="center" 
+          mb={3}
+          id="tour-header" 
+      >
+          <Typography variant="h4">
+              Predicciones de Anomalías
+          </Typography>
+
+          <Tooltip title="Iniciar Tutorial de Filtros">
+              <Box sx={{
+                  animation: 'pulse 3s infinite', 
+                  borderRadius: '50%',
+                  display: 'flex',
+              }}>
+                  <IconButton 
+                      color="primary"
+                      size="medium" 
+                      onClick={startTour} 
+                      aria-label="Iniciar tutorial"
+                  >
+                      <HelpIcon size={24} /> 
+                  </IconButton>
+              </Box>
+          </Tooltip>
+      </Box>
 
       {/* Filtros */}
       <Grid container spacing={2} mb={2}>
         <Grid size={{ xs: 12, sm: 4 }}>
-          <FormControl fullWidth>
+          <FormControl fullWidth id="tour-filtro-activo">
             <InputLabel>Activo</InputLabel>
             <Select
               value={filtroActivo}
@@ -152,7 +188,7 @@ export default function Page() {
           </FormControl>
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
-          <FormControl fullWidth>
+          <FormControl fullWidth id="tour-filtro-severidad">
             <InputLabel>Severidad</InputLabel>
             <Select
               value={filtroSeveridad}

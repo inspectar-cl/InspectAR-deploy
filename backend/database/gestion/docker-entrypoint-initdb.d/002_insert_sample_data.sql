@@ -22,7 +22,10 @@ INSERT INTO usuarios (username, email) VALUES
 ('carlos.mendoza', 'analista@example.com'),
 ('maria.gonzalez', 'tecnico@example.com'),
 ('pedro.silva', 'residente@example.com'),
-('ana.rodriguez', 'admin@example.com')
+('ana.rodriguez', 'admin@example.com'),
+('admin.norte', 'admin.norte@inspectAR.com'),
+('admin.centro', 'admin.centro@inspectAR.com'),
+('root.system', 'root@inspectAR.com')
 ON CONFLICT (username) DO NOTHING;
 
 -- Crear relaciones usuarios-edificios
@@ -35,7 +38,11 @@ INSERT INTO usuarios_edificios (usuario_id, edificio_id) VALUES
 -- usuario tiene acceso a todos los edificios
 (3, 1), (3, 2), (3, 3), (3, 4),
 -- residente_especial solo tiene acceso al edificio 1
-(4, 1)
+(4, 1),
+-- admin.norte tiene acceso a Edificio Central (1) y Torre Norte (2)
+(5, 1), (5, 2),
+-- admin.centro tiene acceso a Complejo Industrial Sur (3) y Centro de Distribución (4)
+(6, 3), (6, 4)
 ON CONFLICT DO NOTHING;
 
 -- Insertar técnicos especializados con empresas

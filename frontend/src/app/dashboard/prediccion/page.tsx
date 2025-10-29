@@ -26,6 +26,7 @@ import { HelpCircle as HelpIcon } from "lucide-react";
 
 import { useDriverTour } from "@/components/tutorial/use-driver-tour";
 import { TourKey } from "@/components/tutorial/tour-config";
+import { TourButton } from "@/components/tutorial/tour-button";
 
 // Tipos
 interface Activo {
@@ -150,22 +151,12 @@ export default function Page() {
               Predicciones de Anomalías
           </Typography>
 
-          <Tooltip title="Iniciar Tutorial de Filtros">
-              <Box sx={{
-                  animation: 'pulse 3s infinite', 
-                  borderRadius: '50%',
-                  display: 'flex',
-              }}>
-                  <IconButton 
-                      color="primary"
-                      size="medium" 
-                      onClick={startTour} 
-                      aria-label="Iniciar tutorial"
-                  >
-                      <HelpIcon size={24} /> 
-                  </IconButton>
-              </Box>
-          </Tooltip>
+          <TourButton 
+            onClick={startTour}
+            tooltipTitle="Iniciar Tutorial de Filtros"
+            style="pulse 3s infinite"
+          />
+
       </Box>
 
       {/* Filtros */}

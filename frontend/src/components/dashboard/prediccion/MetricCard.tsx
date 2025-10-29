@@ -18,7 +18,7 @@ function MetricCard({ title, value, icon, color, suffix = "" }: MetricCardProps)
       alignItems: "center",
       justifyContent: "space-between",
       height: 230,
-      width: 210,
+      minWidth: 210,
       p: 2,
       borderRadius: 3,
       boxShadow: 3,
@@ -39,7 +39,7 @@ function MetricCard({ title, value, icon, color, suffix = "" }: MetricCardProps)
         value={Math.min(value, 100)}
         sx={{
           height: 10,
-          width: 120,
+          minWidth: 220,
           borderRadius: 5,
           backgroundColor: "#e0e0e0",
           "& .MuiLinearProgress-bar": { backgroundColor: color },

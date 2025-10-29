@@ -227,8 +227,8 @@ export default function Page() {
             </Box>
 
             {/* Métricas principales */}
-            <Grid container spacing={3} mb={3}>
-              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <Grid container spacing={3} mb={3} id="tour-metricas-principales">
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} id="tour-anomaly-score">
                 <MetricCard
                   title="Último Anomaly Score"
                   value={ultimaPred.anomalyScore}
@@ -237,7 +237,7 @@ export default function Page() {
                   suffix=""
                 />
               </Grid>
-              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} id="tour-anomaly-likelihood">
                 <MetricCard
                   title="Último Anomaly Likelihood"
                   value={ultimaPred.anomalyLikelihood}
@@ -246,7 +246,7 @@ export default function Page() {
                   suffix=""
                 />
               </Grid>
-              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} id="tour-anomaly">
                 <MetricCard
                   title="Total Anomalías"
                   value={totalAnomalias}
@@ -258,13 +258,13 @@ export default function Page() {
             </Grid>
 
             {/* Gráfico */}
-            <Grid container spacing={2}>
+            <Grid container spacing={2} id="tour-grafico-predicciones">
               <Grid size={{ xs: 12 }}>
                 <AnomalyChart predicciones={predActivo} activoNombre={activo.nombre} />
               </Grid>
 
               {/* Tarjetas de predicciones */}
-              <Grid size={{ xs: 12 }}>
+              <Grid size={{ xs: 12 }} id="tour-ultimas-anomalias">
                 <Typography variant="h6" mb={2}>
                   Últimas 10 Anomalías
                 </Typography>

@@ -22,6 +22,8 @@ import {decodeJwtToken} from '@/hooks/use-auth'
 import type { ApiPublicacion, ApiForoResponse, ApiComentario, ApiComentariosResponse} from './helper';
 import type {DecodedJwt} from '@/types/token'
 
+import { useAuthUser } from '@/contexts/user-context';
+
 const gs = new Services();
 
 function makeId(prefix: string): string{
@@ -76,13 +78,14 @@ export default function ForoPage(): React.JSX.Element {
   const [currentPage, setCurrentPage] = React.useState(1);
   const [totalPages, setTotalPages] = React.useState(1);
   const [_itemsPerPage, setItemsPerPage] = React.useState(10);
-  //Seleccion de edificio
-  const [selectedBuildingId, setSelectedBuildingId] = React.useState<number | ''>('');
 
   const [newPostContent, setNewPostContent] = React.useState('');
   const { user, isLoading, error } = useUserToken();
   const edificios = user?.edificio;
   const token = user?.token;
+
+  const { user: userContext} = useAuthUser();
+  const selectedEdificioId = userContext?.selected_edificio?.id;
 
   const payload: DecodedJwt | null = token ? decodeJwtToken(token) : null;
 
@@ -91,16 +94,9 @@ export default function ForoPage(): React.JSX.Element {
     [edificios]
   );
 
-  //Seteo de primer edificio por defecto (de la lista de edificios tomo el primero)
-  React.useEffect(() => {
-    if (buildingIds.length > 0 && selectedBuildingId === '') {
-      setSelectedBuildingId(buildingIds[0] ?? '');
-    }
-  }, [buildingIds, selectedBuildingId]);
-
    React.useEffect((): void => {
     // Asegurarse de tener token y un ID de edificio válido para hacer la llamada
-    const bId = typeof selectedBuildingId === 'number' ? selectedBuildingId : null;
+    const bId = typeof selectedEdificioId === 'number' ? selectedEdificioId : null;
     if (!bId || !token) {
       setPosts([]);
       setTotalPages(1);
@@ -129,12 +125,12 @@ export default function ForoPage(): React.JSX.Element {
 
     void loadPosts();
 
-  }, [selectedBuildingId, currentPage, token]);
+  }, [selectedEdificioId, currentPage, token]);
 
   // Aqui iria el post de las publicaciones
   const handlePublish = async (): Promise<void> => {
     const content = newPostContent.trim();
-    const bId = typeof selectedBuildingId === 'number' ? selectedBuildingId : null;
+    const bId = typeof selectedEdificioId === 'number' ? selectedEdificioId : null;
 
     // Validacion
     if (!content || !bId || !token) {
@@ -255,25 +251,6 @@ export default function ForoPage(): React.JSX.Element {
       {/* Composer */}
       <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
         <Stack spacing={2}>
-          {/* aqui se selecciona el edificio si el usuario tiene mas, es un filtro*/}
-          {buildingIds.length > 1 && (
-            <FormControl size="small" sx={{ minWidth: 220 }}>
-              <InputLabel id="edificio-select-label">Publicar en</InputLabel>
-              <Select
-                labelId="edificio-select-label"
-                label="Publicar en"
-                value={selectedBuildingId}
-                onChange={(e) => {setSelectedBuildingId(Number(e.target.value))}}
-              >
-                {edificios?.map((e) => (
-                  <MenuItem key={e.id} value={e.id}>
-                    {e.nombre ? `${e.nombre} (#${e.id})` : `Edificio #${e.id}`}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          )}
-
           <TextField
             multiline
             minRows={3}

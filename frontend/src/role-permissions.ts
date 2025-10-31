@@ -24,6 +24,7 @@ export const rolePermissions: Record<string, string[]> = {
     paths.dashboard.account,
     paths.dashboard.settings,
     paths.dashboard.reporteFallas,
+    paths.dashboard.formulario,
   ],           
   admin: [
     paths.dashboard.inicio,

@@ -12,8 +12,8 @@ import {
   Typography,
 } from '@mui/material';
 import { Controller, useFormContext } from 'react-hook-form';
-import { useAuthUser } from '@/contexts/user-context';
 import type { SolicitudFormData, TecnicoData, EspecialidadTecnico } from '@/types/formulario';
+import { useUserToken } from '@/hooks/use-usertoken';
 
 const ESPECIALIDADES: EspecialidadTecnico[] = ['Climatización', 'Eléctrico', 'Mecánico'];
 
@@ -31,7 +31,7 @@ export function TecnicoForm(): React.JSX.Element {
   } = useFormContext<SolicitudFormData>();
 
   const tecnicoErrors = errors.datosEspecificos as Partial<Record<keyof TecnicoData, any>>;
-  const { user } = useAuthUser();
+  const { user } = useUserToken();
 
   const [activos, setActivos] = React.useState<ActivoResumen[]>([]);
   const [loading, setLoading] = React.useState(false);

@@ -4,6 +4,7 @@ export const paths = {
   dashboard: {
     inicio: '/dashboard',
     formulario: '/dashboard/formulario',
+    solicitudes: '/dashboard/solicitudes',
     account: '/dashboard/account',
     alertas: '/dashboard/alertas',
     activos: '/dashboard/activos',
@@ -16,6 +17,7 @@ export const paths = {
     ml: '/dashboard/prediccion',
     settings: '/dashboard/settings',
     activoDetail: (id: string) => `/dashboard/activos/${id}`,
+    agregarDatos: (tipo: string) => `/dashboard/agregar-datos/${tipo}`,
   },
   errors: { notFound: '/errors/not-found' },
 } as const;

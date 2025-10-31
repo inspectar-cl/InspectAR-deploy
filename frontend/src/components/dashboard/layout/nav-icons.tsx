@@ -14,6 +14,8 @@ import { BlueprintIcon } from '@phosphor-icons/react/dist/ssr/Blueprint';
 import { AddressBookIcon } from '@phosphor-icons/react/dist/ssr/AddressBook';
 import { SirenIcon } from '@phosphor-icons/react/dist/ssr/Siren';
 import { BrainIcon } from '@phosphor-icons/react/dist/ssr/Brain';
+import { ClipboardTextIcon } from '@phosphor-icons/react/dist/ssr/ClipboardText';
+import { CloudArrowUpIcon } from '@phosphor-icons/react/dist/ssr/CloudArrowUp';
 
 export const navIcons = {
   'chart-pie': ChartPieIcon,
@@ -29,6 +31,8 @@ export const navIcons = {
   'adressBook': AddressBookIcon,
   'siren': SirenIcon,
   'brain': BrainIcon,
+  'clipboard-text': ClipboardTextIcon,
+  'cloud-arrow-up': CloudArrowUpIcon,
   user: UserIcon,
   users: UsersIcon,
 } as Record<string, Icon>;

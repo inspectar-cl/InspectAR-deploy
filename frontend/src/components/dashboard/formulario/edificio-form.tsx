@@ -46,6 +46,14 @@ export function EdificioForm(): React.JSX.Element {
                 })}
                 error={!!edificioErrors?.latitud}
                 helperText={edificioErrors?.latitud?.message ?? ""}
+                slotProps={{
+                    htmlInput: {
+                        step: "any",
+                    },
+                    inputLabel: {
+                        shrink: true,
+                    }
+                }}
                 />
             </Grid>
 
@@ -60,6 +68,14 @@ export function EdificioForm(): React.JSX.Element {
                 })}
                 error={!!edificioErrors?.longitud}
                 helperText={edificioErrors?.longitud?.message ?? ""}
+                slotProps={{
+                    htmlInput: {
+                        step: "any",
+                    },
+                    inputLabel: {
+                        shrink: true,
+                    }
+                }}
                 />
             </Grid>
         </Grid>

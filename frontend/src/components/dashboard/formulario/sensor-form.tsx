@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import { useFormContext } from 'react-hook-form';
 import type { SolicitudFormData, SensorData, TipoSensor } from '@/types/formulario';
-import { useAuthUser } from '@/contexts/user-context'; // para obtener el usuario y token
+import { useUserToken } from '@/hooks/use-usertoken';
 
 const TIPOS_SENSOR: TipoSensor[] = ['Temperatura', 'Presión', 'Vibración'];
 
@@ -28,7 +28,7 @@ export function SensorForm(): React.JSX.Element {
     formState: { errors },
   } = useFormContext<SolicitudFormData>();
 
-  const { user } = useAuthUser();
+  const { user } = useUserToken();
   const sensorErrors = errors.datosEspecificos as Partial<Record<keyof SensorData, any>>;
 
   const [activos, setActivos] = React.useState<ActivoResumen[]>([]);

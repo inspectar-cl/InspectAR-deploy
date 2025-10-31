@@ -8,7 +8,7 @@ import { ActivoForm } from './activo-form';
 import { TecnicoForm } from './tecnico-form';
 import { SensorForm } from './sensor-form';
 
-import { useAuthUser } from '@/contexts/user-context';
+import { useUserToken } from '@/hooks/use-usertoken';
 
 type TipoSolicitud = 'Edificio' | 'Activo' | 'Sensor' | 'Técnico';
 
@@ -34,11 +34,11 @@ export function FormularioSolicitud() {
     const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = methods;
 
     const tipoActual = watch("tipoSolicitud"); // Observar el campo de tipo de solicitud
-    const { user: userContext } = useAuthUser();
+    const { user} = useUserToken();
 
     const onSubmit = async (data: SolicitudFormData) => {
         const URL_ENDPOINT = '/api/solicitudes/crear'; // URL del backend
-        const token = userContext?.token;
+        const token = user?.token;
 
         if (!token) {
             console.error("Token no disponible.");

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { TextField, Grid } from '@mui/material';
-import { useFormContext } from 'react-hook-form'; // Importante para la conexión
+import { useFormContext } from 'react-hook-form';
 import type { SolicitudFormData, EdificioData } from '@/types/formulario';
 
 export function EdificioForm(): React.JSX.Element {
@@ -9,7 +9,9 @@ export function EdificioForm(): React.JSX.Element {
         formState: { errors },
     } = useFormContext<SolicitudFormData>();
 
-    const edificioErrors = errors.datosEspecificos as Partial<Record<keyof EdificioData, any>>;
+    const edificioErrors = errors.datosEspecificos as
+    | Partial<Record<keyof EdificioData, { message?: string }>>
+    | undefined;
 
     return (
         <Grid container spacing={2}>
@@ -19,8 +21,8 @@ export function EdificioForm(): React.JSX.Element {
                 fullWidth
                 required
                 {...register("datosEspecificos.nombre" as const)}
-                error={!!edificioErrors?.nombre}
-                helperText={edificioErrors?.nombre?.message ?? ""}
+                error={Boolean(edificioErrors?.nombre)}
+                helperText={edificioErrors?.nombre?.message ?? ''}
                 />
             </Grid>
 
@@ -30,8 +32,8 @@ export function EdificioForm(): React.JSX.Element {
                 fullWidth
                 required
                 {...register("datosEspecificos.direccion" as const)}
-                error={!!edificioErrors?.direccion}
-                helperText={edificioErrors?.direccion?.message ?? ""}
+                error={Boolean(edificioErrors?.direccion)}
+                helperText={edificioErrors?.direccion?.message ?? ''}
                 />
             </Grid>
 
@@ -44,7 +46,7 @@ export function EdificioForm(): React.JSX.Element {
                 {...register("datosEspecificos.latitud" as const, {
                     valueAsNumber: true,
                 })}
-                error={!!edificioErrors?.latitud}
+                error={Boolean(edificioErrors?.latitud)}
                 helperText={edificioErrors?.latitud?.message ?? ""}
                 slotProps={{
                     htmlInput: {
@@ -66,7 +68,7 @@ export function EdificioForm(): React.JSX.Element {
                 {...register("datosEspecificos.longitud" as const, {
                     valueAsNumber: true,
                 })}
-                error={!!edificioErrors?.longitud}
+                error={Boolean(edificioErrors?.longitud)}
                 helperText={edificioErrors?.longitud?.message ?? ""}
                 slotProps={{
                     htmlInput: {

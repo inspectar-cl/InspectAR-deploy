@@ -9,11 +9,9 @@ import {
   Select,
   MenuItem,
   FormHelperText,
-  CircularProgress,
 } from '@mui/material';
 import { useFormContext } from 'react-hook-form';
 import type { SolicitudFormData, SensorData, TipoSensor } from '@/types/formulario';
-import { useAuthUser } from '@/contexts/user-context';
 import { useUserToken } from '@/hooks/use-usertoken';
 
 const TIPOS_SENSOR: TipoSensor[] = ['Temperatura', 'Presión', 'Vibración'];
@@ -29,16 +27,18 @@ export function SensorForm(): React.JSX.Element {
     formState: { errors },
   } = useFormContext<SolicitudFormData>();
 
-  const formErrors = errors.datosEspecificos as Partial<Record<keyof SensorData, any>>;
+  const formErrors = errors.datosEspecificos as
+    | Partial<Record<keyof SensorData, { message?: string }>>
+    | undefined;
 
-  // --- Lógica para cargar Activos ---
+  // Logica para cargar Activos
   const { user: userContext } = useUserToken();
   const [activos, setActivos] = React.useState<ActivoSimple[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [fetchError, setFetchError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    const fetchActivos = async () => {
+    const fetchActivos = async (): Promise<void> => {
       if (!userContext?.token) return;
       setIsLoading(true);
       setFetchError(null);
@@ -48,7 +48,7 @@ export function SensorForm(): React.JSX.Element {
           headers: { 'Authorization': `Bearer ${userContext.token}` },
         });
         if (!response.ok) throw new Error('No se pudieron cargar los activos');
-        const data: ActivoSimple[] = await response.json();
+        const data = (await response.json()) as ActivoSimple[];
         setActivos(data);
       } catch (err) {
         setFetchError(err instanceof Error ? err.message : 'Error desconocido');
@@ -56,7 +56,7 @@ export function SensorForm(): React.JSX.Element {
         setIsLoading(false);
       }
     };
-    fetchActivos();
+    void fetchActivos();
   }, [userContext]);
 
   return (
@@ -67,13 +67,13 @@ export function SensorForm(): React.JSX.Element {
           fullWidth
           required
           {...register('datosEspecificos.nombre' as const)}
-          error={!!formErrors?.nombre}
+          error={Boolean(formErrors?.nombre)}
           helperText={formErrors?.nombre?.message ?? ''}
         />
       </Grid>
       
       <Grid size={{ xs: 12 }}>
-        <FormControl fullWidth required error={!!formErrors?.tipoSnsor}>
+        <FormControl fullWidth required error={Boolean(formErrors?.tipoSnsor)}>
           <InputLabel id="tipo-sensor-label">Tipo de Sensor</InputLabel>
           <Select
             labelId="tipo-sensor-label"
@@ -92,17 +92,25 @@ export function SensorForm(): React.JSX.Element {
       </Grid>
 
       <Grid size={{ xs: 12 }}>
-        <FormControl fullWidth required error={!!formErrors?.activoAsociadoId || !!fetchError}>
+        <FormControl fullWidth required error={Boolean(formErrors?.activoAsociadoId) || Boolean(fetchError)}>
           <InputLabel id="activo-asociado-label">Activo Asociado</InputLabel>
           <Select
             labelId="activo-asociado-label"
             label="Activo Asociado"
             defaultValue=""
             {...register('datosEspecificos.activoAsociadoId' as const, { valueAsNumber: true })}
-            disabled={isLoading || !!fetchError || activos.length === 0}
+            disabled={isLoading || Boolean(fetchError) || activos.length === 0}
           >
-            {isLoading && <MenuItem disabled value=""><em>Cargando activos...</em></MenuItem>}
-            {fetchError && <MenuItem disabled value=""><em>Error al cargar</em></MenuItem>}
+            {Boolean(isLoading) && (
+              <MenuItem disabled value="">
+                <em>Cargando activos...</em>
+              </MenuItem>
+            )}
+            {Boolean(fetchError) && (
+              <MenuItem disabled value="">
+                <em>Error al cargar</em>
+              </MenuItem>
+            )}
             {!isLoading && activos.map((activo) => (
               <MenuItem key={activo.id} value={activo.id}>
                 {activo.nombre} (ID: {activo.id})

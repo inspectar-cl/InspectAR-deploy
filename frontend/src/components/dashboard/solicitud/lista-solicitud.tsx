@@ -12,9 +12,9 @@ import {
     FormControl,
     InputLabel,
     Select,
-    MenuItem,
-    SelectChangeEvent
+    MenuItem
 } from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material';
 import type { SolicitudAPI, TipoSolicitud } from '@/types/form-solicitud';
 import { SolicitudCard } from './solicitud-card';
 
@@ -25,7 +25,7 @@ const TIPOS_FILTRO: (TipoSolicitud | 'Todas')[] = ['Todas', 'Edificio', 'Activo'
 type EstadoSolicitud = 'Pendiente' | 'EnProgreso' | 'Resuelta';
 const TIPOS_ESTADO: ('Todos' | EstadoSolicitud)[] = ['Todos', 'Pendiente', 'EnProgreso', 'Resuelta'];
 
-export function ListaSolicitudes() {
+export function ListaSolicitudes(): React.JSX.Element {
   const { user } = useUserToken();
   
   // --- Estados ---
@@ -39,7 +39,7 @@ export function ListaSolicitudes() {
   React.useEffect(() => {
     if (!user?.token) return;
 
-    const fetchSolicitudes = async () => {
+    const fetchSolicitudes = async (): Promise<void> => {
       setIsLoading(true);
       setError(null);
 
@@ -63,10 +63,12 @@ export function ListaSolicitudes() {
         */
 
       try {
-        console.warn("Usando datos MOCK para simular la API");
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setAllSolicitudes(MOCK_SOLICITUDES);
-            } catch (err) {
+          //console.warn("Usando datos MOCK para simular la API");
+          await new Promise((resolve) => {
+            setTimeout(resolve, 1000);
+          });
+          setAllSolicitudes(MOCK_SOLICITUDES);
+        } catch (err) {
             setError(err instanceof Error ? err.message : 'Ocurrió un error desconocido');
         } finally {
             setIsLoading(false);
@@ -74,7 +76,7 @@ export function ListaSolicitudes() {
 
     };
 
-    fetchSolicitudes();
+     void fetchSolicitudes();
   }, [user]);
 
   // Filtros
@@ -101,16 +103,20 @@ export function ListaSolicitudes() {
   }, [allSolicitudes, filtroActual, filtroEstado]);
 
   // Los tabs de navegacion
-  const handleFiltroChange = (event: React.SyntheticEvent, newValue: TipoSolicitud | 'Todas') => {
+  const handleFiltroChange = (
+    event: React.SyntheticEvent,
+    newValue: TipoSolicitud | 'Todas',
+  ): void => {
     setFiltroActual(newValue);
   };
 
-  const handleEstadoChange = (event: SelectChangeEvent<'Todos' | EstadoSolicitud>) => {
+  const handleEstadoChange = (
+    event: SelectChangeEvent<'Todos' | EstadoSolicitud>,
+  ): void => {
     setFiltroEstado(event.target.value as 'Todos' | EstadoSolicitud);
   };
 
-  // --- 4. Renderizado condicional ---
-  const renderContent = () => {
+  const renderContent = (): React.JSX.Element => {
     if (isLoading) {
       return (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>

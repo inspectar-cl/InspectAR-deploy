@@ -1,5 +1,6 @@
 'use client'; 
 
+import React from 'react';
 import { Stack } from '@mui/material';
 import Typography from '@mui/material/Typography';
 import { FormularioSolicitud } from '@/components/dashboard/formulario/formulario-solicitud'; 

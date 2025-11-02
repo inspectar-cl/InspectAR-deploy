@@ -30,7 +30,9 @@ export function TecnicoForm(): React.JSX.Element {
     formState: { errors },
   } = useFormContext<SolicitudFormData>();
 
-  const tecnicoErrors = errors.datosEspecificos as Partial<Record<keyof TecnicoData, any>>;
+  const tecnicoErrors = errors.datosEspecificos as
+    | Partial<Record<keyof TecnicoData, { message?: string }>>
+    | undefined;
   const { user } = useUserToken();
 
   const [activos, setActivos] = React.useState<ActivoResumen[]>([]);
@@ -40,7 +42,7 @@ export function TecnicoForm(): React.JSX.Element {
   React.useEffect(() => {
     if (!user?.token) return;
 
-    const fetchActivos = async () => {
+    const fetchActivos = async (): Promise<void> => {
       setLoading(true);
       setError(null);
       try {
@@ -49,17 +51,17 @@ export function TecnicoForm(): React.JSX.Element {
         });
         if (!res.ok) throw new Error('Error al obtener los activos del usuario.');
 
-        const data = await res.json();
-        setActivos(data.activos || []);
-      } catch (err: any) {
-        console.error(err);
+        const data = (await res.json()) as { activos?: ActivoResumen[] };
+        setActivos(data.activos ?? []);
+      } catch (err: unknown) {
+        //console.error(err);
         setError('No se pudieron cargar los activos.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchActivos();
+    void fetchActivos();
   }, [user?.token]);
 
   return (
@@ -70,7 +72,7 @@ export function TecnicoForm(): React.JSX.Element {
           fullWidth
           required
           {...register('datosEspecificos.nombre' as const)}
-          error={!!tecnicoErrors?.nombre}
+          error={Boolean(tecnicoErrors?.nombre)}
           helperText={tecnicoErrors?.nombre?.message ?? ''}
         />
       </Grid>
@@ -82,7 +84,7 @@ export function TecnicoForm(): React.JSX.Element {
           required
           type="email"
           {...register('datosEspecificos.correo' as const)}
-          error={!!tecnicoErrors?.correo}
+          error={Boolean(tecnicoErrors?.correo)}
           helperText={tecnicoErrors?.correo?.message ?? ''}
         />
       </Grid>
@@ -94,13 +96,13 @@ export function TecnicoForm(): React.JSX.Element {
           required
           type="tel"
           {...register('datosEspecificos.telefono' as const)}
-          error={!!tecnicoErrors?.telefono}
+          error={Boolean(tecnicoErrors?.telefono)}
           helperText={tecnicoErrors?.telefono?.message ?? ''}
         />
       </Grid>
 
       <Grid size={{ xs: 12 }}>
-        <FormControl fullWidth required error={!!tecnicoErrors?.especialidad}>
+        <FormControl fullWidth required error={Boolean(tecnicoErrors?.especialidad)}>
           <InputLabel id="especialidad-label">Especialidad</InputLabel>
           <Select
             labelId="especialidad-label"
@@ -123,7 +125,7 @@ export function TecnicoForm(): React.JSX.Element {
           control={control}
           defaultValue={[]}
           render={({ field }) => (
-            <FormControl fullWidth error={!!tecnicoErrors?.activosAsociados}>
+            <FormControl fullWidth error={Boolean(tecnicoErrors?.activosAsociados)}>
               <InputLabel id="activos-label">Activos Asociados</InputLabel>
 
               {loading ? (
@@ -138,10 +140,10 @@ export function TecnicoForm(): React.JSX.Element {
                   multiple
                   label="Activos Asociados"
                   value={field.value}
-                  onChange={(e) => field.onChange(e.target.value)}
+                  onChange={(e) => {field.onChange(e.target.value)}}
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {(selected as number[]).map((id) => {
+                      {selected.map((id) => {
                         const activo = activos.find((a) => a.id === id);
                         return (
                           <Chip

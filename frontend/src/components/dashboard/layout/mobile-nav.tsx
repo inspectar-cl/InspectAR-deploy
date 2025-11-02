@@ -69,7 +69,7 @@ export function MobileNav({ open, onClose }: MobileNavProps): React.JSX.Element 
 
     const handleSelect = (edificio: Edificio) => {
         if (user?.selected_edificio?.id !== edificio.id) {
-            changeSelectedEdificio(edificio); 
+            void changeSelectedEdificio(edificio); 
         }
         handleClose();
         onClose?.(); //Esto cierra el menu cuando se selecciona edificio
@@ -172,7 +172,7 @@ export function MobileNav({ open, onClose }: MobileNavProps): React.JSX.Element 
           {edificiosList?.map((edificio) => (
               <MenuItem 
                   key={edificio.id} 
-                  onClick={() => handleSelect(edificio)}
+                  onClick={() => {handleSelect(edificio)}}
                   selected={selectedEdificio?.id === edificio.id}
                   sx={{
                       borderRadius: '6px',

@@ -1,8 +1,8 @@
 'use client'; 
 
+import React from 'react';
 import { Box, IconButton, Tooltip } from "@mui/material";
 import { HelpCircle as HelpIcon } from "lucide-react";
-import React from "react";
 
 interface TourButtonProps {
     onClick: () => void;
@@ -10,11 +10,11 @@ interface TourButtonProps {
     style: string; //Este campo, colocar "none" si no se quiere animacion, si no se recomienda usar "pulse 3s infinite"
 }
 
-export const TourButton: React.FC<TourButtonProps> = ({ onClick, tooltipTitle, style }) => {
+export function TourButton({ onClick, tooltipTitle, style }: TourButtonProps): React.JSX.Element {
     return (
         <Tooltip title={tooltipTitle}>
             <Box sx={{
-                animation: `${style}`, 
+                animation: style,
                 borderRadius: '50%',
                 display: 'flex',
             }}>

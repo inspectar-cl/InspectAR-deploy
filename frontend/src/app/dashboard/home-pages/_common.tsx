@@ -51,7 +51,7 @@ export function useActivosDelUsuario(): {
   const selectedEdificioId = userContext?.selected_edificio?.id;
 
   React.useEffect(() => {
-    const run = async () => {
+    const run = async (): Promise<void> => {
       if (isLoading || !user || !selectedEdificioId) {
         setLoading(false);
         return;
@@ -60,7 +60,6 @@ export function useActivosDelUsuario(): {
       setLoading(true);
       setErr(null);
       try {
-        const edificiosIds = new Set(user.edificio?.map((e) => e.id) ?? []);
         const severity: Record<Estado, number> = { Crítico: 3, Medio: 2, OK: 1, NN: 0 };
 
         const apiUrl = `/obtener-activos-id/${selectedEdificioId}`;
@@ -92,7 +91,7 @@ export function useActivosDelUsuario(): {
 }
 
 /** Sección de tarjetas 2x2 para mostrar activos (reutilizable para todos los roles) */
-export function ActivosGrid({ title }: { title: string }) {
+export function ActivosGrid({ title }: { title: string }): React.JSX.Element {
   const { activos, loading, err } = useActivosDelUsuario();
 
   if (loading) {

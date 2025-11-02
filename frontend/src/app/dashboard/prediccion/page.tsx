@@ -10,10 +10,7 @@ import {
   Select,
   InputLabel,
   FormControl,
-  Grid,
-  Button,
-  IconButton, 
-  Tooltip,
+  Grid
 } from "@mui/material";
 import { Activity as ActivityIcon, AlertTriangle as AlertIcon } from "lucide-react";
 import { type Prediccion } from "@/types/prediccion";
@@ -22,10 +19,9 @@ import MetricCard from "@/components/dashboard/prediccion/MetricCard";
 import PrediccionCards from "@/components/dashboard/prediccion/PrediccionCards";
 import AlertasResumen from "@/components/dashboard/prediccion/AlertasResumen";
 import AnomalyChart from "@/components/dashboard/prediccion/AnomalyChart";
-import { HelpCircle as HelpIcon } from "lucide-react";
 
 import { useDriverTour } from "@/components/tutorial/use-driver-tour";
-import { TourKey } from "@/components/tutorial/tour-config";
+import type { TourKey } from "@/components/tutorial/tour-config";
 import { TourButton } from "@/components/tutorial/tour-button";
 
 // Tipos
@@ -42,9 +38,8 @@ const severityFromLikelihood = (likelihood: number): "Baja" | "Media" | "Alta" =
     return "Baja";
   } else if (likelihood < 70) {
     return "Media";
-  } else {
-    return "Alta";
   }
+  return "Alta";
 };
 
 // Función para obtener descripción según severidad (igual que el API)

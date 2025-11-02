@@ -1,4 +1,4 @@
-import { DriveStep } from 'driver.js';
+import type { DriveStep } from 'driver.js';
 
 //Palabras clave a utilizar para identificar los diferentes tours disponibles en la aplicación.
 export type TourKey = 'home' | 'activo' | 'predicciones-filtros';

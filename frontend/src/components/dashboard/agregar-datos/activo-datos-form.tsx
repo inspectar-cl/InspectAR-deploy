@@ -9,17 +9,14 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  CircularProgress,
   FormHelperText,
 } from '@mui/material';
 import { useFormContext } from 'react-hook-form';
 import type { SolicitudFormData, ActivoData, TipoActivo } from '@/types/formulario';
 import { useUserToken } from '@/hooks/use-usertoken';
 
-// Tipos de activo (puedes moverlos a un archivo de constantes)
 const TIPOS_ACTIVO: TipoActivo[] = ['Ascensor', 'BombaDeAgua', 'PanelElectrico'];
 
-// Tipo simple para la lista de edificios
 interface EdificioSimple {
   id: number;
   nombre: string;
@@ -31,7 +28,9 @@ export function ActivoForm(): React.JSX.Element {
     formState: { errors },
   } = useFormContext<SolicitudFormData>();
 
-  const formErrors = errors.datosEspecificos as Partial<Record<keyof ActivoData, any>>;
+  const formErrors = errors.datosEspecificos as
+    | Partial<Record<keyof ActivoData, { message?: string }>>
+    | undefined;
   
   const { user: userContext } = useUserToken();
   const [edificios, setEdificios] = React.useState<EdificioSimple[]>([]);
@@ -39,7 +38,7 @@ export function ActivoForm(): React.JSX.Element {
   const [fetchError, setFetchError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    const fetchEdificios = async () => {
+    const fetchEdificios = async (): Promise<void> => {
       if (!userContext?.token) return;
       setIsLoading(true);
       setFetchError(null);
@@ -49,7 +48,7 @@ export function ActivoForm(): React.JSX.Element {
           headers: { 'Authorization': `Bearer ${userContext.token}` },
         });
         if (!response.ok) throw new Error('No se pudieron cargar los edificios');
-        const data: EdificioSimple[] = await response.json();
+        const data = (await response.json()) as EdificioSimple[];
         setEdificios(data);
       } catch (err) {
         setFetchError(err instanceof Error ? err.message : 'Error desconocido');
@@ -57,13 +56,13 @@ export function ActivoForm(): React.JSX.Element {
         setIsLoading(false);
       }
     };
-    fetchEdificios();
+    void fetchEdificios();
   }, [userContext]);
 
   return (
     <Grid container spacing={2}>
       <Grid size={{ xs: 12 }}>
-        <FormControl fullWidth required error={!!formErrors?.tipoActivo}>
+        <FormControl fullWidth required>
           <InputLabel id="tipo-activo-label">Tipo de Activo</InputLabel>
           <Select
             labelId="tipo-activo-label"
@@ -82,17 +81,27 @@ export function ActivoForm(): React.JSX.Element {
       </Grid>
       
       <Grid size={{ xs: 12 }}>
-        <FormControl fullWidth required error={!!formErrors?.edificioId || !!fetchError}>
+        <FormControl fullWidth required error={Boolean(formErrors?.edificioId) || Boolean(fetchError)}>
           <InputLabel id="edificio-id-label">Edificio Asociado</InputLabel>
           <Select
             labelId="edificio-id-label"
             label="Edificio Asociado"
             defaultValue=""
             {...register('datosEspecificos.edificioId' as const, { valueAsNumber: true })}
-            disabled={isLoading || !!fetchError || edificios.length === 0}
+            disabled={
+              isLoading || Boolean(fetchError) || edificios.length === 0
+            }
           >
-            {isLoading && <MenuItem disabled value=""><em>Cargando edificios...</em></MenuItem>}
-            {fetchError && <MenuItem disabled value=""><em>Error al cargar</em></MenuItem>}
+            {Boolean(isLoading) && (
+              <MenuItem disabled value="">
+                <em>Cargando edificios...</em>
+              </MenuItem>
+            )}
+            {Boolean(fetchError) && (
+              <MenuItem disabled value="">
+                <em>Error al cargar</em>
+              </MenuItem>
+            )}
             {!isLoading && edificios.map((edificio) => (
               <MenuItem key={edificio.id} value={edificio.id}>
                 {edificio.nombre}
@@ -109,7 +118,7 @@ export function ActivoForm(): React.JSX.Element {
           fullWidth
           required
           {...register('datosEspecificos.ubicacion' as const)}
-          error={!!formErrors?.ubicacion}
+          error={Boolean(formErrors?.ubicacion)}
           helperText={formErrors?.ubicacion?.message ?? ''}
         />
       </Grid>
@@ -129,9 +138,13 @@ export function ActivoForm(): React.JSX.Element {
           label="Imagen"
           type="file"
           fullWidth
-          InputLabelProps={{ shrink: true }}
+          slotProps={{
+            inputLabel: {
+              shrink: true,
+            }
+          }}
           {...register('datosEspecificos.imagen' as const)}
-          error={!!formErrors?.imagen}
+          error={Boolean(formErrors?.imagen)}
           helperText={formErrors?.imagen?.message ?? 'Sube una imagen del activo (opcional)'}
         />
       </Grid>

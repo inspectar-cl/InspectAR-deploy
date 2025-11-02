@@ -12,12 +12,14 @@ export function ActivoForm(): React.JSX.Element {
     formState: { errors },
   } = useFormContext<SolicitudFormData>();
 
-  const activoErrors = errors.datosEspecificos as Partial<Record<keyof ActivoData, any>>;
+  const activoErrors = errors.datosEspecificos as
+      | Partial<Record <keyof ActivoData, { message?: string }>>
+      | undefined
 
   return (
     <Grid container spacing={2}>
       <Grid size={{xs:12}}>
-        <FormControl fullWidth required error={!!activoErrors?.tipoActivo}>
+        <FormControl fullWidth required error={Boolean(activoErrors?.tipoActivo)}>
           <InputLabel id="tipo-activo-label">Tipo de Activo</InputLabel>
           <Select
             labelId="tipo-activo-label"
@@ -39,7 +41,7 @@ export function ActivoForm(): React.JSX.Element {
           required
           type="number"
           {...register('datosEspecificos.edificioId' as const, { valueAsNumber: true })}
-          error={!!activoErrors?.edificioId}
+          error={Boolean(activoErrors?.edificioId)}
           helperText={activoErrors?.edificioId?.message ?? ''}
         />
       </Grid>
@@ -50,7 +52,7 @@ export function ActivoForm(): React.JSX.Element {
           fullWidth
           required
           {...register('datosEspecificos.ubicacion' as const)}
-          error={!!activoErrors?.ubicacion}
+          error={Boolean(activoErrors?.ubicacion)}
           helperText={activoErrors?.ubicacion?.message ?? ''}
         />
       </Grid>
@@ -71,7 +73,7 @@ export function ActivoForm(): React.JSX.Element {
           fullWidth
           inputProps={{ accept: 'image/*' }}
           {...register('datosEspecificos.imagen' as const)}
-          error={!!activoErrors?.imagen}
+          error={Boolean(activoErrors?.imagen)}
           helperText={activoErrors?.imagen?.message ?? ''}
         />
       </Grid>

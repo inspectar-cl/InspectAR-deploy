@@ -8,26 +8,21 @@ import { ActivoForm } from './activo-form';
 import { TecnicoForm } from './tecnico-form';
 import { SensorForm } from './sensor-form';
 
+import type { EdificioData, SolicitudFormData } from '@/types/formulario';
+
 import { useUserToken } from '@/hooks/use-usertoken';
 
 type TipoSolicitud = 'Edificio' | 'Activo' | 'Sensor' | 'Técnico';
 
-interface SolicitudFormData {
-    tipoSolicitud: TipoSolicitud;
-    asunto: string;
-    detalles?: string;
-    datosEspecificos: any;
-}
-
 const TIPOS_SOLICITUD: TipoSolicitud[] = ['Edificio', 'Activo', 'Sensor', 'Técnico'];
 
-export function FormularioSolicitud() {
+export function FormularioSolicitud(): React.JSX.Element {
     const methods = useForm<SolicitudFormData>({
         defaultValues: {
             tipoSolicitud: 'Edificio',
             asunto: '',
             detalles: '',
-            datosEspecificos: {}
+            datosEspecificos: {} as EdificioData
         }
     });
 
@@ -36,12 +31,12 @@ export function FormularioSolicitud() {
     const tipoActual = watch("tipoSolicitud"); // Observar el campo de tipo de solicitud
     const { user} = useUserToken();
 
-    const onSubmit = async (data: SolicitudFormData) => {
+    const onSubmit = async (data: SolicitudFormData): Promise<void> => {
         const URL_ENDPOINT = '/api/solicitudes/crear'; // URL del backend
         const token = user?.token;
 
         if (!token) {
-            console.error("Token no disponible.");
+            //console.error("Token no disponible.");
             return;
         }
 
@@ -63,16 +58,16 @@ export function FormularioSolicitud() {
                 throw new Error('Error en el backend al crear la solicitud.');
             }
 
-            console.log("Solicitud creada con éxito:", payload);
-            alert("Solicitud enviada con éxito.");
+            //console.log("Solicitud creada con éxito:", payload);
+            //alert("Solicitud enviada con éxito.");
             methods.reset();
         } catch (error) {
-            console.error("Fallo al enviar el formulario:", error);
-            alert("Fallo al enviar el formulario. Vea la consola para más detalles.");
+            //console.error("Fallo al enviar el formulario:", error);
+            //alert("Fallo al enviar el formulario. Vea la consola para más detalles.");
         }
     };
 
-    const renderFormularioEspecifico = () => {
+    const renderFormularioEspecifico = (): React.JSX.Element => {
         switch (tipoActual) {
             case 'Edificio':
                 return <EdificioForm />;
@@ -97,7 +92,7 @@ export function FormularioSolicitud() {
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <Stack spacing={3}>
                         
-                        <FormControl fullWidth required error={!!errors.tipoSolicitud}>
+                        <FormControl fullWidth required error={Boolean(errors.tipoSolicitud)}>
                             <InputLabel id="tipo-solicitud-label">Tipo de Solicitud</InputLabel>
                             <Select
                                 labelId="tipo-solicitud-label"
@@ -117,7 +112,7 @@ export function FormularioSolicitud() {
                             fullWidth
                             required
                             {...register("asunto", { required: "El Asunto es obligatorio" })}
-                            error={!!errors.asunto}
+                            error={Boolean(errors.asunto)}
                             helperText={errors.asunto?.message}
                         />
 

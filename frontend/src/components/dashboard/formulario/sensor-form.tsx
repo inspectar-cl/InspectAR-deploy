@@ -29,7 +29,9 @@ export function SensorForm(): React.JSX.Element {
   } = useFormContext<SolicitudFormData>();
 
   const { user } = useUserToken();
-  const sensorErrors = errors.datosEspecificos as Partial<Record<keyof SensorData, any>>;
+  const sensorErrors = errors.datosEspecificos as
+    | Partial<Record<keyof SensorData, { message?: string }>>
+    | undefined;
 
   const [activos, setActivos] = React.useState<ActivoResumen[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -39,7 +41,7 @@ export function SensorForm(): React.JSX.Element {
   React.useEffect(() => {
     if (!user?.token) return;
 
-    const fetchActivos = async () => {
+    const fetchActivos = async (): Promise<void> => {
       setLoading(true);
       setError(null);
       try {
@@ -49,17 +51,17 @@ export function SensorForm(): React.JSX.Element {
 
         if (!res.ok) throw new Error('Error al obtener los activos del usuario.');
 
-        const data = await res.json();
-        setActivos(data.activos || []);
-      } catch (err: any) {
-        console.error(err);
+        const data = (await res.json()) as { activos?: ActivoResumen[] };
+        setActivos(data.activos ?? []);
+      } catch (err: unknown) {
+        //console.error(err);
         setError('No se pudieron cargar los activos.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchActivos();
+    void fetchActivos();
   }, [user?.token]);
 
   return (
@@ -70,13 +72,13 @@ export function SensorForm(): React.JSX.Element {
           fullWidth
           required
           {...register('datosEspecificos.nombre' as const)}
-          error={!!sensorErrors?.nombre}
+          error={Boolean(sensorErrors?.nombre)}
           helperText={sensorErrors?.nombre?.message ?? ''}
         />
       </Grid>
 
       <Grid size={{xs:12}}>
-        <FormControl fullWidth required error={!!sensorErrors?.tipoSnsor}>
+        <FormControl fullWidth required error={Boolean(sensorErrors?.tipoSnsor)}>
           <InputLabel id="tipo-sensor-label">Tipo de Sensor</InputLabel>
           <Select
             labelId="tipo-sensor-label"
@@ -94,7 +96,7 @@ export function SensorForm(): React.JSX.Element {
       </Grid>
 
       <Grid size={{xs:12}}>
-        <FormControl fullWidth required error={!!sensorErrors?.activoAsociadoId}>
+        <FormControl fullWidth required error={Boolean(sensorErrors?.activoAsociadoId)}>
           <InputLabel id="activo-asociado-label">Activo Asociado</InputLabel>
           {loading ? (
             <CircularProgress size={24} sx={{ mt: 2, mb: 1 }} />

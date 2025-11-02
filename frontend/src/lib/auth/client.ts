@@ -222,7 +222,7 @@ class AuthClient {
         return { error: 'Payload de sesión inválido.' };
       }
       
-      const currentPayload = parsed as StoredPayload;
+      const currentPayload = parsed;
 
       // Verifica que el newEdificio sea parte del array 'edificio'
       const isAllowed = currentPayload.edificio?.some(e => e.id === newEdificio.id);
@@ -236,7 +236,6 @@ class AuthClient {
 
       return {};
     } catch (error) {
-      console.error('Error al actualizar el edificio seleccionado:', error);
       return { error: 'Error al procesar la actualización del edificio.' };
     }
   }

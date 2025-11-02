@@ -8,7 +8,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  CircularProgress,
   FormHelperText,
   Chip,
   Box,
@@ -30,7 +29,9 @@ export function TecnicoForm(): React.JSX.Element {
     formState: { errors },
   } = useFormContext<SolicitudFormData>();
 
-  const formErrors = errors.datosEspecificos as Partial<Record<keyof TecnicoData, any>>;
+  const formErrors = errors.datosEspecificos as
+    | Partial<Record<keyof TecnicoData, { message?: string }>>
+    | undefined;
 
   const { user: userContext } = useUserToken();
   const [activos, setActivos] = React.useState<ActivoSimple[]>([]);
@@ -38,7 +39,7 @@ export function TecnicoForm(): React.JSX.Element {
   const [fetchError, setFetchError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    const fetchActivos = async () => {
+    const fetchActivos = async (): Promise<void> => {
       if (!userContext?.token) return;
       setIsLoading(true);
       setFetchError(null);
@@ -48,7 +49,7 @@ export function TecnicoForm(): React.JSX.Element {
           headers: { 'Authorization': `Bearer ${userContext.token}` },
         });
         if (!response.ok) throw new Error('No se pudieron cargar los activos');
-        const data: ActivoSimple[] = await response.json();
+        const data = (await response.json()) as ActivoSimple[];
         setActivos(data);
       } catch (err) {
         setFetchError(err instanceof Error ? err.message : 'Error desconocido');
@@ -56,7 +57,7 @@ export function TecnicoForm(): React.JSX.Element {
         setIsLoading(false);
       }
     };
-    fetchActivos();
+    void fetchActivos();
   }, [userContext]);
 
   return (
@@ -67,13 +68,13 @@ export function TecnicoForm(): React.JSX.Element {
           fullWidth
           required
           {...register('datosEspecificos.nombre' as const)}
-          error={!!formErrors?.nombre}
+          error={Boolean(formErrors?.nombre)}
           helperText={formErrors?.nombre?.message ?? ''}
         />
       </Grid>
 
       <Grid size={{ xs: 12 }}>
-        <FormControl fullWidth required error={!!formErrors?.especialidad}>
+        <FormControl fullWidth required error={Boolean(formErrors?.especialidad)}>
           <InputLabel id="especialidad-label">Especialidad</InputLabel>
           <Select
             labelId="especialidad-label"
@@ -98,7 +99,7 @@ export function TecnicoForm(): React.JSX.Element {
           fullWidth
           required
           {...register('datosEspecificos.correo' as const)}
-          error={!!formErrors?.correo}
+          error={Boolean(formErrors?.correo)}
           helperText={formErrors?.correo?.message ?? ''}
         />
       </Grid>
@@ -109,21 +110,21 @@ export function TecnicoForm(): React.JSX.Element {
           fullWidth
           required
           {...register('datosEspecificos.telefono' as const)}
-          error={!!formErrors?.telefono}
+          error={Boolean(formErrors?.telefono)}
           helperText={formErrors?.telefono?.message ?? ''}
         />
       </Grid>
 
       <Grid size={{ xs: 12 }}>
-        <FormControl fullWidth error={!!formErrors?.activosAsociados || !!fetchError}>
+        <FormControl fullWidth error={Boolean(formErrors?.activosAsociados) || Boolean(fetchError)}>
           <InputLabel id="activos-asociados-label">Activos Asociados</InputLabel>
           <Select
             labelId="activos-asociados-label"
             label="Activos Asociados"
-            multiple // <-- Permite selección múltiple
-            defaultValue={[]} // <-- Importante para 'multiple'
+            multiple
+            defaultValue={[]}
             {...register('datosEspecificos.activosAsociados' as const)}
-            disabled={isLoading || !!fetchError || activos.length === 0}
+            disabled={isLoading || Boolean(fetchError) || activos.length === 0}
             // Renderiza Chips para las selecciones
             renderValue={(selected) => (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
@@ -134,8 +135,16 @@ export function TecnicoForm(): React.JSX.Element {
               </Box>
             )}
           >
-            {isLoading && <MenuItem disabled value=""><em>Cargando activos...</em></MenuItem>}
-            {fetchError && <MenuItem disabled value=""><em>Error al cargar</em></MenuItem>}
+            {Boolean(isLoading) && (
+              <MenuItem disabled value="">
+                <em>Cargando activos...</em>
+              </MenuItem>
+            )}
+            {Boolean(fetchError) && (
+              <MenuItem disabled value="">
+                <em>Error al cargar</em>
+              </MenuItem>
+            )}
             {!isLoading && activos.map((activo) => (
               <MenuItem key={activo.id} value={activo.id}>
                 {activo.nombre}

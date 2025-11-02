@@ -1,14 +1,14 @@
 'use client'
 
 import * as React from 'react';
-import { Card, CardContent, CardHeader, Typography, Chip, Divider, Box, CardActions, Button} from '@mui/material';
+import { Card, CardContent, CardHeader, Typography, Chip, Divider, Box, CardActions, Button, type ChipProps } from '@mui/material';
 import type { SolicitudAPI } from '@/types/form-solicitud';
 import { DetalleDatosEspecificos } from './detalles-datos';
 import { TIPO_TO_SLUG } from '@/utils/solicitud-utils';
 import { useRouter } from 'next/navigation';
 
 // Helper para dar color a los chips (opcional)
-const getChipColor = (tipo: SolicitudAPI['tipoSolicitud']) => {
+const getChipColor = (tipo: SolicitudAPI['tipoSolicitud']): ChipProps['color'] => {
   switch (tipo) {
     case 'Edificio': return 'primary';
     case 'Activo': return 'secondary';
@@ -18,14 +18,13 @@ const getChipColor = (tipo: SolicitudAPI['tipoSolicitud']) => {
   }
 };
 
-export function SolicitudCard({ solicitud }: { solicitud: SolicitudAPI }) {
-  const { id, asunto, tipoSolicitud, detalles, datosEspecificos, fechaCreacion, estado } = solicitud;
+export function SolicitudCard({ solicitud }: { solicitud: SolicitudAPI }): React.JSX.Element {
+  const { asunto, tipoSolicitud, detalles, datosEspecificos, fechaCreacion, estado } = solicitud;
   const router = useRouter();
 
-  const handleResolver = () => {
+  const handleResolver = (): void => {
     const slug = TIPO_TO_SLUG[solicitud.tipoSolicitud];
     if (!slug) {
-      console.error("Tipo de solicitud no mapeado:", solicitud.tipoSolicitud);
       return;
     }
 
@@ -34,7 +33,6 @@ export function SolicitudCard({ solicitud }: { solicitud: SolicitudAPI }) {
     const dataString = JSON.stringify(solicitud);
     const encodedData = encodeURIComponent(dataString);
 
-    // 4. Construir la URL final (ruta dinámica + query param)
     const fullUrl = `${targetPath}?data=${encodedData}`;
     router.push(fullUrl);
   };
@@ -59,11 +57,11 @@ export function SolicitudCard({ solicitud }: { solicitud: SolicitudAPI }) {
         }
       />
       <CardContent sx={{ flexGrow: 1 }}>
-        {detalles && (
-          <Typography variant="body2" color="text.secondary" paragraph>
+        {detalles ? (
+          <Typography variant="body2" color="text.secondary" component="p">
             {detalles}
           </Typography>
-        )}
+        ): null}
         
         <Divider sx={{ my: 2 }} />
 

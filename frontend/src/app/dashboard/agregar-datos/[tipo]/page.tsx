@@ -1,10 +1,9 @@
-// app/gestion/crear/[tipo]/page.tsx
 'use client';
 
 import * as React from 'react';
 import { useSearchParams, useRouter, useParams } from 'next/navigation';
 import { FormProvider, useForm } from 'react-hook-form';
-import type { SolicitudFormData, TipoSolicitud } from '@/types/formulario';
+import type { SolicitudFormData } from '@/types/formulario';
 import { 
     Container, Paper, Typography, Box, 
     CircularProgress, Alert, Tabs, Tab, Button
@@ -16,12 +15,12 @@ import { ActivoForm } from '@/components/dashboard/agregar-datos/activo-datos-fo
 import { SensorForm } from '@/components/dashboard/agregar-datos/sensor-datos-form';
 import { TecnicoForm } from '@/components/dashboard/agregar-datos/tecnico-datos-form';
 
-function GestionFormulario() {
+function GestionFormulario(): React.JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const params = useParams();
-  const tipoSlug = params.tipo as string; // 'params.tipo' viene de [tipo]
+  const tipoSlug = params.tipo as string;
 
   const activeTabTipo = SLUG_TO_TIPO[tipoSlug];
   const [parseError, setParseError] = React.useState<string | null>(null);
@@ -31,7 +30,7 @@ function GestionFormulario() {
     if (dataParam && activeTabTipo) {
       try {
         const decodedString = decodeURIComponent(dataParam);
-        const solicitud = JSON.parse(decodedString);
+        const solicitud = JSON.parse(decodedString) as SolicitudFormData;
         
         if (solicitud.tipoSolicitud !== activeTabTipo) {
           throw new Error('Conflicto de datos y URL.');
@@ -44,7 +43,7 @@ function GestionFormulario() {
           datosEspecificos: solicitud.datosEspecificos,
         } as SolicitudFormData;
       } catch (e) {
-        console.error("Error al parsear datos:", e);
+        //console.error("Error al parsear datos:", e);
         setParseError("No se pudieron cargar los datos de la solicitud.");
         return { tipoSolicitud: activeTabTipo } as SolicitudFormData;
       }
@@ -54,7 +53,7 @@ function GestionFormulario() {
   }, [searchParams, activeTabTipo]);
 
   const methods = useForm<SolicitudFormData>({
-    defaultValues: defaultValues,
+    defaultValues,
   });
 
   //Resetear el formulario si el defaultValues (derivado de la URL) cambia
@@ -63,14 +62,16 @@ function GestionFormulario() {
   }, [defaultValues, methods]);
 
 
-  const handleTabChange = (event: React.SyntheticEvent, newSlug: string) => {
+  const handleTabChange = (event: React.SyntheticEvent, newSlug: string): void => {
     router.push(`/dashboard/agregar-datos/${newSlug}`);
   };
 
-  const onSubmit = async (data: SolicitudFormData) => {
+  const onSubmit = async (data: SolicitudFormData): Promise<void> => {
     console.log(`Enviando datos para: ${data.tipoSolicitud}`, data);
+
     // Aqui debe estar la logica de la API para guardar la data
-    alert(`Simulación: ${data.tipoSolicitud} creado.`);
+
+    //alert(`Simulación: ${data.tipoSolicitud} creado.`);
     // router.push('/dashboard/solicitudes'); //Agregar?
   };
 
@@ -115,7 +116,11 @@ function GestionFormulario() {
   );
 }
 
-export default function PaginaGestionCrear({ params }: { params: { tipo: string } }) {
+export default function PaginaGestionCrear({
+  params: _params,
+}: {
+  params: { tipo: string };
+}): React.JSX.Element {
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Paper sx={{ p: 4 }}>

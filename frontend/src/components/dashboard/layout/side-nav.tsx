@@ -62,7 +62,7 @@ export function SideNav(): React.JSX.Element {
 
   const handleSelect = (edificio: Edificio) => {
       if (user?.selected_edificio?.id !== edificio.id) {
-          changeSelectedEdificio(edificio); 
+          void changeSelectedEdificio(edificio); 
       }
       handleClose();
   }
@@ -175,7 +175,7 @@ export function SideNav(): React.JSX.Element {
           {edificiosList?.map((edificio) => (
               <MenuItem 
                   key={edificio.id} 
-                  onClick={() => handleSelect(edificio)}
+                  onClick={() => {handleSelect(edificio)}}
                   selected={selectedEdificio?.id === edificio.id}
                   sx={{
                       borderRadius: '6px',

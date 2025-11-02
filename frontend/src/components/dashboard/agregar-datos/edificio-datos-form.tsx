@@ -14,7 +14,9 @@ export function EdificioDataForm(): React.JSX.Element {
   } = useFormContext<SolicitudFormData>();
 
   // Helper para acceder a los errores de este sub-formulario
-  const formErrors = errors.datosEspecificos as Partial<Record<keyof EdificioData, any>>;
+  const formErrors = errors.datosEspecificos as
+    | Partial<Record<keyof EdificioData, { message?: string }>>
+    | undefined;
 
   return (
     <Grid container spacing={2}>
@@ -24,7 +26,7 @@ export function EdificioDataForm(): React.JSX.Element {
           fullWidth
           required
           {...register('datosEspecificos.nombre' as const)}
-          error={!!formErrors?.nombre}
+          error={Boolean(formErrors?.nombre)}
           helperText={formErrors?.nombre?.message ?? ''}
         />
       </Grid>
@@ -34,7 +36,7 @@ export function EdificioDataForm(): React.JSX.Element {
           fullWidth
           required
           {...register('datosEspecificos.direccion' as const)}
-          error={!!formErrors?.direccion}
+          error={Boolean(formErrors?.direccion)}
           helperText={formErrors?.direccion?.message ?? ''}
         />
       </Grid>
@@ -53,7 +55,7 @@ export function EdificioDataForm(): React.JSX.Element {
             }
           }}
           {...register('datosEspecificos.latitud' as const, { valueAsNumber: true })}
-          error={!!formErrors?.latitud}
+          error={Boolean(formErrors?.latitud)}
           helperText={formErrors?.latitud?.message ?? ''}
         />
       </Grid>
@@ -72,7 +74,7 @@ export function EdificioDataForm(): React.JSX.Element {
             }
           }}
           {...register('datosEspecificos.longitud' as const, { valueAsNumber: true })}
-          error={!!formErrors?.longitud}
+          error={Boolean(formErrors?.longitud)}
           helperText={formErrors?.longitud?.message ?? ''}
         />
       </Grid>

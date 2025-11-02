@@ -105,6 +105,7 @@ async def root():
         "service": "IA Service Python",
         "version": "1.0.0",
         "status": "running",
+        "model_trained": model_manager.is_trained,  # ✅ NUEVO: Incluir estado
         "endpoints": {
             "health": "/health",
             "status": "/status",

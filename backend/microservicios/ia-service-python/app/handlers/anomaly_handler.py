@@ -244,3 +244,25 @@ async def health_check():
         "service": "ia-service-python",
         "version": "1.0.0"
     }
+
+
+@router.get("/training/jobs")
+def get_scheduled_jobs():
+    """Muestra los jobs programados en el scheduler"""
+    from app.services.training_service import training_service
+    
+    if not training_service.scheduler:
+        return {"message": "Scheduler no iniciado"}
+    
+    jobs = []
+    for job in training_service.scheduler.get_jobs():
+        jobs.append({
+            "id": job.id,
+            "next_run": str(job.next_run_time) if job.next_run_time else "N/A",
+            "trigger": str(job.trigger)
+        })
+    
+    return {
+        "scheduler_running": training_service.scheduler.running,
+        "jobs": jobs
+    }

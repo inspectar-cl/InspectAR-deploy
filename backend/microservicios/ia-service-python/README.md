@@ -25,6 +25,7 @@ Este servicio orquesta la detección de anomalías combinando datos de sensores 
 │    · Transforma datos            │
 │    · Predicción con modelo local │
 │  - training_service.py           │
+│    · Entrenamiento inicial       │
 │    · Entrenamiento programado    │
 └──────┬──────────────────────────┘
        │
@@ -51,8 +52,11 @@ Este servicio orquesta la detección de anomalías combinando datos de sensores 
 
 - ✅ API REST con FastAPI
 - ✅ **Modelo de ML integrado** (SGDRegressor con StandardScaler)
+- ✅ **Entrenamiento inicial automático** (si no existe modelo)
+- ✅ **Detección automática de modelo no entrenado**
 - ✅ Detección de anomalías sin dependencias externas
 - ✅ Entrenamiento automático programable (APScheduler)
+- ✅ **Métricas avanzadas de evaluación** (MSE, MAE, RMSE, R², CV)
 - ✅ Integración con IOT Service (ParserService)
 - ✅ Almacenamiento en PostgreSQL
 - ✅ Paginación y filtros
@@ -100,7 +104,8 @@ ia-service-python/
 │
 ├── requirements.txt
 ├── Dockerfile
-└── README.md
+├── README.md
+└── TRAINING.md              # Documentación del sistema de entrenamiento
 ```
 
 ## 🔧 Endpoints
@@ -295,6 +300,7 @@ Este servicio utiliza un modelo de **regresión incremental** para detectar anom
 1. **Entrenamiento:**
    - El modelo aprende de datos históricos de sensores
    - Se entrena de forma incremental con `warm_start=True`
+   - **Entrenamiento inicial automático** si no existe modelo previo
    - Entrenamiento programado cada `training_interval_minutes` (configurable)
 
 2. **Predicción:**
@@ -311,6 +317,120 @@ Este servicio utiliza un modelo de **regresión incremental** para detectar anom
      - `0.3 - 0.6` → media
      - `> 0.6` → alta
 
+### Métricas de Evaluación
+
+Durante el entrenamiento, se calculan las siguientes métricas:
+
+#### Métricas de Error
+
+| Métrica | Descripción | Interpretación |
+|---------|-------------|----------------|
+| **MSE** | Mean Squared Error | Promedio de errores al cuadrado (penaliza grandes errores) |
+| **MAE** | Mean Absolute Error | Promedio de errores absolutos (fácil de interpretar) |
+| **RMSE** | Root Mean Squared Error | Raíz del MSE (misma escala que los datos) |
+| **R²** | Coeficiente de Determinación | 0-1, qué tan bien el modelo explica la varianza |
+
+#### Coeficientes de Variación (CV)
+
+El **CV** mide la variabilidad relativa, independiente de la escala de los datos:
+
+```
+CV = (Desviación Estándar / Media) × 100%
+```
+
+| Métrica CV | Descripción | Interpretación |
+|-----------|-------------|----------------|
+| **CV Errores** | Variabilidad de los errores de predicción | < 10% excelente, 10-30% bueno, > 30% revisar |
+| **CV Predicciones** | Dispersión de las predicciones del modelo | Debe ser similar al CV de datos reales |
+| **CV Real** | Variabilidad natural de los datos | Referencia para comparar con predicciones |
+
+**Ejemplo de interpretación:**
+```json
+{
+  "mse": 0.0234,
+  "mae": 0.1123,
+  "rmse": 0.1529,
+  "r2_score": 0.8567,
+  "cv_errors_percent": 8.5,    // ✅ Excelente: errores muy consistentes
+  "cv_predictions_percent": 12.3,  // ✅ Bueno: similar a CV real
+  "cv_actual_percent": 11.8        // Referencia: variabilidad natural
+}
+```
+
+**Conclusión:** Modelo con errores consistentes (8.5%) y predicciones que capturan bien la variabilidad natural de los datos (12.3% ≈ 11.8%).
+
+### Ciclo de Vida del Modelo
+
+#### Al Iniciar el Servicio
+
+```
+┌──────────────────────────────┐
+│  Servicio inicia             │
+└──────────────┬───────────────┘
+               │
+       ┌───────▼────────┐
+       │ load_model()   │
+       └───────┬────────┘
+               │
+        ┌──────▼──────────┐
+        │ ¿Archivos .pkl? │
+        └──────┬──────────┘
+               │
+        ┌──────▼────┬──────┐
+        │ SÍ        │ NO   │
+        │           │      │
+     ┌──▼─┐      ┌──▼──┐
+     │Load│      │Init │
+     │.pkl│      │empty│
+     │✅  │      │❌   │
+     └──┬─┘      └──┬──┘
+        │           │
+     is_trained  is_trained
+       = True    = False
+        │           │
+        └─────┬─────┘
+              │
+       ┌──────▼─────────┐
+       │start_scheduler()│
+       └──────┬──────────┘
+              │
+       ┌──────▼─────────────┐
+       │if not is_trained:  │
+       └──────┬──────────────┘
+              │
+       ┌──────▼──────┐
+       │✅ Entrenar  │
+       │inmediatamente│
+       └─────────────┘
+```
+
+**Escenarios:**
+
+1. **Con modelo existente** (`/app/models/*.pkl`):
+   - ✅ Carga modelo inmediatamente
+   - ✅ `is_trained = True`
+   - ✅ Servicio funcional en segundos
+   - ⏰ Primer reentrenamiento en 60 minutos
+
+2. **Sin modelo previo** (primera vez):
+   - 🆕 Crea modelo vacío
+   - ❌ `is_trained = False`
+   - 🎓 Ejecuta entrenamiento inicial automáticamente (~1-2 min)
+   - ✅ `is_trained = True` después del entrenamiento
+   - ⏰ Siguiente reentrenamiento en 60 minutos
+
+#### Entrenamiento Periódico
+
+```
+Minuto 0:   🚀 Inicio (sin modelo)
+Minuto 0:   🎓 Entrenamiento inicial automático
+Minuto 2:   ✅ Listo (modelo entrenado)
+Minuto 60:  🔄 Reentrenamiento #1
+Minuto 120: 🔄 Reentrenamiento #2
+Minuto 180: 🔄 Reentrenamiento #3
+...
+```
+
 ### Persistencia
 
 Los modelos se guardan en el volumen Docker:
@@ -321,6 +441,8 @@ Los modelos se guardan en el volumen Docker:
 ├── scaler_X.pkl         # Scaler para features
 └── scaler_Y.pkl         # Scaler para target
 ```
+
+**⚠️ Importante:** Si el volumen se elimina, el servicio **automáticamente** entrena un nuevo modelo al iniciar.
 
 ### Configuración de Entrenamiento
 
@@ -380,8 +502,11 @@ El servicio utiliza logging estructurado:
 
 - ✅ **Sin dependencias externas** de ml_engine_python
 - ✅ **Predicción local** con SGDRegressor
-- ✅ **Entrenamiento automático** programado
+- ✅ **Entrenamiento inicial automático**
+- ✅ **Entrenamiento periódico programado**
 - ✅ **Persistencia** en volumen Docker
+- ✅ **Auto-recuperación** (reentrenamiento si no hay modelo)
+- ✅ **Métricas avanzadas** (MSE, MAE, RMSE, R², CV)
 
 **ia-service (Go)** solo **consulta** anomalías ya almacenadas:
 
@@ -391,6 +516,8 @@ El servicio utiliza logging estructurado:
 ## 🤝 Contribución
 
 Este microservicio sigue los estándares del proyecto InspectAR.
+
+Para más información sobre el sistema de entrenamiento, ver [TRAINING.md](TRAINING.md).
 
 ## 📄 Licencia
 

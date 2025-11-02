@@ -8,6 +8,7 @@ import httpx
 import logging
 from datetime import datetime
 from collections import defaultdict
+import numpy as np
 
 from app.config import config
 from app.models.anomaly import (

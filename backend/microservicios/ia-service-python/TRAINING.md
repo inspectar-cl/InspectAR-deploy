@@ -2,7 +2,14 @@
 
 ## 📋 Descripción
 
-El microservicio `ia-service-python` incluye un sistema de entrenamiento automático del modelo de Machine Learning que se ejecuta periódicamente.
+El microservicio `ia-service-python` incluye un sistema de entrenamiento automático del modelo de Machine Learning que:
+
+- ✅ **Detecta modelos no entrenados** mediante flag `is_trained`
+- ✅ **Ejecuta entrenamiento inicial** automáticamente al inicio si no existe modelo
+- ✅ **Reentrena periódicamente** según configuración (default: 60 minutos)
+- ✅ **Obtiene datos reales** del IOT Service para entrenamiento
+- ✅ **Calcula métricas avanzadas** incluyendo Coeficientes de Variación (CV)
+- ✅ **Persiste modelos** en volumen Docker
 
 ## ⚙️ Configuración
 
@@ -35,18 +42,73 @@ volumes:
 
 ## 🔄 Funcionamiento
 
+### Inicio del Servicio
+
+```
+┌─────────────────────────┐
+│ Servicio inicia         │
+└──────────┬──────────────┘
+           │
+    ┌──────▼──────┐
+    │load_model() │
+    └──────┬──────┘
+           │
+    ┌──────▼──────────────┐
+    │¿Archivos .pkl       │
+    │existen en disco?    │
+    └──────┬──────────────┘
+           │
+    ┌──────▼───────┬──────┐
+    │ SÍ           │ NO   │
+    │              │      │
+┌───▼───┐      ┌───▼────┐
+│Load   │      │Create  │
+│files  │      │empty   │
+│       │      │model   │
+│✅     │      │        │
+│trained│      │❌ not  │
+│= True │      │trained │
+└───┬───┘      └───┬────┘
+    │              │
+    └───────┬──────┘
+            │
+    ┌───────▼──────────┐
+    │start_scheduler() │
+    └───────┬──────────┘
+            │
+    ┌───────▼──────────────┐
+    │if not is_trained:    │ ← Verificación clave
+    └───────┬──────────────┘
+            │
+    ┌───────▼──────────┐
+    │✅ Programar      │
+    │entrenamiento     │
+    │INMEDIATO         │
+    └──────────────────┘
+```
+
 ### Scheduler Automático
 
-1. Al iniciar el servicio, se carga el modelo existente (si existe)
-2. Se inicia un scheduler (APScheduler) que ejecuta el entrenamiento cada 60 minutos
-3. Durante el entrenamiento:
+1. **Al iniciar:**
+   - Se verifica el flag `is_trained` del `ModelManager`
+   - Si `is_trained = False`: Se programa entrenamiento inmediato
+   - Si `is_trained = True`: Se espera el primer ciclo (60 min)
+
+2. **Durante el entrenamiento:**
    - Se registra en logs el inicio del proceso
-   - **TODO**: Se recopilan datos de la base de datos
-   - **TODO**: Se preprocesan y transforman los datos
-   - **TODO**: Se entrena el modelo con `partial_fit()`
-   - **TODO**: Se evalúan métricas de performance
+   - Se obtienen datos del IOT Service (activo ID 2, 500 registros)
+   - Se preprocesan y transforman los datos
+   - Se entrena el modelo con `partial_fit()` (entrenamiento incremental)
+   - Se evalúan métricas de performance (MSE, MAE, RMSE, R², CV)
    - Se guarda el modelo en disco
-4. El modelo se guarda también al cerrar el servicio
+   - Se marca `is_trained = True`
+
+3. **Ciclo periódico:**
+   - El modelo se reentrena cada 60 minutos (configurable)
+   - Usa `warm_start=True` para aprendizaje incremental
+
+4. **Al cerrar:**
+   - El modelo se guarda automáticamente
 
 ### Logs de Entrenamiento
 
@@ -119,12 +181,93 @@ Obtiene información sobre el modelo actual:
 {
   "model_loaded": true,
   "model_exists_on_disk": true,
+  "is_trained": true,
   "model_path": "/app/models/anomaly_model.pkl",
   "model_type": "SGDRegressor",
   "model_size_mb": 0.15,
-  "last_modified": 1729987200.0
+  "last_modified": 1730483400.0
 }
 ```
+
+## 📊 Métricas de Evaluación
+
+### Métricas Básicas
+
+| Métrica | Fórmula | Descripción | Rango |
+|---------|---------|-------------|-------|
+| **MSE** | `mean((y_pred - y_true)²)` | Error cuadrático medio | 0 a ∞ (menor es mejor) |
+| **MAE** | `mean(|y_pred - y_true|)` | Error absoluto medio | 0 a ∞ (menor es mejor) |
+| **RMSE** | `sqrt(MSE)` | Raíz del error cuadrático medio | 0 a ∞ (menor es mejor) |
+| **R²** | `1 - (SS_res / SS_tot)` | Coeficiente de determinación | -∞ a 1 (1 es perfecto) |
+
+### Coeficientes de Variación (CV)
+
+El **Coeficiente de Variación** mide la variabilidad relativa, independiente de la escala:
+
+```
+CV = (Desviación Estándar / Media) × 100%
+```
+
+#### CV de Errores (`cv_errors_percent`)
+
+Mide la **consistencia de los errores** del modelo.
+
+```python
+cv_errors = (std(errors) / mean(|errors|)) × 100
+```
+
+**Interpretación:**
+- **< 10%**: ✅ Excelente - Errores muy consistentes
+- **10-30%**: ⚠️ Bueno - Errores moderadamente variables
+- **> 30%**: ❌ Revisar - Errores muy inconsistentes
+
+#### CV de Predicciones (`cv_predictions_percent`)
+
+Mide la **dispersión de las predicciones** del modelo.
+
+```python
+cv_predictions = (std(y_pred) / mean(y_pred)) × 100
+```
+
+**Interpretación:**
+- Debe ser **similar al CV de valores reales**
+- Si es mucho menor → Modelo muy conservador
+- Si es mucho mayor → Modelo sobre-predice varianza
+
+#### CV de Valores Reales (`cv_actual_percent`)
+
+Mide la **variabilidad natural** de los datos.
+
+```python
+cv_actual = (std(y_true) / mean(y_true)) × 100
+```
+
+**Interpretación:**
+- Sirve como **referencia** para comparar con el CV de predicciones
+- Alta variabilidad natural (>20%) puede dificultar el entrenamiento
+
+### Ejemplo de Análisis
+
+```json
+{
+  "mse": 0.0234,
+  "mae": 0.1123,
+  "rmse": 0.1529,
+  "r2_score": 0.8567,
+  "cv_errors_percent": 8.5,
+  "cv_predictions_percent": 12.3,
+  "cv_actual_percent": 11.8
+}
+```
+
+**Análisis:**
+
+1. **R² = 0.8567**: Modelo explica ~86% de la varianza → ✅ Muy bueno
+2. **RMSE = 0.1529**: Error promedio de 0.15 unidades → Depende de la escala
+3. **CV Errores = 8.5%**: Errores muy consistentes → ✅ Excelente
+4. **CV Predicciones = 12.3% ≈ CV Real = 11.8%**: Modelo captura bien la variabilidad natural → ✅ Excelente
+
+**Conclusión:** Modelo con buen ajuste, errores consistentes y predicciones realistas.
 
 ## 🏗️ Arquitectura
 

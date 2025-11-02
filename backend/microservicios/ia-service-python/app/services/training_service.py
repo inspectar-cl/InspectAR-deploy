@@ -123,11 +123,36 @@ class TrainingService:
             pred_scaled = model_manager.model.predict(X_scaled)
             pred = model_manager.scaler_Y.inverse_transform(pred_scaled.reshape(-1, 1)).ravel()
             
-            mse = float(np.mean((pred - y) ** 2))
-            mae = float(np.mean(np.abs(pred - y)))
-            r2 = float(1 - np.sum((y - pred) ** 2) / np.sum((y - np.mean(y)) ** 2))
+            errors = pred - y
+            abs_errors = np.abs(errors)
             
-            logger.info(f"   ✓ MSE: {mse:.4f}, MAE: {mae:.4f}, R²: {r2:.4f}")
+            # Métricas básicas
+            mse = float(np.mean(errors ** 2))
+            mae = float(np.mean(abs_errors))
+            rmse = float(np.sqrt(mse))
+            r2 = float(1 - np.sum(errors ** 2) / np.sum((y - np.mean(y)) ** 2))
+            
+            # ✅ NUEVO: Threshold adaptativo (μ + 3σ estilo ml_engine)
+            threshold_mean = float(np.mean(abs_errors))
+            threshold_std = float(np.std(abs_errors))
+            threshold_adaptive = threshold_mean + 3.0 * threshold_std
+            
+            # ✅ NUEVO: Error de referencia para normalización (percentil 95)
+            err_ref = float(np.percentile(abs_errors, 95))
+            
+            # Coeficientes de variación
+            cv_errors = float(np.std(errors) / threshold_mean * 100) if threshold_mean > 0 else 0.0
+            cv_pred = float(np.std(pred) / np.mean(pred) * 100) if np.mean(pred) > 0 else 0.0
+            cv_actual = float(np.std(y) / np.mean(y) * 100) if np.mean(y) > 0 else 0.0
+            
+            logger.info(f"   ✓ MSE: {mse:.4f}, MAE: {mae:.4f}, RMSE: {rmse:.4f}, R²: {r2:.4f}")
+            logger.info(f"   ✓ CV Errores: {cv_errors:.2f}%, CV Pred: {cv_pred:.2f}%, CV Real: {cv_actual:.2f}%")
+            logger.info(f"   ✓ Threshold Adaptativo: {threshold_adaptive:.4f} (μ={threshold_mean:.4f}, σ={threshold_std:.4f})")
+            logger.info(f"   ✓ Error de Referencia (p95): {err_ref:.4f}")
+            
+            # ✅ NUEVO: Guardar threshold y err_ref en el modelo
+            model_manager.threshold = threshold_adaptive
+            model_manager.err_ref = err_ref
             
             # Fase 5: Guardar modelo
             logger.info("💾 Fase 5: Guardando modelo")
@@ -151,7 +176,15 @@ class TrainingService:
                 "features_count": X.shape[1],
                 "mse": round(mse, 4),
                 "mae": round(mae, 4),
+                "rmse": round(rmse, 4),
                 "r2_score": round(r2, 4),
+                "cv_errors_percent": round(cv_errors, 2),
+                "cv_predictions_percent": round(cv_pred, 2),
+                "cv_actual_percent": round(cv_actual, 2),
+                "threshold_adaptive": round(threshold_adaptive, 4),  # ✅ NUEVO
+                "threshold_mean": round(threshold_mean, 4),          # ✅ NUEVO
+                "threshold_std": round(threshold_std, 4),            # ✅ NUEVO
+                "err_ref_p95": round(err_ref, 4),                    # ✅ NUEVO
                 "model_saved": success,
                 "message": "Entrenamiento completado con datos del IOT Service"
             }
@@ -169,27 +202,48 @@ class TrainingService:
     def start_scheduler(self):
         """Inicia el scheduler"""
         if not config.training_enabled:
+            logger.info("⏸️  Entrenamiento deshabilitado en configuración")
             return
         
         self.scheduler = AsyncIOScheduler()
+        
+        # Programar entrenamientos periódicos SIEMPRE
         self.scheduler.add_job(
             self.train_model,
             trigger=IntervalTrigger(minutes=config.training_interval_minutes),
             id='train_model_job',
-            max_instances=1
+            max_instances=1,
+            replace_existing=True
         )
+        
+        # Si no hay modelo, agregar job inmediato ADICIONAL
+        if not model_manager.is_trained:
+            logger.info("🎓 Modelo no entrenado. Programando entrenamiento inmediato...")
+            self.scheduler.add_job(
+                self.train_model,
+                'date',
+                run_date=datetime.now(),
+                id='initial_training_once',
+                misfire_grace_time=30
+            )
+        else:
+            logger.info("✅ Modelo entrenado detectado")
+        
         self.scheduler.start()
-        logger.info("🔄 Scheduler iniciado")
+        logger.info(f"🔄 Scheduler iniciado (cada {config.training_interval_minutes} minutos)")
+        logger.info(f"📅 Próximo entrenamiento periódico: ~{config.training_interval_minutes} minutos")
     
     def stop_scheduler(self):
         """Detiene el scheduler"""
         if self.scheduler:
             self.scheduler.shutdown()
+            logger.info("🛑 Scheduler detenido")
     
     def get_training_stats(self) -> Dict[str, Any]:
         """Retorna estadísticas"""
         return {
             "training_enabled": config.training_enabled,
+            "interval_minutes": config.training_interval_minutes,
             "total_trainings": self.training_count,
             "last_training_status": self.last_training_status
         }

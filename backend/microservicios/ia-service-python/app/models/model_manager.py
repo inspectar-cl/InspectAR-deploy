@@ -22,6 +22,9 @@ class ModelManager:
         self.model: Optional[SGDRegressor] = None
         self.scaler_X: Optional[StandardScaler] = None
         self.scaler_Y: Optional[StandardScaler] = None
+        self.is_trained: bool = False  # ✅ NUEVO: Flag para saber si está entrenado
+        self.threshold: float = 0.5  # ✅ NUEVO: Threshold adaptativo
+        self.err_ref: float = 1.0    # ✅ NUEVO: Error de referencia (p95)
         self._ensure_model_dir()
     
     def _ensure_model_dir(self):
@@ -52,11 +55,31 @@ class ModelManager:
             self.scaler_X = joblib.load(config.scaler_x_path)
             self.scaler_Y = joblib.load(config.scaler_y_path)
             
+            # ✅ NUEVO: Cargar threshold y err_ref
+            threshold_path = os.path.join(config.model_dir, "threshold.pkl")
+            err_ref_path = os.path.join(config.model_dir, "err_ref.pkl")
+            
+            if os.path.exists(threshold_path):
+                self.threshold = joblib.load(threshold_path)
+                logger.info(f"📊 Threshold cargado: {self.threshold:.4f}")
+            else:
+                self.threshold = 0.5
+                logger.warning("⚠️  Threshold no encontrado, usando default: 0.5")
+            
+            if os.path.exists(err_ref_path):
+                self.err_ref = joblib.load(err_ref_path)
+                logger.info(f"📊 Error de referencia cargado: {self.err_ref:.4f}")
+            else:
+                self.err_ref = 1.0
+                logger.warning("⚠️  Error de referencia no encontrado, usando default: 1.0")
+            
+            self.is_trained = True
             logger.info("✅ Modelo cargado exitosamente desde disco")
             return True, "Modelo cargado correctamente"
             
         except Exception as e:
             logger.error(f"❌ Error cargando modelo: {e}")
+            logger.info("🔄 Inicializando modelo vacío")
             self._initialize_new_model()
             return False, f"Error al cargar, modelo reinicializado: {str(e)}"
     
@@ -71,6 +94,8 @@ class ModelManager:
         )
         self.scaler_X = StandardScaler()
         self.scaler_Y = StandardScaler()
+        
+        self.is_trained = False  # ✅ NUEVO: Modelo vacío NO está entrenado
         
         logger.info("🆕 Nuevo modelo SGDRegressor inicializado")
     
@@ -90,8 +115,19 @@ class ModelManager:
             joblib.dump(self.scaler_X, config.scaler_x_path)
             joblib.dump(self.scaler_Y, config.scaler_y_path)
             
+            # ✅ NUEVO: Guardar threshold y err_ref
+            threshold_path = os.path.join(config.model_dir, "threshold.pkl")
+            err_ref_path = os.path.join(config.model_dir, "err_ref.pkl")
+            
+            joblib.dump(self.threshold, threshold_path)
+            joblib.dump(self.err_ref, err_ref_path)
+            
             logger.info(f"💾 Modelo guardado en {config.model_path}")
-            return True, "Modelo guardado correctamente"
+            logger.info(f"💾 Threshold guardado: {self.threshold:.4f}")
+            logger.info(f"💾 Error de referencia guardado: {self.err_ref:.4f}")
+            
+            self.is_trained = True
+            return True, "Modelo guardado exitosamente"
             
         except Exception as e:
             logger.error(f"❌ Error guardando modelo: {e}")
@@ -104,17 +140,16 @@ class ModelManager:
         Returns:
             dict: Información del modelo
         """
-        model_exists = all(os.path.exists(p) for p in [
-            config.model_path,
-            config.scaler_x_path,
-            config.scaler_y_path
-        ])
+        model_exists = os.path.exists(config.model_path)
         
         info = {
             "model_loaded": self.model is not None,
             "model_exists_on_disk": model_exists,
+            "is_trained": self.is_trained,  # ✅ NUEVO: Incluir estado de entrenamiento
             "model_path": config.model_path,
             "model_type": type(self.model).__name__ if self.model else None,
+            "threshold": round(self.threshold, 4),      # ✅ NUEVO
+            "err_ref": round(self.err_ref, 4),          # ✅ NUEVO
         }
         
         if model_exists:

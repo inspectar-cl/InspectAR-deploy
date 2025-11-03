@@ -9,6 +9,7 @@ import logging
 from datetime import datetime
 from collections import defaultdict
 import numpy as np
+import pandas as pd
 
 from app.config import config
 from app.models.anomaly import (
@@ -18,6 +19,31 @@ from app.models.anomaly import (
 from app.repositories.anomaly_repository import AnomalyRepository
 
 logger = logging.getLogger(__name__)
+
+# ========================================
+# ✅ FUNCIONES HELPER HTM (de ml_engine)
+# ========================================
+
+def severity_from_likelihood(likelihood: float) -> str:
+    """Determina severidad basada en likelihood (0-100)"""
+    if likelihood < 40:
+        return "baja"
+    elif likelihood < 70:
+        return "media"
+    else:
+        return "alta"
+
+
+def description_from_severity(sev: str) -> str:
+    """Genera descripción basada en severidad"""
+    d = {
+        "baja": "Funcionamiento dentro del rango esperado.",
+        "media": "Comportamiento irregular detectado. Revisar condiciones operativas.",
+        "alta": "Anomalía crítica detectada. Atención prioritaria requerida."
+    }
+    return d.get(sev, "Sin descripción disponible")
+
+# ========================================
 
 
 class AnomalyService:
@@ -72,7 +98,7 @@ class AnomalyService:
         except Exception as e:
             logger.error(f"❌ Error inesperado obteniendo datos: {e}")
             raise
-    
+
     def transform_to_ml_format(
         self,
         parser_data: ParserResponse
@@ -152,37 +178,69 @@ class AnomalyService:
         
         try:
             from app.models.model_manager import model_manager
-            import numpy as np
+            
+            # ✅ Constantes HTM
+            ALPHA = 0.3  # Factor de suavizado EWMA
+            K_ADAPT = 3.0  # Factor threshold adaptativo
+            WINDOW_SIZE = 100  # Ventana para rolling threshold
+            MIN_PERIODS = 50  # Mínimo de períodos para calcular threshold
             
             # Verificar si el modelo está disponible
             model_available = False
             if model_manager.model is None:
-                logger.warning("⚠️  Modelo no cargado, intentando cargar...")
-                success, msg = model_manager.load_model()
-                if success:
-                    model_available = True
-                    logger.info("✅ Modelo cargado exitosamente")
-                else:
-                    logger.warning(f"⚠️  Modelo no disponible: {msg}")
-                    logger.info("📊 Generando datos con valores aleatorios para entrenamiento inicial")
+                logger.warning("⚠️  Modelo no disponible, usando valores de fallback")
+                model_available = False
             else:
                 model_available = True
+                logger.info("✅ Modelo disponible para predicción")
+            
+            # ===================================
+            # ✅ PREPARAR DATOS (VENTANA COMPLETA)
+            # ===================================
+            timestamps = []
+            features_list = []
+            
+            for record in ml_records:
+                record_dict = record.model_dump()
+                timestamp = record_dict.pop('timestamp')
+                timestamps.append(timestamp)
+                
+                # Features: valores de sensores
+                feature_values = [v for v in record_dict.values() if v is not None]
+                features_list.append(feature_values if feature_values else [0.0])
+            
+            # Padding para features uniformes
+            max_feat = max(len(x) for x in features_list)
+            X = np.array([
+                x + [0.0] * (max_feat - len(x)) if len(x) < max_feat else x[:max_feat]
+                for x in features_list
+            ])
+            
+            # ✅ Calcular estadísticas globales de la ventana
+            mu_global = np.mean(X, axis=0)
+            sigma_global = np.std(X, axis=0) + 1e-6
+            
+            logger.info(f"📊 Ventana: {len(X)} registros, {X.shape[1]} features")
+            logger.info(f"📊 μ_global: {mu_global.mean():.4f}, σ_global: {sigma_global.mean():.4f}")
             
             results = []
             
-            # Preparar datos para predicción
-            for record in ml_records:
+            # ✅ Variables para cálculo HTM (inicializadas localmente, NO del modelo)
+            err_ref = 1.0  # Se inicializa localmente y se actualiza con EWMA
+            likelihood_value = 0.0  # Likelihood suavizado (EWMA)
+            
+            # ===================================
+            # ✅ CALCULAR SCORES PARA CADA REGISTRO
+            # ===================================
+            for i in range(len(X)):
                 try:
-                    # Extraer features (todos los valores de sensores excepto timestamp)
-                    record_dict = record.model_dump()
-                    timestamp = record_dict.pop('timestamp')
-                    
-                    # Convertir valores a array numpy
-                    features = np.array([list(record_dict.values())]).reshape(1, -1)
+                    features = X[i:i+1]
                     actual_value = features[0][0] if len(features[0]) > 0 else 0.0
                     
                     if model_available:
-                        # Usar modelo entrenado
+                        # ===================================
+                        # ✅ CON MODELO: Cálculo HTM completo
+                        # ===================================
                         try:
                             # Escalar features si el scaler está entrenado
                             if hasattr(model_manager.scaler_X, 'mean_'):
@@ -193,55 +251,197 @@ class AnomalyService:
                             # Predecir con el modelo
                             prediction = model_manager.model.predict(features_scaled)[0]
                             
-                            # Calcular error de reconstrucción
-                            reconstruction_error = abs(actual_value - prediction)
+                            # ✅ Error normalizado (HTM-style)
+                            y_true_normalized = (X[i] - mu_global) / sigma_global
+                            err = np.sqrt(np.mean(y_true_normalized ** 2))
                             
-                            # Calcular anomaly score (normalizado 0-1)
-                            anomaly_score = min(reconstruction_error / 10.0, 1.0)
+                            # ✅ Error de referencia adaptativo (EWMA) - SE CALCULA LOCALMENTE
+                            err_ref = (1 - ALPHA) * err_ref + ALPHA * err
+                            
+                            # ✅ AnomalyScore: error escalado 0-100
+                            anomaly_score = np.clip((err / (err_ref + 1e-6)) * 50, 0, 100)
+                            
+                            # ✅ Likelihood suavizado (EWMA)
+                            likelihood_value = (1 - ALPHA) * likelihood_value + ALPHA * anomaly_score
                         
                         except Exception as e:
-                            logger.warning(f"⚠️  Error en predicción, usando valores por defecto: {e}")
+                            logger.warning(f"⚠️  Error en cálculo HTM punto {i}: {e}")
                             prediction = actual_value
-                            anomaly_score = np.random.uniform(0.1, 0.4)  # Score bajo por defecto
+                            anomaly_score = 20.0
+                            likelihood_value = 20.0
+                    
                     else:
-                        # Sin modelo: generar datos de ejemplo para entrenamiento inicial
+                        # ===================================
+                        # ✅ SIN MODELO: Fallback simple
+                        # ===================================
                         prediction = actual_value + np.random.normal(0, 0.1)
-                        # Score basado en variación aleatoria
-                        anomaly_score = min(abs(actual_value - prediction) / 10.0, 0.6)
+                        
+                        # Score basado en desviación de la media global
+                        deviation = np.abs(X[i] - mu_global).mean()
+                        anomaly_score = min((deviation / (sigma_global.mean() + 1e-6)) * 50, 100)
+                        likelihood_value = anomaly_score
                     
-                    # Determinar si es anomalía (threshold dinámico)
-                    threshold = 0.5
-                    is_anomaly = anomaly_score > threshold
+                    # Normalizar a 0-100
+                    anomaly_score = float(np.clip(anomaly_score, 0, 100))
+                    likelihood_value = float(np.clip(likelihood_value, 0, 100))
                     
-                    # Determinar severidad basada en el score
-                    if anomaly_score < 0.3:
-                        severity = "baja"
-                    elif anomaly_score < 0.6:
-                        severity = "media"
-                    else:
-                        severity = "alta"
+                    # ✅ Threshold se calculará después con rolling window
+                    threshold = 50.0  # Valor temporal
                     
-                    # Crear resultado
+                    # ✅ Severidad basada en likelihood
+                    severity = severity_from_likelihood(likelihood_value)
+                    
+                    # ✅ Descripción basada en severidad
+                    description = description_from_severity(severity)
+                    
+                    # ✅ Crear resultado con is_anomaly como False por defecto
                     result = {
-                        "timestamp": timestamp,
-                        "is_anomaly": is_anomaly,
-                        "AnomalyScore": round(anomaly_score, 4),
-                        "AnomalyLikelihood": round(anomaly_score * 100, 2),
-                        "Threshold": threshold,
+                        "timestamp": timestamps[i],
+                        "is_anomaly": False,  # Se calculará después con threshold adaptativo
+                        "AnomalyScore": round(anomaly_score, 2),
+                        "AnomalyLikelihood": round(likelihood_value, 2),
+                        "Threshold": threshold,  # Se actualizará
                         "Severity": severity,
-                        "Description": (
-                            f"Anomalía detectada en activo {activo_id}"
-                            if is_anomaly
-                            else f"Lectura normal en activo {activo_id}"
-                        ),
-                        "ReconstructedValue": round(prediction, 4)
+                        "Description": description,
+                        "ReconstructedValue": round(float(prediction), 4)
                     }
                     
                     results.append(result)
                     
                 except Exception as e:
-                    logger.warning(f"⚠️  Error procesando registro: {e}")
+                    logger.warning(f"⚠️  Error procesando registro {i}: {e}")
                     continue
+            
+            # ===================================
+            # ✅ CALCULAR THRESHOLD ADAPTATIVO Y is_anomaly
+            # ===================================
+            if results:
+                df_results = pd.DataFrame(results)
+                
+                # Calcular rolling threshold sobre AnomalyLikelihood
+                likelihood_series = df_results['AnomalyLikelihood']
+                
+                # Rolling mean + k * rolling std
+                mean_rolling = likelihood_series.rolling(
+                    window=WINDOW_SIZE, 
+                    min_periods=MIN_PERIODS
+                ).mean()
+                
+                std_rolling = likelihood_series.rolling(
+                    window=WINDOW_SIZE, 
+                    min_periods=MIN_PERIODS
+                ).std()
+                
+                threshold_series = (mean_rolling + K_ADAPT * std_rolling).clip(lower=0)
+                
+                # Rellenar NaN en la ventana inicial con un valor por defecto
+                # Puedes usar la media global o un percentil
+                default_threshold = likelihood_series.quantile(0.75) if len(likelihood_series) > 0 else 50.0
+                threshold_series = threshold_series.fillna(default_threshold)
+                
+                # ✅ Actualizar threshold y calcular is_anomaly como booleano
+                df_results['Threshold'] = threshold_series.round(2)
+                df_results['is_anomaly'] = (
+                    df_results['AnomalyLikelihood'] > df_results['Threshold']
+                )  # Ya es booleano por pandas
+                
+                # ===================================
+                # ✅ MÉTRICAS DE ESTABILIDAD (Likelihood vs Threshold)
+                # ===================================
+                dif = np.abs(df_results['AnomalyLikelihood'] - df_results['Threshold'])
+                mean_dif = np.mean(dif)
+                std_dif = np.std(dif)
+                cv_dif = std_dif / (mean_dif + 1e-6)
+                
+                indicadores_estabilidad = {
+                    'Media diferencia': round(mean_dif, 2),
+                    'Desv. diferencia': round(std_dif, 2),
+                    'Coef. de variación': round(cv_dif, 4)
+                }
+                
+                # Interpretación del CV de diferencia
+                if cv_dif < 0.5:
+                    interpretacion = "Sistema ESTABLE - Detección consistente"
+                    nivel_estabilidad = "🟢 ALTA"
+                elif cv_dif < 1.0:
+                    interpretacion = "Sistema MODERADO - Algunas fluctuaciones"
+                    nivel_estabilidad = "🟡 MEDIA"
+                else:
+                    interpretacion = "Sistema INESTABLE - Alta variabilidad en detección"
+                    nivel_estabilidad = "🔴 BAJA"
+                
+                # ✅ Actualizar severidad y descripción solo para anomalías (is_anomaly == True)
+                anomaly_mask = df_results['is_anomaly'] == True
+                
+                if anomaly_mask.any():
+                    for idx in df_results[anomaly_mask].index:
+                        likelihood = df_results.loc[idx, 'AnomalyLikelihood']
+                        df_results.loc[idx, 'Severity'] = severity_from_likelihood(likelihood)
+                        df_results.loc[idx, 'Description'] = description_from_severity(
+                            df_results.loc[idx, 'Severity']
+                        )
+                
+                # Convertir de vuelta a lista de dicts
+                results = df_results.to_dict('records')
+                
+                # ✅ Contar anomalías usando booleanos
+                anomaly_count = df_results['is_anomaly'].sum()
+                
+                logger.info(
+                    f"📊 Threshold adaptativo calculado. "
+                    f"Ventana: {WINDOW_SIZE}, k={K_ADAPT}, "
+                    f"Threshold promedio: {threshold_series.mean():.2f}, "
+                    f"Anomalías detectadas: {anomaly_count}"
+                )
+                
+                # ✅ LOG PRINCIPAL: Métricas de estabilidad
+                logger.info(
+                    f"📈 ESTABILIDAD DEL SISTEMA ({nivel_estabilidad}):\n"
+                    f"   • Media diferencia (Likelihood - Threshold): {mean_dif:.2f}\n"
+                    f"   • Desviación estándar: {std_dif:.2f}\n"
+                    f"   • Coeficiente de variación: {cv_dif:.4f}\n"
+                    f"   ➜ {interpretacion}"
+                )
+                
+                # ✅ LOG de advertencia si hay inestabilidad
+                if cv_dif > 1.0:
+                    logger.warning(
+                        f"⚠️  INESTABILIDAD DETECTADA (CV={cv_dif:.4f}): "
+                        f"El sistema está fluctuando entre anomalía y normalidad. "
+                        f"Considerar:\n"
+                        f"   1. Aumentar WINDOW_SIZE (actual: {WINDOW_SIZE})\n"
+                        f"   2. Ajustar K_ADAPT (actual: {K_ADAPT})\n"
+                        f"   3. Revisar calidad de datos de entrada"
+                    )
+                elif cv_dif > 0.5:
+                    logger.info(
+                        f"ℹ️  Estabilidad moderada (CV={cv_dif:.4f}). "
+                        f"El sistema funciona correctamente pero hay algunas fluctuaciones normales."
+                    )
+                else:
+                    logger.info(
+                        f"✅ Excelente estabilidad (CV={cv_dif:.4f}). "
+                        f"El sistema está detectando anomalías de manera consistente."
+                    )
+                
+                # ✅ Estadísticas adicionales de detección
+                if anomaly_count > 0:
+                    anomaly_indices = df_results[anomaly_mask].index
+                    likelihood_anomalies = df_results.loc[anomaly_indices, 'AnomalyLikelihood']
+                    threshold_anomalies = df_results.loc[anomaly_indices, 'Threshold']
+                    
+                    # Cuánto superan el threshold las anomalías
+                    margin = (likelihood_anomalies - threshold_anomalies).mean()
+                    
+                    logger.info(
+                        f"🚨 Análisis de anomalías detectadas:\n"
+                        f"   • Total: {anomaly_count} de {len(df_results)} registros ({anomaly_count/len(df_results)*100:.1f}%)\n"
+                        f"   • Margen promedio sobre threshold: {margin:.2f}\n"
+                        f"   • Likelihood promedio en anomalías: {likelihood_anomalies.mean():.2f}\n"
+                        f"   • Threshold promedio en anomalías: {threshold_anomalies.mean():.2f}"
+                    )
+            else:
+                anomaly_count = 0
             
             # Crear respuesta en formato MLResponse
             from app.models.anomaly import MLResponse as MLResponseClass
@@ -251,9 +451,7 @@ class AnomalyService:
                 "results": results
             }
             
-            anomaly_count = sum(1 for r in results if r.get("is_anomaly") is True)
-            
-            mode_text = "con modelo ML" if model_available else "sin modelo (datos iniciales)"
+            mode_text = "con modelo HTM" if model_available else "sin modelo (datos iniciales)"
             logger.info(
                 f"✅ Predicción completada {mode_text}. "
                 f"Resultados: {len(results)}, "
@@ -263,7 +461,7 @@ class AnomalyService:
             return ml_response
                 
         except Exception as e:
-            logger.error(f"❌ Error en predicción de anomalías: {e}")
+            logger.error(f"❌ Error en predicción de anomalías: {e}", exc_info=True)
             raise
     
     def save_ml_results(
@@ -285,60 +483,132 @@ class AnomalyService:
         
         results = ml_response.get("results", [])
         
-        for result in results:
+        logger.info(f"💾 Preparando guardado de {len(results)} resultados para activo {activo_id}")
+        
+        for idx, result in enumerate(results):
             try:
+                # ✅ Extraer TODOS los valores calculados por predict_anomalies
+                anomaly_score = result.get("AnomalyScore")
+                anomaly_likelihood = result.get("AnomalyLikelihood")
+                threshold = result.get("Threshold")
+                severidad = result.get("Severity")
+                descripcion = result.get("Description")
+                is_anomaly_value = result.get("is_anomaly")
+               
                 # Normalizar severidad a minúsculas para BD
                 severidad = result.get("Severity", "baja").lower()
                 
                 # Parsear timestamp
                 try:
                     timestamp_str = result.get("timestamp")
+                    if not timestamp_str:
+                        logger.warning(f"⚠️  Registro {idx} sin timestamp, saltando")
+                        continue
+                    
                     # Intentar varios formatos
                     timestamp = datetime.fromisoformat(
                         timestamp_str.replace('Z', '+00:00')
                     )
-                except (ValueError, AttributeError):
+                except (ValueError, AttributeError) as e:
+                    logger.warning(f"⚠️  Timestamp inválido en registro {idx}: '{timestamp_str}' - {e}")
                     # Fallback: usar timestamp actual
                     timestamp = datetime.utcnow()
+                                
+                # ✅ Convertir is_anomaly a booleano explícitamente
+                is_anomaly_value = result.get("is_anomaly", False)
+                if isinstance(is_anomaly_value, (int, float)):
+                    is_anomaly_value = bool(is_anomaly_value)
                 
                 # Crear modelo de anomalía
                 anomaly = AnomalyCreate(
                     activo_id=activo_id,
                     sensor_id=None,  # NULL para análisis a nivel de activo
                     timestamp=timestamp,
-                    anomaly_score=result.get("AnomalyScore", 0.0),
-                    anomaly_likelihood=result.get("AnomalyLikelihood", 0.0),
-                    severidad=severidad,
-                    descripcion=result.get("Description", f"Análisis ML para activo {activo_id}"),
-                    threshold=result.get("Threshold", 0.5),
-                    is_anomaly=bool(result.get("is_anomaly", False))
+                    anomaly_score=float(anomaly_score),  # Valor REAL del predict
+                    anomaly_likelihood=float(anomaly_likelihood),  # Valor REAL del predict
+                    severidad=severidad,  # Severidad REAL del predict
+                    descripcion=descripcion,  # Descripción completa
+                    threshold=float(threshold),  # Threshold REAL calculado con rolling
+                    is_anomaly=is_anomaly_value  # is_anomaly REAL del predict
                 )
                 
                 anomalies_to_create.append(anomaly)
                 
             except Exception as e:
-                logger.error(f"❌ Error preparando anomalía: {e}")
+                logger.error(
+                    f"❌ Error preparando anomalía para registro {idx} "
+                    f"(timestamp: {result.get('timestamp', 'unknown')}): {e}",
+                    exc_info=True
+                )
                 continue
         
-        # Guardar en batch
-        if anomalies_to_create:
+        # ✅ Validar que se crearon registros
+        if not anomalies_to_create:
+            logger.warning(
+                f"⚠️  No se crearon registros válidos para guardar. "
+                f"Total procesados: {len(results)}, válidos: 0"
+            )
+            return {
+                "total": len(results),
+                "saved": 0,
+                "anomalies": 0,
+                "failed": len(results)
+            }
+        
+        # ✅ Guardar en batch
+        try:
             saved_count = self.repository.bulk_create(anomalies_to_create)
+            
+            # ✅ Contar anomalías reales detectadas
             anomaly_count = sum(1 for a in anomalies_to_create if a.is_anomaly is True)
             
             logger.info(
-                f"💾 Guardados {saved_count}/{len(results)} resultados, "
-                f"{anomaly_count} anomalías detectadas"
+                f"💾 ✅ Guardados {saved_count}/{len(results)} resultados ML para activo {activo_id}, "
+                f"🚨 {anomaly_count} anomalías detectadas"
             )
+            
+            # ✅ Log de muestra de datos guardados (primeros 3)
+            if saved_count > 0 and len(anomalies_to_create) > 0:
+                sample_size = min(3, len(anomalies_to_create))
+                logger.info(f"📝 Muestra de {sample_size} registros guardados:")
+                for i, anomaly in enumerate(anomalies_to_create[:sample_size]):
+                    logger.info(
+                        f"  [{i+1}] {anomaly.timestamp.isoformat()} - "
+                        f"is_anomaly={anomaly.is_anomaly}, "
+                        f"Score={anomaly.anomaly_score:.2f}, "
+                        f"Likelihood={anomaly.anomaly_likelihood:.2f}, "
+                        f"Threshold={anomaly.threshold:.2f}, "
+                        f"Severidad={anomaly.severidad}"
+                    )
+            
+            # ✅ Log de anomalías detectadas
+            if anomaly_count > 0:
+                logger.warning(f"🚨 ANOMALÍAS DETECTADAS: {anomaly_count} de {saved_count} registros")
+                anomalies_only = [a for a in anomalies_to_create if a.is_anomaly]
+                for i, anom in enumerate(anomalies_only[:5]):  # Mostrar primeras 5 anomalías
+                    logger.warning(
+                        f"  🚨 Anomalía {i+1}: {anom.timestamp.isoformat()} - "
+                        f"Likelihood={anom.anomaly_likelihood:.2f} > Threshold={anom.threshold:.2f}, "
+                        f"Severidad={anom.severidad}"
+                    )
             
             return {
                 "total": len(results),
                 "saved": saved_count,
-                "anomalies": anomaly_count
+                "anomalies": anomaly_count,
+                "failed": len(results) - len(anomalies_to_create)
             }
-        else:
-            logger.warning("⚠️  No se guardaron resultados")
-            return {"total": 0, "saved": 0, "anomalies": 0}
-    
+            
+        except Exception as e:
+            logger.error(f"❌ Error guardando resultados en BD: {e}", exc_info=True)
+            return {
+                "total": len(results),
+                "saved": 0,
+                "anomalies": 0,
+                "failed": len(results),
+                "error": str(e)
+            }
+
     async def detect_and_store_anomalies(
         self,
         activo_id: int,

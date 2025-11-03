@@ -88,12 +88,19 @@ class TrainingService:
             logger.info("🔧 Fase 2: Preprocesamiento")
             X_list = []
             y_list = []
+            feature_names = []  # Agregar lista para nombres
             
             for rec in ml_records:
                 vals = [v for k, v in rec.items() if k != 'timestamp']
+                if vals and not feature_names:  # Capturar nombres solo una vez
+                    feature_names = [k for k in rec.keys() if k != 'timestamp']
                 if vals:
                     X_list.append(vals)
                     y_list.append(np.mean(vals))
+            
+            # Imprimir nombres de features
+            logger.info(f"   📋 Features detectadas: {feature_names}")
+            logger.info(f"   📋 Cantidad de features: {len(feature_names)}")
             
             max_feat = max(len(x) for x in X_list)
             X = np.array([
@@ -132,27 +139,7 @@ class TrainingService:
             rmse = float(np.sqrt(mse))
             r2 = float(1 - np.sum(errors ** 2) / np.sum((y - np.mean(y)) ** 2))
             
-            '''# ✅ NUEVO: Threshold adaptativo (μ + 3σ estilo ml_engine)
-            threshold_mean = float(np.mean(abs_errors))
-            threshold_std = float(np.std(abs_errors))
-            threshold_adaptive = threshold_mean + 3.0 * threshold_std
-            
-            # ✅ NUEVO: Error de referencia para normalización (percentil 95)
-            err_ref = float(np.percentile(abs_errors, 95))
-            
-            # Coeficientes de variación
-            cv_errors = float(np.std(errors) / threshold_mean * 100) if threshold_mean > 0 else 0.0
-            cv_pred = float(np.std(pred) / np.mean(pred) * 100) if np.mean(pred) > 0 else 0.0
-            cv_actual = float(np.std(y) / np.mean(y) * 100) if np.mean(y) > 0 else 0.0
-            '''
             logger.info(f"   ✓ MSE: {mse:.4f}, MAE: {mae:.4f}, RMSE: {rmse:.4f}, R²: {r2:.4f}")
-            '''logger.info(f"   ✓ CV Errores: {cv_errors:.2f}%, CV Pred: {cv_pred:.2f}%, CV Real: {cv_actual:.2f}%")
-            logger.info(f"   ✓ Threshold Adaptativo: {threshold_adaptive:.4f} (μ={threshold_mean:.4f}, σ={threshold_std:.4f})")
-            logger.info(f"   ✓ Error de Referencia (p95): {err_ref:.4f}")
-            '''
-            '''# ✅ NUEVO: Guardar threshold y err_ref en el modelo
-            model_manager.threshold = threshold_adaptive
-            model_manager.err_ref = err_ref'''
             
             # Fase 5: Guardar modelo
             logger.info("💾 Fase 5: Guardando modelo")
@@ -178,14 +165,7 @@ class TrainingService:
                 "mae": round(mae, 4),
                 "rmse": round(rmse, 4),
                 "r2_score": round(r2, 4),
-                '''"cv_errors_percent": round(cv_errors, 2),
-                "cv_predictions_percent": round(cv_pred, 2),
-                "cv_actual_percent": round(cv_actual, 2),
-                "threshold_adaptive": round(threshold_adaptive, 4),  # ✅ NUEVO
-                "threshold_mean": round(threshold_mean, 4),          # ✅ NUEVO
-                "threshold_std": round(threshold_std, 4),            # ✅ NUEVO
-                "err_ref_p95": round(err_ref, 4),                    # ✅ NUEVO
-            '''    "model_saved": success,
+                "model_saved": success,
                 "message": "Entrenamiento completado con datos del IOT Service"
             }
             
@@ -216,9 +196,9 @@ class TrainingService:
         
         # Calcular cuándo debe ser el primer entrenamiento
         if not model_manager.is_trained:
-            # Si no hay modelo, entrenar en 2 segundos
-            first_run = datetime.now() + timedelta(seconds=2)
-            logger.info("🎓 Modelo no entrenado. Primer entrenamiento en 2 segundos")
+            # Si no hay modelo, entrenar en 3 minutos
+            first_run = datetime.now() + timedelta(minutes=3)
+            logger.info("🎓 Modelo no entrenado. Primer entrenamiento en 3 minutos")
         else:
             # Si hay modelo, esperar el intervalo completo
             first_run = datetime.now() + timedelta(minutes=config.training_interval_minutes)

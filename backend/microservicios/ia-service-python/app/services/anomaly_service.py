@@ -56,7 +56,7 @@ class AnomalyService:
         self,
         activo_id: int,
         page: int = 1,
-        limit: int = 1000
+        limit: int = 1000,
     ) -> ParserResponse:
         """
         Obtiene datos del ParserService (iot-service)
@@ -124,36 +124,23 @@ class AnomalyService:
         records_by_time: Dict[str, Dict[str, float]] = defaultdict(dict)
         
         for sensor in parser_data.sensores:
-            sensor_id = sensor.id_sensor
+            if sensor.datos:
+                for dp in sensor.datos:
+                    records_by_time[dp.tiempo][sensor.id_sensor] = dp.valor
             
-            for data_point in sensor.datos:
-                timestamp = data_point.tiempo
-                value = data_point.valor
-                
-                # Normalizar nombre del sensor para ML Engine
-                # Reemplazar puntos por guiones bajos
-                normalized_sensor = sensor_id.replace(".", "_")
-                
-                records_by_time[timestamp][normalized_sensor] = value
         
         # Convertir a lista de MLSensorRecord
-        ml_records = []
-        for timestamp, sensors in sorted(records_by_time.items()):
-            try:
-                record = MLSensorRecord(
-                    timestamp=timestamp,
-                    **sensors
-                )
-                ml_records.append(record)
-            except Exception as e:
-                logger.warning(f"⚠️  Error creando record para {timestamp}: {e}")
-                continue
+        ml_records = [
+            {"timestamp": t, **vals}
+            for t, vals in records_by_time.items()
+            if len(vals) >= 3
+        ]
         
         logger.info(
             f"📊 Transformados {len(ml_records)} registros agrupados por timestamp "
             f"desde {len(parser_data.sensores)} sensores"
         )
-        
+        logger.info(f"   ✓ {len(ml_records)} registros obtenidos")
         return ml_records
     
     async def predict_anomalies(
@@ -197,29 +184,51 @@ class AnomalyService:
             # ===================================
             # ✅ PREPARAR DATOS (VENTANA COMPLETA)
             # ===================================
-            timestamps = []
-            features_list = []
+            # Fase 2: Preprocesamiento
+            logger.info("🔧 Fase 2: Preprocesamiento")
+            X_list = []
+            y_list = []
+            feature_names = []  # Agregar lista para nombres
             
-            for record in ml_records:
-                record_dict = record.model_dump()
-                timestamp = record_dict.pop('timestamp')
-                timestamps.append(timestamp)
-                
-                # Features: valores de sensores
-                feature_values = [v for v in record_dict.values() if v is not None]
-                features_list.append(feature_values if feature_values else [0.0])
+            for rec in ml_records:
+                vals = [v for k, v in rec.items() if k != 'timestamp']
+                if vals and not feature_names:  # Capturar nombres solo una vez
+                    feature_names = [k for k in rec.keys() if k != 'timestamp']
+                if vals:
+                    X_list.append(vals)
+                    y_list.append(np.mean(vals))
             
-            # Padding para features uniformes
-            max_feat = max(len(x) for x in features_list)
+            # Imprimir nombres de features
+            logger.info(f"   📋 Features detectadas: {feature_names}")
+            logger.info(f"   📋 Cantidad de features: {len(feature_names)}")
+            
+            max_feat = max(len(x) for x in X_list)
             X = np.array([
                 x + [0.0] * (max_feat - len(x)) if len(x) < max_feat else x[:max_feat]
-                for x in features_list
+                for x in X_list
             ])
+            y = np.array(y_list)
             
-            # ✅ Calcular estadísticas globales de la ventana
+            logger.info(f"   ✓ X: {X.shape}, y: {y.shape}")
+            timestamps = [rec['timestamp'] for rec in ml_records]
+            # ✅ LOG para verificar dimensiones
+            logger.info(f"📊 Ventana preparada: shape={X.shape} (debe ser [n_samples, n_sensores])")
+            logger.info(f"📊 Features por registro: {max_feat}")
+            
+            # ✅ LOG DE MUESTRA DE PRIMER REGISTRO
+            if len(ml_records) > 0:
+                first_record = ml_records[0].copy()
+                first_timestamp = first_record.pop('timestamp')
+                logger.info(f"📝 Primer registro ({first_timestamp}):")
+                for sensor_name, value in first_record.items():
+                    logger.info(f"   • {sensor_name}: {value}")
+            
+            # ===================================
+            # ✅ CALCULAR ESTADÍSTICAS DE LA VENTANA
+            # ===================================
             mu_global = np.mean(X, axis=0)
             sigma_global = np.std(X, axis=0) + 1e-6
-            
+
             logger.info(f"📊 Ventana: {len(X)} registros, {X.shape[1]} features")
             logger.info(f"📊 μ_global: {mu_global.mean():.4f}, σ_global: {sigma_global.mean():.4f}")
             
@@ -242,8 +251,17 @@ class AnomalyService:
                         # ✅ CON MODELO: Cálculo HTM completo
                         # ===================================
                         try:
+                            # ✅ LOG de verificación detallado en el PRIMER registro
+                            if i == 0:
+                                logger.info(
+                                    f"🔍 Análisis primer registro:\n"
+                                    f"   • Features shape: {features.shape}\n"
+                                    f"   • Features values: {features[0]}\n"
+                                    f"   • Timestamp: {timestamps[i]}"
+                                )
+                            
                             # Escalar features si el scaler está entrenado
-                            if hasattr(model_manager.scaler_X, 'mean_'):
+                            if hasattr(model_manager.scaler_X, 'mean_'):                                
                                 features_scaled = model_manager.scaler_X.transform(features)
                             else:
                                 features_scaled = features
@@ -265,7 +283,7 @@ class AnomalyService:
                             likelihood_value = (1 - ALPHA) * likelihood_value + ALPHA * anomaly_score
                         
                         except Exception as e:
-                            logger.warning(f"⚠️  Error en cálculo HTM punto {i}: {e}")
+                            #logger.warning(f"⚠️  Error en cálculo HTM punto {i}: {e}")
                             prediction = actual_value
                             anomaly_score = 20.0
                             likelihood_value = 20.0
@@ -353,11 +371,6 @@ class AnomalyService:
                 std_dif = np.std(dif)
                 cv_dif = std_dif / (mean_dif + 1e-6)
                 
-                indicadores_estabilidad = {
-                    'Media diferencia': round(mean_dif, 2),
-                    'Desv. diferencia': round(std_dif, 2),
-                    'Coef. de variación': round(cv_dif, 4)
-                }
                 
                 # Interpretación del CV de diferencia
                 if cv_dif < 0.5:

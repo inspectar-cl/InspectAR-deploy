@@ -110,7 +110,6 @@ class ModelManager:
         Returns:
             dict: Información del modelo
         """
-        model_exists = os.path.exists(config.model_path)
         
         info = {
             "model_loaded": self.model is not None,

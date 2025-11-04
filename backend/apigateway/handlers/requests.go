@@ -2515,3 +2515,102 @@ func ObtenerDocumentosHandler(c *gin.Context) {
 
     c.JSON(http.StatusOK, result)
 }
+
+// Rutas Sprint 3
+func CrearActivoHandler(c *gin.Context) {
+    authHeader := c.GetHeader("Authorization")
+    email, _ := extractClaimFromToken(authHeader, "email")
+    if email == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
+        return
+    }
+    fmt.Printf("Usuario creando activo: %s\n", email)
+
+    // Leer el body de la request
+    var activoData map[string]interface{}
+    if err := c.ShouldBindJSON(&activoData); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+        return
+    }
+    
+    // Validar campos requeridos
+    if _, exists := activoData["nombre"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'nombre' es requerido"})
+        return
+    }
+
+    if _, exists := activoData["tipo"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'tipo' es requerido"})
+        return
+    }
+
+    if _, exists := activoData["descripcion"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'descripcion' es requerido"})
+        return
+    }
+
+    if _, exists := activoData["ubicacion"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'ubicacion' es requerido"})
+        return
+    }
+
+    if _, exists := activoData["edificio_id"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'edificio_id' es requerido"})
+        return
+    }
+
+    fmt.Printf("Datos del activo a crear: %+v\n", activoData)
+
+    // Construir el body para el microservicio de gestión
+    bodyData := map[string]interface{}{
+        "nombre":      activoData["nombre"],
+        "tipo":        activoData["tipo"],
+        "descripcion": activoData["descripcion"],
+        "ubicacion":   activoData["ubicacion"],
+        "edificio_id": activoData["edificio_id"],
+        "email":       email,
+    }
+
+    // Convertir a JSON
+    jsonData, err := json.Marshal(bodyData)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando datos"})
+        return
+    }
+
+    fmt.Printf("DEBUG: Enviando datos para crear activo: %+v\n", bodyData)
+
+    // Hacer POST al microservicio de gestión
+    url := fmt.Sprintf("%s/admin/activos", gestionURL)
+    resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+    if err != nil {
+        fmt.Println("Error creando activo: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al crear el activo"})
+        return
+    }
+    defer resp.Body.Close()
+
+    fmt.Printf("DEBUG: Status code de respuesta: %d\n", resp.StatusCode)
+
+    // Verificar si la respuesta es exitosa
+    if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+        var errorData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&errorData); err == nil {
+            c.JSON(resp.StatusCode, errorData)
+            return
+        }
+        c.JSON(resp.StatusCode, gin.H{"error": "Error al crear el activo"})
+        return
+    }
+
+    // Leer la respuesta exitosa
+    var responseData map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+        fmt.Println("Error decodificando respuesta: ", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando respuesta"})
+        return
+    }
+
+    // Retornar la respuesta del microservicio
+    c.JSON(resp.StatusCode, responseData)
+}

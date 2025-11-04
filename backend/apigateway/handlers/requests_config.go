@@ -116,11 +116,7 @@ func getSpecialHandlers() []SpecialHandler {
             Pattern: "/api/obtener-activo-id/:id_activo",
             Handler: ObtenerActivoPorID,
             Protected: true,
-<<<<<<< HEAD
             RequiredScopes: userTypes("Tecnico", "Residente", "Analista", "Admin"),
-=======
-            RequiredScopes: userTypes("Tecnico", "Residente", "Admin"),
->>>>>>> origin/feature/ML
             RequiredValidation: "activo",
         },
         { 
@@ -209,6 +205,14 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: userTypes("Tecnico", "Admin"),
         },
+        // A partir de acá serían los handlers para el sprint 3
+        { 
+            Method:  "POST",
+            Pattern: "/api/crear-activo",
+            Handler: CrearActivoHandler,
+            Protected: true,
+            RequiredScopes: userTypes("Root"),
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",
@@ -223,7 +227,7 @@ func getSpecialHandlers() []SpecialHandler {
         //     Pattern: "",
         //     Handler: ,
         //     Protected: true,
-        //     RequiredScopes: userTypes("Analista", "Admin"),
+        //     RequiredScopes: userTypes("root"),
         //     RequiredValidation: "edificio",
         // },
     }

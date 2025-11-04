@@ -102,11 +102,44 @@ class TrainingService:
             logger.info(f"   📋 Features detectadas: {feature_names}")
             logger.info(f"   📋 Cantidad de features: {len(feature_names)}")
             
-            max_feat = max(len(x) for x in X_list)
-            X = np.array([
-                x + [0.0] * (max_feat - len(x)) if len(x) < max_feat else x[:max_feat]
-                for x in X_list
-            ])
+            # ✅ DIAGNÓSTICO: Verificar longitudes de X_list
+            lengths = [len(x) for x in X_list]
+            unique_lengths = set(lengths)
+            
+            if len(unique_lengths) > 1:
+                logger.warning(
+                    f"⚠️  INCONSISTENCIA DETECTADA:\n"
+                    f"   • Longitudes únicas: {unique_lengths}\n"
+                    f"   • Distribución: {dict(zip(*np.unique(lengths, return_counts=True)))}"
+                )
+                
+                # ✅ Usar la longitud más común
+                most_common_length = max(set(lengths), key=lengths.count)
+                logger.info(
+                    f"   ✓ Usando longitud más común: {most_common_length} "
+                    f"({lengths.count(most_common_length)} registros)"
+                )
+                
+                # Actualizar feature_names
+                for rec in ml_records:
+                    vals = [v for k, v in rec.items() if k != 'timestamp']
+                    if len(vals) == most_common_length:
+                        feature_names = [k for k in rec.keys() if k != 'timestamp']
+                        break
+                
+                logger.info(f"   📋 Features actualizadas: {feature_names}")
+                
+                # Filtrar registros
+                X_list = [x for x in X_list if len(x) == most_common_length]
+                y_list = [y for x, y in zip(X_list, y_list) if len(x) == most_common_length]
+                
+                logger.info(
+                    f"   ✓ Filtrados {len(X_list)} registros válidos "
+                    f"(descartados {lengths.count(lengths[0]) - len(X_list)} registros)"
+                )
+            
+            # ✅ CONVERSIÓN DIRECTA (sin padding)
+            X = np.array(X_list)
             y = np.array(y_list)
             
             logger.info(f"   ✓ X: {X.shape}, y: {y.shape}")

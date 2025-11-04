@@ -4,12 +4,47 @@ Orquesta las llamadas entre ParserService, ML Engine y BD
 """
 
 from typing import List, Dict, Any, Optional
+from app.models.model_manager import model_manager
 import httpx
 import logging
 from datetime import datetime
 from collections import defaultdict
 import numpy as np
 import pandas as pd
+import warnings
+import os
+import sys
+
+# ✅ SOLUCIÓN DEFINITIVA: Deshabilitar tqdm globalmente
+os.environ['SHAP_SHOW_PROGRESS'] = 'false'
+
+# ✅ Monkey patch tqdm antes de importar shap
+class DummyTqdm:
+    def __init__(self, *args, **kwargs):
+        self.iterable = args[0] if args else []
+    def __iter__(self):
+        return iter(self.iterable)
+    def __enter__(self):
+        return self
+    def __exit__(self, *args):
+        pass
+    def update(self, *args, **kwargs):
+        pass
+    def close(self):
+        pass
+
+sys.modules['tqdm'] = type(sys)('tqdm')
+sys.modules['tqdm'].tqdm = DummyTqdm
+sys.modules['tqdm.auto'] = type(sys)('tqdm.auto')
+sys.modules['tqdm.auto'].tqdm = DummyTqdm
+
+# ✅ Ahora importar shap
+import shap
+
+# ✅ Silenciar warnings
+logging.getLogger('shap').setLevel(logging.ERROR)
+warnings.filterwarnings('ignore', category=UserWarning, module='shap')
+warnings.filterwarnings('ignore', category=FutureWarning, module='shap')
 
 from app.config import config
 from app.models.anomaly import (
@@ -51,6 +86,7 @@ class AnomalyService:
     
     def __init__(self, repository: AnomalyRepository):
         self.repository = repository
+        self._shap_explainer = None  # Cache del explainer
     
     async def fetch_data_from_parser(
         self,
@@ -143,6 +179,91 @@ class AnomalyService:
         logger.info(f"   ✓ {len(ml_records)} registros obtenidos")
         return ml_records
     
+    def _get_feature_contribution(
+        self,
+        features: np.ndarray,
+        feature_names: List[str],
+        is_anomaly: bool
+    ) -> Dict[str, Any]:
+        """
+        Calcula la contribución de cada feature a la predicción usando SHAP
+        
+        Args:
+            features: Array de features del registro [1, n_features]
+            feature_names: Nombres de las features
+            is_anomaly: Si el registro es anomalía o no
+            
+        Returns:
+            Dict con variable más influyente y su contribución, o None si no hay anomalía
+        """
+        if not is_anomaly or model_manager.model is None:
+            return {
+                "most_influential_variable": None,
+                "contribution_magnitude": None
+            }
+        
+        try:
+            # ✅ Crear explainer si no existe (cache)
+            if self._shap_explainer is None:
+                # Usar TreeExplainer para modelos basados en árboles
+                # o LinearExplainer para regresión lineal
+                try:
+                    self._shap_explainer = shap.LinearExplainer(model_manager.model)
+                except:
+                    # Fallback a KernelExplainer si TreeExplainer no funciona
+                    # Usar muestra de datos de entrenamiento como background
+                    self._shap_explainer = shap.KernelExplainer(
+                        model_manager.model.predict,
+                        shap.sample(features, 100) if len(features) > 100 else features
+                    )
+            
+            # ✅ Escalar features si es necesario
+            if hasattr(model_manager.scaler_X, 'mean_'):
+                features_scaled = model_manager.scaler_X.transform(features)
+            else:
+                features_scaled = features
+            
+            # ✅ Calcular SHAP values
+            shap_values = self._shap_explainer.shap_values(features_scaled)
+            
+            # Si shap_values es una lista (clasificación multiclase), tomar primer elemento
+            if isinstance(shap_values, list):
+                shap_values = shap_values[0]
+            
+            # ✅ Obtener magnitudes absolutas
+            abs_shap_values = np.abs(shap_values[0])
+            
+            # ✅ Encontrar índice de mayor contribución
+            max_idx = np.argmax(abs_shap_values)
+            max_contribution = float(abs_shap_values[max_idx])
+            # ✅ VALIDACIÓN del índice
+            if max_idx >= len(feature_names):
+                logger.error(
+                    f"❌ max_idx={max_idx} fuera de rango de feature_names "
+                    f"(len={len(feature_names)})"
+                )
+                variable_name = f"Feature_{max_idx}_OutOfRange"
+            else:
+                variable_name = feature_names[max_idx]
+        
+            # ✅ Obtener nombre de la variable
+            if max_idx < len(feature_names):
+                variable_name = feature_names[max_idx]
+            else:
+                variable_name = f"Feature_{max_idx}"
+            
+            return {
+                "most_influential_variable": variable_name,
+                "contribution_magnitude": round(max_contribution, 4)
+            }
+            
+        except Exception as e:
+            logger.warning(f"⚠️  Error calculando feature contribution: {e}")
+            return {
+                "most_influential_variable": None,
+                "contribution_magnitude": None
+            }
+    
     async def predict_anomalies(
         self,
         activo_id: int,
@@ -188,7 +309,8 @@ class AnomalyService:
             logger.info("🔧 Fase 2: Preprocesamiento")
             X_list = []
             y_list = []
-            feature_names = []  # Agregar lista para nombres
+            feature_names = []
+            timestamps = []  # ✅ Inicializar ANTES del loop
             
             for rec in ml_records:
                 vals = [v for k, v in rec.items() if k != 'timestamp']
@@ -197,23 +319,84 @@ class AnomalyService:
                 if vals:
                     X_list.append(vals)
                     y_list.append(np.mean(vals))
+                    timestamps.append(rec['timestamp'])  # ✅ Agregar timestamp al mismo tiempo
             
             # Imprimir nombres de features
             logger.info(f"   📋 Features detectadas: {feature_names}")
             logger.info(f"   📋 Cantidad de features: {len(feature_names)}")
             
-            max_feat = max(len(x) for x in X_list)
-            X = np.array([
-                x + [0.0] * (max_feat - len(x)) if len(x) < max_feat else x[:max_feat]
-                for x in X_list
-            ])
+            # ✅ DIAGNÓSTICO: Verificar longitudes de X_list
+            lengths = [len(x) for x in X_list]
+            unique_lengths = set(lengths)
+            
+            if len(unique_lengths) > 1:
+                logger.error(
+                    f"❌ INCONSISTENCIA DETECTADA:\n"
+                    f"   • Longitudes únicas: {unique_lengths}\n"
+                    f"   • Distribución: {dict(zip(*np.unique(lengths, return_counts=True)))}\n"
+                    f"   • feature_names tiene: {len(feature_names)} features"
+                )
+                
+                # Mostrar ejemplos de registros con diferentes longitudes
+                for length in unique_lengths:
+                    idx = lengths.index(length)
+                    logger.error(
+                        f"   • Registro {idx} (timestamp={timestamps[idx]}) tiene {length} valores"
+                    )
+                    # Mostrar qué sensores tiene este registro
+                    rec_sensors = [k for k in ml_records[idx].keys() if k != 'timestamp']
+                    logger.error(f"     Sensores: {rec_sensors}")
+                
+                # ✅ SOLUCIÓN: Usar la longitud más común (la mayoría de registros)
+                most_common_length = max(set(lengths), key=lengths.count)
+                logger.warning(
+                    f"⚠️  Longitud más común: {most_common_length} "
+                    f"({lengths.count(most_common_length)} registros)"
+                )
+                
+                # Actualizar feature_names a la longitud correcta
+                for rec in ml_records:
+                    vals = [v for k, v in rec.items() if k != 'timestamp']
+                    if len(vals) == most_common_length:
+                        feature_names = [k for k in rec.keys() if k != 'timestamp']
+                        break
+                
+                logger.info(f"   📋 Features actualizadas: {feature_names}")
+                logger.info(f"   📋 Cantidad de features: {len(feature_names)}")
+                
+                # Filtrar registros con la longitud correcta
+                filtered_data = [
+                    (x, ts, y) 
+                    for x, ts, y in zip(X_list, timestamps, y_list) 
+                    if len(x) == most_common_length
+                ]
+                
+                if not filtered_data:
+                    raise ValueError(
+                        f"No hay registros válidos con {most_common_length} features. "
+                        f"Longitudes encontradas: {unique_lengths}"
+                    )
+                
+                # Desempaquetar datos filtrados
+                X_list, timestamps, y_list = zip(*filtered_data)
+                X_list = list(X_list)
+                timestamps = list(timestamps)
+                y_list = list(y_list)
+                
+                logger.warning(
+                    f"⚠️  Filtrados {len(X_list)} registros válidos de {len(ml_records)} totales "
+                    f"({len(ml_records) - len(X_list)} descartados por tener {list(unique_lengths - {most_common_length})} features)"
+                )
+            
+            # ✅ CONVERSIÓN DIRECTA (sin padding)
+            X = np.array(X_list)
             y = np.array(y_list)
             
-            logger.info(f"   ✓ X: {X.shape}, y: {y.shape}")
+            logger.info(f"   ✓ X: {X.shape}, y: {y.shape}, timestamps: {len(timestamps)}")
             timestamps = [rec['timestamp'] for rec in ml_records]
             # ✅ LOG para verificar dimensiones
             logger.info(f"📊 Ventana preparada: shape={X.shape} (debe ser [n_samples, n_sensores])")
-            logger.info(f"📊 Features por registro: {max_feat}")
+            logger.info(f"📊 Features por registro: {X.shape[1]}")  # ✅ Usar X.shape[1] en lugar de max_feat
             
             # ✅ LOG DE MUESTRA DE PRIMER REGISTRO
             if len(ml_records) > 0:
@@ -321,7 +504,9 @@ class AnomalyService:
                         "Threshold": threshold,  # Se actualizará
                         "Severity": severity,
                         "Description": description,
-                        "ReconstructedValue": round(float(prediction), 4)
+                        "ReconstructedValue": round(float(prediction), 4),
+                        "most_influential_variable": None,  # ✅ Nuevo campo
+                        "contribution_magnitude": None      # ✅ Nuevo campo
                     }
                     
                     results.append(result)
@@ -330,8 +515,10 @@ class AnomalyService:
                     logger.warning(f"⚠️  Error procesando registro {i}: {e}")
                     continue
             
+            logger.info(f"✅ Cálculo de scores completado para {len(results)} registros")
+        
             # ===================================
-            # ✅ CALCULAR THRESHOLD ADAPTATIVO Y is_anomaly
+            # ✅ CALCULAR THRESHOLD ADAPTATIVO, is_anomaly Y EXPLICABILIDAD
             # ===================================
             if results:
                 df_results = pd.DataFrame(results)
@@ -384,15 +571,62 @@ class AnomalyService:
                     nivel_estabilidad = "🔴 BAJA"
                 
                 # ✅ Actualizar severidad y descripción solo para anomalías (is_anomaly == True)
+                # ✅ CALCULAR FEATURE CONTRIBUTION SOLO PARA ANOMALÍAS
                 anomaly_mask = df_results['is_anomaly'] == True
                 
                 if anomaly_mask.any():
+                    logger.info(f"🔍 Calculando explicabilidad para {anomaly_mask.sum()} anomalías")
+                    
+                    # ✅ LOG DE MUESTRA DE EXPLICABILIDAD (primeras 3 anomalías)
+                    anomaly_indices = df_results[anomaly_mask].index[:3]
+                    logger.info("=" * 70)
+                    logger.info("🧠 MUESTRA DE EXPLICABILIDAD (primeras 3 anomalías)")
+                    logger.info("=" * 70)
+                    
                     for idx in df_results[anomaly_mask].index:
-                        likelihood = df_results.loc[idx, 'AnomalyLikelihood']
-                        df_results.loc[idx, 'Severity'] = severity_from_likelihood(likelihood)
-                        df_results.loc[idx, 'Description'] = description_from_severity(
-                            df_results.loc[idx, 'Severity']
-                        )
+                        try:
+                            # Obtener features del registro original
+                            features = X[idx:idx+1]
+                            
+                            # Calcular contribución
+                            contribution = self._get_feature_contribution(
+                                features=features,
+                                feature_names=feature_names,
+                                is_anomaly=True
+                            )
+                            
+                            # ✅ LOG DETALLADO PARA LAS PRIMERAS 3 ANOMALÍAS
+                            if idx in anomaly_indices:
+                                logger.info(
+                                    f"  🚨 Anomalía [{df_results.loc[idx, 'timestamp']}]:\n"
+                                    f"     • Variable más influyente: {contribution['most_influential_variable']}\n"
+                                    f"     • Magnitud de contribución: {contribution['contribution_magnitude']}\n"
+                                    f"     • AnomalyLikelihood: {df_results.loc[idx, 'AnomalyLikelihood']:.2f}\n"
+                                    f"     • Threshold: {df_results.loc[idx, 'Threshold']:.2f}\n"
+                                    f"     • Severidad: {df_results.loc[idx, 'Severity']}"
+                                )
+                            
+                            # Actualizar DataFrame
+                            df_results.loc[idx, 'most_influential_variable'] = contribution['most_influential_variable']
+                            df_results.loc[idx, 'contribution_magnitude'] = contribution['contribution_magnitude']
+                            
+                            # Actualizar severidad y descripción
+                            likelihood = df_results.loc[idx, 'AnomalyLikelihood']
+                            df_results.loc[idx, 'Severity'] = severity_from_likelihood(likelihood)
+                            
+                            # ✅ Descripción enriquecida con variable influyente
+                            base_desc = description_from_severity(df_results.loc[idx, 'Severity'])
+                            if contribution['most_influential_variable']:
+                                enriched_desc = (
+                                    f"{base_desc} "
+                                    f"Variable más influyente: {contribution['most_influential_variable']} "
+                                    f"(contribución: {contribution['contribution_magnitude']:.4f})."
+                                )
+                                df_results.loc[idx, 'Description'] = enriched_desc
+                            
+                        except Exception as e:
+                            logger.warning(f"⚠️  Error calculando contribución para índice {idx}: {e}")
+                            continue
                 
                 # Convertir de vuelta a lista de dicts
                 results = df_results.to_dict('records')
@@ -436,6 +670,21 @@ class AnomalyService:
                         f"✅ Excelente estabilidad (CV={cv_dif:.4f}). "
                         f"El sistema está detectando anomalías de manera consistente."
                     )
+                # Distribución de severidades
+                severity_counts = df_results['Severity'].value_counts()
+                logger.info(f"  • Distribución de severidades:")
+                for severity, count in severity_counts.items():
+                    logger.info(f"    - {severity}: {count} ({count/len(df_results)*100:.1f}%)")
+                
+                # Top 3 variables más influyentes (si hay anomalías)
+                if anomaly_mask.any():
+                    anomalies_df = df_results[anomaly_mask]
+                    top_vars = anomalies_df['most_influential_variable'].value_counts().head(3)
+                    logger.info(f"  • Top 3 variables más influyentes en anomalías:")
+                    for var, count in top_vars.items():
+                        logger.info(f"    - {var}: {count} veces")
+                
+                logger.info("=" * 70)
                 
                 # ✅ Estadísticas adicionales de detección
                 if anomaly_count > 0:
@@ -532,27 +781,29 @@ class AnomalyService:
                 if isinstance(is_anomaly_value, (int, float)):
                     is_anomaly_value = bool(is_anomaly_value)
                 
+                # ✅ Extraer nuevos campos de explicabilidad
+                # most_influential_variable = result.get("most_influential_variable")
+                # contribution_magnitude = result.get("contribution_magnitude")
+                
                 # Crear modelo de anomalía
                 anomaly = AnomalyCreate(
                     activo_id=activo_id,
                     sensor_id=None,  # NULL para análisis a nivel de activo
                     timestamp=timestamp,
-                    anomaly_score=float(anomaly_score),  # Valor REAL del predict
-                    anomaly_likelihood=float(anomaly_likelihood),  # Valor REAL del predict
-                    severidad=severidad,  # Severidad REAL del predict
-                    descripcion=descripcion,  # Descripción completa
-                    threshold=float(threshold),  # Threshold REAL calculado con rolling
-                    is_anomaly=is_anomaly_value  # is_anomaly REAL del predict
+                    anomaly_score=float(anomaly_score),
+                    anomaly_likelihood=float(anomaly_likelihood),
+                    severidad=severidad,
+                    descripcion=descripcion,
+                    threshold=float(threshold),
+                    is_anomaly=is_anomaly_value,
+                    # most_influential_variable=most_influential_variable,      # ✅ Nuevo
+                    # contribution_magnitude=float(contribution_magnitude) if contribution_magnitude else None  # ✅ Nuevo
                 )
                 
                 anomalies_to_create.append(anomaly)
                 
             except Exception as e:
-                logger.error(
-                    f"❌ Error preparando anomalía para registro {idx} "
-                    f"(timestamp: {result.get('timestamp', 'unknown')}): {e}",
-                    exc_info=True
-                )
+                logger.error(f"❌ Error preparando anomalía: {e}", exc_info=True)
                 continue
         
         # ✅ Validar que se crearon registros
@@ -591,7 +842,10 @@ class AnomalyService:
                         f"Score={anomaly.anomaly_score:.2f}, "
                         f"Likelihood={anomaly.anomaly_likelihood:.2f}, "
                         f"Threshold={anomaly.threshold:.2f}, "
-                        f"Severidad={anomaly.severidad}"
+                        f"Severidad={anomaly.severidad}, "
+                        f"Descripcion={anomaly.descripcion}, "
+                        # f"Most Infl. Var={anomaly.most_influential_variable}, "
+                        # f"Contrib. Mag={anomaly.contribution_magnitude}"
                     )
             
             # ✅ Log de anomalías detectadas

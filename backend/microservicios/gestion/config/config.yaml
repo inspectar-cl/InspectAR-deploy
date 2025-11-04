@@ -9,6 +9,10 @@ postgres:
 server:
   port: "8092"
 
+services:
+  parser_url: "http://localhost:8090"
+  base_url: "https://interbanded-kole-sneeringly.ngrok-free.app"
+
 # Para conexión externa (cuando esté en Google Cloud)
 # postgres:
 #   host: "34.39.160.195"

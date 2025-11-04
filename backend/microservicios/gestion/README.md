@@ -11,13 +11,13 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 - Testing completo exitoso en todas las rutas
 
 **📊 Estadísticas de Implementación:**
-- **45 rutas totales** configuradas 🆕
-- **44 rutas funcionando** (97.8% operativas)
-- **1 ruta con issue DB** (reporte PDF legacy)
+- **57 rutas totales** configuradas 🆕
+- **57 rutas funcionando** (100% operativas) ✅
+- **0 rutas con issues** 
 - **0 rutas pendientes** de implementación
-- **15 nuevas rutas agregadas** (6 observaciones + 3 usuarios/edificios/acceso + 3 activos + 3 HU22) 🎉
+- **27 nuevas rutas agregadas** (6 observaciones + 3 usuarios/edificios/acceso + 3 activos + 3 HU22 + 9 administrador + 3 QR) 🎉
 
-**🚀 Última Actualización:** 7 de Octubre 2025 - **Sistema de Reportes de Fallas HU22** 🆕
+**🚀 Última Actualización:** 4 de Noviembre 2025 - **Sistema de Códigos QR para Activos** 🆕
 
 ## Funcionalidades
 
@@ -69,6 +69,18 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 - ✅ **Username en respuestas** para mejor UX
 - ✅ **Ordenamiento cronológico** (DESC por fecha_publicacion)
 - ✅ **Estados de falla** (reportado, en_revision, resuelto, rechazado)
+
+### 🔐 Sistema de Administración con Auditoría 🆕
+- ✅ **CRUD completo de activos** con sincronización a ParserService
+- ✅ **CRUD completo de edificios** con validación de permisos
+- ✅ **Creación de sensores** integrada con ParserService
+- ✅ **Logs de auditoría automáticos** para todas las operaciones
+- ✅ **Trazabilidad completa** de cambios (datos antes/después)
+- ✅ **Registro de usuario, IP y User-Agent** en cada acción
+- ✅ **Consulta de logs con filtros** (usuario, entidad, fecha)
+- ✅ **Validación de tipos de activos** (caldera, bomba, ascensor, transformador)
+- ✅ **Rollback automático** si falla sincronización con ParserService
+- ✅ **8 endpoints REST** para administración completa
 
 ## 📋 Tabla de Rutas - Vista Rápida
 
@@ -150,6 +162,48 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 
 | Método | Endpoint | Descripción | Estado |
 |--------|----------|-------------|---------|
+| `POST` | `/tipos-falla` | Crear reporte de falla de usuario | ✅ **IMPLEMENTADO** |
+| `POST` | `/comentarios` | Agregar comentario a una falla | ✅ **IMPLEMENTADO** |
+| `GET` | `/tipos-falla/edificio/{edificio_id}` | Obtener fallas por edificio (con paginación) | ✅ **IMPLEMENTADO** |
+
+### ✍️ Rutas de Firmas Digitales - 🆕 **SISTEMA COMPLETO IMPLEMENTADO**
+
+| Método | Endpoint | Descripción | Estado |
+|--------|----------|-------------|---------|
+| `POST` | `/firmas/upload` | Subir firma como archivo de imagen | ✅ **IMPLEMENTADO** |
+| `POST` | `/firmas/svg` | Crear firma desde SVG (pizarra digital) | ✅ **IMPLEMENTADO** |
+| `GET` | `/firmas/:id` | Obtener información de firma por ID | ✅ **IMPLEMENTADO** |
+| `GET` | `/firmas/:id/imagen` | Obtener imagen de la firma | ✅ **IMPLEMENTADO** |
+| `GET` | `/firmas/usuario/:email` | Obtener todas las firmas de un usuario | ✅ **IMPLEMENTADO** |
+| `GET` | `/firmas/usuario/:email/predeterminada` | Obtener firma predeterminada de usuario | ✅ **IMPLEMENTADO** |
+| `PUT` | `/firmas/:id` | Actualizar información de firma | ✅ **IMPLEMENTADO** |
+| `DELETE` | `/firmas/:id` | Eliminar firma (requiere email en body) | ✅ **IMPLEMENTADO** |
+| `POST` | `/firmas/:id/predeterminada` | Establecer firma como predeterminada | ✅ **IMPLEMENTADO** |
+
+### 🔐 Rutas de Administrador - 🆕 **SISTEMA COMPLETO CON AUDITORÍA**
+
+| Método | Endpoint | Descripción | Estado |
+|--------|----------|-------------|---------|
+| `POST` | `/admin/activos` | **Crear activo** (sincroniza con ParserService) | ✅ **NUEVO** |
+| `PUT` | `/admin/activos/:id` | **Actualizar activo** (registra cambios) | ✅ **NUEVO** |
+| `DELETE` | `/admin/activos/:id` | **Eliminar activo** (ambos servicios) | ✅ **NUEVO** |
+| `POST` | `/admin/edificios` | **Crear edificio** (con auditoría) | ✅ **NUEVO** |
+| `PUT` | `/admin/edificios/:id` | **Actualizar edificio** (registra cambios) | ✅ **NUEVO** |
+| `DELETE` | `/admin/edificios/:id` | **Eliminar edificio** (con auditoría) | ✅ **NUEVO** |
+| `POST` | `/admin/sensores` | **Crear sensor** en ParserService | ✅ **NUEVO** |
+| `PUT` | `/admin/sensores/:id` | **Actualizar sensor** en ParserService | ✅ **NUEVO** |
+| `GET` | `/admin/logs` | **Consultar logs de auditoría** (con filtros) | ✅ **NUEVO** |
+
+### 📱 Rutas de Códigos QR - 🆕 **SISTEMA COMPLETO IMPLEMENTADO**
+
+| Método | Endpoint | Descripción | Estado |
+|--------|----------|-------------|---------|
+| `GET` | `/qr/:codigo` | **Obtener información del activo por código QR** | ✅ **NUEVO** |
+| `GET` | `/qr/obtener/:activo_id` | **Descargar código QR como imagen PNG** | ✅ **NUEVO** |
+| `GET` | `/qr/ver/:activo_id` | **Visualizar QR en página HTML interactiva** | ✅ **NUEVO** |
+
+| Método | Endpoint | Descripción | Estado |
+|--------|----------|-------------|---------|
 | `POST` | `/tipos-falla` | 🎯 **Crear reporte de falla** (agua, ascensor, electricidad, caldera) | ✅ **IMPLEMENTADO** |
 | `POST` | `/comentarios` | 🎯 **Agregar comentario a una falla reportada** | ✅ **IMPLEMENTADO** |
 | `GET` | `/tipos-falla/edificio/{edificio_id}?pagina={N}` | 🎯 **Obtener fallas de un edificio (con/sin paginación)** | ✅ **IMPLEMENTADO** |
@@ -170,11 +224,11 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 
 ### 🎯 Resumen de Estado
 
-- **✅ Funcionando**: 53 rutas operativas (98.1% IMPLEMENTADAS) 🆕
+- **✅ Funcionando**: 57 rutas operativas (100% IMPLEMENTADAS) 🆕
 - **🔧 No implementado**: 0 rutas pendientes  
-- **⚠️ Issue DB**: 1 ruta con problema de schema
-- **🎉 Nuevas rutas**: 24 rutas agregadas (6 observaciones + 3 usuarios/acceso + 3 activos + 3 fallas HU22 + 9 firmas digitales) 🆕
-- **Total**: 54 rutas configuradas 🆕
+- **⚠️ Issue DB**: 0 rutas con problema de schema
+- **🎉 Nuevas rutas**: 3 rutas QR + 25 rutas anteriores (6 observaciones + 3 usuarios/acceso + 3 activos + 3 fallas HU22 + 9 firmas digitales + 1 sensor) 🆕
+- **Total**: 57 rutas configuradas 🆕
 
 ### ⚡ Tests Rápidos
 
@@ -249,6 +303,16 @@ curl "http://localhost:8092/tipos-falla/edificio/1"
 curl "http://localhost:8092/tipos-falla/edificio/1?pagina=1"
 curl "http://localhost:8092/tipos-falla/edificio/1?pagina=2"
 curl "http://localhost:8092/tipos-falla/edificio/1?pagina=3"
+
+# 📱 NUEVAS RUTAS QR: Códigos QR para Activos
+# Obtener información del activo por código
+curl http://localhost:8092/qr/EDI01-BOMBA-0001-2025
+
+# Descargar QR como imagen PNG
+curl http://localhost:8092/qr/obtener/1 -o qr_activo.png
+
+# Visualizar QR en página HTML (abrir en navegador)
+# http://localhost:8092/qr/ver/1
 ```
 
 ## API Endpoints
@@ -1386,7 +1450,437 @@ El servicio estará disponible en el puerto `8092`.
 
 ---
 
-## 🚨 HU22 - Sistema de Reportes de Fallas de Usuarios
+## � Sistema de Códigos QR para Activos
+
+### Descripción
+
+Sistema completo de generación y gestión de códigos QR únicos para activos, con las siguientes características:
+
+- ✅ **Generación automática de códigos únicos** al crear activos
+- ✅ **Formato jerárquico**: `EDI[ID]-[TIPO]-[SECUENCIAL]-[AÑO]`
+- ✅ **Códigos QR generados automáticamente** (256x256 px, PNG)
+- ✅ **Almacenamiento en Base64** en PostgreSQL
+- ✅ **3 rutas REST** para gestión completa
+- ✅ **Visualización HTML interactiva** con diseño responsive
+- ✅ **URL pública configurable** (ngrok, dominio propio)
+
+### Características del Sistema QR
+
+#### Generación Automática de Códigos
+
+Cada activo recibe un código único con el formato:
+```
+EDI[ID_EDIFICIO]-[TIPO_ABREVIADO]-[SECUENCIAL]-[AÑO]
+```
+
+**Ejemplos:**
+- `EDI01-BOMBA-0001-2025` - Primera bomba del Edificio 1
+- `EDI02-ASCE-0003-2025` - Tercer ascensor del Edificio 2
+- `EDI03-CALD-0001-2025` - Primera caldera del Edificio 3
+
+**Tipos abreviados:**
+- `bomba de agua` → `BOMBA`
+- `caldera` → `CALD`
+- `ascensor` → `ASCE`
+- `transformador` → `TRANS`
+
+#### Secuencias Automáticas
+
+El sistema mantiene secuencias independientes por:
+- **Edificio** (edificio_id)
+- **Tipo de activo** (tipo)
+- **Año** (año actual)
+
+Esto garantiza códigos únicos y predecibles.
+
+### Rutas Implementadas
+
+#### 1. 🔍 Obtener información del activo por código
+
+```bash
+GET /qr/:codigo
+```
+
+**Uso:** Obtener información básica del activo usando su código único.
+
+**Ejemplo:**
+```bash
+curl http://localhost:8092/qr/EDI01-BOMBA-0003-2025
+```
+
+**Respuesta (200 OK):**
+```json
+{
+  "codigo": "EDI01-BOMBA-0003-2025",
+  "nombre": "Bomba Ngrok Test",
+  "tipo": "bomba de agua",
+  "descripcion": "Bomba para probar QR con URL pública de ngrok",
+  "ubicacion": "Sala de Pruebas Ngrok"
+}
+```
+
+**Respuesta de error (404 Not Found):**
+```json
+{
+  "error": "Activo no encontrado"
+}
+```
+
+---
+
+#### 2. 📥 Descargar código QR como imagen PNG
+
+```bash
+GET /qr/obtener/:activo_id
+```
+
+**Uso:** Descargar el código QR como imagen PNG. Si no existe, lo genera automáticamente.
+
+**Ejemplo:**
+```bash
+# Descargar y guardar
+curl http://localhost:8092/qr/obtener/9 -o qr_activo_9.png
+
+# Usar en HTML
+<img src="http://localhost:8092/qr/obtener/9" alt="QR del activo" />
+```
+
+**Headers de respuesta:**
+```
+Content-Type: image/png
+Content-Disposition: inline; filename="qr_activo_9.png"
+Cache-Control: public, max-age=86400
+```
+
+**Características:**
+- ✅ Imagen PNG de 256x256 píxeles
+- ✅ Generación lazy (solo si no existe)
+- ✅ Guardado automático en base de datos
+- ✅ Cache de 24 horas
+- ✅ Peso aproximado: 600-700 bytes
+
+---
+
+#### 3. 👁️ Visualizar QR en página HTML
+
+```bash
+GET /qr/ver/:activo_id
+```
+
+**Uso:** Ver el código QR en una página HTML interactiva con diseño moderno.
+
+**Ejemplo:**
+```bash
+# Abrir en navegador
+http://localhost:8092/qr/ver/9
+
+# Con URL pública (ngrok)
+https://interbanded-kole-sneeringly.ngrok-free.app/qr/ver/9
+```
+
+**Características de la página:**
+- 🎨 Diseño moderno con gradiente purple/blue
+- 📱 Responsive (mobile-first)
+- 🖼️ QR embebido en base64 (carga instantánea)
+- ℹ️ Información del activo (nombre, tipo, descripción, ubicación)
+- 💾 Botón de descarga directa del QR
+- 🖨️ Funcionalidad de impresión optimizada
+- ⚡ Sin dependencias externas (self-contained)
+
+**Vista previa de la página:**
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Código QR - Bomba Ngrok Test</title>
+    <style>
+        /* Gradiente purple/blue */
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        /* Diseño responsive con cards */
+    </style>
+</head>
+<body>
+    <!-- Badge con el código -->
+    <div class="code-badge">EDI01-BOMBA-0003-2025</div>
+    
+    <!-- QR embebido en base64 -->
+    <img src="data:image/png;base64,iVBORw0K..." />
+    
+    <!-- Información del activo -->
+    <div class="info-card">
+        <h3>Nombre</h3>
+        <p>Bomba Ngrok Test</p>
+    </div>
+    
+    <!-- Botones de acción -->
+    <button onclick="descargarQR()">💾 Descargar QR</button>
+    <button onclick="window.print()">🖨️ Imprimir</button>
+</body>
+</html>
+```
+
+---
+
+### Configuración de URL Base
+
+El sistema soporta URLs configurables para adaptar el QR a diferentes entornos:
+
+**Archivo: `config/config.yaml` (desarrollo local)**
+```yaml
+services:
+  base_url: "http://localhost:8092"
+```
+
+**Archivo: `config/config.docker.yaml` (producción/ngrok)**
+```yaml
+services:
+  base_url: "https://interbanded-kole-sneeringly.ngrok-free.app"
+```
+
+Cuando escaneas el QR, te redirige a:
+```
+{base_url}/qr/{codigo_unico}
+```
+
+---
+
+### Flujo Completo del Sistema QR
+
+```mermaid
+graph LR
+    A[Crear Activo] --> B[Generar Código Único]
+    B --> C[Función SQL: generar_codigo_activo]
+    C --> D[Código: EDI01-BOMBA-0001-2025]
+    D --> E[Generar QR automáticamente]
+    E --> F[Guardar QR en Base64]
+    F --> G[Activo listo con QR]
+    
+    G --> H1[Ruta 1: GET /qr/:codigo]
+    G --> H2[Ruta 2: GET /qr/obtener/:id]
+    G --> H3[Ruta 3: GET /qr/ver/:id]
+    
+    H1 --> I1[JSON con info]
+    H2 --> I2[PNG descargable]
+    H3 --> I3[Página HTML]
+```
+
+---
+
+### Ejemplos de Uso
+
+#### Caso 1: Descargar QR para imprimir
+
+```bash
+# 1. Obtener el ID del activo
+curl http://localhost:8092/activos | jq '.activos[0].id'
+# Respuesta: 9
+
+# 2. Descargar el QR
+curl http://localhost:8092/qr/obtener/9 -o qr_bomba.png
+
+# 3. Verificar el archivo
+file qr_bomba.png
+# qr_bomba.png: PNG image data, 256 x 256, 1-bit colormap
+```
+
+---
+
+#### Caso 2: Mostrar QR en aplicación web
+
+```html
+<!-- React/Next.js component -->
+<div className="activo-card">
+  <h2>{activo.nombre}</h2>
+  <img 
+    src={`http://localhost:8092/qr/obtener/${activo.id}`}
+    alt={`QR de ${activo.nombre}`}
+    width="256"
+    height="256"
+  />
+  <a 
+    href={`http://localhost:8092/qr/ver/${activo.id}`}
+    target="_blank"
+  >
+    Ver QR en pantalla completa
+  </a>
+</div>
+```
+
+---
+
+#### Caso 3: Escanear QR con celular
+
+1. **Usuario escanea el QR impreso**
+2. **Celular lee la URL:** `https://tu-dominio.com/qr/EDI01-BOMBA-0003-2025`
+3. **API responde con JSON:**
+   ```json
+   {
+     "codigo": "EDI01-BOMBA-0003-2025",
+     "nombre": "Bomba Ngrok Test",
+     "tipo": "bomba de agua",
+     "descripcion": "...",
+     "ubicacion": "Sala de Pruebas"
+   }
+   ```
+4. **Frontend mobile muestra la información del activo**
+
+---
+
+#### Caso 4: Generar QRs en batch
+
+```bash
+#!/bin/bash
+# Script para generar QRs de todos los activos de un edificio
+
+EDIFICIO_ID=1
+OUTPUT_DIR="qr_codes"
+mkdir -p $OUTPUT_DIR
+
+# Obtener activos del edificio
+ACTIVOS=$(curl -s http://localhost:8092/activos/edificio/$EDIFICIO_ID | jq -r '.activos[].id')
+
+# Descargar QR de cada activo
+for ID in $ACTIVOS; do
+  echo "Descargando QR del activo $ID..."
+  curl -s http://localhost:8092/qr/obtener/$ID -o "$OUTPUT_DIR/qr_activo_$ID.png"
+done
+
+echo "✅ QRs descargados en $OUTPUT_DIR/"
+```
+
+---
+
+### Estructura de Base de Datos
+
+#### Tabla `activos` (campos QR agregados):
+
+```sql
+CREATE TABLE activos (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL,
+    tipo VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    ubicacion VARCHAR(255),
+    edificio_id INTEGER REFERENCES edificios(id),
+    
+    -- 🆕 Campos del sistema QR
+    codigo_activo VARCHAR(50) UNIQUE,        -- EDI01-BOMBA-0001-2025
+    codigo_qr TEXT,                          -- Base64 del PNG
+    url_qr VARCHAR(500),                     -- URL completa
+    qr_generado_en TIMESTAMP,                -- Timestamp de generación
+    secuencial INTEGER DEFAULT 0,            -- Número secuencial
+    
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### Tabla `activos_secuencias` (control de secuencias):
+
+```sql
+CREATE TABLE activos_secuencias (
+    id SERIAL PRIMARY KEY,
+    edificio_id INTEGER NOT NULL,
+    tipo_activo VARCHAR(100) NOT NULL,
+    ultimo_secuencial INTEGER DEFAULT 0,
+    anio INTEGER DEFAULT EXTRACT(YEAR FROM CURRENT_TIMESTAMP),
+    UNIQUE(edificio_id, tipo_activo, anio)
+);
+```
+
+#### Función PostgreSQL `generar_codigo_activo()`:
+
+```sql
+CREATE OR REPLACE FUNCTION generar_codigo_activo(
+    p_edificio_id INTEGER,
+    p_tipo VARCHAR
+)
+RETURNS VARCHAR AS $$
+DECLARE
+    v_codigo VARCHAR(50);
+    v_tipo_abreviado VARCHAR(10);
+    v_secuencial INTEGER;
+    v_anio INTEGER;
+BEGIN
+    -- Mapeo de tipos a abreviaturas
+    v_tipo_abreviado := CASE p_tipo
+        WHEN 'bomba de agua' THEN 'BOMBA'
+        WHEN 'caldera' THEN 'CALD'
+        WHEN 'ascensor' THEN 'ASCE'
+        WHEN 'transformador' THEN 'TRANS'
+        ELSE 'OTRO'
+    END;
+    
+    v_anio := EXTRACT(YEAR FROM CURRENT_TIMESTAMP);
+    
+    -- Obtener y actualizar secuencial (atómico)
+    INSERT INTO activos_secuencias (edificio_id, tipo_activo, anio, ultimo_secuencial)
+    VALUES (p_edificio_id, p_tipo, v_anio, 1)
+    ON CONFLICT (edificio_id, tipo_activo, anio)
+    DO UPDATE SET ultimo_secuencial = activos_secuencias.ultimo_secuencial + 1
+    RETURNING ultimo_secuencial INTO v_secuencial;
+    
+    -- Construir código
+    v_codigo := FORMAT('EDI%s-%s-%s-%s',
+        LPAD(p_edificio_id::TEXT, 2, '0'),
+        v_tipo_abreviado,
+        LPAD(v_secuencial::TEXT, 4, '0'),
+        v_anio
+    );
+    
+    RETURN v_codigo;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+#### Trigger automático:
+
+```sql
+CREATE TRIGGER before_insert_activo_codigo
+BEFORE INSERT ON activos
+FOR EACH ROW
+WHEN (NEW.codigo_activo IS NULL)
+EXECUTE FUNCTION trigger_generar_codigo_activo();
+```
+
+---
+
+### Tests del Sistema QR
+
+Script completo de validación: `tests/testQR.sh`
+
+**Pasos validados:**
+1. ✅ Crear edificio
+2. ✅ Crear activo (genera código y QR automáticamente)
+3. ✅ GET /qr/:codigo → Retorna info JSON
+4. ✅ GET /qr/obtener/:activo_id → Descarga PNG
+5. ✅ GET /qr/ver/:activo_id → Página HTML
+6. ✅ Verificar QR en base de datos
+7. ✅ Validar secuencia incremental
+
+**Ejecutar tests:**
+```bash
+cd /home/joytan/repo/InspectAR/backend/microservicios/gestion
+./tests/testQR.sh
+```
+
+---
+
+### Ventajas del Sistema
+
+✅ **Códigos únicos garantizados** por función SQL atómica  
+✅ **Generación automática** al crear activos (cero fricción)  
+✅ **3 rutas flexibles** para diferentes casos de uso  
+✅ **Visualización moderna** con HTML responsive  
+✅ **Cache optimizado** para performance  
+✅ **URL configurable** para cualquier entorno  
+✅ **Sin dependencias externas** en frontend  
+✅ **Secuencias por edificio/tipo/año** para organización  
+
+---
+
+## �🚨 HU22 - Sistema de Reportes de Fallas de Usuarios
 
 ### Descripción (Octubre 2025)
 
@@ -1707,5 +2201,747 @@ curl "http://localhost:8092/tipos-falla/edificio/2?pagina=2"
 - `idx_comentarios_falla` - Comentarios por falla
 - `idx_comentarios_usuario` - Comentarios por usuario
 - `idx_comentarios_fecha` - Ordenamiento temporal
+
+---
+
+## ✍️ Sistema de Firmas Digitales
+
+### Descripción
+
+Sistema completo de gestión de firmas digitales para usuarios, soportando:
+- Subida de firmas como archivos de imagen (PNG, JPEG, JPG)
+- Creación de firmas desde datos SVG (pizarra digital)
+- Gestión de múltiples firmas por usuario
+- Firma predeterminada por usuario
+- Validación de permisos para eliminación
+
+### Endpoints de Firmas
+
+#### 1. Subir firma como archivo
+```bash
+curl -X POST http://localhost:8092/firmas/upload \
+  -F "email=admin@example.com" \
+  -F "nombre_archivo=Mi Firma Oficial" \
+  -F "es_predeterminada=true" \
+  -F "archivo=@firma.png"
+```
+
+**Respuesta:**
+```json
+{
+  "message": "Firma subida exitosamente",
+  "firma": {
+    "id": 1,
+    "usuario_id": 1,
+    "nombre_archivo": "Mi Firma Oficial",
+    "ruta_archivo": "/app/storage/firmas/admin@example.com/firma_20251027.png",
+    "tipo_mime": "image/png",
+    "tamano": 15234,
+    "es_predeterminada": true,
+    "creado_en": "2025-10-27T10:30:00Z"
+  }
+}
+```
+
+#### 2. Crear firma desde SVG
+```bash
+curl -X POST http://localhost:8092/firmas/svg \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "tecnico@example.com",
+    "nombre_archivo": "Firma Digital",
+    "datos_svg": "<svg>...</svg>",
+    "es_predeterminada": false
+  }'
+```
+
+#### 3. Obtener firma por ID
+```bash
+curl http://localhost:8092/firmas/1
+```
+
+#### 4. Obtener imagen de firma
+```bash
+curl http://localhost:8092/firmas/1/imagen -o firma.png
+```
+
+#### 5. Obtener firmas de un usuario
+```bash
+curl http://localhost:8092/firmas/usuario/admin@example.com
+```
+
+**Respuesta:**
+```json
+{
+  "firmas": [
+    {
+      "id": 1,
+      "usuario_id": 1,
+      "nombre_archivo": "Mi Firma Oficial",
+      "ruta_archivo": "/app/storage/firmas/admin@example.com/firma_20251027.png",
+      "tipo_mime": "image/png",
+      "tamano": 15234,
+      "es_predeterminada": true,
+      "creado_en": "2025-10-27T10:30:00Z"
+    }
+  ],
+  "total": 1
+}
+```
+
+#### 6. Obtener firma predeterminada
+```bash
+curl http://localhost:8092/firmas/usuario/admin@example.com/predeterminada
+```
+
+#### 7. Actualizar firma
+```bash
+curl -X PUT http://localhost:8092/firmas/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre_archivo": "Firma Actualizada",
+    "es_predeterminada": true
+  }'
+```
+
+#### 8. Establecer firma como predeterminada
+```bash
+curl -X POST http://localhost:8092/firmas/1/predeterminada \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@example.com"
+  }'
+```
+
+#### 9. 🔒 Eliminar firma (con validación de permisos)
+```bash
+curl -X DELETE http://localhost:8092/firmas/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@example.com"
+  }'
+```
+
+**⚠️ Importante:** El endpoint de eliminación ahora requiere el `email` en el body para validar que la firma pertenezca al usuario. Si la firma no pertenece al usuario, retorna error 403.
+
+**Respuestas posibles:**
+
+✅ **200 OK** - Firma eliminada exitosamente
+```json
+{
+  "message": "Firma eliminada exitosamente"
+}
+```
+
+❌ **400 Bad Request** - Email no proporcionado
+```json
+{
+  "error": "email requerido en el body"
+}
+```
+
+❌ **403 Forbidden** - Usuario no tiene permisos
+```json
+{
+  "error": "No tiene permisos para eliminar esta firma"
+}
+```
+
+❌ **404 Not Found** - Firma no existe
+```json
+{
+  "error": "Firma no encontrada"
+}
+```
+
+### Formatos Soportados
+
+- ✅ **PNG** - `image/png`
+- ✅ **JPEG** - `image/jpeg`
+- ✅ **JPG** - `image/jpg`
+- ✅ **SVG** - `image/svg+xml`
+
+### Estructura de Base de Datos
+
+**Tabla `firmas`:**
+- `id` (PK) - Serial
+- `usuario_id` (FK) - INTEGER → usuarios(id)
+- `nombre_archivo` - VARCHAR(255)
+- `ruta_archivo` - TEXT (ruta física del archivo)
+- `tipo_mime` - VARCHAR(50)
+- `tamano` - INTEGER (bytes)
+- `es_predeterminada` - BOOLEAN (default false)
+- `creado_en` - TIMESTAMP (default CURRENT_TIMESTAMP)
+
+**Índices:**
+- `idx_firmas_usuario` - Búsqueda por usuario
+- `idx_firmas_predeterminada` - Filtrado por firma predeterminada
+
+### Almacenamiento
+
+Las firmas se almacenan en el sistema de archivos:
+- Ruta base: `/app/storage/firmas/`
+- Estructura: `/app/storage/firmas/{email}/{nombre_archivo}_{timestamp}.{ext}`
+- Ejemplo: `/app/storage/firmas/admin@example.com/firma_20251027_103045.png`
+
+### Seguridad
+
+- ✅ Validación de formatos permitidos
+- ✅ Validación de permisos para eliminación
+- ✅ Validación de usuario por email
+- ✅ Almacenamiento seguro en volumen Docker persistente
+- ✅ Solo un usuario puede eliminar sus propias firmas
+
+---
+
+## 🔐 Administración de Activos y Edificios
+
+### Descripción
+
+Sistema completo de administración para gestionar activos, edificios y sensores con auditoría automática de todas las operaciones realizadas por usuarios.
+
+### Características
+
+- ✅ **CRUD completo de activos** (crear, modificar, eliminar)
+- ✅ **CRUD completo de edificios** (crear, modificar, eliminar)
+- ✅ **Creación de sensores** integrada con ParserService
+- ✅ **Logs de auditoría automáticos** para todas las operaciones
+- ✅ **Sincronización con ParserService** para activos y sensores
+- ✅ **Validación de permisos** por usuario y email
+- ✅ **Registro de IP y User-Agent** en logs
+
+### ⚠️ Lógicas Críticas Implementadas
+
+#### 1. 🔄 Sincronización de Activos con ParserService
+
+**Cuando se crea un activo:**
+```go
+// 1. Crear en gestion (PostgreSQL)
+activoCreado, err := h.activoRepo.Crear(activo)
+
+// 2. Crear en ParserService con EL MISMO ID
+parserReq := map[string]interface{}{
+    "id_activo": activoCreado.ID,  // ⭐ MISMO ID
+    "nombre":    activoCreado.Nombre,
+    "tipo":      activoCreado.Tipo,
+}
+
+// 3. Si falla en ParserService → ROLLBACK
+if err != nil {
+    h.activoRepo.Eliminar(activoCreado.ID)  // ⚠️ Rollback automático
+}
+```
+
+**✅ Garantía:** El ID del activo es **idéntico** en ambos servicios (PostgreSQL y MongoDB).
+
+#### 2. 🔌 Gestión de Sensores SOLO en ParserService
+
+**Los sensores NO se guardan en SQL**, solo en ParserService (MongoDB):
+
+```go
+// Crear sensor - NO guarda en gestion_db
+parserReq := map[string]interface{}{
+    "id_activo": req.ActivoID,
+    "nombre":    req.Nombre,
+    "tipo":      req.Tipo,
+    "unidad":    req.Unidad,
+}
+resp, err := http.Post(h.parserURL+"/admin/sensores", ...)
+```
+
+**Operaciones soportadas:**
+- ✅ `POST /admin/sensores` - Crear sensor (solo ParserService)
+- ✅ `PUT /admin/sensores/:id` - Actualizar sensor (solo ParserService)
+- ❌ **NO hay tabla de sensores en gestion_db**
+
+#### 3. 📝 Logs de Auditoría para Sensores
+
+**Todas las operaciones de sensores se registran:**
+
+```go
+// Después de crear/actualizar/eliminar sensor
+log := models.LogAuditoria{
+    UsuarioID:   usuario.ID,
+    Accion:      "crear",      // o "modificar", "eliminar"
+    Entidad:     "sensor",
+    EntidadID:   req.ActivoID, // ID del activo asociado
+    DatosNuevos: map[string]interface{}{
+        "activo_id": req.ActivoID,
+        "nombre":    req.Nombre,
+        "tipo":      req.Tipo,
+        "unidad":    req.Unidad,
+    },
+    IPOrigen:    c.ClientIP(),
+    UserAgent:   c.Request.UserAgent(),
+}
+h.logRepo.CrearLog(log)
+```
+
+**✅ Garantía:** Todas las operaciones CRUD de sensores quedan registradas en `logs_auditoria`.
+
+#### 4. ⚙️ Configuración de ParserService URL
+
+**La URL de ParserService se configura en `config.yaml`:**
+
+**Archivo:** `/config/config.yaml` (desarrollo)
+```yaml
+services:
+  parser_url: "http://localhost:8090"
+```
+
+**Archivo:** `/config/config.docker.yaml` (producción)
+```yaml
+services:
+  parser_url: "http://parser-service:8090"
+```
+
+**Carga en código:**
+```go
+// cmd/main.go
+parserURL := viper.GetString("services.parser_url")
+if parserURL == "" {
+    parserURL = "http://localhost:8095" // Fallback
+}
+```
+
+**✅ Garantía:** URL configurable por ambiente sin recompilar código.
+
+---
+
+### Rutas de Administración
+
+#### Activos
+
+##### 1. Crear Activo
+```http
+POST /admin/activos
+Content-Type: application/json
+
+{
+  "nombre": "Bomba Hidráulica Principal",
+  "tipo": "bomba de agua",
+  "descripcion": "Bomba centrífuga de alta eficiencia",
+  "ubicacion": "Sala de Máquinas - Piso 2",
+  "edificio_id": 1,
+  "email": "admin@example.com"
+}
+```
+
+✅ **Respuesta 201 Created**
+```json
+{
+  "message": "Activo creado exitosamente en ambos servicios",
+  "activo": {
+    "id": 15,
+    "nombre": "Bomba Hidráulica Principal",
+    "tipo": "bomba de agua",
+    "descripcion": "Bomba centrífuga de alta eficiencia",
+    "ubicacion": "Sala de Máquinas - Piso 2",
+    "edificio_id": 1,
+    "creado_en": "2025-11-03T10:30:00Z"
+  }
+}
+```
+
+**Comportamiento:**
+- Crea el activo en la base de datos de gestión
+- Sincroniza con ParserService (MongoDB)
+- Registra la acción en `logs_auditoria`
+- Si falla en ParserService, hace rollback en gestión
+
+##### 2. Actualizar Activo
+```http
+PUT /admin/activos/15
+Content-Type: application/json
+
+{
+  "nombre": "Bomba Hidráulica Principal A",
+  "ubicacion": "Sala de Máquinas - Piso 3",
+  "email": "admin@example.com"
+}
+```
+
+✅ **Respuesta 200 OK**
+```json
+{
+  "message": "Activo actualizado exitosamente",
+  "activo": {
+    "id": 15,
+    "nombre": "Bomba Hidráulica Principal A",
+    "tipo": "bomba de agua",
+    "descripcion": "Bomba centrífuga de alta eficiencia",
+    "ubicacion": "Sala de Máquinas - Piso 3",
+    "edificio_id": 1,
+    "creado_en": "2025-11-03T10:30:00Z"
+  }
+}
+```
+
+**Comportamiento:**
+- Actualiza solo los campos enviados (parcial update)
+- Registra estado anterior y nuevo en logs
+- Valida tipo de activo si se modifica
+
+##### 3. Eliminar Activo
+```http
+DELETE /admin/activos/15?email=admin@example.com
+```
+
+✅ **Respuesta 200 OK**
+```json
+{
+  "message": "Activo eliminado exitosamente"
+}
+```
+
+**Comportamiento:**
+- Elimina el activo de gestión
+- Elimina el activo de ParserService
+- Registra la eliminación en logs con datos completos
+- Eliminación en cascada de sensores y relaciones
+
+#### Edificios
+
+##### 4. Crear Edificio
+```http
+POST /admin/edificios
+Content-Type: application/json
+
+{
+  "nombre": "Torre Empresarial Norte",
+  "direccion": "Av. Apoquindo 4500, Las Condes",
+  "latitud": -33.4172,
+  "longitud": -70.6068,
+  "email": "admin@example.com"
+}
+```
+
+✅ **Respuesta 201 Created**
+```json
+{
+  "message": "Edificio creado exitosamente",
+  "edificio": {
+    "id": 5,
+    "nombre": "Torre Empresarial Norte",
+    "direccion": "Av. Apoquindo 4500, Las Condes",
+    "latitud": -33.4172,
+    "longitud": -70.6068,
+    "creado_en": "2025-11-03T11:00:00Z"
+  }
+}
+```
+
+##### 5. Actualizar Edificio
+```http
+PUT /admin/edificios/5
+Content-Type: application/json
+
+{
+  "nombre": "Torre Norte - Renovada",
+  "latitud": -33.4173,
+  "email": "admin@example.com"
+}
+```
+
+✅ **Respuesta 200 OK**
+```json
+{
+  "message": "Edificio actualizado exitosamente",
+  "edificio": {
+    "id": 5,
+    "nombre": "Torre Norte - Renovada",
+    "direccion": "Av. Apoquindo 4500, Las Condes",
+    "latitud": -33.4173,
+    "longitud": -70.6068,
+    "creado_en": "2025-11-03T11:00:00Z"
+  }
+}
+```
+
+##### 6. Eliminar Edificio
+```http
+DELETE /admin/edificios/5?email=admin@example.com
+```
+
+✅ **Respuesta 200 OK**
+```json
+{
+  "message": "Edificio eliminado exitosamente"
+}
+```
+
+**Comportamiento:**
+- Elimina el edificio
+- Los activos asociados quedan con `edificio_id = NULL`
+- Registra la eliminación en logs
+
+#### Sensores
+
+##### 7. Crear Sensor
+```http
+POST /admin/sensores
+Content-Type: application/json
+
+{
+  "activo_id": 15,
+  "nombre": "Sensor de Temperatura",
+  "tipo": "temperatura",
+  "unidad": "°C",
+  "email": "admin@example.com"
+}
+```
+
+✅ **Respuesta 201 Created**
+```json
+{
+  "message": "Sensor creado exitosamente",
+  "sensor": {
+    "sensor_id": "temp_bomba_15_001",
+    "nombre": "Sensor de Temperatura",
+    "tipo": "temperatura",
+    "unidad": "°C"
+  }
+}
+```
+
+**Comportamiento:**
+- Verifica que el activo existe en gestión
+- Crea el sensor en ParserService (MongoDB)
+- Registra la creación en logs
+- Asocia automáticamente el sensor al activo
+
+##### 8. Actualizar Sensor
+```http
+PUT /admin/sensores/:id
+Content-Type: application/json
+
+{
+  "nombre": "Sensor de Temperatura Actualizado",
+  "tipo": "temperatura",
+  "unidad": "°C",
+  "email": "admin@example.com"
+}
+```
+
+✅ **Respuesta 200 OK**
+```json
+{
+  "message": "Sensor actualizado exitosamente",
+  "sensor_id": "temp_bomba_15_001"
+}
+```
+
+**Comportamiento:**
+- Actualiza el sensor en ParserService (MongoDB)
+- Registra la modificación en logs con datos anteriores y nuevos
+- Captura IP y User-Agent del usuario
+
+#### Logs de Auditoría
+
+##### 9. Obtener Logs
+```http
+GET /admin/logs?limit=50&offset=0
+```
+
+✅ **Respuesta 200 OK**
+```json
+{
+  "logs": [
+    {
+      "id": 125,
+      "usuario_id": 1,
+      "accion": "crear",
+      "entidad": "activo",
+      "entidad_id": 15,
+      "datos_anteriores": null,
+      "datos_nuevos": {
+        "id": 15,
+        "nombre": "Bomba Hidráulica Principal",
+        "tipo": "bomba de agua",
+        "descripcion": "Bomba centrífuga de alta eficiencia",
+        "ubicacion": "Sala de Máquinas - Piso 2",
+        "edificio_id": 1
+      },
+      "descripcion": "Usuario admin@example.com creó el activo 'Bomba Hidráulica Principal' (ID: 15)",
+      "ip_origen": "192.168.1.100",
+      "user_agent": "Mozilla/5.0...",
+      "fecha_accion": "2025-11-03T10:30:00Z"
+    }
+  ],
+  "total": 125,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+**Filtros disponibles:**
+- `usuario_id` - Logs de un usuario específico
+- `entidad` - Filtrar por tipo de entidad (activo, edificio, sensor, etc.)
+- `entidad_id` - Logs de una entidad específica
+- `limit` - Cantidad de registros (default: 50)
+- `offset` - Paginación (default: 0)
+
+**Ejemplos de filtros:**
+```http
+GET /admin/logs?usuario_id=1&limit=20
+GET /admin/logs?entidad=activo&entidad_id=15
+GET /admin/logs?entidad=edificio&limit=100&offset=50
+```
+
+### Tipos de Activos Válidos
+
+- `caldera`
+- `bomba de agua`
+- `ascensor`
+- `transformador`
+
+### Tabla de Logs de Auditoría
+
+**Estructura `logs_auditoria`:**
+```sql
+CREATE TABLE logs_auditoria (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id),
+    accion VARCHAR(50) NOT NULL CHECK (accion IN ('crear', 'modificar', 'eliminar')),
+    entidad VARCHAR(100) NOT NULL CHECK (entidad IN ('edificio', 'activo', 'tecnico', ...)),
+    entidad_id INTEGER NOT NULL,
+    datos_anteriores JSONB,
+    datos_nuevos JSONB,
+    descripcion TEXT,
+    ip_origen VARCHAR(45),
+    user_agent TEXT,
+    fecha_accion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Índices:**
+- `idx_logs_usuario` - Búsqueda por usuario
+- `idx_logs_accion` - Filtro por tipo de acción
+- `idx_logs_entidad` - Filtro por entidad
+- `idx_logs_entidad_id` - Búsqueda por ID de entidad
+- `idx_logs_fecha` - Ordenamiento cronológico
+- `idx_logs_usuario_fecha` - Búsqueda combinada
+- `idx_logs_entidad_entidad_id` - Historial de entidad específica
+
+### Entidades Auditables
+
+- `edificio` - Edificios
+- `activo` - Activos industriales
+- `sensor` - Sensores IoT
+- `tecnico` - Técnicos especializados
+- `empresa` - Empresas de mantención
+- `solicitud` - Solicitudes de servicio
+- `reporte` - Reportes generados
+- `usuario` - Usuarios del sistema
+- `firma` - Firmas digitales
+- `comentario` - Comentarios en fallas
+- `tipo_falla` - Reportes de fallas
+
+### Códigos de Error
+
+❌ **400 Bad Request**
+```json
+{
+  "error": "Tipo de activo inválido"
+}
+```
+
+❌ **404 Not Found**
+```json
+{
+  "error": "Usuario no encontrado"
+}
+```
+
+❌ **409 Conflict**
+```json
+{
+  "error": "Activo ya existe en ParserService"
+}
+```
+
+❌ **500 Internal Server Error**
+```json
+{
+  "error": "Error al crear activo",
+  "details": "..."
+}
+```
+
+### Integración con ParserService
+
+**URL configurada en:** `config/config.yaml`
+```yaml
+services:
+  parser_url: "http://localhost:8090"         # Desarrollo
+  # parser_url: "http://parser-service:8090"  # Docker
+```
+
+**Endpoints utilizados:**
+- `POST /admin/activos` - Crear activo
+- `DELETE /admin/activos/:id` - Eliminar activo
+- `POST /admin/sensores` - Crear sensor
+- `PUT /admin/sensores/:id` - Actualizar sensor
+
+### ✅ Checklist de Verificación de Lógicas
+
+Use este checklist para verificar que todas las lógicas críticas estén implementadas:
+
+- [x] **Activo con mismo ID:** Al crear activo, se usa el mismo ID en gestion y ParserService
+- [x] **Rollback automático:** Si falla en ParserService, se elimina de gestion
+- [x] **Sensores solo en Parser:** Los sensores NO se guardan en gestion_db (solo MongoDB)
+- [x] **Logs de sensores:** Todas las operaciones CRUD de sensores se registran en logs_auditoria
+- [x] **URL configurable:** `services.parser_url` está en config.yaml (local y docker)
+- [x] **Fallback URL:** Si no está configurado, usa "http://localhost:8095" por defecto
+- [x] **IP y User-Agent:** Se capturan en cada operación de admin
+- [x] **Datos antes/después:** Se guardan en logs para trazabilidad completa
+
+**Archivos clave:**
+```
+/config/config.yaml              # services.parser_url
+/config/config.docker.yaml       # services.parser_url (Docker)
+/cmd/main.go                     # Carga parserURL
+/internal/handlers/admin_handler.go  # Lógica de sincronización
+/internal/repository/log_repository.go # Persistencia de logs
+```
+
+### Seguridad y Auditoría
+
+✅ **Validación de usuario** por email en cada operación
+✅ **Registro automático** de todas las acciones
+✅ **IP y User-Agent** capturados de cada request
+✅ **Estado anterior y nuevo** guardado en formato JSON
+✅ **Descripción legible** generada automáticamente
+✅ **Rollback automático** si falla sincronización con ParserService
+✅ **Trazabilidad completa** de cambios en el sistema
+
+### Ejemplo de Flujo Completo
+
+1. **Administrador crea edificio**
+   ```bash
+   POST /admin/edificios
+   → Log: "Usuario admin@example.com creó el edificio 'Torre Norte' (ID: 5)"
+   ```
+
+2. **Administrador crea activo en el edificio**
+   ```bash
+   POST /admin/activos
+   → Crea en gestion-db
+   → Sincroniza con ParserService
+   → Log: "Usuario admin@example.com creó el activo 'Bomba XYZ' (ID: 15)"
+   ```
+
+3. **Administrador agrega sensores al activo**
+   ```bash
+   POST /admin/sensores
+   → Crea en ParserService
+   → Log: "Usuario admin@example.com creó el sensor 'Temp001' para activo ID 15"
+   ```
+
+4. **Consulta histórico de cambios**
+   ```bash
+   GET /admin/logs?entidad=activo&entidad_id=15
+   → Retorna historial completo del activo
+   ```
 
 ---

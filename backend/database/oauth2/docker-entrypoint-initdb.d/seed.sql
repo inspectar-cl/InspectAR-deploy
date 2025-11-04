@@ -1,15 +1,26 @@
 -- Insertar users de prueba con IDs específicos
 INSERT INTO users (username, email, password, scope) 
-VALUES ('analista', 'analista@example.com', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'user-type:Analista');
+VALUES ('carlos.mendoza', 'analista@example.com', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'user-type:Analista');
 
 INSERT INTO users (username, email, password, scope) 
-VALUES ('tecnico', 'tecnico@example.com', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'user-type:Tecnico');
+VALUES ('maria.gonzalez', 'tecnico@example.com', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'user-type:Tecnico');
 
 INSERT INTO users (username, email, password, scope) 
-VALUES ('residente', 'residente@example.com', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'user-type:Residente');
+VALUES ('pedro.silva', 'residente@example.com', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'user-type:Residente');
 
 INSERT INTO users (username, email, password, scope) 
-VALUES ('admin', 'admin@example.com', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'user-type:Residente');
+VALUES ('ana.rodriguez', 'admin@example.com', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'user-type:Residente');
+
+-- Usuarios Administradores
+INSERT INTO users (username, email, password, scope) 
+VALUES ('admin.norte', 'admin.norte@inspectAR.com', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'user-type:Administrador');
+
+INSERT INTO users (username, email, password, scope) 
+VALUES ('admin.centro', 'admin.centro@inspectAR.com', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'user-type:Administrador');
+
+-- Usuario Root
+INSERT INTO users (username, email, password, scope) 
+VALUES ('root.system', 'root@inspectAR.com', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E5VXPk2538Eu.0j/chBV1ZWBBFG', 'user-type:Root');
 
 -- Insertar configuración
 

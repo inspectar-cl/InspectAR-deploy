@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS anomalias (
     descripcion TEXT,
     threshold FLOAT NOT NULL,
     is_anomaly BOOLEAN NOT NULL DEFAULT false,
+    most_influential_variable FLOAT,
+    contribution_magnitude FLOAT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -33,6 +35,8 @@ COMMENT ON COLUMN anomalias.severidad IS 'Nivel de gravedad: baja, media, alta, 
 COMMENT ON COLUMN anomalias.descripcion IS 'Descripción detallada de la anomalía detectada';
 COMMENT ON COLUMN anomalias.threshold IS 'Umbral utilizado para detectar la anomalía';
 COMMENT ON COLUMN anomalias.is_anomaly IS 'Indica si se confirmó como anomalía verdadera';
+COMMENT ON COLUMN anomalias.most_influential_variable IS 'Variable que más contribuyó a la detección de la anomalía';
+COMMENT ON COLUMN anomalias.contribution_magnitude IS 'Magnitud de la contribución de la variable más influyente';
 
 -- Trigger para actualizar updated_at automáticamente
 CREATE OR REPLACE FUNCTION update_updated_at_column()

@@ -1,0 +1,38 @@
+# IA Service Python Configuration
+# Configuración para desarrollo local
+
+# Server
+app_name: "IA Service Python"
+host: "0.0.0.0"
+port: 8095
+debug: true
+log_level: "INFO"
+
+# Database
+database_host: "localhost"
+database_port: 5436
+database_name: "ia_db"
+database_user: "ia_user"
+database_password: "ia_pass"
+
+# External Services
+iot_service_url: "http://localhost:8090"
+iot_service_timeout: 60
+
+# Scheduler
+scheduler_enabled: false
+scheduler_interval_minutes: 2
+
+# Training Configuration
+training_enabled: true
+training_interval_minutes: 60  # Entrenar modelo cada 60 minutos
+
+# Model Storage
+model_dir: "/app/models"
+model_filename: "anomaly_model.pkl"
+scaler_x_filename: "scaler_X.pkl"
+scaler_y_filename: "scaler_Y.pkl"
+
+# Data Window
+window_size: 1000
+window_page: 1

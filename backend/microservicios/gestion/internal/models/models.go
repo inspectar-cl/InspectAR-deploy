@@ -58,6 +58,8 @@ type Edificio struct {
 	ID        int       `json:"id" db:"id"`
 	Nombre    string    `json:"nombre" db:"nombre"`
 	Direccion string    `json:"direccion" db:"direccion"`
+	Latitud   *float64  `json:"latitud,omitempty" db:"latitud"`
+	Longitud  *float64  `json:"longitud,omitempty" db:"longitud"`
 	CreadoEn  time.Time `json:"creado_en" db:"creado_en"`
 }
 
@@ -78,12 +80,18 @@ type UsuarioEdificio struct {
 
 // Activo gestionado
 type Activo struct {
-	ID         int       `json:"id" db:"id"`
-	Nombre     string    `json:"nombre" db:"nombre"`
-	Tipo       string    `json:"tipo" db:"tipo"`
-	Ubicacion  string    `json:"ubicacion" db:"ubicacion"`
-	EdificioID int       `json:"edificio_id" db:"edificio_id"`
-	CreadoEn   time.Time `json:"creado_en" db:"creado_en"`
+	ID           int        `json:"id" db:"id"`
+	Nombre       string     `json:"nombre" db:"nombre"`
+	Tipo         string     `json:"tipo" db:"tipo"`
+	Descripcion  *string    `json:"descripcion,omitempty" db:"descripcion"`
+	Ubicacion    string     `json:"ubicacion" db:"ubicacion"`
+	EdificioID   int        `json:"edificio_id" db:"edificio_id"`
+	CodigoActivo *string    `json:"codigo_activo,omitempty" db:"codigo_activo"`
+	CodigoQR     *string    `json:"codigo_qr,omitempty" db:"codigo_qr"`
+	URLQR        *string    `json:"url_qr,omitempty" db:"url_qr"`
+	QRGeneradoEn *time.Time `json:"qr_generado_en,omitempty" db:"qr_generado_en"`
+	Secuencial   *int       `json:"secuencial,omitempty" db:"secuencial"`
+	CreadoEn     time.Time  `json:"creado_en" db:"creado_en"`
 }
 
 // Acción de mantenimiento colaborativa
@@ -349,4 +357,63 @@ type FirmaResponse struct {
 	EsPredeterminada bool      `json:"es_predeterminada"`
 	CreadoEn         time.Time `json:"creado_en"`
 	ActualizadoEn    time.Time `json:"actualizado_en"`
+}
+
+// LogAuditoria para registrar acciones de usuarios
+type LogAuditoria struct {
+	ID              int                    `json:"id" db:"id"`
+	UsuarioID       *int                   `json:"usuario_id,omitempty" db:"usuario_id"`   // ID del usuario (opcional)
+	UsuarioEmail    string                 `json:"usuario_email" db:"usuario_email"`       // Email del usuario
+	Accion          string                 `json:"accion" db:"accion"`                     // crear, modificar, eliminar
+	Entidad         string                 `json:"entidad" db:"entidad"`                   // edificio, activo, tecnico, etc
+	EntidadID       int                    `json:"entidad_id" db:"entidad_id"`             // ID del registro afectado
+	DatosAnteriores map[string]interface{} `json:"datos_anteriores" db:"datos_anteriores"` // Estado anterior (NULL para crear)
+	DatosNuevos     map[string]interface{} `json:"datos_nuevos" db:"datos_nuevos"`         // Estado nuevo (NULL para eliminar)
+	Descripcion     string                 `json:"descripcion" db:"descripcion"`           // Descripción legible
+	IPOrigen        *string                `json:"ip_origen,omitempty" db:"ip_origen"`     // IP del cliente
+	UserAgent       *string                `json:"user_agent,omitempty" db:"user_agent"`   // Navegador/cliente
+	FechaAccion     time.Time              `json:"fecha_accion" db:"fecha_accion"`
+}
+
+// DTOs para administración de activos y edificios
+type CreateActivoAdminRequest struct {
+	Nombre      string  `json:"nombre" binding:"required"`
+	Tipo        string  `json:"tipo" binding:"required"`
+	Descripcion *string `json:"descripcion"`
+	Ubicacion   string  `json:"ubicacion" binding:"required"`
+	EdificioID  int     `json:"edificio_id" binding:"required"`
+	Email       string  `json:"email" binding:"required,email"` // Email del usuario que crea
+}
+
+type UpdateActivoAdminRequest struct {
+	Nombre      *string `json:"nombre"`
+	Tipo        *string `json:"tipo"`
+	Descripcion *string `json:"descripcion"`
+	Ubicacion   *string `json:"ubicacion"`
+	EdificioID  *int    `json:"edificio_id"`
+	Email       string  `json:"email" binding:"required,email"` // Email del usuario que modifica
+}
+
+type CreateEdificioRequest struct {
+	Nombre    string   `json:"nombre" binding:"required"`
+	Direccion string   `json:"direccion" binding:"required"`
+	Latitud   *float64 `json:"latitud"`
+	Longitud  *float64 `json:"longitud"`
+	Email     string   `json:"email" binding:"required,email"` // Email del usuario que crea
+}
+
+type UpdateEdificioRequest struct {
+	Nombre    *string  `json:"nombre"`
+	Direccion *string  `json:"direccion"`
+	Latitud   *float64 `json:"latitud"`
+	Longitud  *float64 `json:"longitud"`
+	Email     string   `json:"email" binding:"required,email"` // Email del usuario que modifica
+}
+
+type CreateSensorRequest struct {
+	ActivoID int    `json:"activo_id" binding:"required"`
+	Nombre   string `json:"nombre" binding:"required"`
+	Tipo     string `json:"tipo" binding:"required"`
+	Unidad   string `json:"unidad" binding:"required"`
+	Email    string `json:"email" binding:"required,email"` // Email del usuario que crea
 }

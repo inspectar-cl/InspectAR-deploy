@@ -116,7 +116,11 @@ func getSpecialHandlers() []SpecialHandler {
             Pattern: "/api/obtener-activo-id/:id_activo",
             Handler: ObtenerActivoPorID,
             Protected: true,
+<<<<<<< HEAD
             RequiredScopes: userTypes("Tecnico", "Residente", "Analista", "Admin"),
+=======
+            RequiredScopes: userTypes("Tecnico", "Residente", "Admin"),
+>>>>>>> origin/feature/ML
             RequiredValidation: "activo",
         },
         { 

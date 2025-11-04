@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS edificios (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
     direccion VARCHAR(255),
+    latitud DECIMAL(10, 8),
+    longitud DECIMAL(11, 8),
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -25,8 +27,14 @@ CREATE TABLE IF NOT EXISTS activos (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
     tipo VARCHAR(100) NOT NULL CHECK (tipo IN ('caldera', 'bomba de agua', 'ascensor', 'transformador')),
+    descripcion TEXT,
     ubicacion VARCHAR(255),
     edificio_id INTEGER REFERENCES edificios(id) ON DELETE SET NULL,
+    codigo_activo VARCHAR(50) UNIQUE,
+    codigo_qr TEXT,
+    url_qr VARCHAR(500),
+    qr_generado_en TIMESTAMP,
+    secuencial INTEGER DEFAULT 0,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -172,28 +180,6 @@ CREATE TABLE IF NOT EXISTS usuarios_edificios (
     PRIMARY KEY (usuario_id, edificio_id)
 );
 
--- Tabla de fallos por tipo de activo
-CREATE TABLE IF NOT EXISTS fallos (
-    id SERIAL PRIMARY KEY,
-    tipo_activo VARCHAR(100) NOT NULL CHECK (tipo_activo IN ('caldera', 'bomba_de_agua', 'ascensor', 'transformador')),
-    descripcion TEXT NOT NULL,
-    prioridad VARCHAR(20) NOT NULL DEFAULT 'media' CHECK (prioridad IN ('media', 'alta')),
-    probabilidad_ocurrencia DECIMAL(5,2) NOT NULL CHECK (probabilidad_ocurrencia >= 0 AND probabilidad_ocurrencia <= 100),
-    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Tabla intermedia para relacionar activos con fallos específicos
-CREATE TABLE IF NOT EXISTS activos_fallos (
-    id SERIAL PRIMARY KEY,
-    activo_id INTEGER NOT NULL REFERENCES activos(id) ON DELETE CASCADE,
-    fallo_id INTEGER NOT NULL REFERENCES fallos(id) ON DELETE CASCADE,
-    fecha_deteccion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    estado VARCHAR(50) DEFAULT 'detectado' CHECK (estado IN ('detectado', 'en_revision', 'resuelto', 'pendiente')),
-    notas TEXT,
-    UNIQUE(activo_id, fallo_id, fecha_deteccion)
-);
-
 -- Tabla de reportes de fallas hechos por usuarios (tipos_falla)
 CREATE TABLE IF NOT EXISTS tipos_falla (
     id_falla SERIAL PRIMARY KEY,
@@ -265,13 +251,13 @@ CREATE INDEX IF NOT EXISTS idx_activos_tecnicos_autorizados_edificio ON activos_
 CREATE INDEX IF NOT EXISTS idx_usuarios_edificios_usuario ON usuarios_edificios(usuario_id);
 CREATE INDEX IF NOT EXISTS idx_usuarios_edificios_edificio ON usuarios_edificios(edificio_id);
 
--- Índices para fallos
-CREATE INDEX IF NOT EXISTS idx_fallos_tipo_activo ON fallos(tipo_activo);
-CREATE INDEX IF NOT EXISTS idx_fallos_prioridad ON fallos(prioridad);
-CREATE INDEX IF NOT EXISTS idx_fallos_probabilidad ON fallos(probabilidad_ocurrencia);
-CREATE INDEX IF NOT EXISTS idx_activos_fallos_activo ON activos_fallos(activo_id);
-CREATE INDEX IF NOT EXISTS idx_activos_fallos_fallo ON activos_fallos(fallo_id);
-CREATE INDEX IF NOT EXISTS idx_activos_fallos_estado ON activos_fallos(estado);
+-- Índices para fallos (COMENTADO - tablas no existen aún)
+-- CREATE INDEX IF NOT EXISTS idx_fallos_tipo_activo ON fallos(tipo_activo);
+-- CREATE INDEX IF NOT EXISTS idx_fallos_prioridad ON fallos(prioridad);
+-- CREATE INDEX IF NOT EXISTS idx_fallos_probabilidad ON fallos(probabilidad_ocurrencia);
+-- CREATE INDEX IF NOT EXISTS idx_activos_fallos_activo ON activos_fallos(activo_id);
+-- CREATE INDEX IF NOT EXISTS idx_activos_fallos_fallo ON activos_fallos(fallo_id);
+-- CREATE INDEX IF NOT EXISTS idx_activos_fallos_estado ON activos_fallos(estado);
 
 -- Índices para reportes de fallas de usuarios
 CREATE INDEX IF NOT EXISTS idx_tipos_falla_tipo ON tipos_falla(tipo);
@@ -287,6 +273,45 @@ CREATE INDEX IF NOT EXISTS idx_comentarios_fecha ON comentarios(fecha_comentario
 CREATE INDEX IF NOT EXISTS idx_firmas_usuario ON firmas_digitales(usuario_id);
 CREATE INDEX IF NOT EXISTS idx_firmas_predeterminada ON firmas_digitales(es_predeterminada);
 
+-- Tabla de logs de auditoría para acciones de usuarios
+CREATE TABLE IF NOT EXISTS logs_auditoria (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL, -- Opcional, puede ser NULL si solo hay email
+    usuario_email VARCHAR(255) NOT NULL, -- Email del usuario que realiza la acción
+    
+    -- Información de la acción
+    accion VARCHAR(50) NOT NULL CHECK (accion IN ('crear', 'modificar', 'eliminar')),
+    entidad VARCHAR(100) NOT NULL CHECK (entidad IN ('edificio', 'activo', 'tecnico', 'empresa', 'solicitud', 'reporte', 'usuario', 'firma', 'comentario', 'tipo_falla', 'sensor')),
+    entidad_id INTEGER NOT NULL, -- ID del registro afectado
+    
+    -- Detalles del cambio
+    datos_anteriores JSONB, -- Estado anterior del registro (NULL para 'crear')
+    datos_nuevos JSONB, -- Estado nuevo del registro (NULL para 'eliminar')
+    descripcion TEXT, -- Descripción legible de la acción realizada
+    
+    -- Metadata
+    ip_origen VARCHAR(45), -- IPv4 o IPv6
+    user_agent TEXT, -- Navegador/cliente utilizado
+    fecha_accion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Índice para búsquedas rápidas
+    CONSTRAINT chk_datos_validos CHECK (
+        (accion = 'crear' AND datos_anteriores IS NULL AND datos_nuevos IS NOT NULL) OR
+        (accion = 'modificar' AND datos_anteriores IS NOT NULL AND datos_nuevos IS NOT NULL) OR
+        (accion = 'eliminar' AND datos_anteriores IS NOT NULL AND datos_nuevos IS NULL)
+    )
+);
+
+-- Índices para logs de auditoría
+CREATE INDEX IF NOT EXISTS idx_logs_usuario ON logs_auditoria(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_logs_usuario_email ON logs_auditoria(usuario_email);
+CREATE INDEX IF NOT EXISTS idx_logs_accion ON logs_auditoria(accion);
+CREATE INDEX IF NOT EXISTS idx_logs_entidad ON logs_auditoria(entidad);
+CREATE INDEX IF NOT EXISTS idx_logs_entidad_id ON logs_auditoria(entidad_id);
+CREATE INDEX IF NOT EXISTS idx_logs_fecha ON logs_auditoria(fecha_accion);
+CREATE INDEX IF NOT EXISTS idx_logs_usuario_fecha ON logs_auditoria(usuario_id, fecha_accion);
+CREATE INDEX IF NOT EXISTS idx_logs_entidad_entidad_id ON logs_auditoria(entidad, entidad_id);
+
 -- Comentarios sobre las tablas creadas
 COMMENT ON TABLE tecnicos IS 'Técnicos especializados para mantenimiento (HdU16)';
 COMMENT ON TABLE edificios IS 'Edificios donde se ubican los activos';
@@ -299,10 +324,103 @@ COMMENT ON TABLE archivos_solicitud IS 'Archivos adjuntos a solicitudes técnica
 COMMENT ON TABLE activos_tecnicos_autorizados IS 'Técnicos autorizados para trabajar en activos específicos';
 COMMENT ON TABLE usuarios IS 'Usuarios del sistema con acceso a edificios';
 COMMENT ON TABLE usuarios_edificios IS 'Relación muchos a muchos entre usuarios y edificios';
-COMMENT ON TABLE fallos IS 'Catálogo de fallos comunes por tipo de activo';
-COMMENT ON TABLE activos_fallos IS 'Relación entre activos específicos y fallos detectados';
+-- COMMENT ON TABLE fallos IS 'Catálogo de fallos comunes por tipo de activo';
+-- COMMENT ON TABLE activos_fallos IS 'Relación entre activos específicos y fallos detectados';
 COMMENT ON TABLE tipos_falla IS 'Reportes de fallas hechos por usuarios residentes en edificios';
 COMMENT ON TABLE comentarios IS 'Comentarios de usuarios sobre reportes de fallas';
+
+-- ============================================================================
+-- SISTEMA DE CÓDIGOS QR Y CÓDIGOS ÚNICOS PARA ACTIVOS
+-- ============================================================================
+
+-- Tabla de secuencias para códigos de activos
+CREATE TABLE IF NOT EXISTS activos_secuencias (
+    id SERIAL PRIMARY KEY,
+    edificio_id INTEGER NOT NULL REFERENCES edificios(id) ON DELETE CASCADE,
+    tipo_activo VARCHAR(100) NOT NULL,
+    ultimo_secuencial INTEGER DEFAULT 0,
+    anio INTEGER DEFAULT EXTRACT(YEAR FROM CURRENT_TIMESTAMP),
+    UNIQUE(edificio_id, tipo_activo, anio)
+);
+
+CREATE INDEX IF NOT EXISTS idx_secuencias_edificio_tipo ON activos_secuencias(edificio_id, tipo_activo);
+
+COMMENT ON TABLE activos_secuencias IS 'Control de secuencias para generación de códigos únicos de activos';
+
+-- Índices adicionales para activos con códigos
+CREATE INDEX IF NOT EXISTS idx_activos_codigo ON activos(codigo_activo);
+
+-- Comentarios para nuevos campos de activos
+COMMENT ON COLUMN activos.codigo_activo IS 'Código único del activo (EDI01-BOMBA-0001-2025)';
+COMMENT ON COLUMN activos.codigo_qr IS 'Imagen del código QR en formato Base64';
+COMMENT ON COLUMN activos.url_qr IS 'URL que apunta a la información del activo';
+COMMENT ON COLUMN activos.qr_generado_en IS 'Fecha y hora de generación del código QR';
+COMMENT ON COLUMN activos.secuencial IS 'Número secuencial del activo por tipo en el edificio';
+
+-- Función para generar código de activo automáticamente
+CREATE OR REPLACE FUNCTION generar_codigo_activo(
+    p_edificio_id INTEGER,
+    p_tipo_activo VARCHAR(100)
+) RETURNS VARCHAR(50) AS $$
+DECLARE
+    v_codigo_edificio VARCHAR(10);
+    v_tipo_codigo VARCHAR(20);
+    v_secuencial INTEGER;
+    v_anio INTEGER;
+BEGIN
+    -- Código del edificio (EDI + ID de 2 dígitos con padding)
+    v_codigo_edificio := 'EDI' || LPAD(p_edificio_id::TEXT, 2, '0');
+    
+    -- Normalizar tipo de activo a código corto
+    v_tipo_codigo := CASE LOWER(p_tipo_activo)
+        WHEN 'bomba de agua' THEN 'BOMBA'
+        WHEN 'caldera' THEN 'CALD'
+        WHEN 'ascensor' THEN 'ASCE'
+        WHEN 'transformador' THEN 'TRANS'
+        ELSE UPPER(SUBSTRING(p_tipo_activo FROM 1 FOR 5))
+    END;
+    
+    -- Año actual
+    v_anio := EXTRACT(YEAR FROM CURRENT_TIMESTAMP);
+    
+    -- Obtener e incrementar secuencial atómicamente
+    INSERT INTO activos_secuencias (edificio_id, tipo_activo, ultimo_secuencial, anio)
+    VALUES (p_edificio_id, p_tipo_activo, 1, v_anio)
+    ON CONFLICT (edificio_id, tipo_activo, anio) 
+    DO UPDATE SET ultimo_secuencial = activos_secuencias.ultimo_secuencial + 1
+    RETURNING ultimo_secuencial INTO v_secuencial;
+    
+    -- Formato final: EDI01-BOMBA-0001-2025
+    RETURN v_codigo_edificio || '-' || 
+           v_tipo_codigo || '-' || 
+           LPAD(v_secuencial::TEXT, 4, '0') || '-' || 
+           v_anio::TEXT;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION generar_codigo_activo IS 'Genera código único para activos basado en edificio y tipo';
+
+-- Trigger para auto-generar código al insertar activo
+CREATE OR REPLACE FUNCTION trigger_generar_codigo_activo()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Solo generar si no viene código
+    IF NEW.codigo_activo IS NULL OR NEW.codigo_activo = '' THEN
+        NEW.codigo_activo := generar_codigo_activo(NEW.edificio_id, NEW.tipo);
+        NEW.secuencial := SPLIT_PART(NEW.codigo_activo, '-', 3)::INTEGER;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER before_insert_activo_codigo
+    BEFORE INSERT ON activos
+    FOR EACH ROW
+    EXECUTE FUNCTION trigger_generar_codigo_activo();
+
+COMMENT ON TRIGGER before_insert_activo_codigo ON activos IS 'Auto-genera código único de activo si no se proporciona';
 COMMENT ON TABLE firmas_digitales IS 'Firmas digitales de usuarios para firma de reportes (HdU Firmas Digitales)';
+COMMENT ON TABLE logs_auditoria IS 'Registro de auditoría de todas las acciones realizadas por usuarios en el sistema';
 
 -- Comentarios sobre las tablas creadas

@@ -192,8 +192,28 @@ func (h *FirmaHandler) EliminarFirma(c *gin.Context) {
 		return
 	}
 
-	err = h.service.EliminarFirma(id)
+	// Obtener email del body para validar permisos
+	type DeleteFirmaRequest struct {
+		Email string `json:"email" binding:"required,email"`
+	}
+
+	var req DeleteFirmaRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "email requerido en el body"})
+		return
+	}
+
+	// Validar que la firma pertenezca al usuario antes de eliminar
+	err = h.service.EliminarFirmaConValidacion(id, req.Email)
 	if err != nil {
+		if err.Error() == "firma no encontrada" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Firma no encontrada"})
+			return
+		}
+		if err.Error() == "no tiene permisos para eliminar esta firma" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "No tiene permisos para eliminar esta firma"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

@@ -2,7 +2,10 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import SGDRegressor
 from sklearn.preprocessing import StandardScaler
-from .utils import rolling_threshold, severity_from_likelihood, description_from_severity, normalize_score_0_100, compute_is_anomaly, preprocess_timeseries
+from .utils import (rolling_threshold, severity_from_likelihood, 
+                    description_from_severity, normalize_score_0_100, 
+                    compute_is_anomaly, preprocess_timeseries, 
+                    load_model, save_model)
 from .config import WINDOW_SIZE as W, ALPHA as alpha, K_ADAPT as k_adapt
 
 def detectar_htm_multivar(df, pump):
@@ -13,13 +16,15 @@ def detectar_htm_multivar(df, pump):
     if 'Timestamp' in df.columns:
         df = df.sort_values('Timestamp').reset_index(drop=True)
     d = preprocess_timeseries(df, timestamp_col="Timestamp", method="linear")
-
+    
     if len(d) <= W:
         return ValueError(f"Datos insuficientes ({len(d)}) para bomba {pump}")
 
-    scaler_X = StandardScaler()
-    scaler_y = StandardScaler()
-    model = SGDRegressor(max_iter=1, learning_rate='constant', eta0=0.01, warm_start=True)
+    model, scaler_X, scaler_y = load_model()
+    if model is None:
+        model = SGDRegressor(max_iter=1, learning_rate='constant', eta0=0.01, warm_start=True)
+        scaler_X = StandardScaler()
+        scaler_y = StandardScaler()
 
     scores, probs, preds = [], [], []
     likelihood = 0.0
@@ -63,6 +68,7 @@ def detectar_htm_multivar(df, pump):
         scores.append(score)
         probs.append(likelihood)
 
+    save_model(model, scaler_X, scaler_y)
     # construir DataFrame de resultados alineados con Timestamps desde W en adelante
     res = d.iloc[W:].copy().reset_index(drop=True)
     res['AnomalyScore'] = normalize_score_0_100(pd.Series(scores))

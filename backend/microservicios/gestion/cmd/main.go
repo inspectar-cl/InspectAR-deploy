@@ -41,6 +41,19 @@ func main() {
 	usuarioRepo := repository.NewUsuarioRepository(db)
 	tipoFallaRepo := repository.NewTipoFallaRepository(db)
 	firmaRepo := repository.NewFirmaRepository(db)
+	logRepo := repository.NewLogRepository(db)
+
+	// URL de ParserService desde configuración
+	parserURL := viper.GetString("services.parser_url")
+	if parserURL == "" {
+		parserURL = "http://localhost:8095" // Valor por defecto
+	}
+
+	// URL base para QR codes
+	baseURL := viper.GetString("services.base_url")
+	if baseURL == "" {
+		baseURL = "http://localhost:8092" // Valor por defecto
+	}
 
 	// Servicios con las dependencias correctas
 	tecnicoService := services.NewTecnicoService(tecnicoRepo)
@@ -51,6 +64,7 @@ func main() {
 	reporteService.SetUsuarioRepo(usuarioRepo) // Configurar repositorio de usuarios
 	solicitudService := services.NewSolicitudService(db)
 	firmaService := services.NewFirmaService(firmaRepo, usuarioRepo)
+	qrService := services.NewQRService(baseURL) // Nuevo servicio de QR
 
 	// Handlers
 	tecnicoHandler := handlers.NewTecnicoHandler(tecnicoService)
@@ -61,9 +75,11 @@ func main() {
 	usuarioHandler := handlers.NewUsuarioHandler(usuarioRepo)
 	tipoFallaHandler := handlers.NewTipoFallaHandler(tipoFallaRepo)
 	firmaHandler := handlers.NewFirmaHandler(firmaService)
+	adminHandler := handlers.NewAdminHandler(activoRepo, edificioRepo, usuarioRepo, logRepo, qrService, parserURL)
+	qrHandler := handlers.NewQRHandler(activoRepo, qrService) // Nuevo handler de QR
 
-	// Router (ahora con todos los handlers)
-	r := router.SetupRouter(tecnicoHandler, accionHandler, activoHandler, reporteHandler, solicitudHandler, usuarioHandler, tipoFallaHandler, firmaHandler)
+	// Router (ahora con todos los handlers incluido adminHandler y qrHandler)
+	r := router.SetupRouter(tecnicoHandler, accionHandler, activoHandler, reporteHandler, solicitudHandler, usuarioHandler, tipoFallaHandler, firmaHandler, adminHandler, qrHandler)
 
 	// Servidor web
 	port := viper.GetString("server.port")

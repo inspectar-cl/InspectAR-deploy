@@ -2615,3 +2615,95 @@ func EliminarActivoHandler(c *gin.Context) {
         c.JSON(http.StatusOK, gin.H{"message": "Activo eliminado exitosamente"})
     }
 }
+
+func CrearSensorHandler(c *gin.Context) {
+    authHeader := c.GetHeader("Authorization")
+    email, _ := extractClaimFromToken(authHeader, "email")
+    if email == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
+        return
+    }
+    fmt.Printf("Usuario creando sensor: %s\n", email)
+
+    // Leer el body de la request
+    var sensorData map[string]interface{}
+    if err := c.ShouldBindJSON(&sensorData); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+        return
+    }
+
+    // Validar campos requeridos
+    if _, exists := sensorData["activo_id"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "El campo 'activo_id' es obligatorio"})
+        return
+    }
+
+    if _, exists := sensorData["nombre"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "El campo 'nombre' es obligatorio"})
+        return
+    }
+
+    if _, exists := sensorData["tipo"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "El campo 'tipo' es obligatorio"})
+        return
+    }
+
+    if _, exists := sensorData["unidad"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "El campo 'unidad' es obligatorio"})
+        return
+    }
+
+    fmt.Printf("Datos del sensor a crear: %+v\n", sensorData)
+
+    // Construir el body para el microservicio de gestión
+    bodyData := map[string]interface{}{
+        "activo_id": sensorData["activo_id"],
+        "nombre":    sensorData["nombre"],
+        "tipo":      sensorData["tipo"],
+        "unidad":    sensorData["unidad"],
+        "email":     email,
+    }
+
+    // Convertir a JSON
+    jsonData, err := json.Marshal(bodyData)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando datos"})
+        return
+    }
+
+    fmt.Printf("DEBUG: Enviando datos para crear sensor: %+v\n", bodyData)
+
+    // Hacer POST al microservicio de gestión
+    url := fmt.Sprintf("%s/admin/sensores", gestionURL)
+    resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+    if err != nil {
+        fmt.Println("Error creando sensor: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al crear el sensor"})
+        return
+    }
+    defer resp.Body.Close()
+
+    fmt.Printf("DEBUG: Status code de respuesta: %d\n", resp.StatusCode)
+
+    // Verificar si la respuesta es exitosa
+    if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+        var errorData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&errorData); err == nil {
+            c.JSON(resp.StatusCode, errorData)
+            return
+        }
+        c.JSON(resp.StatusCode, gin.H{"error": "Error al crear el sensor"})
+        return
+    }
+
+    // Leer la respuesta exitosa
+    var responseData map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+        fmt.Println("Error decodificando respuesta: ", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando respuesta"})
+        return
+    }
+
+    // Retornar la respuesta del microservicio
+    c.JSON(resp.StatusCode, responseData)
+}

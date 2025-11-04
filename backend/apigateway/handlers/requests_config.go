@@ -229,6 +229,13 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: rootOnly(),
         },
+        { 
+            Method:  "POST",
+            Pattern: "/api/crear-sensor",
+            Handler: CrearSensorHandler,
+            Protected: true,
+            RequiredScopes: rootOnly(),
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",
@@ -245,6 +252,13 @@ func getSpecialHandlers() []SpecialHandler {
         //     Protected: true,
         //     RequiredScopes: userTypes("root"),
         //     RequiredValidation: "edificio",
+        // },
+        // { 
+        //     Method:  "",
+        //     Pattern: "",
+        //     Handler: ,
+        //     Protected: true,
+        //     RequiredScopes: rootOnly(),
         // },
     }
 }

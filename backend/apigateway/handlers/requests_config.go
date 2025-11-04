@@ -12,17 +12,27 @@ type SpecialHandler struct {
     Pattern             string
     Handler             gin.HandlerFunc
     Protected           bool
-    RequiredScopes      []string // Pueden ser 4 hasta el momento, user-type:Analista, user-type:Tecnico, user-type:Residente y user-type:Admin
+    RequiredScopes      []string // Root siempre incluido automáticamente. Otros roles: Analista, Tecnico, Residente, Admin
     RequiredValidation  string   // Puede ser "edificio", "activo" o vacío si no se requiere validación.
 }
 
 // userTypes agrega el prefijo "user-type:" a cada rol especificado
+// y automáticamente incluye "Root" para acceso total
 func userTypes(roles ...string) []string {
-    scopes := make([]string, len(roles))
-    for i, role := range roles {
-        scopes[i] = "user-type:" + role
+    // Siempre incluir Root al inicio
+    scopes := make([]string, 0, len(roles)+1)
+    scopes = append(scopes, "user-type:Root")
+    
+    // Agregar los demás roles especificados
+    for _, role := range roles {
+        scopes = append(scopes, "user-type:"+role)
     }
     return scopes
+}
+
+// rootOnly retorna un scope exclusivo para Root
+func rootOnly() []string {
+    return []string{"user-type:Root"}
 }
 
 // getSpecialHandlers devuelve todos los handlers especiales
@@ -211,21 +221,21 @@ func getSpecialHandlers() []SpecialHandler {
             Pattern: "/api/crear-activo",
             Handler: CrearActivoHandler,
             Protected: true,
-            RequiredScopes: userTypes("Root"),
+            RequiredScopes: rootOnly(),
         },
         { 
             Method:  "PUT",
             Pattern: "/api/editar-activo/:id_activo",
             Handler: EditarActivoHandler,
             Protected: true,
-            RequiredScopes: userTypes("Root"),
+            RequiredScopes: rootOnly(),
         },
         {
             Method:  "DELETE",
             Pattern: "/api/eliminar-activo/:id_activo",
             Handler: EliminarActivoHandler,
             Protected: true,
-            RequiredScopes: userTypes("Root"),
+            RequiredScopes: rootOnly(),
         },
         // Aquí se agregan más handlers de manera fácil
         // {

@@ -19,6 +19,18 @@ func ValidationMiddleware(validationType string) gin.HandlerFunc {
 			return
 		}
 
+		// Si el usuario es Root, omitir validación (tiene acceso a todo)
+		scopeInterface, exists := c.Get("scope")
+		if exists {
+			if scope, ok := scopeInterface.(string); ok {
+				if strings.Contains(scope, "user-type:Root") {
+					fmt.Println("Usuario Root detectado, omitiendo validación de acceso")
+					c.Next()
+					return
+				}
+			}
+		}
+
 		gestionURL := os.Getenv("GESTION_URL")
 		if gestionURL == "" {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "GESTION_URL no configurado"})

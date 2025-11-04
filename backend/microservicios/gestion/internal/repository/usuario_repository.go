@@ -56,6 +56,11 @@ func (r *UsuarioRepository) GetUsuarioByEmail(email string) (*models.Usuario, er
 	return &usuario, nil
 }
 
+// GetByEmail obtiene un usuario por su email (alias para GetUsuarioByEmail)
+func (r *UsuarioRepository) GetByEmail(email string) (*models.Usuario, error) {
+	return r.GetUsuarioByEmail(email)
+}
+
 // VerificarAccesoEdificio verifica si un usuario tiene acceso a un edificio específico
 func (r *UsuarioRepository) VerificarAccesoEdificio(email string, edificioID int) (bool, error) {
 	query := `

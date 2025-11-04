@@ -246,13 +246,13 @@ CREATE INDEX IF NOT EXISTS idx_activos_tecnicos_autorizados_edificio ON activos_
 CREATE INDEX IF NOT EXISTS idx_usuarios_edificios_usuario ON usuarios_edificios(usuario_id);
 CREATE INDEX IF NOT EXISTS idx_usuarios_edificios_edificio ON usuarios_edificios(edificio_id);
 
--- Índices para fallos
-CREATE INDEX IF NOT EXISTS idx_fallos_tipo_activo ON fallos(tipo_activo);
-CREATE INDEX IF NOT EXISTS idx_fallos_prioridad ON fallos(prioridad);
-CREATE INDEX IF NOT EXISTS idx_fallos_probabilidad ON fallos(probabilidad_ocurrencia);
-CREATE INDEX IF NOT EXISTS idx_activos_fallos_activo ON activos_fallos(activo_id);
-CREATE INDEX IF NOT EXISTS idx_activos_fallos_fallo ON activos_fallos(fallo_id);
-CREATE INDEX IF NOT EXISTS idx_activos_fallos_estado ON activos_fallos(estado);
+-- Índices para fallos (COMENTADO - tablas no existen aún)
+-- CREATE INDEX IF NOT EXISTS idx_fallos_tipo_activo ON fallos(tipo_activo);
+-- CREATE INDEX IF NOT EXISTS idx_fallos_prioridad ON fallos(prioridad);
+-- CREATE INDEX IF NOT EXISTS idx_fallos_probabilidad ON fallos(probabilidad_ocurrencia);
+-- CREATE INDEX IF NOT EXISTS idx_activos_fallos_activo ON activos_fallos(activo_id);
+-- CREATE INDEX IF NOT EXISTS idx_activos_fallos_fallo ON activos_fallos(fallo_id);
+-- CREATE INDEX IF NOT EXISTS idx_activos_fallos_estado ON activos_fallos(estado);
 
 -- Índices para reportes de fallas de usuarios
 CREATE INDEX IF NOT EXISTS idx_tipos_falla_tipo ON tipos_falla(tipo);
@@ -268,6 +268,45 @@ CREATE INDEX IF NOT EXISTS idx_comentarios_fecha ON comentarios(fecha_comentario
 CREATE INDEX IF NOT EXISTS idx_firmas_usuario ON firmas_digitales(usuario_id);
 CREATE INDEX IF NOT EXISTS idx_firmas_predeterminada ON firmas_digitales(es_predeterminada);
 
+-- Tabla de logs de auditoría para acciones de usuarios
+CREATE TABLE IF NOT EXISTS logs_auditoria (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL, -- Opcional, puede ser NULL si solo hay email
+    usuario_email VARCHAR(255) NOT NULL, -- Email del usuario que realiza la acción
+    
+    -- Información de la acción
+    accion VARCHAR(50) NOT NULL CHECK (accion IN ('crear', 'modificar', 'eliminar')),
+    entidad VARCHAR(100) NOT NULL CHECK (entidad IN ('edificio', 'activo', 'tecnico', 'empresa', 'solicitud', 'reporte', 'usuario', 'firma', 'comentario', 'tipo_falla', 'sensor')),
+    entidad_id INTEGER NOT NULL, -- ID del registro afectado
+    
+    -- Detalles del cambio
+    datos_anteriores JSONB, -- Estado anterior del registro (NULL para 'crear')
+    datos_nuevos JSONB, -- Estado nuevo del registro (NULL para 'eliminar')
+    descripcion TEXT, -- Descripción legible de la acción realizada
+    
+    -- Metadata
+    ip_origen VARCHAR(45), -- IPv4 o IPv6
+    user_agent TEXT, -- Navegador/cliente utilizado
+    fecha_accion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Índice para búsquedas rápidas
+    CONSTRAINT chk_datos_validos CHECK (
+        (accion = 'crear' AND datos_anteriores IS NULL AND datos_nuevos IS NOT NULL) OR
+        (accion = 'modificar' AND datos_anteriores IS NOT NULL AND datos_nuevos IS NOT NULL) OR
+        (accion = 'eliminar' AND datos_anteriores IS NOT NULL AND datos_nuevos IS NULL)
+    )
+);
+
+-- Índices para logs de auditoría
+CREATE INDEX IF NOT EXISTS idx_logs_usuario ON logs_auditoria(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_logs_usuario_email ON logs_auditoria(usuario_email);
+CREATE INDEX IF NOT EXISTS idx_logs_accion ON logs_auditoria(accion);
+CREATE INDEX IF NOT EXISTS idx_logs_entidad ON logs_auditoria(entidad);
+CREATE INDEX IF NOT EXISTS idx_logs_entidad_id ON logs_auditoria(entidad_id);
+CREATE INDEX IF NOT EXISTS idx_logs_fecha ON logs_auditoria(fecha_accion);
+CREATE INDEX IF NOT EXISTS idx_logs_usuario_fecha ON logs_auditoria(usuario_id, fecha_accion);
+CREATE INDEX IF NOT EXISTS idx_logs_entidad_entidad_id ON logs_auditoria(entidad, entidad_id);
+
 -- Comentarios sobre las tablas creadas
 COMMENT ON TABLE tecnicos IS 'Técnicos especializados para mantenimiento (HdU16)';
 COMMENT ON TABLE edificios IS 'Edificios donde se ubican los activos';
@@ -280,10 +319,11 @@ COMMENT ON TABLE archivos_solicitud IS 'Archivos adjuntos a solicitudes técnica
 COMMENT ON TABLE activos_tecnicos_autorizados IS 'Técnicos autorizados para trabajar en activos específicos';
 COMMENT ON TABLE usuarios IS 'Usuarios del sistema con acceso a edificios';
 COMMENT ON TABLE usuarios_edificios IS 'Relación muchos a muchos entre usuarios y edificios';
-COMMENT ON TABLE fallos IS 'Catálogo de fallos comunes por tipo de activo';
-COMMENT ON TABLE activos_fallos IS 'Relación entre activos específicos y fallos detectados';
+-- COMMENT ON TABLE fallos IS 'Catálogo de fallos comunes por tipo de activo';
+-- COMMENT ON TABLE activos_fallos IS 'Relación entre activos específicos y fallos detectados';
 COMMENT ON TABLE tipos_falla IS 'Reportes de fallas hechos por usuarios residentes en edificios';
 COMMENT ON TABLE comentarios IS 'Comentarios de usuarios sobre reportes de fallas';
 COMMENT ON TABLE firmas_digitales IS 'Firmas digitales de usuarios para firma de reportes (HdU Firmas Digitales)';
+COMMENT ON TABLE logs_auditoria IS 'Registro de auditoría de todas las acciones realizadas por usuarios en el sistema';
 
 -- Comentarios sobre las tablas creadas

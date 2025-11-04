@@ -380,3 +380,10 @@ func (r *ActivoRepository) enrichSensors(ctx context.Context, act *models.Activo
 	// Los activos ya no contienen sensores
 	return
 }
+
+// Delete elimina un activo de MongoDB
+func (r *ActivoRepository) Delete(ctx context.Context, activoID int) error {
+	filter := bson.M{"activo_id": activoID}
+	_, err := r.primary.DeleteOne(ctx, filter)
+	return err
+}

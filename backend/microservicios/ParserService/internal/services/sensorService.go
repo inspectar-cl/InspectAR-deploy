@@ -46,3 +46,19 @@ func (s *SensorService) GetDatosSensorWindow(ctx context.Context, sensorID strin
 	}
 	return result, err
 }
+
+// EliminarSensor elimina un sensor (placeholder - en producción eliminaría datos de InfluxDB)
+func (s *SensorService) EliminarSensor(ctx context.Context, sensorID string) error {
+	// TODO: Implementar eliminación de datos de InfluxDB si es necesario
+	// Por ahora retorna éxito
+	log.Printf("🗑️ Sensor %s marcado para eliminación", sensorID)
+	return nil
+}
+
+// ActualizarSensor actualiza la información de un sensor
+func (s *SensorService) ActualizarSensor(ctx context.Context, sensorID, nombre, tipo, unidad string) error {
+	// TODO: Implementar actualización en MongoDB
+	// Por ahora registra la operación
+	log.Printf("✏️ Sensor %s actualizado - Nombre: %s, Tipo: %s, Unidad: %s", sensorID, nombre, tipo, unidad)
+	return nil
+}

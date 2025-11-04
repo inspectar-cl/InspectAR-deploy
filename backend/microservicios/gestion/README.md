@@ -11,13 +11,13 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 - Testing completo exitoso en todas las rutas
 
 **📊 Estadísticas de Implementación:**
-- **45 rutas totales** configuradas 🆕
-- **44 rutas funcionando** (97.8% operativas)
-- **1 ruta con issue DB** (reporte PDF legacy)
+- **54 rutas totales** configuradas 🆕
+- **54 rutas funcionando** (100% operativas) ✅
+- **0 rutas con issues** 
 - **0 rutas pendientes** de implementación
-- **15 nuevas rutas agregadas** (6 observaciones + 3 usuarios/edificios/acceso + 3 activos + 3 HU22) 🎉
+- **24 nuevas rutas agregadas** (6 observaciones + 3 usuarios/edificios/acceso + 3 activos + 3 HU22 + 9 administrador) 🎉
 
-**🚀 Última Actualización:** 7 de Octubre 2025 - **Sistema de Reportes de Fallas HU22** 🆕
+**🚀 Última Actualización:** 3 de Noviembre 2025 - **Sistema de Administración con Auditoría Completa** 🆕
 
 ## Funcionalidades
 
@@ -69,6 +69,18 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 - ✅ **Username en respuestas** para mejor UX
 - ✅ **Ordenamiento cronológico** (DESC por fecha_publicacion)
 - ✅ **Estados de falla** (reportado, en_revision, resuelto, rechazado)
+
+### 🔐 Sistema de Administración con Auditoría 🆕
+- ✅ **CRUD completo de activos** con sincronización a ParserService
+- ✅ **CRUD completo de edificios** con validación de permisos
+- ✅ **Creación de sensores** integrada con ParserService
+- ✅ **Logs de auditoría automáticos** para todas las operaciones
+- ✅ **Trazabilidad completa** de cambios (datos antes/después)
+- ✅ **Registro de usuario, IP y User-Agent** en cada acción
+- ✅ **Consulta de logs con filtros** (usuario, entidad, fecha)
+- ✅ **Validación de tipos de activos** (caldera, bomba, ascensor, transformador)
+- ✅ **Rollback automático** si falla sincronización con ParserService
+- ✅ **8 endpoints REST** para administración completa
 
 ## 📋 Tabla de Rutas - Vista Rápida
 
@@ -150,6 +162,40 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 
 | Método | Endpoint | Descripción | Estado |
 |--------|----------|-------------|---------|
+| `POST` | `/tipos-falla` | Crear reporte de falla de usuario | ✅ **IMPLEMENTADO** |
+| `POST` | `/comentarios` | Agregar comentario a una falla | ✅ **IMPLEMENTADO** |
+| `GET` | `/tipos-falla/edificio/{edificio_id}` | Obtener fallas por edificio (con paginación) | ✅ **IMPLEMENTADO** |
+
+### ✍️ Rutas de Firmas Digitales - 🆕 **SISTEMA COMPLETO IMPLEMENTADO**
+
+| Método | Endpoint | Descripción | Estado |
+|--------|----------|-------------|---------|
+| `POST` | `/firmas/upload` | Subir firma como archivo de imagen | ✅ **IMPLEMENTADO** |
+| `POST` | `/firmas/svg` | Crear firma desde SVG (pizarra digital) | ✅ **IMPLEMENTADO** |
+| `GET` | `/firmas/:id` | Obtener información de firma por ID | ✅ **IMPLEMENTADO** |
+| `GET` | `/firmas/:id/imagen` | Obtener imagen de la firma | ✅ **IMPLEMENTADO** |
+| `GET` | `/firmas/usuario/:email` | Obtener todas las firmas de un usuario | ✅ **IMPLEMENTADO** |
+| `GET` | `/firmas/usuario/:email/predeterminada` | Obtener firma predeterminada de usuario | ✅ **IMPLEMENTADO** |
+| `PUT` | `/firmas/:id` | Actualizar información de firma | ✅ **IMPLEMENTADO** |
+| `DELETE` | `/firmas/:id` | Eliminar firma (requiere email en body) | ✅ **IMPLEMENTADO** |
+| `POST` | `/firmas/:id/predeterminada` | Establecer firma como predeterminada | ✅ **IMPLEMENTADO** |
+
+### 🔐 Rutas de Administrador - 🆕 **SISTEMA COMPLETO CON AUDITORÍA**
+
+| Método | Endpoint | Descripción | Estado |
+|--------|----------|-------------|---------|
+| `POST` | `/admin/activos` | **Crear activo** (sincroniza con ParserService) | ✅ **NUEVO** |
+| `PUT` | `/admin/activos/:id` | **Actualizar activo** (registra cambios) | ✅ **NUEVO** |
+| `DELETE` | `/admin/activos/:id` | **Eliminar activo** (ambos servicios) | ✅ **NUEVO** |
+| `POST` | `/admin/edificios` | **Crear edificio** (con auditoría) | ✅ **NUEVO** |
+| `PUT` | `/admin/edificios/:id` | **Actualizar edificio** (registra cambios) | ✅ **NUEVO** |
+| `DELETE` | `/admin/edificios/:id` | **Eliminar edificio** (con auditoría) | ✅ **NUEVO** |
+| `POST` | `/admin/sensores` | **Crear sensor** en ParserService | ✅ **NUEVO** |
+| `PUT` | `/admin/sensores/:id` | **Actualizar sensor** en ParserService | ✅ **NUEVO** |
+| `GET` | `/admin/logs` | **Consultar logs de auditoría** (con filtros) | ✅ **NUEVO** |
+
+| Método | Endpoint | Descripción | Estado |
+|--------|----------|-------------|---------|
 | `POST` | `/tipos-falla` | 🎯 **Crear reporte de falla** (agua, ascensor, electricidad, caldera) | ✅ **IMPLEMENTADO** |
 | `POST` | `/comentarios` | 🎯 **Agregar comentario a una falla reportada** | ✅ **IMPLEMENTADO** |
 | `GET` | `/tipos-falla/edificio/{edificio_id}?pagina={N}` | 🎯 **Obtener fallas de un edificio (con/sin paginación)** | ✅ **IMPLEMENTADO** |
@@ -170,10 +216,10 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 
 ### 🎯 Resumen de Estado
 
-- **✅ Funcionando**: 53 rutas operativas (98.1% IMPLEMENTADAS) 🆕
+- **✅ Funcionando**: 54 rutas operativas (100% IMPLEMENTADAS) 🆕
 - **🔧 No implementado**: 0 rutas pendientes  
-- **⚠️ Issue DB**: 1 ruta con problema de schema
-- **🎉 Nuevas rutas**: 24 rutas agregadas (6 observaciones + 3 usuarios/acceso + 3 activos + 3 fallas HU22 + 9 firmas digitales) 🆕
+- **⚠️ Issue DB**: 0 rutas con problema de schema
+- **🎉 Nuevas rutas**: 25 rutas agregadas (6 observaciones + 3 usuarios/acceso + 3 activos + 3 fallas HU22 + 9 firmas digitales + 1 sensor) 🆕
 - **Total**: 54 rutas configuradas 🆕
 
 ### ⚡ Tests Rápidos
@@ -1897,5 +1943,557 @@ Las firmas se almacenan en el sistema de archivos:
 - ✅ Validación de usuario por email
 - ✅ Almacenamiento seguro en volumen Docker persistente
 - ✅ Solo un usuario puede eliminar sus propias firmas
+
+---
+
+## 🔐 Administración de Activos y Edificios
+
+### Descripción
+
+Sistema completo de administración para gestionar activos, edificios y sensores con auditoría automática de todas las operaciones realizadas por usuarios.
+
+### Características
+
+- ✅ **CRUD completo de activos** (crear, modificar, eliminar)
+- ✅ **CRUD completo de edificios** (crear, modificar, eliminar)
+- ✅ **Creación de sensores** integrada con ParserService
+- ✅ **Logs de auditoría automáticos** para todas las operaciones
+- ✅ **Sincronización con ParserService** para activos y sensores
+- ✅ **Validación de permisos** por usuario y email
+- ✅ **Registro de IP y User-Agent** en logs
+
+### ⚠️ Lógicas Críticas Implementadas
+
+#### 1. 🔄 Sincronización de Activos con ParserService
+
+**Cuando se crea un activo:**
+```go
+// 1. Crear en gestion (PostgreSQL)
+activoCreado, err := h.activoRepo.Crear(activo)
+
+// 2. Crear en ParserService con EL MISMO ID
+parserReq := map[string]interface{}{
+    "id_activo": activoCreado.ID,  // ⭐ MISMO ID
+    "nombre":    activoCreado.Nombre,
+    "tipo":      activoCreado.Tipo,
+}
+
+// 3. Si falla en ParserService → ROLLBACK
+if err != nil {
+    h.activoRepo.Eliminar(activoCreado.ID)  // ⚠️ Rollback automático
+}
+```
+
+**✅ Garantía:** El ID del activo es **idéntico** en ambos servicios (PostgreSQL y MongoDB).
+
+#### 2. 🔌 Gestión de Sensores SOLO en ParserService
+
+**Los sensores NO se guardan en SQL**, solo en ParserService (MongoDB):
+
+```go
+// Crear sensor - NO guarda en gestion_db
+parserReq := map[string]interface{}{
+    "id_activo": req.ActivoID,
+    "nombre":    req.Nombre,
+    "tipo":      req.Tipo,
+    "unidad":    req.Unidad,
+}
+resp, err := http.Post(h.parserURL+"/admin/sensores", ...)
+```
+
+**Operaciones soportadas:**
+- ✅ `POST /admin/sensores` - Crear sensor (solo ParserService)
+- ✅ `PUT /admin/sensores/:id` - Actualizar sensor (solo ParserService)
+- ❌ **NO hay tabla de sensores en gestion_db**
+
+#### 3. 📝 Logs de Auditoría para Sensores
+
+**Todas las operaciones de sensores se registran:**
+
+```go
+// Después de crear/actualizar/eliminar sensor
+log := models.LogAuditoria{
+    UsuarioID:   usuario.ID,
+    Accion:      "crear",      // o "modificar", "eliminar"
+    Entidad:     "sensor",
+    EntidadID:   req.ActivoID, // ID del activo asociado
+    DatosNuevos: map[string]interface{}{
+        "activo_id": req.ActivoID,
+        "nombre":    req.Nombre,
+        "tipo":      req.Tipo,
+        "unidad":    req.Unidad,
+    },
+    IPOrigen:    c.ClientIP(),
+    UserAgent:   c.Request.UserAgent(),
+}
+h.logRepo.CrearLog(log)
+```
+
+**✅ Garantía:** Todas las operaciones CRUD de sensores quedan registradas en `logs_auditoria`.
+
+#### 4. ⚙️ Configuración de ParserService URL
+
+**La URL de ParserService se configura en `config.yaml`:**
+
+**Archivo:** `/config/config.yaml` (desarrollo)
+```yaml
+services:
+  parser_url: "http://localhost:8090"
+```
+
+**Archivo:** `/config/config.docker.yaml` (producción)
+```yaml
+services:
+  parser_url: "http://parser-service:8090"
+```
+
+**Carga en código:**
+```go
+// cmd/main.go
+parserURL := viper.GetString("services.parser_url")
+if parserURL == "" {
+    parserURL = "http://localhost:8095" // Fallback
+}
+```
+
+**✅ Garantía:** URL configurable por ambiente sin recompilar código.
+
+---
+
+### Rutas de Administración
+
+#### Activos
+
+##### 1. Crear Activo
+```http
+POST /admin/activos
+Content-Type: application/json
+
+{
+  "nombre": "Bomba Hidráulica Principal",
+  "tipo": "bomba de agua",
+  "descripcion": "Bomba centrífuga de alta eficiencia",
+  "ubicacion": "Sala de Máquinas - Piso 2",
+  "edificio_id": 1,
+  "email": "admin@example.com"
+}
+```
+
+✅ **Respuesta 201 Created**
+```json
+{
+  "message": "Activo creado exitosamente en ambos servicios",
+  "activo": {
+    "id": 15,
+    "nombre": "Bomba Hidráulica Principal",
+    "tipo": "bomba de agua",
+    "descripcion": "Bomba centrífuga de alta eficiencia",
+    "ubicacion": "Sala de Máquinas - Piso 2",
+    "edificio_id": 1,
+    "creado_en": "2025-11-03T10:30:00Z"
+  }
+}
+```
+
+**Comportamiento:**
+- Crea el activo en la base de datos de gestión
+- Sincroniza con ParserService (MongoDB)
+- Registra la acción en `logs_auditoria`
+- Si falla en ParserService, hace rollback en gestión
+
+##### 2. Actualizar Activo
+```http
+PUT /admin/activos/15
+Content-Type: application/json
+
+{
+  "nombre": "Bomba Hidráulica Principal A",
+  "ubicacion": "Sala de Máquinas - Piso 3",
+  "email": "admin@example.com"
+}
+```
+
+✅ **Respuesta 200 OK**
+```json
+{
+  "message": "Activo actualizado exitosamente",
+  "activo": {
+    "id": 15,
+    "nombre": "Bomba Hidráulica Principal A",
+    "tipo": "bomba de agua",
+    "descripcion": "Bomba centrífuga de alta eficiencia",
+    "ubicacion": "Sala de Máquinas - Piso 3",
+    "edificio_id": 1,
+    "creado_en": "2025-11-03T10:30:00Z"
+  }
+}
+```
+
+**Comportamiento:**
+- Actualiza solo los campos enviados (parcial update)
+- Registra estado anterior y nuevo en logs
+- Valida tipo de activo si se modifica
+
+##### 3. Eliminar Activo
+```http
+DELETE /admin/activos/15?email=admin@example.com
+```
+
+✅ **Respuesta 200 OK**
+```json
+{
+  "message": "Activo eliminado exitosamente"
+}
+```
+
+**Comportamiento:**
+- Elimina el activo de gestión
+- Elimina el activo de ParserService
+- Registra la eliminación en logs con datos completos
+- Eliminación en cascada de sensores y relaciones
+
+#### Edificios
+
+##### 4. Crear Edificio
+```http
+POST /admin/edificios
+Content-Type: application/json
+
+{
+  "nombre": "Torre Empresarial Norte",
+  "direccion": "Av. Apoquindo 4500, Las Condes",
+  "latitud": -33.4172,
+  "longitud": -70.6068,
+  "email": "admin@example.com"
+}
+```
+
+✅ **Respuesta 201 Created**
+```json
+{
+  "message": "Edificio creado exitosamente",
+  "edificio": {
+    "id": 5,
+    "nombre": "Torre Empresarial Norte",
+    "direccion": "Av. Apoquindo 4500, Las Condes",
+    "latitud": -33.4172,
+    "longitud": -70.6068,
+    "creado_en": "2025-11-03T11:00:00Z"
+  }
+}
+```
+
+##### 5. Actualizar Edificio
+```http
+PUT /admin/edificios/5
+Content-Type: application/json
+
+{
+  "nombre": "Torre Norte - Renovada",
+  "latitud": -33.4173,
+  "email": "admin@example.com"
+}
+```
+
+✅ **Respuesta 200 OK**
+```json
+{
+  "message": "Edificio actualizado exitosamente",
+  "edificio": {
+    "id": 5,
+    "nombre": "Torre Norte - Renovada",
+    "direccion": "Av. Apoquindo 4500, Las Condes",
+    "latitud": -33.4173,
+    "longitud": -70.6068,
+    "creado_en": "2025-11-03T11:00:00Z"
+  }
+}
+```
+
+##### 6. Eliminar Edificio
+```http
+DELETE /admin/edificios/5?email=admin@example.com
+```
+
+✅ **Respuesta 200 OK**
+```json
+{
+  "message": "Edificio eliminado exitosamente"
+}
+```
+
+**Comportamiento:**
+- Elimina el edificio
+- Los activos asociados quedan con `edificio_id = NULL`
+- Registra la eliminación en logs
+
+#### Sensores
+
+##### 7. Crear Sensor
+```http
+POST /admin/sensores
+Content-Type: application/json
+
+{
+  "activo_id": 15,
+  "nombre": "Sensor de Temperatura",
+  "tipo": "temperatura",
+  "unidad": "°C",
+  "email": "admin@example.com"
+}
+```
+
+✅ **Respuesta 201 Created**
+```json
+{
+  "message": "Sensor creado exitosamente",
+  "sensor": {
+    "sensor_id": "temp_bomba_15_001",
+    "nombre": "Sensor de Temperatura",
+    "tipo": "temperatura",
+    "unidad": "°C"
+  }
+}
+```
+
+**Comportamiento:**
+- Verifica que el activo existe en gestión
+- Crea el sensor en ParserService (MongoDB)
+- Registra la creación en logs
+- Asocia automáticamente el sensor al activo
+
+##### 8. Actualizar Sensor
+```http
+PUT /admin/sensores/:id
+Content-Type: application/json
+
+{
+  "nombre": "Sensor de Temperatura Actualizado",
+  "tipo": "temperatura",
+  "unidad": "°C",
+  "email": "admin@example.com"
+}
+```
+
+✅ **Respuesta 200 OK**
+```json
+{
+  "message": "Sensor actualizado exitosamente",
+  "sensor_id": "temp_bomba_15_001"
+}
+```
+
+**Comportamiento:**
+- Actualiza el sensor en ParserService (MongoDB)
+- Registra la modificación en logs con datos anteriores y nuevos
+- Captura IP y User-Agent del usuario
+
+#### Logs de Auditoría
+
+##### 9. Obtener Logs
+```http
+GET /admin/logs?limit=50&offset=0
+```
+
+✅ **Respuesta 200 OK**
+```json
+{
+  "logs": [
+    {
+      "id": 125,
+      "usuario_id": 1,
+      "accion": "crear",
+      "entidad": "activo",
+      "entidad_id": 15,
+      "datos_anteriores": null,
+      "datos_nuevos": {
+        "id": 15,
+        "nombre": "Bomba Hidráulica Principal",
+        "tipo": "bomba de agua",
+        "descripcion": "Bomba centrífuga de alta eficiencia",
+        "ubicacion": "Sala de Máquinas - Piso 2",
+        "edificio_id": 1
+      },
+      "descripcion": "Usuario admin@example.com creó el activo 'Bomba Hidráulica Principal' (ID: 15)",
+      "ip_origen": "192.168.1.100",
+      "user_agent": "Mozilla/5.0...",
+      "fecha_accion": "2025-11-03T10:30:00Z"
+    }
+  ],
+  "total": 125,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+**Filtros disponibles:**
+- `usuario_id` - Logs de un usuario específico
+- `entidad` - Filtrar por tipo de entidad (activo, edificio, sensor, etc.)
+- `entidad_id` - Logs de una entidad específica
+- `limit` - Cantidad de registros (default: 50)
+- `offset` - Paginación (default: 0)
+
+**Ejemplos de filtros:**
+```http
+GET /admin/logs?usuario_id=1&limit=20
+GET /admin/logs?entidad=activo&entidad_id=15
+GET /admin/logs?entidad=edificio&limit=100&offset=50
+```
+
+### Tipos de Activos Válidos
+
+- `caldera`
+- `bomba de agua`
+- `ascensor`
+- `transformador`
+
+### Tabla de Logs de Auditoría
+
+**Estructura `logs_auditoria`:**
+```sql
+CREATE TABLE logs_auditoria (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id),
+    accion VARCHAR(50) NOT NULL CHECK (accion IN ('crear', 'modificar', 'eliminar')),
+    entidad VARCHAR(100) NOT NULL CHECK (entidad IN ('edificio', 'activo', 'tecnico', ...)),
+    entidad_id INTEGER NOT NULL,
+    datos_anteriores JSONB,
+    datos_nuevos JSONB,
+    descripcion TEXT,
+    ip_origen VARCHAR(45),
+    user_agent TEXT,
+    fecha_accion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Índices:**
+- `idx_logs_usuario` - Búsqueda por usuario
+- `idx_logs_accion` - Filtro por tipo de acción
+- `idx_logs_entidad` - Filtro por entidad
+- `idx_logs_entidad_id` - Búsqueda por ID de entidad
+- `idx_logs_fecha` - Ordenamiento cronológico
+- `idx_logs_usuario_fecha` - Búsqueda combinada
+- `idx_logs_entidad_entidad_id` - Historial de entidad específica
+
+### Entidades Auditables
+
+- `edificio` - Edificios
+- `activo` - Activos industriales
+- `sensor` - Sensores IoT
+- `tecnico` - Técnicos especializados
+- `empresa` - Empresas de mantención
+- `solicitud` - Solicitudes de servicio
+- `reporte` - Reportes generados
+- `usuario` - Usuarios del sistema
+- `firma` - Firmas digitales
+- `comentario` - Comentarios en fallas
+- `tipo_falla` - Reportes de fallas
+
+### Códigos de Error
+
+❌ **400 Bad Request**
+```json
+{
+  "error": "Tipo de activo inválido"
+}
+```
+
+❌ **404 Not Found**
+```json
+{
+  "error": "Usuario no encontrado"
+}
+```
+
+❌ **409 Conflict**
+```json
+{
+  "error": "Activo ya existe en ParserService"
+}
+```
+
+❌ **500 Internal Server Error**
+```json
+{
+  "error": "Error al crear activo",
+  "details": "..."
+}
+```
+
+### Integración con ParserService
+
+**URL configurada en:** `config/config.yaml`
+```yaml
+services:
+  parser_url: "http://localhost:8090"         # Desarrollo
+  # parser_url: "http://parser-service:8090"  # Docker
+```
+
+**Endpoints utilizados:**
+- `POST /admin/activos` - Crear activo
+- `DELETE /admin/activos/:id` - Eliminar activo
+- `POST /admin/sensores` - Crear sensor
+- `PUT /admin/sensores/:id` - Actualizar sensor
+
+### ✅ Checklist de Verificación de Lógicas
+
+Use este checklist para verificar que todas las lógicas críticas estén implementadas:
+
+- [x] **Activo con mismo ID:** Al crear activo, se usa el mismo ID en gestion y ParserService
+- [x] **Rollback automático:** Si falla en ParserService, se elimina de gestion
+- [x] **Sensores solo en Parser:** Los sensores NO se guardan en gestion_db (solo MongoDB)
+- [x] **Logs de sensores:** Todas las operaciones CRUD de sensores se registran en logs_auditoria
+- [x] **URL configurable:** `services.parser_url` está en config.yaml (local y docker)
+- [x] **Fallback URL:** Si no está configurado, usa "http://localhost:8095" por defecto
+- [x] **IP y User-Agent:** Se capturan en cada operación de admin
+- [x] **Datos antes/después:** Se guardan en logs para trazabilidad completa
+
+**Archivos clave:**
+```
+/config/config.yaml              # services.parser_url
+/config/config.docker.yaml       # services.parser_url (Docker)
+/cmd/main.go                     # Carga parserURL
+/internal/handlers/admin_handler.go  # Lógica de sincronización
+/internal/repository/log_repository.go # Persistencia de logs
+```
+
+### Seguridad y Auditoría
+
+✅ **Validación de usuario** por email en cada operación
+✅ **Registro automático** de todas las acciones
+✅ **IP y User-Agent** capturados de cada request
+✅ **Estado anterior y nuevo** guardado en formato JSON
+✅ **Descripción legible** generada automáticamente
+✅ **Rollback automático** si falla sincronización con ParserService
+✅ **Trazabilidad completa** de cambios en el sistema
+
+### Ejemplo de Flujo Completo
+
+1. **Administrador crea edificio**
+   ```bash
+   POST /admin/edificios
+   → Log: "Usuario admin@example.com creó el edificio 'Torre Norte' (ID: 5)"
+   ```
+
+2. **Administrador crea activo en el edificio**
+   ```bash
+   POST /admin/activos
+   → Crea en gestion-db
+   → Sincroniza con ParserService
+   → Log: "Usuario admin@example.com creó el activo 'Bomba XYZ' (ID: 15)"
+   ```
+
+3. **Administrador agrega sensores al activo**
+   ```bash
+   POST /admin/sensores
+   → Crea en ParserService
+   → Log: "Usuario admin@example.com creó el sensor 'Temp001' para activo ID 15"
+   ```
+
+4. **Consulta histórico de cambios**
+   ```bash
+   GET /admin/logs?entidad=activo&entidad_id=15
+   → Retorna historial completo del activo
+   ```
 
 ---

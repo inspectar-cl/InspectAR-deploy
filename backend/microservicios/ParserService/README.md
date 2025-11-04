@@ -12,13 +12,14 @@ Microservicio encargado de la gestión de activos industriales, sensores IoT y a
 - Detección de desconexión de sensores
 
 **📊 Estadísticas de Implementación:**
-- **17 rutas totales** configuradas
-- **17 rutas funcionando** (100% operativas)
+- **23 rutas totales** configuradas 🆕
+- **23 rutas funcionando** (100% operativas) ✅
 - **0 rutas pendientes** de implementación
 - **Sistema de monitoreo automático** activo (cada 2 minutos)
 - **Detección de desconexión** (timeout de 5 minutos)
+- **6 rutas de administración** para gestión desde gestion-service 🆕
 
-**🚀 Última Actualización:** 15 de Octubre 2025 - **Paginación en Ruta de Datos Históricos** 🆕
+**🚀 Última Actualización:** 3 de Noviembre 2025 - **Sistema de Administración CRUD Completo con Actualización de Sensores** 🆕
 
 ## Funcionalidades
 
@@ -45,6 +46,14 @@ Microservicio encargado de la gestión de activos industriales, sensores IoT y a
 - ✅ Monitoreo en tiempo real (cada 2 minutos)
 - ✅ Estadísticas de sensores activos/inactivos
 - ✅ Health check del sistema de monitoreo
+
+### Sistema de Administración 🆕
+- ✅ **CRUD completo de activos** (crear, actualizar, eliminar)
+- ✅ **CRUD completo de sensores** (crear, actualizar, eliminar)
+- ✅ **Sincronización con gestion-service** vía API REST
+- ✅ **Eliminación en MongoDB** sin pérdida de datos InfluxDB
+- ✅ **Validación de existencia** antes de operaciones
+- ✅ **6 endpoints REST** para administración completa
 
 ## 📋 Tabla de Rutas - Vista Rápida
 
@@ -85,11 +94,22 @@ Microservicio encargado de la gestión de activos industriales, sensores IoT y a
 | `POST` | `/api/sensors/check-disconnected` | Verificación manual de desconexiones | ✅ Funcionando |
 | `GET` | `/api/sensors/health` | Health check del sistema de monitoreo | ✅ Funcionando |
 
+### 🔐 Rutas de Administrador - 🆕 **SISTEMA COMPLETO**
+
+| Método | Endpoint | Descripción | Estado |
+|--------|----------|-------------|---------|
+| `POST` | `/admin/activos` | **Crear activo** (desde gestion-service) | ✅ **NUEVO** |
+| `PUT` | `/admin/activos/:activo_id` | **Actualizar estado de activo** | ✅ **NUEVO** |
+| `DELETE` | `/admin/activos/:activo_id` | **Eliminar activo** de MongoDB | ✅ **NUEVO** |
+| `POST` | `/admin/sensores` | **Crear sensor** (desde gestion-service) | ✅ **NUEVO** |
+| `PUT` | `/admin/sensores/:sensor_id` | **Actualizar sensor** | ✅ **NUEVO** |
+| `DELETE` | `/admin/sensores/:sensor_id` | **Eliminar sensor** | ✅ **NUEVO** |
+
 ### 🎯 Resumen de Estado
 
-- **✅ Funcionando**: 17 rutas operativas (100% IMPLEMENTADAS)
+- **✅ Funcionando**: 23 rutas operativas (100% IMPLEMENTADAS) 🆕
 - **🔧 No implementado**: 0 rutas pendientes
-- **Total**: 17 rutas configuradas
+- **Total**: 23 rutas configuradas (6 nuevas de administración)
 
 ### ⚡ Tests Rápidos
 

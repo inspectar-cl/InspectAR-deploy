@@ -1,5 +1,5 @@
 run-b:
-	cd backend && docker compose up --build
+	cd backend && docker compose up --build -d
 
 stop-b:
 	cd backend && docker compose down -v
@@ -43,7 +43,7 @@ stop-b-ag:
 	cd backend && docker compose stop apigateway || true
 	cd backend && docker compose rm -f -s apigateway || true
 
-NGROK_URL := anita-submicroscopic-overgently.ngrok-free.app
+NGROK_URL := interbanded-kole-sneeringly.ngrok-free.app
 
 run-b-ngrok:
 	cd backend && docker compose up --build -d && ngrok http --domain=$(NGROK_URL) 3500

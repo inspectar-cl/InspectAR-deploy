@@ -50,3 +50,8 @@ func (s *ActivoService) ObtenerActivosPorEdificio(ctx context.Context, edificioI
 func (s *ActivoService) ObtenerSensoresPorActivo(ctx context.Context, activoID int) ([]models.Sensor, error) {
 	return s.activoRepo.GetSensoresByActivo(ctx, activoID)
 }
+
+// EliminarActivo elimina un activo de MongoDB
+func (s *ActivoService) EliminarActivo(ctx context.Context, activoID int) error {
+	return s.activoRepo.Delete(ctx, activoID)
+}

@@ -584,3 +584,135 @@ func (h *DataHandler) GetActivosByEdificio(c *gin.Context) {
 		"total":       len(activosEnriquecidos),
 	})
 }
+
+// ==================== MÉTODOS DE ADMINISTRACIÓN ====================
+
+// DELETE /admin/activos/:activo_id - Eliminar activo
+func (h *DataHandler) DeleteActivo(c *gin.Context) {
+	activoIDStr := c.Param("activo_id")
+	activoID, err := strconv.Atoi(activoIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de activo inválido"})
+		return
+	}
+
+	// Verificar que el activo existe
+	activo, err := h.activoService.ObtenerActivo(c.Request.Context(), activoID)
+	if err != nil || activo == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Activo no encontrado"})
+		return
+	}
+
+	// Eliminar el activo
+	err = h.activoService.EliminarActivo(c.Request.Context(), activoID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo eliminar el activo", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":   "Activo eliminado exitosamente",
+		"activo_id": activoID,
+	})
+}
+
+// POST /admin/sensores - Crear sensor (desde gestion-service)
+func (h *DataHandler) AddSensorToActivoAdmin(c *gin.Context) {
+	var req struct {
+		IDActivo int    `json:"id_activo" binding:"required"`
+		Nombre   string `json:"nombre" binding:"required"`
+		Tipo     string `json:"tipo" binding:"required"`
+		Unidad   string `json:"unidad" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos", "details": err.Error()})
+		return
+	}
+
+	// Verificar que el activo existe
+	activo, err := h.activoService.ObtenerActivo(c.Request.Context(), req.IDActivo)
+	if err != nil || activo == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Activo no encontrado en ParserService"})
+		return
+	}
+
+	// Crear el sensor
+	sensor := models.Sensor{
+		SensorID: req.Nombre, // Usar nombre como ID inicial
+		Tipo:     req.Tipo,
+		Unidad:   req.Unidad,
+	}
+
+	err = h.activoService.AgregarSensor(c.Request.Context(), req.IDActivo, sensor)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo crear el sensor", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message":   "Sensor creado exitosamente",
+		"sensor_id": sensor.SensorID,
+		"activo_id": req.IDActivo,
+		"sensor":    sensor,
+	})
+}
+
+// PUT /admin/sensores/:sensor_id - Actualizar sensor
+func (h *DataHandler) UpdateSensor(c *gin.Context) {
+	sensorID := c.Param("sensor_id")
+
+	if sensorID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de sensor requerido"})
+		return
+	}
+
+	var req struct {
+		Nombre string `json:"nombre"`
+		Tipo   string `json:"tipo"`
+		Unidad string `json:"unidad"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos", "details": err.Error()})
+		return
+	}
+
+	// Actualizar el sensor
+	err := h.sensorService.ActualizarSensor(c.Request.Context(), sensorID, req.Nombre, req.Tipo, req.Unidad)
+	if err != nil {
+		if err.Error() == "sensor no encontrado" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Sensor no encontrado"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo actualizar el sensor", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":   "Sensor actualizado exitosamente",
+		"sensor_id": sensorID,
+	})
+}
+
+// DELETE /admin/sensores/:sensor_id - Eliminar sensor
+func (h *DataHandler) DeleteSensor(c *gin.Context) {
+	sensorID := c.Param("sensor_id")
+
+	if sensorID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de sensor requerido"})
+		return
+	}
+
+	// Eliminar el sensor del activo
+	err := h.sensorService.EliminarSensor(c.Request.Context(), sensorID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo eliminar el sensor", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":   "Sensor eliminado exitosamente",
+		"sensor_id": sensorID,
+	})
+}

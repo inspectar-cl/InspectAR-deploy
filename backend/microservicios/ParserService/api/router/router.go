@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(dataHandler *handlers.DataHandler, statusHandler *handlers.SensorStatusHandler) *gin.Engine {
+func SetupRouter(dataHandler *handlers.DataHandler, statusHandler *handlers.SensorStatusHandler, adminHandler *handlers.AdminHandler) *gin.Engine {
 	r := gin.Default()
 	// Healthcheck simple
 	r.GET("/healthz", func(c *gin.Context) {
@@ -46,6 +46,20 @@ func SetupRouter(dataHandler *handlers.DataHandler, statusHandler *handlers.Sens
 			sensors.GET("/stats", statusHandler.GetSensorStats)
 			sensors.GET("/health", statusHandler.HealthCheck)
 		}
+	}
+
+	// Rutas de administración (CRUD de activos y sensores)
+	admin := r.Group("/admin")
+	{
+		// Activos
+		admin.POST("/activos", adminHandler.CreateActivoAdmin)              // Crear activo (desde gestion-service)
+		admin.PUT("/activos/:activo_id", dataHandler.UpdActivoEstado)       // Actualizar activo
+		admin.DELETE("/activos/:activo_id", adminHandler.DeleteActivoAdmin) // Eliminar activo
+
+		// Sensores
+		admin.POST("/sensores", adminHandler.CreateSensorAdmin)        // Crear sensor (desde gestion-service)
+		admin.PUT("/sensores/:sensor_id", dataHandler.UpdateSensor)    // Actualizar sensor
+		admin.DELETE("/sensores/:sensor_id", dataHandler.DeleteSensor) // Eliminar sensor
 	}
 
 	return r

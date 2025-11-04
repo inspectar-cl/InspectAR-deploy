@@ -69,13 +69,14 @@ func main() {
 	// Handlers
 	dataHandler := handlers.NewDataHandler(activoService, sensorService, monitoringService)
 	statusHandler := handlers.NewSensorStatusHandler(monitoringService)
+	adminHandler := handlers.NewAdminHandler(activoRepo)
 
 	// Iniciar monitoreo automático (verificar cada 2 minutos)
 	log.Printf("🚀 Iniciando monitoreo automático de sensores...")
 	monitoringService.StartMonitoring(2 * time.Minute)
 
 	// Ruteo con Gin
-	r := router.SetupRouter(dataHandler, statusHandler)
+	r := router.SetupRouter(dataHandler, statusHandler, adminHandler)
 
 	// Servicio web
 	service := web.NewService(
@@ -96,5 +97,3 @@ func main() {
 		log.Fatal(err)
 	}
 }
-
-

@@ -9,6 +9,9 @@ postgres:
 server:
   port: "8092"
 
+services:
+  parser_url: "http://localhost:8090"
+
 # Para conexión externa (cuando esté en Google Cloud)
 # postgres:
 #   host: "34.39.160.195"

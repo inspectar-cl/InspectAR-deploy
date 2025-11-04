@@ -17,6 +17,7 @@ func SetupRouter(
 	usuarioHandler *handlers.UsuarioHandler,
 	tipoFallaHandler *handlers.TipoFallaHandler,
 	firmaHandler *handlers.FirmaHandler,
+	adminHandler *handlers.AdminHandler,
 ) *gin.Engine {
 	r := gin.Default()
 
@@ -223,6 +224,27 @@ func SetupRouter(
 	r.PUT("/firmas/:id", firmaHandler.ActualizarFirma)                                      // Actualizar firma
 	r.DELETE("/firmas/:id", firmaHandler.EliminarFirma)                                     // Eliminar firma
 	r.POST("/firmas/:id/predeterminada", firmaHandler.EstablecerComoPredeterminada)         // Establecer como predeterminada
+
+	// 🔧 Rutas de administración (activos, edificios, sensores)
+	admin := r.Group("/admin")
+	{
+		// Activos
+		admin.POST("/activos", adminHandler.CrearActivo)          // Crear activo
+		admin.PUT("/activos/:id", adminHandler.ActualizarActivo)  // Actualizar activo
+		admin.DELETE("/activos/:id", adminHandler.EliminarActivo) // Eliminar activo
+
+		// Edificios
+		admin.POST("/edificios", adminHandler.CrearEdificio)          // Crear edificio
+		admin.PUT("/edificios/:id", adminHandler.ActualizarEdificio)  // Actualizar edificio
+		admin.DELETE("/edificios/:id", adminHandler.EliminarEdificio) // Eliminar edificio
+
+		// Sensores
+		admin.POST("/sensores", adminHandler.CrearSensor)         // Crear sensor en ParserService
+		admin.PUT("/sensores/:id", adminHandler.ActualizarSensor) // Actualizar sensor en ParserService
+
+		// Logs de auditoría
+		admin.GET("/logs", adminHandler.ObtenerLogs) // Obtener logs con filtros
+	}
 
 	return r
 }

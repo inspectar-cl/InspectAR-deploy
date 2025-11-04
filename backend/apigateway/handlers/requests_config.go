@@ -213,6 +213,14 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: userTypes("Root"),
         },
+        { 
+            Method:  "PUT",
+            Pattern: "/api/editar-activo/:id_activo",
+            Handler: EditarActivoHandler,
+            Protected: true,
+            RequiredScopes: userTypes("Root"),
+            // RequiredValidation: "activo",
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",

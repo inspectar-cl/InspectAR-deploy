@@ -106,343 +106,6 @@ func extractClaimFromToken(tokenString string, claimKey string) (interface{}, er
     return nil, fmt.Errorf("%s no encontrado en token", claimKey)
 }
 
-// ActivosCompletosHandler maneja la petición consolidada de activos con sensores
-func ActivosCompletosHandler(c *gin.Context) {
-    // tiposActivos := []string{"caldera"}
-	tiposActivos := []string{"bomba de agua", "caldera", "ascensor", "transformador"}
-    
-    var wg sync.WaitGroup
-    var mu sync.Mutex
-    
-    client := &http.Client{Timeout: 15 * time.Second}
-    todosLosActivos := []interface{}{}
-    fmt.Println("DEBUG: Llegué hasta aquí - iniciando obtención de activos por tipo")
-    
-    // 1. Obtener activos por tipo (4 peticiones concurrentes)
-    for _, tipo := range tiposActivos {
-        wg.Add(1)
-        go func(t string) {
-            defer wg.Done()
-            
-            url := fmt.Sprintf("%s/activos/tipo/%s", gestionURL, t)
-            resp, err := client.Get(url)
-            if err != nil {
-                return
-            }
-            defer resp.Body.Close()
-            
-            var data map[string]interface{}
-            if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-                return
-            }
-            
-            if activos, exists := data["activos"]; exists {
-                if activosArray, ok := activos.([]interface{}); ok {
-                    mu.Lock()
-                    todosLosActivos = append(todosLosActivos, activosArray...)
-                    mu.Unlock()
-                }
-            }
-        }(tipo)
-    }
-    
-    wg.Wait()
-    
-    // 2. Para cada activo, hacer las 3 peticiones al parser
-    activosCompletos := []interface{}{}
-    
-    for _, activo := range todosLosActivos {
-        if activoMap, ok := activo.(map[string]interface{}); ok {
-            activoID := fmt.Sprintf("%v", activoMap["id"])
-            
-            wg.Add(1)
-            go func(aID string, aMap map[string]interface{}) {
-                defer wg.Done()
-                
-                activoCompleto := make(map[string]interface{})
-                // Copiar datos base del activo
-                for k, v := range aMap {
-                    activoCompleto[k] = v
-                }
-                
-                var wgActivo sync.WaitGroup
-                var muActivo sync.Mutex
-                
-                // Petición sensores/estado
-                wgActivo.Add(1)
-                go func() {
-                    defer wgActivo.Done()
-                    url := fmt.Sprintf("%s/activo/%s/sensores/estado", parserURL, aID)
-                    resp, err := client.Get(url)
-                    if err != nil {
-                        return
-                    }
-                    defer resp.Body.Close()
-                    
-                    var sensoresData interface{}
-                    if err := json.NewDecoder(resp.Body).Decode(&sensoresData); err != nil {
-                        return
-                    }
-                    
-                    muActivo.Lock()
-                    activoCompleto["sensores_estado"] = sensoresData
-                    muActivo.Unlock()
-                }()
-                
-                // Petición últimos valores
-                wgActivo.Add(1)
-                go func() {
-                    defer wgActivo.Done()
-                    url := fmt.Sprintf("%s/lectura/%s/datos/ultimo", parserURL, aID)
-                    resp, err := client.Get(url)
-                    if err != nil {
-                        return
-                    }
-                    defer resp.Body.Close()
-                    
-                    var ultimosData interface{}
-                    if err := json.NewDecoder(resp.Body).Decode(&ultimosData); err != nil {
-                        return
-                    }
-                    
-                    muActivo.Lock()
-                    activoCompleto["ultimos_valores"] = ultimosData
-                    muActivo.Unlock()
-                }()
-                
-                // Petición datos históricos
-                wgActivo.Add(1)
-                go func() {
-                    defer wgActivo.Done()
-                    url := fmt.Sprintf("%s/lectura/%s/datos", parserURL, aID)
-                    resp, err := client.Get(url)
-                    if err != nil {
-                        return
-                    }
-                    defer resp.Body.Close()
-                    
-                    var historicosData interface{}
-                    if err := json.NewDecoder(resp.Body).Decode(&historicosData); err != nil {
-                        return
-                    }
-                    
-                    muActivo.Lock()
-                    activoCompleto["datos_historicos"] = historicosData
-                    muActivo.Unlock()
-                }()
-                
-                wgActivo.Wait()
-                
-                mu.Lock()
-                activosCompletos = append(activosCompletos, activoCompleto)
-                mu.Unlock()
-                
-            }(activoID, activoMap)
-        }
-    }
-    
-    wg.Wait()
-    
-    result := map[string]interface{}{
-        "activos": activosCompletos,
-        "total": len(activosCompletos),
-        "timestamp": time.Now(),
-    }
-    
-    c.JSON(http.StatusOK, result)
-}
-
-func ActivosYSensores(c *gin.Context) {
-	// c.JSON(http.StatusOK, gin.H{"message": "Sensores endpoint"})
-	var wg sync.WaitGroup
-    var mu sync.Mutex
-
-	// tiposActivos := []string{"bomba de agua"}
-    tiposActivos := []string{"transformador", "bomba de agua", "caldera", "ascensor"}
-	activos := []interface{}{}
-	
-	for _, tipo := range tiposActivos {
-		
-		fmt.Println("DEBUG: Obteniendo activos de tipo", tipo)
-		wg.Add(1) // Aumentar contador del WaitGroup
-		go func(t string) {
-			defer wg.Done() // Marca la tarea como terminada al finalizar la goroutine
-			url := fmt.Sprintf("%s/activos/tipo/%s", gestionURL, t)
-			resp, err := httpClient.Get(url)
-			if err != nil {
-				fmt.Println("Error: ", err)
-				return
-			}
-			defer resp.Body.Close()
-			
-			var data map[string]interface{} // Mapa para decodificar la respuesta JSON
-			if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-				fmt.Println("Error decodificando JSON: ", err)
-				return
-			}
-            // Añadir lo que está en "activos" al slice principal
-			if activosData, exists := data["activos"]; exists {
-                if activosArray, ok := activosData.([]interface{}); ok {
-                    mu.Lock()
-                    activos = append(activos, activosArray...)
-                    mu.Unlock()
-                }
-            }
-		}(tipo)
-	}
-
-	wg.Wait() // Esperar a que termine la goroutine para ejecutar la siguiente parte
-
-    // Hacer la segunda parte: obtener sensores para cada activo
-    for _, activo := range activos {
-        // activo es una interface del estilo, que hay que convertir para extraer la id:
-        // map[edificio_id:1 estado:operativo id:2 nombre:Bomba Centrífuga A tipo:bomba de agua]
-        fmt.Println("DEBUG: Obteniendo sensores para activo", activo)
-        if activoMap, ok := activo.(map[string]interface{}); ok {
-            activoID := fmt.Sprintf("%v", activoMap["id"]) // Convertir a string la id obtenida
-            wg.Add(1)
-            go func(aMap map[string]interface{}) {
-                defer wg.Done() // Ejecutar al finalizar la goroutine
-                url := fmt.Sprintf("%s/activo/%s/sensores/estado", parserURL, activoID)
-                resp, err := httpClient.Get(url)
-                if err != nil {
-                    fmt.Println("Error obteniendo sensores: ", err)
-                    return
-                }
-                defer resp.Body.Close()
-
-                body := make(map[string]interface{})
-                if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-                    fmt.Println("Error decodificando sensores: ", err)
-                    return
-                }
-
-                if sensores, exists := body["sensores"]; exists {
-                    mu.Lock()
-                    // Añadir sensores al mapa del activo
-                    // como se pasó como referencia, se modifica el original en el slice.
-                    aMap["sensores"] = sensores 
-                    mu.Unlock()
-                    fmt.Printf("DEBUG: Sensores agregados para activo ID %s\n", activoID)
-
-                    // Obtener datos históricos para el activo completo
-                    wg.Add(1)
-                    go func(aID string, sensoresList interface{}) {
-                        defer wg.Done()
-                        fmt.Println("DEBUG: Obteniendo datos históricos para activo id: ", aID)
-                        url := fmt.Sprintf("%s/lectura/%s/datos", parserURL, aID)
-                        resp, err := httpClient.Get(url)
-                        if err != nil {
-                            fmt.Println("Error obteniendo datos históricos: ", err)
-                            return
-                        }
-                        defer resp.Body.Close()
-
-                        var datosHistoricos map[string]interface{}
-                        if err := json.NewDecoder(resp.Body).Decode(&datosHistoricos); err != nil {
-                            fmt.Println("Error decodificando datos históricos: ", err)
-                            return
-                        }
-
-                        // Distribuir los datos históricos a cada sensor
-                        if sensoresData, exists := datosHistoricos["sensores"]; exists {
-                            if sensoresArray, ok := sensoresData.([]interface{}); ok {
-                                // Crear un mapa para acceso rápido por sensor_id
-                                datosPorSensor := make(map[string]interface{})
-                                for _, sensorData := range sensoresArray {
-                                    if sensorMap, ok := sensorData.(map[string]interface{}); ok {
-                                        if sensorID, exists := sensorMap["sensor_id"]; exists {
-                                            datosPorSensor[fmt.Sprintf("%v", sensorID)] = sensorMap["datos"]
-                                            // fmt.Printf("DEBUG: Datos encontrados para sensor %s\n", sensorID)
-                                        }
-                                    }
-                                }
-
-                                // fmt.Printf("DEBUG: Total sensores con datos: %d\n", len(datosPorSensor))
-
-                                // Agregar los datos a cada sensor en la lista original
-                                mu.Lock()
-                                if sensoresOriginales, ok := sensoresList.([]interface{}); ok {
-                                    fmt.Printf("DEBUG: Distribuyendo datos a sensores del activo id: %s\n", aID)
-                                    for _, sensor := range sensoresOriginales {
-                                        if sensorMap, ok := sensor.(map[string]interface{}); ok {
-                                            // Usar 'sensor_id' en lugar de 'id'
-                                            if sensorID, exists := sensorMap["sensor_id"]; exists {
-                                                sensorIDStr := fmt.Sprintf("%v", sensorID)
-                                                // fmt.Printf("DEBUG: Buscando datos para sensor %s\n", sensorIDStr)
-                                                if datos, encontrado := datosPorSensor[sensorIDStr]; encontrado {
-                                                    sensorMap["datos"] = datos
-                                                    // fmt.Printf("DEBUG: Datos agregados al sensor %s\n", sensorIDStr)
-                                                } else {
-                                                    fmt.Printf("DEBUG: No se encontraron datos para sensor %s\n", sensorIDStr)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                mu.Unlock()
-                            }
-                        }
-                    }(activoID, sensores)
-                }
-
-            }(activoMap) // Pasar el mapa del activo a la goroutine
-        }
-    }
-
-    wg.Wait() // Esperar a que terminen todas las goroutines
-
-
-	result := map[string]interface{}{
-        "activos": activos,
-        "total": len(activos),
-        "timestamp": time.Now(),
-    }
-
-	c.JSON(http.StatusOK, result)
-}
-
-func ObtenerActivos(c *gin.Context) {
-    var wg sync.WaitGroup
-    var mu sync.Mutex
-    activos := []interface{}{}
-    
-    wg.Add(1)
-    // Goroutine para obtener activos
-    go func() {
-        defer wg.Done()
-        url := fmt.Sprintf("%s/activos", gestionURL)
-        resp, err := httpClient.Get(url)
-        if err != nil {
-            fmt.Println("Error obteniendo activos: ", err)
-            return
-        }
-        defer resp.Body.Close()
-        
-        var data map[string]interface{}
-        if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-            fmt.Println("Error decodificando activos: ", err)
-            return
-        }
-        
-        if activosData, exists := data["activos"]; exists {
-            if activosArray, ok := activosData.([]interface{}); ok {
-                mu.Lock()
-                activos = activosArray
-                mu.Unlock()
-            }
-        }
-    }()
-
-    wg.Wait() // Esperar a que termine la goroutine de activos
-
-    result := map[string]interface{}{
-        "activos": activos,
-    }
-
-    c.JSON(http.StatusOK, result)
-}
-
 func GenerarReporte(c *gin.Context) {
     // NO terminado
     id := c.Param("id_reporte")
@@ -728,12 +391,17 @@ func ObtenerActivosPorEdificio(c *gin.Context) {
     var mu sync.Mutex
     activos := []interface{}{}
     estadosMap := make(map[int]string) // Agregar declaración del mapa de estados
+    sensoresMap := make(map[int]interface{})
+
+    // Verificar si se solicitan sensores
+    incluirSensores := c.Query("sensores") == "true"
     
     wg.Add(1)
     // Goroutine para obtener activos del edificio
     go func() {
         defer wg.Done()
         url := fmt.Sprintf("%s/activos/edificio/%s", gestionURL, idEdificio)
+
         resp, err := httpClient.Get(url)
         if err != nil {
             fmt.Println("Error obteniendo activos por edificio: ", err)
@@ -758,69 +426,190 @@ func ObtenerActivosPorEdificio(c *gin.Context) {
 
     wg.Wait() // Esperar a que termine la goroutine de activos
 
-    // Obtener el estado de cada activo mediante el parser
-    wg.Add(1)
-    go func() {
-        defer wg.Done()
-        url := fmt.Sprintf("%s/activo/edificio/%s", parserURL, idEdificio)
-
-        resp, err := httpClient.Get(url)
-        if err != nil {
-            fmt.Println("Error obteniendo estados de activos: ", err)
-            return
-        }
-        defer resp.Body.Close()
-
-        // Primero intentar decodificar como objeto con clave "activos"
-        var responseData map[string]interface{}
-        if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
-            fmt.Println("Error decodificando respuesta de estados: ", err)
-            return
-        }
-
-        // fmt.Printf("DEBUG: Respuesta completa del parser: %+v\n", responseData)
-
-        // Extraer el array de estados (puede estar en diferentes claves)
-        var estadosArray []interface{}
+    // Si se solicitan sensores, consultar individualmente cada activo en el parser
+    if incluirSensores {
+        fmt.Println("DEBUG: Consultando sensores para cada activo")
         
-        // Intentar varias posibles claves
-        if activos, exists := responseData["activos"]; exists {
-            if arr, ok := activos.([]interface{}); ok {
-                estadosArray = arr
+        for _, activo := range activos {
+            if activoMap, ok := activo.(map[string]interface{}); ok {
+                if idInterface, exists := activoMap["id"]; exists {
+                    var activoID int
+                    
+                    // Convertir el ID a int
+                    switch v := idInterface.(type) {
+                    case float64:
+                        activoID = int(v)
+                    case int:
+                        activoID = v
+                    default:
+                        fmt.Printf("Tipo inesperado para id de activo: %T\n", idInterface)
+                        continue
+                    }
+
+                    // Consultar sensores y datos para este activo específico
+                    wg.Add(1)
+                    go func(aID int) {
+                        defer wg.Done()
+                        
+                        // Consultar información de sensores (estado, tipo, unidad, etc.)
+                        url := fmt.Sprintf("%s/activo/%d", parserURL, aID)
+                        resp, err := httpClient.Get(url)
+                        if err != nil {
+                            fmt.Printf("Error obteniendo sensores para activo %d: %v\n", aID, err)
+                            return
+                        }
+                        defer resp.Body.Close()
+
+                        var activoData map[string]interface{}
+                        if err := json.NewDecoder(resp.Body).Decode(&activoData); err != nil {
+                            fmt.Printf("Error decodificando datos del activo %d: %v\n", aID, err)
+                            return
+                        }
+
+                        mu.Lock()
+                        // Guardar estado si existe
+                        if estado, exists := activoData["estado"]; exists {
+                            if estadoStr, ok := estado.(string); ok {
+                                estadosMap[aID] = estadoStr
+                            }
+                        }
+
+                        // Obtener sensores
+                        var sensoresArray []interface{}
+                        if sensores, exists := activoData["sensores"]; exists {
+                            if sensoresArr, ok := sensores.([]interface{}); ok {
+                                sensoresArray = sensoresArr
+                            }
+                        }
+                        mu.Unlock()
+
+                        // Consultar datos históricos de sensores
+                        urlDatos := fmt.Sprintf("%s/lectura/%d/datos", parserURL, aID)
+                        respDatos, err := httpClient.Get(urlDatos)
+                        if err != nil {
+                            fmt.Printf("Error obteniendo datos para activo %d: %v\n", aID, err)
+                            // Guardar sensores sin datos
+                            mu.Lock()
+                            sensoresMap[aID] = sensoresArray
+                            mu.Unlock()
+                            return
+                        }
+                        defer respDatos.Body.Close()
+
+                        var datosResponse map[string]interface{}
+                        if err := json.NewDecoder(respDatos.Body).Decode(&datosResponse); err != nil {
+                            fmt.Printf("Error decodificando datos históricos del activo %d: %v\n", aID, err)
+                            // Guardar sensores sin datos
+                            mu.Lock()
+                            sensoresMap[aID] = sensoresArray
+                            mu.Unlock()
+                            return
+                        }
+
+                        // Crear un mapa de datos por sensor_id
+                        datosMap := make(map[string]interface{})
+                        if sensoresDatos, exists := datosResponse["sensores"]; exists {
+                            if sensoresDatosArray, ok := sensoresDatos.([]interface{}); ok {
+                                for _, sensorDato := range sensoresDatosArray {
+                                    if sensorDatoMap, ok := sensorDato.(map[string]interface{}); ok {
+                                        if sensorID, exists := sensorDatoMap["sensor_id"]; exists {
+                                            if datos, existsDatos := sensorDatoMap["datos"]; existsDatos {
+                                                datosMap[fmt.Sprintf("%v", sensorID)] = datos
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Agregar los datos a cada sensor
+                        for _, sensor := range sensoresArray {
+                            if sensorMap, ok := sensor.(map[string]interface{}); ok {
+                                if sensorID, exists := sensorMap["sensor_id"]; exists {
+                                    sensorIDStr := fmt.Sprintf("%v", sensorID)
+                                    if datos, encontrado := datosMap[sensorIDStr]; encontrado {
+                                        sensorMap["datos"] = datos
+                                    } else {
+                                        sensorMap["datos"] = nil
+                                    }
+                                }
+                            }
+                        }
+
+                        // Guardar sensores con datos
+                        mu.Lock()
+                        sensoresMap[aID] = sensoresArray
+                        mu.Unlock()
+
+                    }(activoID)
+                }
             }
         }
 
-        mu.Lock()
-        for _, estadoItem := range estadosArray {
-            if estadoData, ok := estadoItem.(map[string]interface{}); ok {
-                if activoID, exists := estadoData["activo_id"]; exists {
-                    // Convertir activo_id a int
-                    var id int
-                    switch v := activoID.(type) {
-                    case float64:
-                        id = int(v)
-                    case int:
-                        id = v
-                    default:
-                        fmt.Printf("Tipo inesperado para activo_id: %T\n", activoID)
-                        continue
-                    }
-                    
-                    // Guardar estado
-                    if estado, existsEstado := estadoData["estado"]; existsEstado {
-                        if estadoStr, ok := estado.(string); ok {
-                            estadosMap[id] = estadoStr
+        wg.Wait() // Esperar a que terminen todas las consultas de sensores
+    } else {
+        // Si NO se solicitan sensores, usar el endpoint para estados del edificio
+        wg.Add(1)
+        go func() {
+            defer wg.Done()
+            url := fmt.Sprintf("%s/activo/edificio/%s", parserURL, idEdificio)
+
+            resp, err := httpClient.Get(url)
+            if err != nil {
+                fmt.Println("Error obteniendo estados de activos: ", err)
+                return
+            }
+            defer resp.Body.Close()
+
+            // Primero intentar decodificar como objeto con clave "activos"
+            var responseData map[string]interface{}
+            if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+                fmt.Println("Error decodificando respuesta de estados: ", err)
+                return
+            }
+
+            // Extraer el array de estados (puede estar en diferentes claves)
+            var estadosArray []interface{}
+            
+            // Intentar varias posibles claves
+            if activos, exists := responseData["activos"]; exists {
+                if arr, ok := activos.([]interface{}); ok {
+                    estadosArray = arr
+                }
+            }
+
+            mu.Lock()
+            for _, estadoItem := range estadosArray {
+                if estadoData, ok := estadoItem.(map[string]interface{}); ok {
+                    if activoID, exists := estadoData["activo_id"]; exists {
+                        // Convertir activo_id a int
+                        var id int
+                        switch v := activoID.(type) {
+                        case float64:
+                            id = int(v)
+                        case int:
+                            id = v
+                        default:
+                            fmt.Printf("Tipo inesperado para activo_id: %T\n", activoID)
+                            continue
+                        }
+                        
+                        // Guardar estado
+                        if estado, existsEstado := estadoData["estado"]; existsEstado {
+                            if estadoStr, ok := estado.(string); ok {
+                                estadosMap[id] = estadoStr
+                            }
                         }
                     }
                 }
             }
-        }
-        mu.Unlock()
-    }()
+            mu.Unlock()
+        }()
 
-    wg.Wait() // Esperar a que termine la goroutine de estados
+        wg.Wait() // Esperar a que termine la goroutine de estados
+    }
 
-    // Agregar el estado a cada activo en la lista
+    // Agregar el estado (y sensores si se solicitaron) a cada activo en la lista
     activosConEstado := []interface{}{}
     for _, activo := range activos {
         if activoMap, ok := activo.(map[string]interface{}); ok {
@@ -846,6 +635,15 @@ func ObtenerActivosPorEdificio(c *gin.Context) {
                 } else {
                     // Si no se encuentra estado, poner "Desconocido"
                     activoMap["estado"] = "Desconocido"
+                }
+
+                // Si se solicitaron sensores, agregarlos
+                if incluirSensores {
+                    if sensores, encontrado := sensoresMap[activoID]; encontrado {
+                        activoMap["sensores"] = sensores
+                    } else {
+                        activoMap["sensores"] = []interface{}{}
+                    }
                 }
             }
             activosConEstado = append(activosConEstado, activoMap)
@@ -975,33 +773,13 @@ func PublicacionForoHandler(c *gin.Context) {
     }
 
     // Extraer el email desde el token JWT
-    var email string
     authHeader := c.GetHeader("Authorization")
-    if authHeader == "" {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+    email, _ := extractClaimFromToken(authHeader, "email")
+    if email == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
         return
     }
-    
-    // fmt.Printf("DEBUG: Authorization header: %s\n", authHeader)
-
-    //Bearer eydsdsdsd...
-    tokenParts := strings.Split(authHeader, " ")
-
-    emailInterface, err := extractClaimFromToken(tokenParts[1], "email")
-    if err != nil {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-        return
-    }
-    
-    // Type assertion para convertir interface{} a string
-    var ok bool
-    email, ok = emailInterface.(string)
-    if !ok {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid email format in token"})
-        return
-    }
-    
-    fmt.Printf("Email extraído del token: %s\n", email)
+    fmt.Printf("Email usuario: %s\n", email)
 
     // Leer el body de la request
     var publicacionData map[string]interface{}
@@ -1100,31 +878,13 @@ func ComentariosForoHandler(c *gin.Context) {
     }
 
     // Extraer el email desde el token JWT
-    var email string
     authHeader := c.GetHeader("Authorization")
-    if authHeader == "" {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+    email, _ := extractClaimFromToken(authHeader, "email")
+    if email == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
         return
     }
-
-    //Bearer eydsdsdsd...
-    tokenParts := strings.Split(authHeader, " ")
-
-    emailInterface, err := extractClaimFromToken(tokenParts[1], "email")
-    if err != nil {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-        return
-    }
-    
-    // Type assertion para convertir interface{} a string
-    var ok bool
-    email, ok = emailInterface.(string)
-    if !ok {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid email format in token"})
-        return
-    }
-    
-    fmt.Printf("Email extraído del token: %s\n", email)
+    fmt.Printf("Email usuario: %s\n", email)
 
     // Leer el body de la request
     var comentarioData map[string]interface{}
@@ -1502,30 +1262,13 @@ func GenerarPDFReporte(c *gin.Context) {
     }
 
     // Extraer el email desde el token JWT
-    var email string
     authHeader := c.GetHeader("Authorization")
-    if authHeader == "" {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+    email, _ := extractClaimFromToken(authHeader, "email")
+    if email == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
         return
     }
-
-    tokenParts := strings.Split(authHeader, " ")
-
-    emailInterface, err := extractClaimFromToken(tokenParts[1], "email")
-    if err != nil {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-        return
-    }
-    
-    // Type assertion para convertir interface{} a string
-    var ok bool
-    email, ok = emailInterface.(string)
-    if !ok {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid email format in token"})
-        return
-    }
-    
-    fmt.Printf("Email extraído del token: %s\n", email)
+    fmt.Printf("Email usuario: %s\n", email)
 
     // Leer el body de la request
     var reporteData map[string]interface{}
@@ -1540,7 +1283,8 @@ func GenerarPDFReporte(c *gin.Context) {
     bodyData := map[string]interface{}{
         "campos": reporteData["campos"],
         "usar_firma_predeterminada": true,
-        "usuario_id": 1,
+        "email": email,
+        "firma_id": reporteData["firma_id"],
     }
 
     // Convertir a JSON
@@ -2322,4 +2066,452 @@ func ActualizarEstadoAccionHandler(c *gin.Context) {
 
     // Retornar la respuesta del microservicio
     c.JSON(http.StatusOK, responseData)
+}
+
+func ObtenerFirmasUsuarioHandler(c *gin.Context) {
+    // Extraer el email desde el token JWT
+    authHeader := c.GetHeader("Authorization")
+    email, _ := extractClaimFromToken(authHeader, "email")
+    if email == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
+        return
+    }
+    fmt.Printf("Email usuario: %s\n", email)
+
+    // Hacer GET al microservicio de gestión
+    url := fmt.Sprintf("%s/firmas/usuario/%s", gestionURL, email)
+    resp, err := httpClient.Get(url)
+    if err != nil {
+        fmt.Println("Error obteniendo firmas del usuario: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al obtener las firmas"})
+        return
+    }
+    defer resp.Body.Close()
+
+    // Verificar si la respuesta es exitosa
+    if resp.StatusCode != http.StatusOK {
+        var errorData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&errorData); err == nil {
+            c.JSON(resp.StatusCode, errorData)
+            return
+        }
+        c.JSON(resp.StatusCode, gin.H{"error": "Error al obtener las firmas"})
+        return
+    }
+
+    // Leer la respuesta del microservicio
+    var firmasData interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&firmasData); err != nil {
+        fmt.Println("Error decodificando firmas: ", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando las firmas"})
+        return
+    }
+
+    // Retornar la respuesta del microservicio directamente
+    c.JSON(http.StatusOK, firmasData)
+}
+
+func SubirFirmaUsuarioHandler(c *gin.Context) {
+    // Extraer el email desde el token JWT
+    authHeader := c.GetHeader("Authorization")
+    email, _ := extractClaimFromToken(authHeader, "email")
+    if email == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
+        return
+    }
+    fmt.Printf("Usuario subiendo firma: %s\n", email)
+
+    // Parsear multipart/form-data
+    err := c.Request.ParseMultipartForm(10 << 20) // 10 MB
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Error parseando form-data"})
+        return
+    }
+
+    // Obtener el archivo
+    file, fileHeader, err := c.Request.FormFile("archivo")
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'archivo' es requerido"})
+        return
+    }
+    defer file.Close()
+
+    fmt.Printf("Archivo de firma recibido: %s, tamaño: %d bytes\n", fileHeader.Filename, fileHeader.Size)
+
+    // Obtener los demás campos del form
+    nombreArchivo := c.Request.FormValue("nombre_archivo")
+    esPredeterminadaStr := c.Request.FormValue("es_predeterminada")
+
+    // Validar campos requeridos
+    if nombreArchivo == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'nombre_archivo' es requerido"})
+        return
+    }
+
+    if esPredeterminadaStr == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'es_predeterminada' es requerido"})
+        return
+    }
+
+    fmt.Printf("Datos de la firma - nombre: %s, es_predeterminada: %s\n", nombreArchivo, esPredeterminadaStr)
+
+    // Crear el form-data para el microservicio de gestión
+    var requestBody bytes.Buffer
+    writer := multipart.NewWriter(&requestBody)
+
+    // Determinar el Content-Type basado en la extensión del archivo
+    contentType := fileHeader.Header.Get("Content-Type")
+    if contentType == "" {
+        // Si no viene el Content-Type, intentar determinarlo por extensión
+        ext := strings.ToLower(fileHeader.Filename[strings.LastIndex(fileHeader.Filename, ".")+1:])
+        switch ext {
+        case "png":
+            contentType = "image/png"
+        case "jpg", "jpeg":
+            contentType = "image/jpeg"
+        case "svg":
+            contentType = "image/svg+xml"
+        default:
+            contentType = "application/octet-stream"
+        }
+    }
+
+    fmt.Printf("Content-Type detectado: %s\n", contentType)
+
+    // Crear el campo del archivo con el Content-Type correcto
+    h := make(map[string][]string)
+    h["Content-Disposition"] = []string{fmt.Sprintf(`form-data; name="archivo"; filename="%s"`, fileHeader.Filename)}
+    h["Content-Type"] = []string{contentType}
+    
+    part, err := writer.CreatePart(h)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creando form file"})
+        return
+    }
+
+    // Copiar el contenido del archivo
+    _, err = io.Copy(part, file)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error copiando archivo"})
+        return
+    }
+
+    // Agregar los demás campos
+    writer.WriteField("email", fmt.Sprintf("%v", email))
+    writer.WriteField("nombre_archivo", nombreArchivo)
+    writer.WriteField("es_predeterminada", esPredeterminadaStr)
+
+    // Cerrar el writer
+    err = writer.Close()
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error cerrando writer"})
+        return
+    }
+
+    // Hacer POST al microservicio de gestión
+    url := fmt.Sprintf("%s/firmas/upload", gestionURL)
+    req, err := http.NewRequest("POST", url, &requestBody)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creando request"})
+        return
+    }
+
+    // Establecer el Content-Type con el boundary correcto
+    req.Header.Set("Content-Type", writer.FormDataContentType())
+
+    // Ejecutar la petición
+    client := &http.Client{Timeout: 30 * time.Second} // Mayor timeout para uploads
+    resp, err := client.Do(req)
+    if err != nil {
+        fmt.Println("Error subiendo firma: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al subir la firma"})
+        return
+    }
+    defer resp.Body.Close()
+
+    fmt.Printf("DEBUG: Status code de respuesta de subida de firma: %d\n", resp.StatusCode)
+
+    // Verificar si la respuesta es exitosa
+    if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+        var errorData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&errorData); err == nil {
+            c.JSON(resp.StatusCode, errorData)
+            return
+        }
+        c.JSON(resp.StatusCode, gin.H{"error": "Error al subir la firma"})
+        return
+    }
+
+    // Leer la respuesta exitosa
+    var responseData map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+        fmt.Println("Error decodificando respuesta de subida de firma: ", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando respuesta"})
+        return
+    }
+
+    c.JSON(resp.StatusCode, responseData)
+}
+
+func EliminarFirmaUsuarioHandler(c *gin.Context) {
+    // Extraer el email desde el token JWT
+    authHeader := c.GetHeader("Authorization")
+    email, _ := extractClaimFromToken(authHeader, "email")
+    if email == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
+        return
+    }
+    fmt.Printf("Usuario eliminando firma: %s\n", email)
+
+    // Obtener el ID de la firma desde los parámetros de la URL
+    idFirma := c.Param("id_firma")
+    if idFirma == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID de la firma es requerido"})
+        return
+    }
+
+    fmt.Printf("Eliminando firma ID: %s para usuario: %s\n", idFirma, email)
+
+    // Construir el body con el email
+    bodyData := map[string]interface{}{
+        "email": email,
+    }
+
+    // Convertir a JSON
+    jsonData, err := json.Marshal(bodyData)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando datos"})
+        return
+    }
+
+    // Hacer DELETE al microservicio de gestión
+    url := fmt.Sprintf("%s/firmas/%s", gestionURL, idFirma)
+    req, err := http.NewRequest("DELETE", url, bytes.NewBuffer(jsonData))
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creando request"})
+        return
+    }
+
+    // Establecer headers
+    req.Header.Set("Content-Type", "application/json")
+
+    // Ejecutar la petición
+    resp, err := httpClient.Do(req)
+    if err != nil {
+        fmt.Println("Error eliminando firma: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al eliminar la firma"})
+        return
+    }
+    defer resp.Body.Close()
+
+    fmt.Printf("DEBUG: Status code de eliminación de firma: %d\n", resp.StatusCode)
+
+    // Verificar si la respuesta es exitosa
+    if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+        var errorData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&errorData); err == nil {
+            c.JSON(resp.StatusCode, errorData)
+            return
+        }
+        c.JSON(resp.StatusCode, gin.H{"error": "Error al eliminar la firma"})
+        return
+    }
+
+    // Leer la respuesta exitosa (si existe)
+    var responseData map[string]interface{}
+    if resp.StatusCode == http.StatusOK {
+        if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+            fmt.Println("Error decodificando respuesta de eliminación: ", err)
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando respuesta"})
+            return
+        }
+        c.JSON(http.StatusOK, responseData)
+    } else {
+        // Si es 204 No Content, responder con mensaje de éxito
+        c.JSON(http.StatusOK, gin.H{"message": "Firma eliminada exitosamente"})
+    }
+}
+
+func ActualizarFirmaUsuarioHandler(c *gin.Context) {
+    // Extraer el email desde el token JWT
+    authHeader := c.GetHeader("Authorization")
+    email, _ := extractClaimFromToken(authHeader, "email")
+    if email == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
+        return
+    }
+    fmt.Printf("Usuario actualizando firma: %s\n", email)
+
+    // Obtener el ID de la firma desde los parámetros de la URL
+    idFirma := c.Param("id_firma")
+    if idFirma == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID de la firma es requerido"})
+        return
+    }
+
+    // Leer el body de la request
+    var firmaData map[string]interface{}
+    if err := c.ShouldBindJSON(&firmaData); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+        return
+    }
+
+    // Validar que vengan los campos requeridos
+    if _, exists := firmaData["nombre_archivo"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'nombre_archivo' es requerido"})
+        return
+    }
+
+    if _, exists := firmaData["es_predeterminada"]; !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'es_predeterminada' es requerido"})
+        return
+    }
+
+    fmt.Printf("Actualizando firma ID: %s - datos: %+v\n", idFirma, firmaData)
+
+    // Construir el body para el microservicio
+    bodyData := map[string]interface{}{
+        "nombre_archivo": firmaData["nombre_archivo"],
+        "es_predeterminada": firmaData["es_predeterminada"],
+    }
+
+    // Convertir a JSON
+    jsonData, err := json.Marshal(bodyData)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando datos"})
+        return
+    }
+
+    fmt.Printf("DEBUG: Enviando actualización de firma: %+v\n", bodyData)
+
+    // Hacer PUT al microservicio de gestión
+    url := fmt.Sprintf("%s/firmas/%s", gestionURL, idFirma)
+    req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creando request"})
+        return
+    }
+
+    // Establecer headers
+    req.Header.Set("Content-Type", "application/json")
+
+    // Ejecutar la petición
+    resp, err := httpClient.Do(req)
+    if err != nil {
+        fmt.Println("Error actualizando firma: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al actualizar la firma"})
+        return
+    }
+    defer resp.Body.Close()
+
+    fmt.Printf("DEBUG: Status code de actualización de firma: %d\n", resp.StatusCode)
+
+    // Verificar si la respuesta es exitosa
+    if resp.StatusCode != http.StatusOK {
+        var errorData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&errorData); err == nil {
+            c.JSON(resp.StatusCode, errorData)
+            return
+        }
+        c.JSON(resp.StatusCode, gin.H{"error": "Error al actualizar la firma"})
+        return
+    }
+
+    // Leer la respuesta exitosa
+    var responseData map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+        fmt.Println("Error decodificando respuesta de actualización: ", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando respuesta"})
+        return
+    }
+
+    // Retornar la respuesta del microservicio
+    c.JSON(http.StatusOK, responseData)
+}
+
+func ObtenerDocumentosHandler(c *gin.Context) {
+    // Leer el body con la lista de activos
+    var requestData map[string]interface{}
+    if err := c.ShouldBindJSON(&requestData); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+        return
+    }
+
+    // Validar que venga el array de activos
+    activosInterface, exists := requestData["activos"]
+    if !exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'activos' es requerido"})
+        return
+    }
+
+    activos, ok := activosInterface.([]interface{})
+    if !ok {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'activos' debe ser un array"})
+        return
+    }
+
+    fmt.Printf("Obteniendo documentos para %d activos\n", len(activos))
+
+    var wg sync.WaitGroup
+    var mu sync.Mutex
+    todosLosDocumentos := []interface{}{}
+
+    // Hacer peticiones concurrentes para cada activo
+    for _, activo := range activos {
+        activoMap, ok := activo.(map[string]interface{})
+        if !ok {
+            continue
+        }
+
+        // Extraer el ID del activo
+        var activoID int
+        switch id := activoMap["id"].(type) {
+        case float64:
+            activoID = int(id)
+        case int:
+            activoID = id
+        default:
+            continue
+        }
+
+        wg.Add(1)
+        go func(id int) {
+            defer wg.Done()
+
+            url := fmt.Sprintf("%s/api/v1/documentos/activo/%d", documentacionURL, id)
+            resp, err := httpClient.Get(url)
+            if err != nil {
+                fmt.Printf("Error obteniendo documentos del activo %d: %v\n", id, err)
+                return
+            }
+            defer resp.Body.Close()
+
+            if resp.StatusCode != http.StatusOK {
+                fmt.Printf("Error en respuesta de documentos del activo %d: status %d\n", id, resp.StatusCode)
+                return
+            }
+
+            var data map[string]interface{}
+            if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+                fmt.Printf("Error decodificando documentos del activo %d: %v\n", id, err)
+                return
+            }
+
+            // Extraer solo el array de documentos
+            if documentos, exists := data["documentos"].([]interface{}); exists {
+                mu.Lock()
+                todosLosDocumentos = append(todosLosDocumentos, documentos...)
+                mu.Unlock()
+            }
+        }(activoID)
+    }
+
+    wg.Wait()
+
+    // Retornar la respuesta consolidada
+    result := map[string]interface{}{
+        "documentos": todosLosDocumentos,
+    }
+
+    c.JSON(http.StatusOK, result)
 }

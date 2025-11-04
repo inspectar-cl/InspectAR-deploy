@@ -113,14 +113,6 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: userTypes("Residente", "Admin"),
         },
-        { 
-            Method:  "GET",
-            Pattern: "/api/lista-activos-edificio/:id_edificio",
-            Handler: ListaActivosHandler,
-            Protected: true,
-            RequiredScopes: userTypes("Tecnico", "Analista", "Admin"),
-            RequiredValidation: "edificio",
-        },
         {
             Method: "GET",
             Pattern: "/api/obtener-activo-id/:id_activo",

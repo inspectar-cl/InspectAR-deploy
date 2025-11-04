@@ -2717,3 +2717,68 @@ func EditarActivoHandler(c *gin.Context) {
     // Retornar la respuesta del microservicio
     c.JSON(http.StatusOK, responseData)
 }
+
+func EliminarActivoHandler(c *gin.Context) {
+    id := c.Param("id_activo")
+    if id == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID del activo es requerido"})
+        return
+    }
+
+    authHeader := c.GetHeader("Authorization")
+    email, _ := extractClaimFromToken(authHeader, "email")
+    if email == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
+        return
+    }
+    fmt.Printf("Usuario eliminando activo %s: %s\n", id, email)
+
+    // Construir URL con el email como query parameter
+    url := fmt.Sprintf("%s/admin/activos/%s?email=%s", gestionURL, id, email)
+    
+    // Crear request DELETE
+    req, err := http.NewRequest("DELETE", url, nil)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creando request"})
+        return
+    }
+
+    // Establecer headers
+    req.Header.Set("Content-Type", "application/json")
+
+    // Ejecutar la petición
+    resp, err := httpClient.Do(req)
+    if err != nil {
+        fmt.Println("Error eliminando activo: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al eliminar el activo"})
+        return
+    }
+    defer resp.Body.Close()
+
+    fmt.Printf("DEBUG: Status code de respuesta: %d\n", resp.StatusCode)
+
+    // Verificar si la respuesta es exitosa
+    if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+        var errorData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&errorData); err == nil {
+            c.JSON(resp.StatusCode, errorData)
+            return
+        }
+        c.JSON(resp.StatusCode, gin.H{"error": "Error al eliminar el activo"})
+        return
+    }
+
+    // Leer la respuesta exitosa (si existe contenido)
+    if resp.StatusCode == http.StatusOK {
+        var responseData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+            fmt.Println("Error decodificando respuesta: ", err)
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando respuesta"})
+            return
+        }
+        c.JSON(http.StatusOK, responseData)
+    } else {
+        // Si es 204 No Content, responder con mensaje de éxito
+        c.JSON(http.StatusOK, gin.H{"message": "Activo eliminado exitosamente"})
+    }
+}

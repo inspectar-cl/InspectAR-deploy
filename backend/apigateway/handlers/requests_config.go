@@ -219,7 +219,13 @@ func getSpecialHandlers() []SpecialHandler {
             Handler: EditarActivoHandler,
             Protected: true,
             RequiredScopes: userTypes("Root"),
-            // RequiredValidation: "activo",
+        },
+        {
+            Method:  "DELETE",
+            Pattern: "/api/eliminar-activo/:id_activo",
+            Handler: EliminarActivoHandler,
+            Protected: true,
+            RequiredScopes: userTypes("Root"),
         },
         // Aquí se agregan más handlers de manera fácil
         // {

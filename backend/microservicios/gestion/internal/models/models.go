@@ -80,13 +80,18 @@ type UsuarioEdificio struct {
 
 // Activo gestionado
 type Activo struct {
-	ID          int       `json:"id" db:"id"`
-	Nombre      string    `json:"nombre" db:"nombre"`
-	Tipo        string    `json:"tipo" db:"tipo"`
-	Descripcion *string   `json:"descripcion,omitempty" db:"descripcion"`
-	Ubicacion   string    `json:"ubicacion" db:"ubicacion"`
-	EdificioID  int       `json:"edificio_id" db:"edificio_id"`
-	CreadoEn    time.Time `json:"creado_en" db:"creado_en"`
+	ID           int        `json:"id" db:"id"`
+	Nombre       string     `json:"nombre" db:"nombre"`
+	Tipo         string     `json:"tipo" db:"tipo"`
+	Descripcion  *string    `json:"descripcion,omitempty" db:"descripcion"`
+	Ubicacion    string     `json:"ubicacion" db:"ubicacion"`
+	EdificioID   int        `json:"edificio_id" db:"edificio_id"`
+	CodigoActivo *string    `json:"codigo_activo,omitempty" db:"codigo_activo"`
+	CodigoQR     *string    `json:"codigo_qr,omitempty" db:"codigo_qr"`
+	URLQR        *string    `json:"url_qr,omitempty" db:"url_qr"`
+	QRGeneradoEn *time.Time `json:"qr_generado_en,omitempty" db:"qr_generado_en"`
+	Secuencial   *int       `json:"secuencial,omitempty" db:"secuencial"`
+	CreadoEn     time.Time  `json:"creado_en" db:"creado_en"`
 }
 
 // Acción de mantenimiento colaborativa

@@ -4,6 +4,9 @@ run-b:
 stop-b:
 	cd backend && docker compose down -v
 
+retard:
+	cd backend && docker compose down -v && docker compose up --build -d
+
 run-gestion:
 	cd backend && docker compose up --build gestion-db gestion-service
 

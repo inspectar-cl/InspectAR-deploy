@@ -18,6 +18,7 @@ func SetupRouter(
 	tipoFallaHandler *handlers.TipoFallaHandler,
 	firmaHandler *handlers.FirmaHandler,
 	adminHandler *handlers.AdminHandler,
+	qrHandler *handlers.QRHandler,
 ) *gin.Engine {
 	r := gin.Default()
 
@@ -225,7 +226,15 @@ func SetupRouter(
 	r.DELETE("/firmas/:id", firmaHandler.EliminarFirma)                                     // Eliminar firma
 	r.POST("/firmas/:id/predeterminada", firmaHandler.EstablecerComoPredeterminada)         // Establecer como predeterminada
 
-	// 🔧 Rutas de administración (activos, edificios, sensores)
+	// 📱 Rutas de códigos QR para activos
+	qr := r.Group("/qr")
+	{
+		qr.GET("/:codigo", qrHandler.ObtenerInfoPorCodigo)         // GET /qr/EDI01-BOMBA-0001-2025 -> Info del activo
+		qr.GET("/obtener/:activo_id", qrHandler.GenerarYObtenerQR) // GET /qr/obtener/15 -> Genera y devuelve QR como imagen
+		qr.GET("/ver/:activo_id", qrHandler.VerQR)                 // GET /qr/ver/15 -> Muestra QR en página HTML
+	}
+
+	// � Rutas de administración (activos, edificios, sensores)
 	admin := r.Group("/admin")
 	{
 		// Activos

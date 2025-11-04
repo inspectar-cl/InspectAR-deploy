@@ -11,13 +11,13 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 - Testing completo exitoso en todas las rutas
 
 **📊 Estadísticas de Implementación:**
-- **54 rutas totales** configuradas 🆕
-- **54 rutas funcionando** (100% operativas) ✅
+- **57 rutas totales** configuradas 🆕
+- **57 rutas funcionando** (100% operativas) ✅
 - **0 rutas con issues** 
 - **0 rutas pendientes** de implementación
-- **24 nuevas rutas agregadas** (6 observaciones + 3 usuarios/edificios/acceso + 3 activos + 3 HU22 + 9 administrador) 🎉
+- **27 nuevas rutas agregadas** (6 observaciones + 3 usuarios/edificios/acceso + 3 activos + 3 HU22 + 9 administrador + 3 QR) 🎉
 
-**🚀 Última Actualización:** 3 de Noviembre 2025 - **Sistema de Administración con Auditoría Completa** 🆕
+**🚀 Última Actualización:** 4 de Noviembre 2025 - **Sistema de Códigos QR para Activos** 🆕
 
 ## Funcionalidades
 
@@ -194,6 +194,14 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 | `PUT` | `/admin/sensores/:id` | **Actualizar sensor** en ParserService | ✅ **NUEVO** |
 | `GET` | `/admin/logs` | **Consultar logs de auditoría** (con filtros) | ✅ **NUEVO** |
 
+### 📱 Rutas de Códigos QR - 🆕 **SISTEMA COMPLETO IMPLEMENTADO**
+
+| Método | Endpoint | Descripción | Estado |
+|--------|----------|-------------|---------|
+| `GET` | `/qr/:codigo` | **Obtener información del activo por código QR** | ✅ **NUEVO** |
+| `GET` | `/qr/obtener/:activo_id` | **Descargar código QR como imagen PNG** | ✅ **NUEVO** |
+| `GET` | `/qr/ver/:activo_id` | **Visualizar QR en página HTML interactiva** | ✅ **NUEVO** |
+
 | Método | Endpoint | Descripción | Estado |
 |--------|----------|-------------|---------|
 | `POST` | `/tipos-falla` | 🎯 **Crear reporte de falla** (agua, ascensor, electricidad, caldera) | ✅ **IMPLEMENTADO** |
@@ -216,11 +224,11 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 
 ### 🎯 Resumen de Estado
 
-- **✅ Funcionando**: 54 rutas operativas (100% IMPLEMENTADAS) 🆕
+- **✅ Funcionando**: 57 rutas operativas (100% IMPLEMENTADAS) 🆕
 - **🔧 No implementado**: 0 rutas pendientes  
 - **⚠️ Issue DB**: 0 rutas con problema de schema
-- **🎉 Nuevas rutas**: 25 rutas agregadas (6 observaciones + 3 usuarios/acceso + 3 activos + 3 fallas HU22 + 9 firmas digitales + 1 sensor) 🆕
-- **Total**: 54 rutas configuradas 🆕
+- **🎉 Nuevas rutas**: 3 rutas QR + 25 rutas anteriores (6 observaciones + 3 usuarios/acceso + 3 activos + 3 fallas HU22 + 9 firmas digitales + 1 sensor) 🆕
+- **Total**: 57 rutas configuradas 🆕
 
 ### ⚡ Tests Rápidos
 
@@ -295,6 +303,16 @@ curl "http://localhost:8092/tipos-falla/edificio/1"
 curl "http://localhost:8092/tipos-falla/edificio/1?pagina=1"
 curl "http://localhost:8092/tipos-falla/edificio/1?pagina=2"
 curl "http://localhost:8092/tipos-falla/edificio/1?pagina=3"
+
+# 📱 NUEVAS RUTAS QR: Códigos QR para Activos
+# Obtener información del activo por código
+curl http://localhost:8092/qr/EDI01-BOMBA-0001-2025
+
+# Descargar QR como imagen PNG
+curl http://localhost:8092/qr/obtener/1 -o qr_activo.png
+
+# Visualizar QR en página HTML (abrir en navegador)
+# http://localhost:8092/qr/ver/1
 ```
 
 ## API Endpoints
@@ -1432,7 +1450,437 @@ El servicio estará disponible en el puerto `8092`.
 
 ---
 
-## 🚨 HU22 - Sistema de Reportes de Fallas de Usuarios
+## � Sistema de Códigos QR para Activos
+
+### Descripción
+
+Sistema completo de generación y gestión de códigos QR únicos para activos, con las siguientes características:
+
+- ✅ **Generación automática de códigos únicos** al crear activos
+- ✅ **Formato jerárquico**: `EDI[ID]-[TIPO]-[SECUENCIAL]-[AÑO]`
+- ✅ **Códigos QR generados automáticamente** (256x256 px, PNG)
+- ✅ **Almacenamiento en Base64** en PostgreSQL
+- ✅ **3 rutas REST** para gestión completa
+- ✅ **Visualización HTML interactiva** con diseño responsive
+- ✅ **URL pública configurable** (ngrok, dominio propio)
+
+### Características del Sistema QR
+
+#### Generación Automática de Códigos
+
+Cada activo recibe un código único con el formato:
+```
+EDI[ID_EDIFICIO]-[TIPO_ABREVIADO]-[SECUENCIAL]-[AÑO]
+```
+
+**Ejemplos:**
+- `EDI01-BOMBA-0001-2025` - Primera bomba del Edificio 1
+- `EDI02-ASCE-0003-2025` - Tercer ascensor del Edificio 2
+- `EDI03-CALD-0001-2025` - Primera caldera del Edificio 3
+
+**Tipos abreviados:**
+- `bomba de agua` → `BOMBA`
+- `caldera` → `CALD`
+- `ascensor` → `ASCE`
+- `transformador` → `TRANS`
+
+#### Secuencias Automáticas
+
+El sistema mantiene secuencias independientes por:
+- **Edificio** (edificio_id)
+- **Tipo de activo** (tipo)
+- **Año** (año actual)
+
+Esto garantiza códigos únicos y predecibles.
+
+### Rutas Implementadas
+
+#### 1. 🔍 Obtener información del activo por código
+
+```bash
+GET /qr/:codigo
+```
+
+**Uso:** Obtener información básica del activo usando su código único.
+
+**Ejemplo:**
+```bash
+curl http://localhost:8092/qr/EDI01-BOMBA-0003-2025
+```
+
+**Respuesta (200 OK):**
+```json
+{
+  "codigo": "EDI01-BOMBA-0003-2025",
+  "nombre": "Bomba Ngrok Test",
+  "tipo": "bomba de agua",
+  "descripcion": "Bomba para probar QR con URL pública de ngrok",
+  "ubicacion": "Sala de Pruebas Ngrok"
+}
+```
+
+**Respuesta de error (404 Not Found):**
+```json
+{
+  "error": "Activo no encontrado"
+}
+```
+
+---
+
+#### 2. 📥 Descargar código QR como imagen PNG
+
+```bash
+GET /qr/obtener/:activo_id
+```
+
+**Uso:** Descargar el código QR como imagen PNG. Si no existe, lo genera automáticamente.
+
+**Ejemplo:**
+```bash
+# Descargar y guardar
+curl http://localhost:8092/qr/obtener/9 -o qr_activo_9.png
+
+# Usar en HTML
+<img src="http://localhost:8092/qr/obtener/9" alt="QR del activo" />
+```
+
+**Headers de respuesta:**
+```
+Content-Type: image/png
+Content-Disposition: inline; filename="qr_activo_9.png"
+Cache-Control: public, max-age=86400
+```
+
+**Características:**
+- ✅ Imagen PNG de 256x256 píxeles
+- ✅ Generación lazy (solo si no existe)
+- ✅ Guardado automático en base de datos
+- ✅ Cache de 24 horas
+- ✅ Peso aproximado: 600-700 bytes
+
+---
+
+#### 3. 👁️ Visualizar QR en página HTML
+
+```bash
+GET /qr/ver/:activo_id
+```
+
+**Uso:** Ver el código QR en una página HTML interactiva con diseño moderno.
+
+**Ejemplo:**
+```bash
+# Abrir en navegador
+http://localhost:8092/qr/ver/9
+
+# Con URL pública (ngrok)
+https://interbanded-kole-sneeringly.ngrok-free.app/qr/ver/9
+```
+
+**Características de la página:**
+- 🎨 Diseño moderno con gradiente purple/blue
+- 📱 Responsive (mobile-first)
+- 🖼️ QR embebido en base64 (carga instantánea)
+- ℹ️ Información del activo (nombre, tipo, descripción, ubicación)
+- 💾 Botón de descarga directa del QR
+- 🖨️ Funcionalidad de impresión optimizada
+- ⚡ Sin dependencias externas (self-contained)
+
+**Vista previa de la página:**
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Código QR - Bomba Ngrok Test</title>
+    <style>
+        /* Gradiente purple/blue */
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        /* Diseño responsive con cards */
+    </style>
+</head>
+<body>
+    <!-- Badge con el código -->
+    <div class="code-badge">EDI01-BOMBA-0003-2025</div>
+    
+    <!-- QR embebido en base64 -->
+    <img src="data:image/png;base64,iVBORw0K..." />
+    
+    <!-- Información del activo -->
+    <div class="info-card">
+        <h3>Nombre</h3>
+        <p>Bomba Ngrok Test</p>
+    </div>
+    
+    <!-- Botones de acción -->
+    <button onclick="descargarQR()">💾 Descargar QR</button>
+    <button onclick="window.print()">🖨️ Imprimir</button>
+</body>
+</html>
+```
+
+---
+
+### Configuración de URL Base
+
+El sistema soporta URLs configurables para adaptar el QR a diferentes entornos:
+
+**Archivo: `config/config.yaml` (desarrollo local)**
+```yaml
+services:
+  base_url: "http://localhost:8092"
+```
+
+**Archivo: `config/config.docker.yaml` (producción/ngrok)**
+```yaml
+services:
+  base_url: "https://interbanded-kole-sneeringly.ngrok-free.app"
+```
+
+Cuando escaneas el QR, te redirige a:
+```
+{base_url}/qr/{codigo_unico}
+```
+
+---
+
+### Flujo Completo del Sistema QR
+
+```mermaid
+graph LR
+    A[Crear Activo] --> B[Generar Código Único]
+    B --> C[Función SQL: generar_codigo_activo]
+    C --> D[Código: EDI01-BOMBA-0001-2025]
+    D --> E[Generar QR automáticamente]
+    E --> F[Guardar QR en Base64]
+    F --> G[Activo listo con QR]
+    
+    G --> H1[Ruta 1: GET /qr/:codigo]
+    G --> H2[Ruta 2: GET /qr/obtener/:id]
+    G --> H3[Ruta 3: GET /qr/ver/:id]
+    
+    H1 --> I1[JSON con info]
+    H2 --> I2[PNG descargable]
+    H3 --> I3[Página HTML]
+```
+
+---
+
+### Ejemplos de Uso
+
+#### Caso 1: Descargar QR para imprimir
+
+```bash
+# 1. Obtener el ID del activo
+curl http://localhost:8092/activos | jq '.activos[0].id'
+# Respuesta: 9
+
+# 2. Descargar el QR
+curl http://localhost:8092/qr/obtener/9 -o qr_bomba.png
+
+# 3. Verificar el archivo
+file qr_bomba.png
+# qr_bomba.png: PNG image data, 256 x 256, 1-bit colormap
+```
+
+---
+
+#### Caso 2: Mostrar QR en aplicación web
+
+```html
+<!-- React/Next.js component -->
+<div className="activo-card">
+  <h2>{activo.nombre}</h2>
+  <img 
+    src={`http://localhost:8092/qr/obtener/${activo.id}`}
+    alt={`QR de ${activo.nombre}`}
+    width="256"
+    height="256"
+  />
+  <a 
+    href={`http://localhost:8092/qr/ver/${activo.id}`}
+    target="_blank"
+  >
+    Ver QR en pantalla completa
+  </a>
+</div>
+```
+
+---
+
+#### Caso 3: Escanear QR con celular
+
+1. **Usuario escanea el QR impreso**
+2. **Celular lee la URL:** `https://tu-dominio.com/qr/EDI01-BOMBA-0003-2025`
+3. **API responde con JSON:**
+   ```json
+   {
+     "codigo": "EDI01-BOMBA-0003-2025",
+     "nombre": "Bomba Ngrok Test",
+     "tipo": "bomba de agua",
+     "descripcion": "...",
+     "ubicacion": "Sala de Pruebas"
+   }
+   ```
+4. **Frontend mobile muestra la información del activo**
+
+---
+
+#### Caso 4: Generar QRs en batch
+
+```bash
+#!/bin/bash
+# Script para generar QRs de todos los activos de un edificio
+
+EDIFICIO_ID=1
+OUTPUT_DIR="qr_codes"
+mkdir -p $OUTPUT_DIR
+
+# Obtener activos del edificio
+ACTIVOS=$(curl -s http://localhost:8092/activos/edificio/$EDIFICIO_ID | jq -r '.activos[].id')
+
+# Descargar QR de cada activo
+for ID in $ACTIVOS; do
+  echo "Descargando QR del activo $ID..."
+  curl -s http://localhost:8092/qr/obtener/$ID -o "$OUTPUT_DIR/qr_activo_$ID.png"
+done
+
+echo "✅ QRs descargados en $OUTPUT_DIR/"
+```
+
+---
+
+### Estructura de Base de Datos
+
+#### Tabla `activos` (campos QR agregados):
+
+```sql
+CREATE TABLE activos (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL,
+    tipo VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    ubicacion VARCHAR(255),
+    edificio_id INTEGER REFERENCES edificios(id),
+    
+    -- 🆕 Campos del sistema QR
+    codigo_activo VARCHAR(50) UNIQUE,        -- EDI01-BOMBA-0001-2025
+    codigo_qr TEXT,                          -- Base64 del PNG
+    url_qr VARCHAR(500),                     -- URL completa
+    qr_generado_en TIMESTAMP,                -- Timestamp de generación
+    secuencial INTEGER DEFAULT 0,            -- Número secuencial
+    
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### Tabla `activos_secuencias` (control de secuencias):
+
+```sql
+CREATE TABLE activos_secuencias (
+    id SERIAL PRIMARY KEY,
+    edificio_id INTEGER NOT NULL,
+    tipo_activo VARCHAR(100) NOT NULL,
+    ultimo_secuencial INTEGER DEFAULT 0,
+    anio INTEGER DEFAULT EXTRACT(YEAR FROM CURRENT_TIMESTAMP),
+    UNIQUE(edificio_id, tipo_activo, anio)
+);
+```
+
+#### Función PostgreSQL `generar_codigo_activo()`:
+
+```sql
+CREATE OR REPLACE FUNCTION generar_codigo_activo(
+    p_edificio_id INTEGER,
+    p_tipo VARCHAR
+)
+RETURNS VARCHAR AS $$
+DECLARE
+    v_codigo VARCHAR(50);
+    v_tipo_abreviado VARCHAR(10);
+    v_secuencial INTEGER;
+    v_anio INTEGER;
+BEGIN
+    -- Mapeo de tipos a abreviaturas
+    v_tipo_abreviado := CASE p_tipo
+        WHEN 'bomba de agua' THEN 'BOMBA'
+        WHEN 'caldera' THEN 'CALD'
+        WHEN 'ascensor' THEN 'ASCE'
+        WHEN 'transformador' THEN 'TRANS'
+        ELSE 'OTRO'
+    END;
+    
+    v_anio := EXTRACT(YEAR FROM CURRENT_TIMESTAMP);
+    
+    -- Obtener y actualizar secuencial (atómico)
+    INSERT INTO activos_secuencias (edificio_id, tipo_activo, anio, ultimo_secuencial)
+    VALUES (p_edificio_id, p_tipo, v_anio, 1)
+    ON CONFLICT (edificio_id, tipo_activo, anio)
+    DO UPDATE SET ultimo_secuencial = activos_secuencias.ultimo_secuencial + 1
+    RETURNING ultimo_secuencial INTO v_secuencial;
+    
+    -- Construir código
+    v_codigo := FORMAT('EDI%s-%s-%s-%s',
+        LPAD(p_edificio_id::TEXT, 2, '0'),
+        v_tipo_abreviado,
+        LPAD(v_secuencial::TEXT, 4, '0'),
+        v_anio
+    );
+    
+    RETURN v_codigo;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+#### Trigger automático:
+
+```sql
+CREATE TRIGGER before_insert_activo_codigo
+BEFORE INSERT ON activos
+FOR EACH ROW
+WHEN (NEW.codigo_activo IS NULL)
+EXECUTE FUNCTION trigger_generar_codigo_activo();
+```
+
+---
+
+### Tests del Sistema QR
+
+Script completo de validación: `tests/testQR.sh`
+
+**Pasos validados:**
+1. ✅ Crear edificio
+2. ✅ Crear activo (genera código y QR automáticamente)
+3. ✅ GET /qr/:codigo → Retorna info JSON
+4. ✅ GET /qr/obtener/:activo_id → Descarga PNG
+5. ✅ GET /qr/ver/:activo_id → Página HTML
+6. ✅ Verificar QR en base de datos
+7. ✅ Validar secuencia incremental
+
+**Ejecutar tests:**
+```bash
+cd /home/joytan/repo/InspectAR/backend/microservicios/gestion
+./tests/testQR.sh
+```
+
+---
+
+### Ventajas del Sistema
+
+✅ **Códigos únicos garantizados** por función SQL atómica  
+✅ **Generación automática** al crear activos (cero fricción)  
+✅ **3 rutas flexibles** para diferentes casos de uso  
+✅ **Visualización moderna** con HTML responsive  
+✅ **Cache optimizado** para performance  
+✅ **URL configurable** para cualquier entorno  
+✅ **Sin dependencias externas** en frontend  
+✅ **Secuencias por edificio/tipo/año** para organización  
+
+---
+
+## �🚨 HU22 - Sistema de Reportes de Fallas de Usuarios
 
 ### Descripción (Octubre 2025)
 

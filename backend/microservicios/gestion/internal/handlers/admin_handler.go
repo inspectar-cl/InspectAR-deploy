@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"gestion/internal/models"
 	"gestion/internal/repository"
+	"gestion/internal/services"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -18,6 +20,7 @@ type AdminHandler struct {
 	edificioRepo *repository.EdificioRepository
 	usuarioRepo  *repository.UsuarioRepository
 	logRepo      *repository.LogRepository
+	qrService    *services.QRService
 	parserURL    string // URL del microservicio ParserService
 }
 
@@ -26,6 +29,7 @@ func NewAdminHandler(
 	edificioRepo *repository.EdificioRepository,
 	usuarioRepo *repository.UsuarioRepository,
 	logRepo *repository.LogRepository,
+	qrService *services.QRService,
 	parserURL string,
 ) *AdminHandler {
 	return &AdminHandler{
@@ -33,6 +37,7 @@ func NewAdminHandler(
 		edificioRepo: edificioRepo,
 		usuarioRepo:  usuarioRepo,
 		logRepo:      logRepo,
+		qrService:    qrService,
 		parserURL:    parserURL,
 	}
 }
@@ -93,6 +98,24 @@ func (h *AdminHandler) CrearActivo(c *gin.Context) {
 		return
 	}
 
+	// Generar código QR para el activo
+	if activoCreado.CodigoActivo != nil && *activoCreado.CodigoActivo != "" {
+		qrBase64, urlQR, err := h.qrService.GenerarQRActivo(activoCreado.ID, *activoCreado.CodigoActivo)
+		if err != nil {
+			log.Printf("⚠️ Error generando QR para activo ID %d: %v", activoCreado.ID, err)
+			// No falla la creación si QR falla, solo lo registra
+		} else {
+			// Guardar QR en base de datos
+			if err := h.activoRepo.ActualizarQR(activoCreado.ID, qrBase64, urlQR); err != nil {
+				log.Printf("⚠️ Error guardando QR en BD: %v", err)
+			} else {
+				activoCreado.CodigoQR = &qrBase64
+				activoCreado.URLQR = &urlQR
+				log.Printf("✓ QR generado exitosamente para activo ID %d", activoCreado.ID)
+			}
+		}
+	}
+
 	// Registrar en log de auditoría
 	datosNuevos := map[string]interface{}{
 		"id":          activoCreado.ID,
@@ -101,24 +124,28 @@ func (h *AdminHandler) CrearActivo(c *gin.Context) {
 		"descripcion": activoCreado.Descripcion,
 		"ubicacion":   activoCreado.Ubicacion,
 		"edificio_id": activoCreado.EdificioID,
+		"codigo":      activoCreado.CodigoActivo,
 	}
 
-	log := models.LogAuditoria{
+	logAudit := models.LogAuditoria{
 		UsuarioEmail: req.Email,
 		Accion:       "crear",
 		Entidad:      "activo",
 		EntidadID:    activoCreado.ID,
 		DatosNuevos:  datosNuevos,
-		Descripcion:  fmt.Sprintf("Usuario %s creó el activo '%s' (ID: %d)", req.Email, activoCreado.Nombre, activoCreado.ID),
+		Descripcion:  fmt.Sprintf("Usuario %s creó el activo '%s' (ID: %d, Código: %s)", req.Email, activoCreado.Nombre, activoCreado.ID, *activoCreado.CodigoActivo),
 		IPOrigen:     stringPtr(c.ClientIP()),
 		UserAgent:    stringPtr(c.Request.UserAgent()),
 	}
 
-	h.logRepo.CrearLog(log)
+	h.logRepo.CrearLog(logAudit)
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "Activo creado exitosamente en ambos servicios",
-		"activo":  activoCreado,
+		"message":       "Activo creado exitosamente en ambos servicios",
+		"activo":        activoCreado,
+		"codigo":        activoCreado.CodigoActivo,
+		"url_qr":        activoCreado.URLQR,
+		"qr_disponible": activoCreado.CodigoQR != nil && *activoCreado.CodigoQR != "",
 	})
 }
 

@@ -20,7 +20,7 @@ func NewAdminHandler(activoRepo *repository.ActivoRepository) *AdminHandler {
 	}
 }
 
-// CreateActivoAdmin crea un activo desde gestion-service
+// CreateActivoAdmin crea o actualiza un activo desde gestion-service
 func (h *AdminHandler) CreateActivoAdmin(c *gin.Context) {
 	var req struct {
 		IDActivo int    `json:"id_activo" binding:"required"`
@@ -33,14 +33,18 @@ func (h *AdminHandler) CreateActivoAdmin(c *gin.Context) {
 		return
 	}
 
-	// Verificar que no existe
+	// Verificar si existe
 	existing, _ := h.activoRepo.GetActivo(context.Background(), req.IDActivo)
 	if existing != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "Activo ya existe en ParserService"})
+		// Si ya existe, solo retornar éxito (idempotencia)
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Activo ya existe en ParserService",
+			"activo":  existing,
+		})
 		return
 	}
 
-	// Crear activo
+	// Crear activo nuevo
 	activo := &models.Activo{
 		ActivoID:   req.IDActivo,
 		Estado:     "operativo",

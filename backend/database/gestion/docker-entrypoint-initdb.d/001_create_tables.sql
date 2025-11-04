@@ -30,6 +30,11 @@ CREATE TABLE IF NOT EXISTS activos (
     descripcion TEXT,
     ubicacion VARCHAR(255),
     edificio_id INTEGER REFERENCES edificios(id) ON DELETE SET NULL,
+    codigo_activo VARCHAR(50) UNIQUE,
+    codigo_qr TEXT,
+    url_qr VARCHAR(500),
+    qr_generado_en TIMESTAMP,
+    secuencial INTEGER DEFAULT 0,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -323,6 +328,98 @@ COMMENT ON TABLE usuarios_edificios IS 'Relación muchos a muchos entre usuarios
 -- COMMENT ON TABLE activos_fallos IS 'Relación entre activos específicos y fallos detectados';
 COMMENT ON TABLE tipos_falla IS 'Reportes de fallas hechos por usuarios residentes en edificios';
 COMMENT ON TABLE comentarios IS 'Comentarios de usuarios sobre reportes de fallas';
+
+-- ============================================================================
+-- SISTEMA DE CÓDIGOS QR Y CÓDIGOS ÚNICOS PARA ACTIVOS
+-- ============================================================================
+
+-- Tabla de secuencias para códigos de activos
+CREATE TABLE IF NOT EXISTS activos_secuencias (
+    id SERIAL PRIMARY KEY,
+    edificio_id INTEGER NOT NULL REFERENCES edificios(id) ON DELETE CASCADE,
+    tipo_activo VARCHAR(100) NOT NULL,
+    ultimo_secuencial INTEGER DEFAULT 0,
+    anio INTEGER DEFAULT EXTRACT(YEAR FROM CURRENT_TIMESTAMP),
+    UNIQUE(edificio_id, tipo_activo, anio)
+);
+
+CREATE INDEX IF NOT EXISTS idx_secuencias_edificio_tipo ON activos_secuencias(edificio_id, tipo_activo);
+
+COMMENT ON TABLE activos_secuencias IS 'Control de secuencias para generación de códigos únicos de activos';
+
+-- Índices adicionales para activos con códigos
+CREATE INDEX IF NOT EXISTS idx_activos_codigo ON activos(codigo_activo);
+
+-- Comentarios para nuevos campos de activos
+COMMENT ON COLUMN activos.codigo_activo IS 'Código único del activo (EDI01-BOMBA-0001-2025)';
+COMMENT ON COLUMN activos.codigo_qr IS 'Imagen del código QR en formato Base64';
+COMMENT ON COLUMN activos.url_qr IS 'URL que apunta a la información del activo';
+COMMENT ON COLUMN activos.qr_generado_en IS 'Fecha y hora de generación del código QR';
+COMMENT ON COLUMN activos.secuencial IS 'Número secuencial del activo por tipo en el edificio';
+
+-- Función para generar código de activo automáticamente
+CREATE OR REPLACE FUNCTION generar_codigo_activo(
+    p_edificio_id INTEGER,
+    p_tipo_activo VARCHAR(100)
+) RETURNS VARCHAR(50) AS $$
+DECLARE
+    v_codigo_edificio VARCHAR(10);
+    v_tipo_codigo VARCHAR(20);
+    v_secuencial INTEGER;
+    v_anio INTEGER;
+BEGIN
+    -- Código del edificio (EDI + ID de 2 dígitos con padding)
+    v_codigo_edificio := 'EDI' || LPAD(p_edificio_id::TEXT, 2, '0');
+    
+    -- Normalizar tipo de activo a código corto
+    v_tipo_codigo := CASE LOWER(p_tipo_activo)
+        WHEN 'bomba de agua' THEN 'BOMBA'
+        WHEN 'caldera' THEN 'CALD'
+        WHEN 'ascensor' THEN 'ASCE'
+        WHEN 'transformador' THEN 'TRANS'
+        ELSE UPPER(SUBSTRING(p_tipo_activo FROM 1 FOR 5))
+    END;
+    
+    -- Año actual
+    v_anio := EXTRACT(YEAR FROM CURRENT_TIMESTAMP);
+    
+    -- Obtener e incrementar secuencial atómicamente
+    INSERT INTO activos_secuencias (edificio_id, tipo_activo, ultimo_secuencial, anio)
+    VALUES (p_edificio_id, p_tipo_activo, 1, v_anio)
+    ON CONFLICT (edificio_id, tipo_activo, anio) 
+    DO UPDATE SET ultimo_secuencial = activos_secuencias.ultimo_secuencial + 1
+    RETURNING ultimo_secuencial INTO v_secuencial;
+    
+    -- Formato final: EDI01-BOMBA-0001-2025
+    RETURN v_codigo_edificio || '-' || 
+           v_tipo_codigo || '-' || 
+           LPAD(v_secuencial::TEXT, 4, '0') || '-' || 
+           v_anio::TEXT;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION generar_codigo_activo IS 'Genera código único para activos basado en edificio y tipo';
+
+-- Trigger para auto-generar código al insertar activo
+CREATE OR REPLACE FUNCTION trigger_generar_codigo_activo()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Solo generar si no viene código
+    IF NEW.codigo_activo IS NULL OR NEW.codigo_activo = '' THEN
+        NEW.codigo_activo := generar_codigo_activo(NEW.edificio_id, NEW.tipo);
+        NEW.secuencial := SPLIT_PART(NEW.codigo_activo, '-', 3)::INTEGER;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER before_insert_activo_codigo
+    BEFORE INSERT ON activos
+    FOR EACH ROW
+    EXECUTE FUNCTION trigger_generar_codigo_activo();
+
+COMMENT ON TRIGGER before_insert_activo_codigo ON activos IS 'Auto-genera código único de activo si no se proporciona';
 COMMENT ON TABLE firmas_digitales IS 'Firmas digitales de usuarios para firma de reportes (HdU Firmas Digitales)';
 COMMENT ON TABLE logs_auditoria IS 'Registro de auditoría de todas las acciones realizadas por usuarios en el sistema';
 

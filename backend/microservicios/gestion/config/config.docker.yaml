@@ -11,3 +11,4 @@ server:
 
 services:
   parser_url: "http://iot-service:8090"
+  base_url: "https://interbanded-kole-sneeringly.ngrok-free.app"

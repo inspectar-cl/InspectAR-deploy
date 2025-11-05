@@ -2947,3 +2947,124 @@ func EliminarEdificioHandler(c *gin.Context) {
         c.JSON(http.StatusOK, gin.H{"message": "Edificio eliminado exitosamente"})
     }
 }
+
+func ActualizarEdificioHandler(c *gin.Context) {
+    id := c.Param("id_edificio")
+    if id == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID del edificio es requerido"})
+        return
+    }
+
+    authHeader := c.GetHeader("Authorization")
+    email, _ := extractClaimFromToken(authHeader, "email")
+    if email == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
+        return
+    }
+    fmt.Printf("Usuario actualizando edificio %s: %s\n", id, email)
+
+    // Leer el body de la request
+    var edificioData map[string]interface{}
+    if err := c.ShouldBindJSON(&edificioData); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+        return
+    }
+
+    // Validar que al menos uno de los campos actualizables esté presente
+    hasNombre := false
+    hasDireccion := false
+    hasLatitud := false
+    hasLongitud := false
+
+    if _, exists := edificioData["nombre"]; exists {
+        hasNombre = true
+    }
+    if _, exists := edificioData["direccion"]; exists {
+        hasDireccion = true
+    }
+    if _, exists := edificioData["latitud"]; exists {
+        hasLatitud = true
+    }
+    if _, exists := edificioData["longitud"]; exists {
+        hasLongitud = true
+    }
+
+    if !hasNombre && !hasDireccion && !hasLatitud && !hasLongitud {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Debe proporcionar al menos un campo para actualizar (nombre, direccion, latitud, longitud)"})
+        return
+    }
+
+    fmt.Printf("Datos del edificio a actualizar: %+v\n", edificioData)
+
+    // Construir el body para el microservicio de gestión
+    bodyData := map[string]interface{}{
+        "email": email,
+    }
+
+    // Agregar solo los campos que vienen en la request
+    if hasNombre {
+        bodyData["nombre"] = edificioData["nombre"]
+    }
+    if hasDireccion {
+        bodyData["direccion"] = edificioData["direccion"]
+    }
+    if hasLatitud {
+        bodyData["latitud"] = edificioData["latitud"]
+    }
+    if hasLongitud {
+        bodyData["longitud"] = edificioData["longitud"]
+    }
+
+    // Convertir a JSON
+    jsonData, err := json.Marshal(bodyData)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando datos"})
+        return
+    }
+
+    fmt.Printf("DEBUG: Enviando datos para actualizar edificio: %+v\n", bodyData)
+
+    // Hacer PUT al microservicio de gestión
+    url := fmt.Sprintf("%s/admin/edificios/%s", gestionURL, id)
+    req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creando request"})
+        return
+    }
+
+    // Establecer headers
+    req.Header.Set("Content-Type", "application/json")
+
+    // Ejecutar la petición
+    resp, err := httpClient.Do(req)
+    if err != nil {
+        fmt.Println("Error actualizando edificio: ", err)
+        c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al actualizar el edificio"})
+        return
+    }
+    defer resp.Body.Close()
+
+    fmt.Printf("DEBUG: Status code de respuesta: %d\n", resp.StatusCode)
+
+    // Verificar si la respuesta es exitosa
+    if resp.StatusCode != http.StatusOK {
+        var errorData map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&errorData); err == nil {
+            c.JSON(resp.StatusCode, errorData)
+            return
+        }
+        c.JSON(resp.StatusCode, gin.H{"error": "Error al actualizar el edificio"})
+        return
+    }
+
+    // Leer la respuesta exitosa
+    var responseData map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+        fmt.Println("Error decodificando respuesta: ", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando respuesta"})
+        return
+    }
+
+    // Retornar la respuesta del microservicio
+    c.JSON(http.StatusOK, responseData)
+}

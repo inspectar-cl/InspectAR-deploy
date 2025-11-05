@@ -372,6 +372,13 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: rootOnly(),
         },
+        { 
+            Method:  "PUT",
+            Pattern: "/api/actualizar-edificio/:id_edificio",
+            Handler: ActualizarEdificioHandler,
+            Protected: true,
+            RequiredScopes: rootOnly(),
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",

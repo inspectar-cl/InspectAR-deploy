@@ -813,6 +813,165 @@ func (h *AdminHandler) ObtenerUsuariosDeEdificio(c *gin.Context) {
 	})
 }
 
+// AsignarActivoAEdificio asigna o reasigna un activo a un edificio
+func (h *AdminHandler) AsignarActivoAEdificio(c *gin.Context) {
+	var req struct {
+		ActivoID   int    `json:"activo_id" binding:"required"`
+		EdificioID int    `json:"edificio_id" binding:"required"`
+		AdminEmail string `json:"admin_email" binding:"required,email"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 1. Verificar que el activo existe
+	activoActual, err := h.activoRepo.GetByID(req.ActivoID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Activo no encontrado"})
+		return
+	}
+
+	// 2. Verificar que el edificio destino existe
+	edificio, err := h.edificioRepo.GetByID(req.EdificioID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Edificio no encontrado"})
+		return
+	}
+
+	// 3. Guardar estado anterior para auditoría
+	edificioAnteriorID := activoActual.EdificioID
+	var edificioAnteriorNombre string
+	if edificioAnteriorID > 0 {
+		edificioAnterior, _ := h.edificioRepo.GetByID(edificioAnteriorID)
+		if edificioAnterior != nil {
+			edificioAnteriorNombre = edificioAnterior.Nombre
+		}
+	}
+
+	// 4. Actualizar edificio del activo
+	activoActual.EdificioID = req.EdificioID
+	if err := h.activoRepo.Actualizar(activoActual.ID, *activoActual); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Error al asignar activo al edificio",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// 5. Registrar log de auditoría
+	adminUsuario, _ := h.usuarioRepo.GetByEmail(req.AdminEmail)
+	if adminUsuario != nil {
+		datosAnteriores := map[string]interface{}{
+			"edificio_id":     edificioAnteriorID,
+			"edificio_nombre": edificioAnteriorNombre,
+		}
+		datosNuevos := map[string]interface{}{
+			"edificio_id":     edificio.ID,
+			"edificio_nombre": edificio.Nombre,
+		}
+
+		accion := "ASIGNAR_ACTIVO_EDIFICIO"
+		descripcion := fmt.Sprintf("Activo %s asignado al edificio %s", activoActual.Nombre, edificio.Nombre)
+		if edificioAnteriorID > 0 {
+			accion = "REASIGNAR_ACTIVO_EDIFICIO"
+			descripcion = fmt.Sprintf("Activo %s reasignado de %s a %s", activoActual.Nombre, edificioAnteriorNombre, edificio.Nombre)
+		}
+
+		h.logRepo.CrearLog(models.LogAuditoria{
+			UsuarioID:       &adminUsuario.ID,
+			UsuarioEmail:    req.AdminEmail,
+			Accion:          accion,
+			Entidad:         "activo_edificio",
+			EntidadID:       activoActual.ID,
+			DatosAnteriores: datosAnteriores,
+			DatosNuevos:     datosNuevos,
+			Descripcion:     descripcion,
+			IPOrigen:        stringPtr(c.ClientIP()),
+			UserAgent:       stringPtr(c.Request.UserAgent()),
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Activo asignado al edificio exitosamente",
+		"activo": gin.H{
+			"id":     activoActual.ID,
+			"nombre": activoActual.Nombre,
+		},
+		"edificio_anterior": gin.H{
+			"id":     edificioAnteriorID,
+			"nombre": edificioAnteriorNombre,
+		},
+		"edificio_nuevo": gin.H{
+			"id":     edificio.ID,
+			"nombre": edificio.Nombre,
+		},
+	})
+}
+
+// CrearUsuarioAdministrador crea un nuevo usuario administrador de edificios
+func (h *AdminHandler) CrearUsuarioAdministrador(c *gin.Context) {
+	var req struct {
+		Username   string `json:"username" binding:"required"`
+		Email      string `json:"email" binding:"required,email"`
+		AdminEmail string `json:"admin_email" binding:"required,email"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Verificar que el email no esté ya registrado
+	usuarioExistente, _ := h.usuarioRepo.GetByEmail(req.Email)
+	if usuarioExistente != nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "El email ya está registrado"})
+		return
+	}
+
+	// Crear el usuario
+	nuevoUsuario := models.Usuario{
+		Username: req.Username,
+		Email:    req.Email,
+	}
+
+	usuarioCreado, err := h.usuarioRepo.Crear(nuevoUsuario)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Error al crear usuario",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Registrar log de auditoría
+	adminUsuario, _ := h.usuarioRepo.GetByEmail(req.AdminEmail)
+	if adminUsuario != nil {
+		logData := map[string]interface{}{
+			"usuario_id": usuarioCreado.ID,
+			"username":   usuarioCreado.Username,
+			"email":      usuarioCreado.Email,
+		}
+		h.logRepo.CrearLog(models.LogAuditoria{
+			UsuarioID:    &adminUsuario.ID,
+			UsuarioEmail: req.AdminEmail,
+			Accion:       "CREAR_USUARIO_ADMINISTRADOR",
+			Entidad:      "usuario",
+			EntidadID:    usuarioCreado.ID,
+			DatosNuevos:  logData,
+			Descripcion:  fmt.Sprintf("Usuario administrador %s (%s) creado", usuarioCreado.Username, usuarioCreado.Email),
+			IPOrigen:     stringPtr(c.ClientIP()),
+			UserAgent:    stringPtr(c.Request.UserAgent()),
+		})
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "Usuario administrador creado exitosamente",
+		"usuario": usuarioCreado,
+	})
+}
+
 // Helper function
 func stringPtr(s string) *string {
 	return &s

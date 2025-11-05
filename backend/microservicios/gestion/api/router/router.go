@@ -78,6 +78,7 @@ func SetupRouter(
 	r.GET("/activos/tipo/:tipo", activoHandler.GetActivosByTipo)                // Filtrar activos por tipo
 
 	// 🏢 Rutas de usuarios y edificios
+	r.POST("/usuarios/registro", usuarioHandler.RegistrarUsuario)                                  // Registrar nuevo usuario (residente)
 	r.GET("/edificios", edificioHandler.GetAllEdificios)                                           // Obtener todos los edificios
 	r.GET("/usuarios/edificios/:email", usuarioHandler.GetEdificiosByEmail)                        // Obtener edificios de un usuario por email
 	r.GET("/usuarios/:email/edificio/:edificio_id/acceso", usuarioHandler.VerificarAccesoEdificio) // Verificar acceso a edificio
@@ -253,10 +254,16 @@ func SetupRouter(
 		admin.POST("/sensores", adminHandler.CrearSensor)         // Crear sensor en ParserService
 		admin.PUT("/sensores/:id", adminHandler.ActualizarSensor) // Actualizar sensor en ParserService
 
+		// Gestión de Usuarios
+		admin.POST("/usuarios", adminHandler.CrearUsuarioAdministrador) // Crear usuario administrador
+
 		// Relaciones Usuarios-Edificios
 		admin.POST("/usuarios/edificios", adminHandler.AsignarUsuarioAEdificio)               // Asignar usuario a edificio
 		admin.DELETE("/usuarios/edificios", adminHandler.RemoverUsuarioDeEdificio)            // Remover usuario de edificio
 		admin.GET("/edificios/:edificio_id/usuarios", adminHandler.ObtenerUsuariosDeEdificio) // Obtener usuarios de un edificio
+
+		// Relaciones Activos-Edificios
+		admin.PUT("/activos/edificio", adminHandler.AsignarActivoAEdificio) // Asignar activo a edificio
 
 		// Logs de auditoría
 		admin.GET("/logs", adminHandler.ObtenerLogs) // Obtener logs con filtros

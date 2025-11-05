@@ -154,3 +154,25 @@ func (r *UsuarioRepository) GetUsuariosPorEdificio(edificioID int) ([]models.Usu
 
 	return usuarios, nil
 }
+
+// Crear crea un nuevo usuario en la base de datos
+func (r *UsuarioRepository) Crear(usuario models.Usuario) (*models.Usuario, error) {
+	query := `
+		INSERT INTO usuarios (username, email)
+		VALUES ($1, $2)
+		RETURNING id, username, email, creado_en
+	`
+
+	var nuevoUsuario models.Usuario
+	err := r.db.QueryRow(query, usuario.Username, usuario.Email).Scan(
+		&nuevoUsuario.ID,
+		&nuevoUsuario.Username,
+		&nuevoUsuario.Email,
+		&nuevoUsuario.CreadoEn,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &nuevoUsuario, nil
+}

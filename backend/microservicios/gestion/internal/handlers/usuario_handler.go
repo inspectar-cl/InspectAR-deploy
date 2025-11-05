@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"gestion/internal/models"
 	"gestion/internal/repository"
 	"net/http"
 
@@ -14,6 +15,68 @@ type UsuarioHandler struct {
 
 func NewUsuarioHandler(repo *repository.UsuarioRepository) *UsuarioHandler {
 	return &UsuarioHandler{repo: repo}
+}
+
+// RegistrarUsuario permite el auto-registro de usuarios/residentes
+// @Summary Registrar nuevo usuario (residente)
+// @Description Permite a un usuario/residente crear su cuenta en el sistema sin necesidad de aprobación administrativa
+// @Tags usuarios
+// @Accept json
+// @Produce json
+// @Param usuario body object{username=string,email=string} true "Datos del usuario"
+// @Success 201 {object} map[string]interface{} "Usuario registrado exitosamente"
+// @Failure 400 {object} map[string]interface{} "Datos inválidos"
+// @Failure 409 {object} map[string]interface{} "El email ya está registrado"
+// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
+// @Router /usuarios/registro [post]
+func (h *UsuarioHandler) RegistrarUsuario(c *gin.Context) {
+	var req struct {
+		Username string `json:"username" binding:"required"`
+		Email    string `json:"email" binding:"required,email"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Datos inválidos",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Verificar que el email no esté registrado
+	usuarioExistente, _ := h.repo.GetByEmail(req.Email)
+	if usuarioExistente != nil {
+		c.JSON(http.StatusConflict, gin.H{
+			"error":   "El email ya está registrado",
+			"mensaje": "Este correo electrónico ya pertenece a un usuario registrado",
+		})
+		return
+	}
+
+	// Crear el nuevo usuario
+	nuevoUsuario := models.Usuario{
+		Username: req.Username,
+		Email:    req.Email,
+	}
+
+	usuarioCreado, err := h.repo.Crear(nuevoUsuario)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "No se pudo registrar el usuario",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"mensaje": "Usuario registrado exitosamente",
+		"usuario": gin.H{
+			"id":        usuarioCreado.ID,
+			"username":  usuarioCreado.Username,
+			"email":     usuarioCreado.Email,
+			"creado_en": usuarioCreado.CreadoEn,
+		},
+	})
 }
 
 // GetEdificiosByEmail obtiene todos los edificios asociados a un usuario por su email

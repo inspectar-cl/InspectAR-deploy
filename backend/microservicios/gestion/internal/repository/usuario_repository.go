@@ -102,3 +102,55 @@ func (r *UsuarioRepository) VerificarAccesoActivo(email string, activoID int) (b
 
 	return tieneAcceso, nil
 }
+
+// AsignarEdificio asigna un usuario a un edificio
+func (r *UsuarioRepository) AsignarEdificio(usuarioID int, edificioID int) error {
+	query := `
+		INSERT INTO usuarios_edificios (usuario_id, edificio_id)
+		VALUES ($1, $2)
+		ON CONFLICT (usuario_id, edificio_id) DO NOTHING
+	`
+
+	_, err := r.db.Exec(query, usuarioID, edificioID)
+	return err
+}
+
+// RemoverEdificio remueve la asignación de un usuario a un edificio
+func (r *UsuarioRepository) RemoverEdificio(usuarioID int, edificioID int) error {
+	query := `
+		DELETE FROM usuarios_edificios
+		WHERE usuario_id = $1 AND edificio_id = $2
+	`
+
+	_, err := r.db.Exec(query, usuarioID, edificioID)
+	return err
+}
+
+// GetUsuariosPorEdificio obtiene todos los usuarios asignados a un edificio
+func (r *UsuarioRepository) GetUsuariosPorEdificio(edificioID int) ([]models.Usuario, error) {
+	query := `
+		SELECT u.id, u.username, u.email, u.creado_en
+		FROM usuarios u
+		INNER JOIN usuarios_edificios ue ON u.id = ue.usuario_id
+		WHERE ue.edificio_id = $1
+		ORDER BY u.username
+	`
+
+	rows, err := r.db.Query(query, edificioID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var usuarios []models.Usuario
+	for rows.Next() {
+		var usuario models.Usuario
+		err := rows.Scan(&usuario.ID, &usuario.Username, &usuario.Email, &usuario.CreadoEn)
+		if err != nil {
+			return nil, err
+		}
+		usuarios = append(usuarios, usuario)
+	}
+
+	return usuarios, nil
+}

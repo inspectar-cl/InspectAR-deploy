@@ -668,6 +668,151 @@ func (h *AdminHandler) ObtenerLogs(c *gin.Context) {
 	})
 }
 
+// ==================== RELACIONES USUARIOS-EDIFICIOS ====================
+
+// AsignarUsuarioAEdificio asigna un usuario a un edificio
+func (h *AdminHandler) AsignarUsuarioAEdificio(c *gin.Context) {
+	var req struct {
+		Email      string `json:"email" binding:"required"`
+		EdificioID int    `json:"edificio_id" binding:"required"`
+		AdminEmail string `json:"admin_email" binding:"required"` // Usuario que realiza la asignación
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Verificar que el usuario existe
+	usuario, err := h.usuarioRepo.GetByEmail(req.Email)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Usuario no encontrado"})
+		return
+	}
+
+	// Verificar que el edificio existe
+	edificio, err := h.edificioRepo.GetByID(req.EdificioID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Edificio no encontrado"})
+		return
+	}
+
+	// Asignar usuario al edificio
+	err = h.usuarioRepo.AsignarEdificio(usuario.ID, req.EdificioID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al asignar usuario al edificio", "details": err.Error()})
+		return
+	}
+
+	// Registrar log de auditoría
+	adminUsuario, _ := h.usuarioRepo.GetByEmail(req.AdminEmail)
+	if adminUsuario != nil {
+		logData := map[string]interface{}{
+			"usuario_id":      usuario.ID,
+			"usuario_email":   req.Email,
+			"edificio_id":     req.EdificioID,
+			"edificio_nombre": edificio.Nombre,
+		}
+		h.logRepo.CrearLog(models.LogAuditoria{
+			UsuarioID:    &adminUsuario.ID,
+			UsuarioEmail: req.AdminEmail,
+			Accion:       "ASIGNAR_USUARIO_EDIFICIO",
+			Entidad:      "usuario_edificio",
+			EntidadID:    usuario.ID,
+			DatosNuevos:  logData,
+			Descripcion:  fmt.Sprintf("Usuario %s asignado al edificio %s", req.Email, edificio.Nombre),
+			IPOrigen:     stringPtr(c.ClientIP()),
+			UserAgent:    stringPtr(c.Request.UserAgent()),
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Usuario asignado al edificio exitosamente",
+		"usuario": gin.H{
+			"id":    usuario.ID,
+			"email": usuario.Email,
+		},
+		"edificio": gin.H{
+			"id":     edificio.ID,
+			"nombre": edificio.Nombre,
+		},
+	})
+}
+
+// RemoverUsuarioDeEdificio remueve la asignación de un usuario a un edificio
+func (h *AdminHandler) RemoverUsuarioDeEdificio(c *gin.Context) {
+	var req struct {
+		Email      string `json:"email" binding:"required"`
+		EdificioID int    `json:"edificio_id" binding:"required"`
+		AdminEmail string `json:"admin_email" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Verificar que el usuario existe
+	usuario, err := h.usuarioRepo.GetByEmail(req.Email)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Usuario no encontrado"})
+		return
+	}
+
+	// Remover asignación
+	err = h.usuarioRepo.RemoverEdificio(usuario.ID, req.EdificioID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al remover asignación", "details": err.Error()})
+		return
+	}
+
+	// Registrar log de auditoría
+	adminUsuario, _ := h.usuarioRepo.GetByEmail(req.AdminEmail)
+	if adminUsuario != nil {
+		logData := map[string]interface{}{
+			"usuario_id":    usuario.ID,
+			"usuario_email": req.Email,
+			"edificio_id":   req.EdificioID,
+		}
+		h.logRepo.CrearLog(models.LogAuditoria{
+			UsuarioID:       &adminUsuario.ID,
+			UsuarioEmail:    req.AdminEmail,
+			Accion:          "REMOVER_USUARIO_EDIFICIO",
+			Entidad:         "usuario_edificio",
+			EntidadID:       usuario.ID,
+			DatosAnteriores: logData,
+			Descripcion:     fmt.Sprintf("Usuario %s removido del edificio %d", req.Email, req.EdificioID),
+			IPOrigen:        stringPtr(c.ClientIP()),
+			UserAgent:       stringPtr(c.Request.UserAgent()),
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Usuario removido del edificio exitosamente",
+	})
+}
+
+// ObtenerUsuariosDeEdificio obtiene todos los usuarios asignados a un edificio
+func (h *AdminHandler) ObtenerUsuariosDeEdificio(c *gin.Context) {
+	edificioID, err := strconv.Atoi(c.Param("edificio_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de edificio inválido"})
+		return
+	}
+
+	usuarios, err := h.usuarioRepo.GetUsuariosPorEdificio(edificioID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener usuarios", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"edificio_id": edificioID,
+		"usuarios":    usuarios,
+		"total":       len(usuarios),
+	})
+}
+
 // Helper function
 func stringPtr(s string) *string {
 	return &s

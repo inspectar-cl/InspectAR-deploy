@@ -365,6 +365,13 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: rootOnly(),
         },
+        { 
+            Method:  "DELETE",
+            Pattern: "/api/eliminar-edificio/:id_edificio",
+            Handler: EliminarEdificioHandler,
+            Protected: true,
+            RequiredScopes: rootOnly(),
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",

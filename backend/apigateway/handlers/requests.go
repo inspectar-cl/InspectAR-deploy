@@ -37,14 +37,19 @@ func init() {
     // maxAgeCookie := 3600 // 1 hora, 60*60 segundos
 }
 
-func obtenerEdificiosUsuario(email string) []interface{} {
+func obtenerEdificiosUsuario(email string, userType string) []interface{} {
     if email == "" {
         log.Println("Email vacío, no se pueden obtener edificios")
         return nil
     }
 
     // Construir URL para obtener edificios
-    url := fmt.Sprintf("%s/usuarios/edificios/%s", gestionURL, email)
+    var url string
+    if userType != "user-type:Root" {
+        url = fmt.Sprintf("%s/usuarios/edificios/%s", gestionURL, email)
+    } else {
+        url = fmt.Sprintf("%s/edificios", gestionURL)
+    }
     
     resp, err := http.Get(url)
     if err != nil {
@@ -163,6 +168,7 @@ func LoginHandler(c *gin.Context) {
     // Si el login es exitoso, obtener los edificios del usuario
     if resp.StatusCode == http.StatusOK {
         email, ok := loginData["email"].(string)
+        // fmt.Println("Login data:", loginData)
         if !ok {
             if user, exists := response["user"].(map[string]interface{}); exists {
                 if userEmail, hasEmail := user["email"].(string); hasEmail {
@@ -171,7 +177,14 @@ func LoginHandler(c *gin.Context) {
             }
         }
 
-        edificios := obtenerEdificiosUsuario(email)
+        userTypeInterface, _ := extractClaimFromToken(response["access_token"].(string), "scope")
+        userTypeStr := ""
+        if ut, ok := userTypeInterface.(string); ok {
+            userTypeStr = ut
+        }
+        fmt.Printf("Tipo de usuario extraído del token: %v\n", userTypeInterface)
+
+        edificios := obtenerEdificiosUsuario(email, userTypeStr)
 
         // Filtrar la respuesta
         filteredResponse := make(map[string]interface{})
@@ -322,10 +335,14 @@ func RefreshHandler(c *gin.Context) {
             }
         }
 
-        fmt.Printf("Email extraído del token: %s\n", email)
+        userTypeInterface, _ := extractClaimFromToken(response["access_token"].(string), "scope")
+        userTypeStr := ""
+        if ut, ok := userTypeInterface.(string); ok {
+            userTypeStr = ut
+        }
+        fmt.Printf("Tipo de usuario extraído del token: %v\n", userTypeInterface)
 
-        // Obtener edificios del usuario
-        edificios := obtenerEdificiosUsuario(email)
+        edificios := obtenerEdificiosUsuario(email, userTypeStr)
 
         // Filtrar la respuesta
         filteredResponse := make(map[string]interface{})

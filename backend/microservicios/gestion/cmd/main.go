@@ -76,10 +76,11 @@ func main() {
 	tipoFallaHandler := handlers.NewTipoFallaHandler(tipoFallaRepo)
 	firmaHandler := handlers.NewFirmaHandler(firmaService)
 	adminHandler := handlers.NewAdminHandler(activoRepo, edificioRepo, usuarioRepo, logRepo, qrService, parserURL)
-	qrHandler := handlers.NewQRHandler(activoRepo, qrService) // Nuevo handler de QR
+	qrHandler := handlers.NewQRHandler(activoRepo, qrService)    // Nuevo handler de QR
+	edificioHandler := handlers.NewEdificioHandler(edificioRepo) // Handler de edificios
 
-	// Router (ahora con todos los handlers incluido adminHandler y qrHandler)
-	r := router.SetupRouter(tecnicoHandler, accionHandler, activoHandler, reporteHandler, solicitudHandler, usuarioHandler, tipoFallaHandler, firmaHandler, adminHandler, qrHandler)
+	// Router (ahora con todos los handlers incluido adminHandler, qrHandler y edificioHandler)
+	r := router.SetupRouter(tecnicoHandler, accionHandler, activoHandler, reporteHandler, solicitudHandler, usuarioHandler, tipoFallaHandler, firmaHandler, adminHandler, qrHandler, edificioHandler)
 
 	// Servidor web
 	port := viper.GetString("server.port")

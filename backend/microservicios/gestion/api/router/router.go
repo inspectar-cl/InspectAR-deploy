@@ -19,6 +19,7 @@ func SetupRouter(
 	firmaHandler *handlers.FirmaHandler,
 	adminHandler *handlers.AdminHandler,
 	qrHandler *handlers.QRHandler,
+	edificioHandler *handlers.EdificioHandler,
 ) *gin.Engine {
 	r := gin.Default()
 
@@ -77,6 +78,7 @@ func SetupRouter(
 	r.GET("/activos/tipo/:tipo", activoHandler.GetActivosByTipo)                // Filtrar activos por tipo
 
 	// 🏢 Rutas de usuarios y edificios
+	r.GET("/edificios", edificioHandler.GetAllEdificios)                                           // Obtener todos los edificios
 	r.GET("/usuarios/edificios/:email", usuarioHandler.GetEdificiosByEmail)                        // Obtener edificios de un usuario por email
 	r.GET("/usuarios/:email/edificio/:edificio_id/acceso", usuarioHandler.VerificarAccesoEdificio) // Verificar acceso a edificio
 	r.GET("/usuarios/:email/activo/:activo_id/acceso", usuarioHandler.VerificarAccesoActivo)       // Verificar acceso a activo
@@ -250,6 +252,11 @@ func SetupRouter(
 		// Sensores
 		admin.POST("/sensores", adminHandler.CrearSensor)         // Crear sensor en ParserService
 		admin.PUT("/sensores/:id", adminHandler.ActualizarSensor) // Actualizar sensor en ParserService
+
+		// Relaciones Usuarios-Edificios
+		admin.POST("/usuarios/edificios", adminHandler.AsignarUsuarioAEdificio)               // Asignar usuario a edificio
+		admin.DELETE("/usuarios/edificios", adminHandler.RemoverUsuarioDeEdificio)            // Remover usuario de edificio
+		admin.GET("/edificios/:edificio_id/usuarios", adminHandler.ObtenerUsuariosDeEdificio) // Obtener usuarios de un edificio
 
 		// Logs de auditoría
 		admin.GET("/logs", adminHandler.ObtenerLogs) // Obtener logs con filtros

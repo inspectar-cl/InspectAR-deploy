@@ -123,6 +123,14 @@ func getProtectedProxyRoutes() []struct {
             RequiredScopes:     userTypes("Tecnico", "Analista", "Admin"),
             RequiredValidation: "",
         },
+        {
+            Method:             "GET",
+            Pattern:            "/api/ML/anomalies/:anomaly_id",
+            TargetEnvVar:       "ML_URL",
+            PrependPath:        "",
+            RequiredScopes:     userTypes("Tecnico", "Analista", "Admin"),
+            RequiredValidation: "",
+        },
         // Rutas Gestion protegidas Sprint 3
         {
             Method:             "GET",

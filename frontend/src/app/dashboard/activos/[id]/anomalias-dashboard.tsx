@@ -8,7 +8,6 @@ import {
   Grid,
   CircularProgress,
   Divider,
-  Chip,
 } from '@mui/material';
 import { useUserToken } from '@/hooks/use-usertoken';
 import { Activity as ActivityIcon, AlertTriangle as AlertIcon } from 'lucide-react';
@@ -21,181 +20,105 @@ import Services from '@/modules/Services';
 
 const gs = new Services();
 
-// Interfaces para anomalías
-interface AnomaliaAPI {
-  id: number;
-  activo_id: number;
-  sensor_id: string;
-  timestamp: string;
-  anomaly_score: number;
-  anomaly_likelihood: number;
-  severidad: string;
-  descripcion: string;
-  threshold: number;
-  is_anomaly: number;
-  created_at: string;
-}
-
-interface AnomaliasPaginadas {
-  activo_id: number;
-  anomalies: AnomaliaAPI[];
-  total: number;
-  page: number;
-  limit: number;
-  has_more: boolean;
-}
-
 interface AnomaliasDashboardProps {
   activoId: number;
   activoNombre: string;
 }
 
-// Función para calcular severidad desde likelihood (igual que el API)
-const severityFromLikelihood = (likelihood: number): "Baja" | "Media" | "Alta" => {
-  if (likelihood < 40) {
-    return "Baja";
-  } else if (likelihood < 70) {
-    return "Media";
-  } else {
-    return "Alta";
-  }
-};
-
-// Función para obtener descripción según severidad (igual que el API)
-const getDescripcionPorSeveridad = (severidad: "Baja" | "Media" | "Alta"): string => {
-  const descripciones = {
-    "Baja": "Funcionamiento dentro del rango esperado.",
-    "Media": "Comportamiento irregular detectado. Revisar condiciones operativas.",
-    "Alta": "Anomalía crítica detectada. Atención prioritaria requerida."
-  };
-  return descripciones[severidad];
-};
-
-// Función para generar datos mock (lógica del API)
-const generateMockData = (activoId: number): Prediccion[] => {
-  const now = new Date();
-  const predicciones: Prediccion[] = [];
-
-  // Generar 50 registros de ejemplo
-  for (let i = 0; i < 50; i++) {
-    const timestamp = new Date(now.getTime() - i * 60000); // Cada minuto hacia atrás
-    
-    // 1. Generar anomaly_score (0-100)
-    const anomalyScore = Math.floor(Math.random() * 101); // 0-100
-    
-    // 2. anomaly_likelihood >= anomaly_score (como en el modelo real)
-    const anomalyLikelihood = anomalyScore + Math.floor(Math.random() * (101 - anomalyScore));
-    
-    // 3. Calcular severidad basándose en likelihood (lógica del API)
-    const severidad = severityFromLikelihood(anomalyLikelihood);
-    
-    // 4. Threshold aleatorio entre 0-100
-    const threshold = Math.floor(Math.random() * 101);
-    
-    predicciones.push({
-      id: i + 1,
-      activoId,
-      timestamp: timestamp.toISOString(),
-      anomalyScore,
-      anomalyLikelihood,
-      severidad,
-      descripcion: getDescripcionPorSeveridad(severidad),
-      threshold,
-      is_anomaly: anomalyLikelihood > threshold, // Compara likelihood con threshold
-    });
-  }
-
-  return predicciones;
-};
-
 export default function AnomaliasDashboard({ activoId, activoNombre }: AnomaliasDashboardProps) {
+  const { user, isLoading: isUserLoading } = useUserToken();
   const [predicciones, setPredicciones] = useState<Prediccion[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [usingMockData, setUsingMockData] = useState(false);
-  const { user, isLoading} = useUserToken();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchAnomalias = async (retryCount = 0, maxRetries = 3) => {
+    if (isUserLoading || !user) return;
+
+    const fetchAnomalias = async () => {
       try {
-        setLoading(true);
-        if (isLoading || !user) {return;}
-                
-        // Intentar obtener datos reales
+        setIsLoading(true);
+        
+        interface AnomaliasPaginadas {
+          activo_id?: number;
+          anomalies?: Array<{
+            id?: number;
+            activo_id?: number;
+            timestamp?: string;
+            anomaly_score?: number;
+            anomaly_likelihood?: number;
+            severidad?: "Baja" | "Media" | "Alta";
+            descripcion?: string;
+            threshold?: number;
+            is_anomaly?: number | boolean;
+            most_influential_variable?: string;
+            contribution_magnitude?: number;
+          }>;
+          total?: number;
+          page?: number;
+          limit?: number;
+          has_more?: boolean;
+        }
+
+        // Ajusta la ruta según tu API
         const response = await gs.authorizedGet(
-          `/ML/anomalies/activo/${activoId}?page=1&limit=50`, user.token
+          `/anomalia-activo/${activoId}?page=1&limit=50`, 
+          user.token
         ) as AnomaliasPaginadas;
 
-        if (response && Array.isArray(response.anomalies) && response.anomalies.length > 0) {
-          // Si hay datos reales, usarlos
-          
-          const prediccionesMapeadas = response.anomalies.map((anomalia) => ({
-            id: anomalia.id,
-            activoId: anomalia.activo_id,
-            timestamp: anomalia.timestamp,
-            anomalyScore: Math.round(anomalia.anomaly_score),
-            anomalyLikelihood: Math.round(anomalia.anomaly_likelihood),
-            severidad: anomalia.severidad as "Baja" | "Media" | "Alta",
-            descripcion: anomalia.descripcion,
-            threshold: Math.round(anomalia.threshold),
-            is_anomaly: anomalia.is_anomaly === 1,
-            sensorId: anomalia.sensor_id,
-            createdAt: anomalia.created_at,
-          }));
+        const prediccionesTransformadas: Prediccion[] = (response.anomalies ?? []).map((p) => ({
+          id: p.id ?? 0,
+          activoId: p.activo_id ?? activoId,
+          timestamp: p.timestamp ?? new Date().toISOString(),
+          anomalyScore: Math.round(p.anomaly_score ?? 0),
+          anomalyLikelihood: Math.round(p.anomaly_likelihood ?? 0),
+          severidad: p.severidad ?? "Baja",
+          descripcion: p.descripcion ?? "Sin descripción",
+          threshold: Math.round(p.threshold ?? 50),
+          is_anomaly: p.is_anomaly === 1 || p.is_anomaly === true,
+          most_influential_variable: p.most_influential_variable ?? "N/A",
+          contribution_magnitude: p.contribution_magnitude ?? 0,
+        }));
 
-          // Ordenar por timestamp descendente
-          prediccionesMapeadas.sort((a, b) => 
-            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-          );
-
-          setPredicciones(prediccionesMapeadas);
-          setUsingMockData(false);
-        } else {
-          // Si no hay datos, lanzar error para reintentar
-          throw new Error('Respuesta vacía del servidor');
-        }
-      } catch (err) {
-        
-        // Si aún quedan reintentos, esperar y volver a intentar
-        if (retryCount < maxRetries) {
-          const delayMs = 1000 * (retryCount + 1); // Espera incremental: 1s, 2s, 3s
-          
-          setTimeout(() => {
-            void fetchAnomalias(retryCount + 1, maxRetries);
-          }, delayMs);
-          return; // No ejecutar el finally todavía
-        }
-        
-        // Si se agotaron los reintentos, usar datos mock        
-        const mockData = generateMockData(activoId);
-        mockData.sort((a, b) => 
+        // Ordenar por timestamp descendente
+        prediccionesTransformadas.sort((a, b) => 
           new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
         );
-        
-        setPredicciones(mockData);
-        setUsingMockData(true);
+
+        setPredicciones(prediccionesTransformadas);
+        setError(null);
+      } catch (err) {
+        console.error('Error al obtener anomalías:', err);
+        setError('Error al cargar anomalías del activo');
       } finally {
-        // Solo quitar loading cuando termine completamente (o se agoten reintentos)
-        if (retryCount >= maxRetries || predicciones.length > 0) {
-          setLoading(false);
-        }
+        setIsLoading(false);
       }
     };
 
+    // Llamado inicial inmediato
     void fetchAnomalias();
 
-    // Actualizar anomalías cada 30 segundos (sin reintentos en el polling)
+    // Actualización periódica cada 30 segundos
     const interval = setInterval(() => {
-      void fetchAnomalias(0, 0); // Sin reintentos en el polling automático
+      void fetchAnomalias();
     }, 30000);
 
+    // Limpieza del intervalo al desmontar componente
     return () => { clearInterval(interval); };
-  }, [activoId]);
+  }, [activoId, isUserLoading, user]);
 
-  if (loading) {
+  if (isUserLoading || isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
         <CircularProgress />
         <Typography ml={2}>Cargando predicciones...</Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box p={2}>
+        <Typography color="error">{error}</Typography>
       </Box>
     );
   }
@@ -228,22 +151,6 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
         <Typography variant="h4">
           Predicciones de Anomalías (ML)
         </Typography>
-        {usingMockData && (
-          <Chip 
-            label="Datos de Simulación" 
-            color="warning" 
-            size="small"
-            icon={<AlertIcon size={16} />}
-          />
-        )}
-        {!usingMockData && (
-          <Chip 
-            label="Datos Reales" 
-            color="success" 
-            size="small"
-            icon={<ActivityIcon size={16} />}
-          />
-        )}
       </Box>
 
       <Grid container spacing={3}>

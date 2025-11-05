@@ -9,6 +9,7 @@ function AnomalyChart({ predicciones, activoNombre }: { predicciones: Prediccion
   const series = [
     { name: "Anomaly Score", data: predicciones.map(p => ({ x: p.timestamp, y: p.anomalyScore })) },
     { name: "Anomaly Likelihood", data: predicciones.map(p => ({ x: p.timestamp, y: p.anomalyLikelihood })) },
+    { name: "Threshold", data: predicciones.map(p => ({ x: p.timestamp, y: p.threshold })) },
   ];
 
   const options = {

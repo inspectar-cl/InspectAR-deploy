@@ -29,6 +29,7 @@ SERVICES := \
 	gestion-service \
 	documentacion-service \
 	middleware_mqtt \
+	ia-service-python \
 	data-sync-init \
 	database1 \
 	oauth2

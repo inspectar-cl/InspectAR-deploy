@@ -2,8 +2,11 @@ package handlers
 
 import (
     "log"
+    "os"
+    "strings"
     "github.com/gin-gonic/gin"
     "apigateway/api/middleware"
+    "apigateway/proxy"
 )
 
 // SpecialHandler representa un handler especial para Gin
@@ -33,6 +36,103 @@ func userTypes(roles ...string) []string {
 // rootOnly retorna un scope exclusivo para Root
 func rootOnly() []string {
     return []string{"user-type:Root"}
+}
+
+// getProxyRoutes devuelve todas las rutas de proxy transparente con su configuración de seguridad
+// IMPORTANTE: Solo habilitar rutas que NO tengan handlers personalizados específicos registrados
+// Si tienes handlers específicos en /api/gestion/*, NO habilites el catch-all de /api/gestion
+func getProxyRoutes() []proxy.ProxyRoute {
+    return []proxy.ProxyRoute{
+        // NOTA: /api/gestion está deshabilitado porque tenemos handlers personalizados
+        // Si necesitas proxy para gestion, usa getProtectedProxyRoutes() para rutas específicas
+        // {
+        //     PathPrefix:         "/api/gestion",
+        //     TargetEnvVar:       "GESTION_URL",
+        //     PrependPath:        "",
+        //     Protected:          false,
+        //     RequiredScopes:     nil,
+        //     RequiredValidation: "",
+        // },
+        {
+            PathPrefix:         "/api/notificacion",
+            TargetEnvVar:       "NOTIFICATION_URL",
+            PrependPath:        "",
+            Protected:          false,
+            RequiredScopes:     nil,
+            RequiredValidation: "",
+        },
+        {
+            PathPrefix:         "/api/parser",
+            TargetEnvVar:       "PARSER_URL",
+            PrependPath:        "",
+            Protected:          false,
+            RequiredScopes:     nil,
+            RequiredValidation: "",
+        },
+        {
+            PathPrefix:         "/api/documentacion",
+            TargetEnvVar:       "DOCUMENTATION_URL",
+            PrependPath:        "/api/v1",
+            Protected:          false,
+            RequiredScopes:     nil,
+            RequiredValidation: "",
+        },
+        // NOTA: /api/ML está deshabilitado porque tenemos rutas específicas protegidas
+        // Si necesitas más rutas de ML, agrégalas en getProtectedProxyRoutes()
+        // {
+        //     PathPrefix:         "/api/ML",
+        //     TargetEnvVar:       "ML_URL",
+        //     PrependPath:        "",
+        //     Protected:          false,
+        //     RequiredScopes:     nil,
+        //     RequiredValidation: "",
+        // },
+    }
+}
+
+func getProtectedProxyRoutes() []struct {
+    Method             string
+    Pattern            string
+    TargetEnvVar       string
+    PrependPath        string
+    RequiredScopes     []string
+    RequiredValidation string
+} {
+    return []struct {
+        Method             string
+        Pattern            string
+        TargetEnvVar       string
+        PrependPath        string
+        RequiredScopes     []string
+        RequiredValidation string
+    }{
+        // Rutas ML protegidas Sprint 3
+        {
+            Method:             "GET",
+            Pattern:            "/api/ML/anomalies/activo/:activo_id",
+            TargetEnvVar:       "ML_URL",
+            PrependPath:        "",
+            RequiredScopes:     userTypes("Tecnico", "Analista", "Admin"),
+            RequiredValidation: "activo",
+        },
+        {
+            Method:             "GET",
+            Pattern:            "/api/ML/anomalies/sensor/:sensor_id",
+            TargetEnvVar:       "ML_URL",
+            PrependPath:        "",
+            RequiredScopes:     userTypes("Tecnico", "Analista", "Admin"),
+            RequiredValidation: "",
+        },
+        // Rutas Gestion protegidas Sprint 3
+        {
+            Method:             "GET",
+            Pattern:            "/api/gestion/edificios",
+            TargetEnvVar:       "GESTION_URL",
+            PrependPath:        "",
+            RequiredScopes:     rootOnly(),
+            RequiredValidation: "",
+        },
+    }
 }
 
 // getSpecialHandlers devuelve todos los handlers especiales
@@ -272,6 +372,12 @@ func getSpecialHandlers() []SpecialHandler {
 
 // RegisterSpecialRoutes registra todos los handlers especiales en Gin
 func RegisterSpecialRoutes(r *gin.Engine) {
+    // Registrar el endpoint de salud
+    r.GET("/healthz", func(c *gin.Context) {
+        c.JSON(200, gin.H{"ok": true})
+    })
+
+    // Registrar handlers personalizados
     specialHandlers := getSpecialHandlers()
     for _, handler := range specialHandlers {
         var routeHandlers []gin.HandlerFunc
@@ -315,6 +421,111 @@ func RegisterSpecialRoutes(r *gin.Engine) {
         }
 
         log.Printf("Registered special handler: %s %s (%s)", handler.Method, handler.Pattern, protectionStatus)
+    }
+
+    // Registrar rutas de proxy protegidas específicas (tienen prioridad sobre las genéricas)
+    protectedProxyRoutes := getProtectedProxyRoutes()
+    for _, route := range protectedProxyRoutes {
+        target := os.Getenv(route.TargetEnvVar)
+        if target == "" {
+            log.Printf("WARNING: %s not set, skipping protected proxy route %s", route.TargetEnvVar, route.Pattern)
+            continue
+        }
+
+        var routeHandlers []gin.HandlerFunc
+
+        // Siempre aplicar autenticación para rutas protegidas
+        routeHandlers = append(routeHandlers, middleware.AuthMiddleware())
+
+        // Si se requieren scopes específicos
+        if len(route.RequiredScopes) > 0 {
+            routeHandlers = append(routeHandlers, middleware.ScopeMiddleware(route.RequiredScopes))
+        }
+
+        // Si se requiere validación de acceso a edificio o activo
+        if route.RequiredValidation != "" {
+            routeHandlers = append(routeHandlers, middleware.ValidationMiddleware(route.RequiredValidation))
+        }
+
+        // Calcular el stripPrefix desde el Pattern
+        stripPrefix := ""
+        if strings.HasPrefix(route.Pattern, "/api/") {
+            // Extraer hasta el segundo slash después de /api/
+            parts := strings.SplitN(route.Pattern, "/", 4) // ["", "api", "servicio", "resto..."]
+            if len(parts) >= 3 {
+                stripPrefix = "/" + parts[1] + "/" + parts[2] // "/api/servicio"
+            }
+        }
+
+        // Agregar el handler de proxy
+        proxyHandler := proxy.CreateProxyHandler(target, stripPrefix, route.PrependPath)
+        routeHandlers = append(routeHandlers, proxyHandler)
+
+        // Registrar la ruta específica con el método indicado
+        switch route.Method {
+        case "GET":
+            r.GET(route.Pattern, routeHandlers...)
+        case "POST":
+            r.POST(route.Pattern, routeHandlers...)
+        case "PUT":
+            r.PUT(route.Pattern, routeHandlers...)
+        case "DELETE":
+            r.DELETE(route.Pattern, routeHandlers...)
+        default:
+            r.Any(route.Pattern, routeHandlers...)
+        }
+
+        protectionStatus := "protected"
+        if len(route.RequiredScopes) > 0 {
+            protectionStatus += " (scopes: " + joinScopes(route.RequiredScopes) + ")"
+        }
+
+        log.Printf("Registered protected proxy: %s %s → %s (%s)", route.Method, route.Pattern, target, protectionStatus)
+    }
+
+    // Registrar rutas de proxy transparente genéricas
+    proxyRoutes := getProxyRoutes()
+    for _, route := range proxyRoutes {
+        target := os.Getenv(route.TargetEnvVar)
+        if target == "" {
+            log.Printf("WARNING: %s not set, skipping proxy route %s", route.TargetEnvVar, route.PathPrefix)
+            continue
+        }
+
+        var routeHandlers []gin.HandlerFunc
+
+        // Si la ruta está protegida, aplicar middlewares
+        if route.Protected {
+            routeHandlers = append(routeHandlers, middleware.AuthMiddleware())
+
+            // Si se requieren scopes específicos
+            if len(route.RequiredScopes) > 0 {
+                routeHandlers = append(routeHandlers, middleware.ScopeMiddleware(route.RequiredScopes))
+            }
+
+            // Si se requiere validación de acceso a edificio o activo
+            if route.RequiredValidation != "" {
+                routeHandlers = append(routeHandlers, middleware.ValidationMiddleware(route.RequiredValidation))
+            }
+        }
+
+        // Agregar el handler de proxy
+        proxyHandler := proxy.CreateProxyHandler(target, route.PathPrefix, route.PrependPath)
+        routeHandlers = append(routeHandlers, proxyHandler)
+
+        // Registrar la ruta con comodín para capturar todas las subrutas
+        pattern := route.PathPrefix + "/*proxyPath"
+        r.Any(pattern, routeHandlers...)
+
+        protectionStatus := "public"
+        if route.Protected {
+            protectionStatus = "protected"
+            if len(route.RequiredScopes) > 0 {
+                protectionStatus += " (scopes: " + joinScopes(route.RequiredScopes) + ")"
+            }
+        }
+
+        log.Printf("Registered proxy route: ANY %s → %s (%s)", pattern, target, protectionStatus)
     }
 }
 

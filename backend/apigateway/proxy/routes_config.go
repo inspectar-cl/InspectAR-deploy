@@ -1,9 +1,12 @@
 package proxy
 
 type ProxyRoute struct {
-    PathPrefix   string // Ej: "/api/gestion"
-    TargetEnvVar string // Ej: "GESTION_URL"
-    PrependPath  string // Ej: "" o "/algo"
+    PathPrefix         string   // Ej: "/api/gestion"
+    TargetEnvVar       string   // Ej: "GESTION_URL"
+    PrependPath        string   // Ej: "" o "/algo"
+    Protected          bool     // Si requiere autenticación
+    RequiredScopes     []string // Root siempre incluido automáticamente. Otros roles: Analista, Tecnico, Residente, Admin
+    RequiredValidation string   // Puede ser "edificio", "activo" o vacío si no se requiere validación
 }
 
 var ProxyRoutes = []ProxyRoute{

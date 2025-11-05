@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"apigateway/pkg"
+	"github.com/gin-gonic/gin"
 )
 
 // Crea un ReverseProxy con:
@@ -67,4 +68,14 @@ func NewReverseProxy(targetBase, stripPrefix, prependPath string) *httputil.Reve
 	}
 
 	return proxy
+}
+
+// CreateProxyHandler crea un gin.HandlerFunc que envuelve el ReverseProxy
+// para ser compatible con la cadena de middlewares de Gin
+func CreateProxyHandler(targetBase, stripPrefix, prependPath string) gin.HandlerFunc {
+	reverseProxy := NewReverseProxy(targetBase, stripPrefix, prependPath)
+	
+	return func(c *gin.Context) {
+		reverseProxy.ServeHTTP(c.Writer, c.Request)
+	}
 }

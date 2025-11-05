@@ -6,7 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"apigateway/config"
-	"apigateway/proxy"
 	"apigateway/handlers"
 	"apigateway/api/middleware"
 )
@@ -18,10 +17,7 @@ func main() {
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(middleware.CORS())
 	
-	// Rutas de proxy
-	proxy.RegisterRoutes(r)
-
-	// Registrar handlers
+	// Registrar todas las rutas (handlers personalizados y proxy transparente)
 	handlers.RegisterSpecialRoutes(r)
 
 	log.Printf("API Gateway escuchando en :%s", cfg.Port)

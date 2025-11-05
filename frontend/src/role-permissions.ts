@@ -30,6 +30,7 @@ export const rolePermissions: Record<string, string[]> = {
     paths.dashboard.agregarDatos('sensor'),
     paths.dashboard.agregarDatos('tecnico'),
     paths.dashboard.agregarDatos('activo'),
+    paths.dashboard.gestion,
   ],           
   admin: [
     paths.dashboard.inicio,

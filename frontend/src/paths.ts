@@ -4,6 +4,7 @@ export const paths = {
   dashboard: {
     inicio: '/dashboard',
     formulario: '/dashboard/formulario',
+    gestion: '/dashboard/gestion',
     solicitudes: '/dashboard/solicitudes',
     account: '/dashboard/account',
     alertas: '/dashboard/alertas',

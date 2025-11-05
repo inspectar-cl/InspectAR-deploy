@@ -6,6 +6,7 @@ export const navItems = [
   { key: 'formulario', title: 'Formulario', href: paths.dashboard.formulario, icon: 'clipboard-text' },
   { key: 'solicitudes', title: 'Solicitudes', href: paths.dashboard.solicitudes, icon: 'clipboard-text' },
   { key: 'agregar-datos', title: 'Agregar Datos', href: paths.dashboard.agregarDatos('edificio'), icon: 'cloud-arrow-up' },
+  { key: 'editar-datos', title: 'Gestionar Datos', href: paths.dashboard.gestion, icon: 'file-cloud' },
   { key: 'alertas', title: 'Alertas', href: paths.dashboard.alertas, icon: 'warning-circle' },
   { key: 'activos', title: 'Lista de activos', href: paths.dashboard.activos, icon: 'building-apartment' },
   { key: 'sensores', title: 'Sensores', href: paths.dashboard.sensores, icon: 'broadcast' },

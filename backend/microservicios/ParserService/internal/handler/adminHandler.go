@@ -92,7 +92,8 @@ func (h *AdminHandler) DeleteActivoAdmin(c *gin.Context) {
 func (h *AdminHandler) CreateSensorAdmin(c *gin.Context) {
 	var req struct {
 		IDActivo int    `json:"id_activo" binding:"required"`
-		Nombre   string `json:"nombre" binding:"required"`
+		SensorID string `json:"sensor_id" binding:"required"` // ID generado por gestion-service
+		Nombre   string `json:"nombre"`                       // Opcional - descripción del sensor
 		Tipo     string `json:"tipo" binding:"required"`
 		Unidad   string `json:"unidad" binding:"required"`
 	}
@@ -109,9 +110,9 @@ func (h *AdminHandler) CreateSensorAdmin(c *gin.Context) {
 		return
 	}
 
-	// Crear sensor
+	// Crear sensor con el ID generado por gestion-service
 	sensor := models.Sensor{
-		SensorID: req.Nombre, // Usar nombre como ID
+		SensorID: req.SensorID, // Usar el ID generado automáticamente
 		Tipo:     req.Tipo,
 		Unidad:   req.Unidad,
 	}
@@ -126,9 +127,16 @@ func (h *AdminHandler) CreateSensorAdmin(c *gin.Context) {
 	// Obtener activo actualizado para obtener el ID del sensor
 	activoActualizado, _ := h.activoRepo.GetActivo(context.Background(), req.IDActivo)
 
-	c.JSON(http.StatusCreated, gin.H{
+	response := gin.H{
 		"message": "Sensor creado exitosamente en ParserService",
 		"sensor":  sensor,
 		"activo":  activoActualizado,
-	})
+	}
+
+	// Agregar nombre en la respuesta si existe
+	if req.Nombre != "" {
+		response["nombre"] = req.Nombre
+	}
+
+	c.JSON(http.StatusCreated, response)
 }

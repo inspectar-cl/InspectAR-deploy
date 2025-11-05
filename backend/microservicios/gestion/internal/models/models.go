@@ -412,7 +412,7 @@ type UpdateEdificioRequest struct {
 
 type CreateSensorRequest struct {
 	ActivoID int    `json:"activo_id" binding:"required"`
-	Nombre   string `json:"nombre" binding:"required"`
+	Nombre   string `json:"nombre"` // Opcional - Nombre descriptivo
 	Tipo     string `json:"tipo" binding:"required"`
 	Unidad   string `json:"unidad" binding:"required"`
 	Email    string `json:"email" binding:"required,email"` // Email del usuario que crea

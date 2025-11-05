@@ -20,6 +20,7 @@ SERVICES := \
 	documentacion-db \
 	gestion-db \
 	notification-db \
+	ia-db
 	mongu \
 	influxdb \
 	emqx \

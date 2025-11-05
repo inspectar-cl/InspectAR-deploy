@@ -2707,3 +2707,29 @@ func CrearSensorHandler(c *gin.Context) {
     // Retornar la respuesta del microservicio
     c.JSON(resp.StatusCode, responseData)
 }
+
+func EditarSensorHandler(c *gin.Context) {
+    id := c.Param("id_sensor")
+    if id == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID del sensor es requerido"})
+        return
+    }
+
+    authHeader := c.GetHeader("Authorization")
+    email, _ := extractClaimFromToken(authHeader, "email")
+    if email == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
+        return
+    }
+    fmt.Printf("Usuario editando sensor %s: %s\n", id, email)
+
+    // Leer el body de la request
+    var sensorData map[string]interface{}
+    if err := c.ShouldBindJSON(&sensorData); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+        return
+    }
+
+    
+
+}

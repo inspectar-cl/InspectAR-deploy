@@ -236,6 +236,13 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: rootOnly(),
         },
+        { 
+            Method:  "PUT",
+            Pattern: "/api/editar-sensor/:id_sensor",
+            Handler: EditarSensorHandler,
+            Protected: true,
+            RequiredScopes: rootOnly(),
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",

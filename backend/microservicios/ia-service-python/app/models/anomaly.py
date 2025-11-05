@@ -29,6 +29,8 @@ class AnomalyDB(Base):
     descripcion = Column(Text, nullable=True)
     threshold = Column(Float, nullable=True)
     is_anomaly = Column(Boolean, nullable=False, default=False, index=True)
+    most_influential_variable = Column(String(100), nullable=True, default=None)
+    contribution_magnitude = Column(Float, nullable=True, default=None)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -48,6 +50,9 @@ class AnomalyBase(BaseModel):
     descripcion: Optional[str] = None
     threshold: Optional[float] = None
     is_anomaly: bool = False
+    most_influential_variable: Optional[str] = None
+    contribution_magnitude: Optional[float] = None
+
 
 
 class AnomalyCreate(AnomalyBase):
@@ -111,6 +116,8 @@ class MLResult(BaseModel):
     is_anomaly: int
     Severity: str
     Description: str
+    most_influential_variable: str
+    contribution_magnitude: float
 
 
 class MLResponse(BaseModel):

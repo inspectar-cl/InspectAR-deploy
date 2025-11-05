@@ -3085,3 +3085,11 @@ func ActualizarEdificioHandler(c *gin.Context) {
     // Retornar la respuesta del microservicio
     c.JSON(http.StatusOK, responseData)
 }
+
+func ObtenerInfoQRHandler(c *gin.Context) {
+    codigoActivo := c.Param("codigo_activo")
+    if codigoActivo == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Código del activo es requerido"})
+        return
+    }
+}

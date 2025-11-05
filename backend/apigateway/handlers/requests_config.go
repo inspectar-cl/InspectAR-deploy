@@ -379,6 +379,13 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: rootOnly(),
         },
+        { 
+            Method:  "GET",
+            Pattern: "/api/codigo_qr/:codigo_activo",
+            Handler: ObtenerInfoQRHandler,
+            Protected: false,
+            RequiredScopes: nil, // Acceso abierto
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",

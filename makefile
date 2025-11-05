@@ -20,7 +20,7 @@ SERVICES := \
 	documentacion-db \
 	gestion-db \
 	notification-db \
-	ia-db
+	ia-db \
 	mongu \
 	influxdb \
 	emqx \
@@ -47,7 +47,8 @@ stop-b-ag:
 	cd backend && docker compose stop apigateway || true
 	cd backend && docker compose rm -f -s apigateway || true
 
-NGROK_URL := interbanded-kole-sneeringly.ngrok-free.app
+# NGROK_URL := interbanded-kole-sneeringly.ngrok-free.app
+NGROK_URL := anita-submicroscopic-overgently.ngrok-free.app
 
 run-b-ngrok:
 	cd backend && docker compose up --build -d && ngrok http --domain=$(NGROK_URL) 3500

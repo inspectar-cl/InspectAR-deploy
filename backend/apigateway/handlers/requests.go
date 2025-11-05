@@ -3087,9 +3087,40 @@ func ActualizarEdificioHandler(c *gin.Context) {
 }
 
 func ObtenerInfoQRHandler(c *gin.Context) {
-    codigoActivo := c.Param("codigo_activo")
-    if codigoActivo == "" {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Código del activo es requerido"})
-        return
-    }
+	codigoActivo := c.Param("codigo_activo")
+	if codigoActivo == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Código del activo es requerido"})
+		return
+	}
+
+	// Construir URL del microservicio de gestión
+	url := fmt.Sprintf("%s/qr/%s", gestionURL, codigoActivo)
+
+	// Crear request
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Printf("Error creando request a gestión: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error interno del servidor"})
+		return
+	}
+
+	// Ejecutar request
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		log.Printf("Error llamando a gestión: %v", err)
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Servicio no disponible"})
+		return
+	}
+	defer resp.Body.Close()
+
+	// Leer respuesta
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Error leyendo respuesta: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando respuesta"})
+		return
+	}
+
+	// Reenviar respuesta tal cual
+	c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), body)
 }

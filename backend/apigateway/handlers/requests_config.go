@@ -358,6 +358,13 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: rootOnly(),
         },
+        { 
+            Method:  "POST",
+            Pattern: "/api/crear-edificio",
+            Handler: CrearEdificioHandler,
+            Protected: true,
+            RequiredScopes: rootOnly(),
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",

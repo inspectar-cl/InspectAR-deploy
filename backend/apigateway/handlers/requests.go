@@ -21,6 +21,7 @@ var (
     parserURL           string
     documentacionURL    string
     oauth2URL           string
+    mlURL               string
 	httpClient          *http.Client
 )
 
@@ -29,6 +30,7 @@ func init() {
     parserURL = os.Getenv("PARSER_URL")
     documentacionURL = os.Getenv("DOCUMENTATION_URL")
     oauth2URL = os.Getenv("OAUTH2_URL")
+    mlURL = os.Getenv("ML_URL")
     httpClient = &http.Client{
         Timeout: 15 * time.Second,
     }
@@ -2709,6 +2711,7 @@ func CrearSensorHandler(c *gin.Context) {
 }
 
 func EditarSensorHandler(c *gin.Context) {
+    // SIN FINALIZAR ☢️
     id := c.Param("id_sensor")
     if id == "" {
         c.JSON(http.StatusBadRequest, gin.H{"error": "ID del sensor es requerido"})
@@ -2732,4 +2735,58 @@ func EditarSensorHandler(c *gin.Context) {
 
     
 
+}
+
+func ObtenerAnomaliaActivoHandler(c *gin.Context) {
+    idActivo := c.Param("id_activo")
+    if idActivo == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID del activo es requerido"})
+        return
+    }
+    fmt.Printf("Obteniendo anomalías para activo ID: %s\n", idActivo)
+
+    // Paso 1: POST a /detect/{id_activo} para iniciar detección
+    detectURL := fmt.Sprintf("%s/detect/%s", mlURL, idActivo)
+    postReq, err := http.NewRequest("POST", detectURL, nil)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creando solicitud de detección"})
+        return
+    }
+
+    postResp, err := httpClient.Do(postReq)
+    if err != nil {
+        c.JSON(http.StatusBadGateway, gin.H{"error": "Error llamando al servicio de ML para detección"})
+        return
+    }
+    defer postResp.Body.Close()
+
+    if postResp.StatusCode != http.StatusOK {
+        c.JSON(postResp.StatusCode, gin.H{"error": "El servicio de ML no pudo detectar anomalías"})
+        return
+    }
+
+    // Paso 2: GET a /anomalies/activo/{id_activo} para obtener resultados
+    anomaliesURL := fmt.Sprintf("%s/anomalies/activo/%s", mlURL, idActivo)
+    getReq, err := http.NewRequest("GET", anomaliesURL, nil)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creando solicitud de anomalías"})
+        return
+    }
+
+    getResp, err := httpClient.Do(getReq)
+    if err != nil {
+        c.JSON(http.StatusBadGateway, gin.H{"error": "Error llamando al servicio de ML para obtener anomalías"})
+        return
+    }
+    defer getResp.Body.Close()
+
+    // Leer la respuesta del GET
+    body, err := io.ReadAll(getResp.Body)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error leyendo respuesta del servicio de ML"})
+        return
+    }
+
+    // Retornar la respuesta del GET al cliente
+    c.Data(getResp.StatusCode, getResp.Header.Get("Content-Type"), body)
 }

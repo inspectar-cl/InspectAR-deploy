@@ -351,6 +351,13 @@ func getSpecialHandlers() []SpecialHandler {
             Protected: true,
             RequiredScopes: rootOnly(),
         },
+        { 
+            Method:  "GET",
+            Pattern: "/api/anomalia-activo/:id_activo",
+            Handler: ObtenerAnomaliaActivoHandler,
+            Protected: true,
+            RequiredScopes: rootOnly(),
+        },
         // Aquí se agregan más handlers de manera fácil
         // {
         //     Method:  "POST",

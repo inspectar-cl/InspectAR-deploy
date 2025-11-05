@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS anomalias (
     descripcion TEXT,
     threshold FLOAT NOT NULL,
     is_anomaly BOOLEAN NOT NULL DEFAULT false,
-    most_influential_variable FLOAT,
+    most_influential_variable VARCHAR(100),
     contribution_magnitude FLOAT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

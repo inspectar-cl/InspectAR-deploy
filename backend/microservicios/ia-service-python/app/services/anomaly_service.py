@@ -38,7 +38,6 @@ sys.modules['tqdm'].tqdm = DummyTqdm
 sys.modules['tqdm.auto'] = type(sys)('tqdm.auto')
 sys.modules['tqdm.auto'].tqdm = DummyTqdm
 
-# ✅ Ahora importar shap
 import shap
 
 # ✅ Silenciar warnings
@@ -58,7 +57,6 @@ logger = logging.getLogger(__name__)
 # ========================================
 # ✅ FUNCIONES HELPER HTM (de ml_engine)
 # ========================================
-
 def severity_from_likelihood(likelihood: float) -> str:
     """Determina severidad basada en likelihood (0-100)"""
     if likelihood < 40:
@@ -79,7 +77,6 @@ def description_from_severity(sev: str) -> str:
     return d.get(sev, "Sin descripción disponible")
 
 # ========================================
-
 
 class AnomalyService:
     """Servicio de lógica de negocio para detección de anomalías"""
@@ -186,7 +183,8 @@ class AnomalyService:
         is_anomaly: bool
     ) -> Dict[str, Any]:
         """
-        Calcula la contribución de cada feature a la predicción usando SHAP
+        Calcula la variable con mayor contribución (mayor SHAP value absoluto) 
+        para un registro anómalo usando SHAP
         
         Args:
             features: Array de features del registro [1, n_features]
@@ -205,60 +203,75 @@ class AnomalyService:
         try:
             # ✅ Crear explainer si no existe (cache)
             if self._shap_explainer is None:
-                # Usar TreeExplainer para modelos basados en árboles
-                # o LinearExplainer para regresión lineal
                 try:
-                    self._shap_explainer = shap.LinearExplainer(model_manager.model)
+                    # ✅ Usar LinearExplainer para modelos lineales
+                    self._shap_explainer = shap.LinearExplainer(
+                        model_manager.model,
+                        model_manager.scaler_X.transform(model_manager.X_train) 
+                        if hasattr(model_manager, 'X_train') and hasattr(model_manager.scaler_X, 'mean_') 
+                        else features
+                    )
+                    logger.info("✅ SHAP LinearExplainer inicializado")
                 except:
-                    # Fallback a KernelExplainer si TreeExplainer no funciona
-                    # Usar muestra de datos de entrenamiento como background
+                    # ✅ Fallback: KernelExplainer (más lento pero universal)
+                    background = shap.sample(features, min(100, len(features)))
                     self._shap_explainer = shap.KernelExplainer(
                         model_manager.model.predict,
-                        shap.sample(features, 100) if len(features) > 100 else features
+                        background
                     )
-            
-            # ✅ Escalar features si es necesario
+                    logger.info("✅ SHAP KernelExplainer inicializado (fallback)")
+        
+            # ✅ PASO 1: Asegurar que features sea 2D [1, n_features]
+            if features.ndim == 1:
+                features = features.reshape(1, -1)
+        
+            # ✅ PASO 2: Escalar features si el scaler está disponible
             if hasattr(model_manager.scaler_X, 'mean_'):
                 features_scaled = model_manager.scaler_X.transform(features)
             else:
                 features_scaled = features
-            
-            # ✅ Calcular SHAP values
+        
+            # ✅ PASO 3: Calcular SHAP values para ESTE ÚNICO REGISTRO
             shap_values = self._shap_explainer.shap_values(features_scaled)
-            
-            # Si shap_values es una lista (clasificación multiclase), tomar primer elemento
+        
+            # ✅ PASO 4: Manejar diferentes formatos de salida de SHAP
+            # - Clasificación multiclase: shap_values es lista [[valores_clase1], [valores_clase2], ...]
+            # - Regresión/Clasificación binaria: shap_values es array [1, n_features] o [n_features]
             if isinstance(shap_values, list):
-                shap_values = shap_values[0]
-            
-            # ✅ Obtener magnitudes absolutas
-            abs_shap_values = np.abs(shap_values[0])
-            
-            # ✅ Encontrar índice de mayor contribución
-            max_idx = np.argmax(abs_shap_values)
+                # Tomar primera clase (o última según el problema)
+                shap_values_flat = np.array(shap_values[0])
+            else:
+                shap_values_flat = shap_values
+        
+            # ✅ PASO 5: Si es 2D [1, n_features], aplanar a [n_features]
+            if shap_values_flat.ndim == 2:
+                shap_values_flat = shap_values_flat.flatten()
+        
+            # ✅ PASO 6: Obtener magnitudes ABSOLUTAS (importancia sin considerar dirección)
+            abs_shap_values = np.abs(shap_values_flat)
+        
+            # ✅ PASO 7: Encontrar el índice con MAYOR contribución absoluta
+            max_idx = int(np.argmax(abs_shap_values))
             max_contribution = float(abs_shap_values[max_idx])
-            # ✅ VALIDACIÓN del índice
+        
+            # ✅ PASO 8: Validar índice y obtener nombre de variable
             if max_idx >= len(feature_names):
                 logger.error(
-                    f"❌ max_idx={max_idx} fuera de rango de feature_names "
-                    f"(len={len(feature_names)})"
+                    f"❌ Índice {max_idx} fuera de rango. "
+                    f"feature_names tiene {len(feature_names)} elementos, "
+                    f"shap_values tiene {len(abs_shap_values)} valores"
                 )
                 variable_name = f"Feature_{max_idx}_OutOfRange"
             else:
                 variable_name = feature_names[max_idx]
         
-            # ✅ Obtener nombre de la variable
-            if max_idx < len(feature_names):
-                variable_name = feature_names[max_idx]
-            else:
-                variable_name = f"Feature_{max_idx}"
-            
             return {
                 "most_influential_variable": variable_name,
                 "contribution_magnitude": round(max_contribution, 4)
             }
-            
+        
         except Exception as e:
-            logger.warning(f"⚠️  Error calculando feature contribution: {e}")
+            logger.warning(f"⚠️  Error calculando feature contribution: {e}", exc_info=True)
             return {
                 "most_influential_variable": None,
                 "contribution_magnitude": None
@@ -619,8 +632,7 @@ class AnomalyService:
                             if contribution['most_influential_variable']:
                                 enriched_desc = (
                                     f"{base_desc} "
-                                    f"Variable más influyente: {contribution['most_influential_variable']} "
-                                    f"(contribución: {contribution['contribution_magnitude']:.4f})."
+                                    f"Verificar: {contribution['most_influential_variable']}."
                                 )
                                 df_results.loc[idx, 'Description'] = enriched_desc
                             
@@ -702,6 +714,7 @@ class AnomalyService:
                         f"   • Likelihood promedio en anomalías: {likelihood_anomalies.mean():.2f}\n"
                         f"   • Threshold promedio en anomalías: {threshold_anomalies.mean():.2f}"
                     )
+
             else:
                 anomaly_count = 0
             
@@ -782,8 +795,8 @@ class AnomalyService:
                     is_anomaly_value = bool(is_anomaly_value)
                 
                 # ✅ Extraer nuevos campos de explicabilidad
-                # most_influential_variable = result.get("most_influential_variable")
-                # contribution_magnitude = result.get("contribution_magnitude")
+                most_influential_variable = result.get("most_influential_variable")
+                contribution_magnitude = result.get("contribution_magnitude")
                 
                 # Crear modelo de anomalía
                 anomaly = AnomalyCreate(
@@ -796,8 +809,8 @@ class AnomalyService:
                     descripcion=descripcion,
                     threshold=float(threshold),
                     is_anomaly=is_anomaly_value,
-                    # most_influential_variable=most_influential_variable,      # ✅ Nuevo
-                    # contribution_magnitude=float(contribution_magnitude) if contribution_magnitude else None  # ✅ Nuevo
+                    most_influential_variable=most_influential_variable,      # ✅ Nuevo
+                    contribution_magnitude=float(contribution_magnitude) if contribution_magnitude else None  # ✅ Nuevo
                 )
                 
                 anomalies_to_create.append(anomaly)
@@ -831,23 +844,6 @@ class AnomalyService:
                 f"🚨 {anomaly_count} anomalías detectadas"
             )
             
-            # ✅ Log de muestra de datos guardados (primeros 3)
-            if saved_count > 0 and len(anomalies_to_create) > 0:
-                sample_size = min(3, len(anomalies_to_create))
-                logger.info(f"📝 Muestra de {sample_size} registros guardados:")
-                for i, anomaly in enumerate(anomalies_to_create[:sample_size]):
-                    logger.info(
-                        f"  [{i+1}] {anomaly.timestamp.isoformat()} - "
-                        f"is_anomaly={anomaly.is_anomaly}, "
-                        f"Score={anomaly.anomaly_score:.2f}, "
-                        f"Likelihood={anomaly.anomaly_likelihood:.2f}, "
-                        f"Threshold={anomaly.threshold:.2f}, "
-                        f"Severidad={anomaly.severidad}, "
-                        f"Descripcion={anomaly.descripcion}, "
-                        # f"Most Infl. Var={anomaly.most_influential_variable}, "
-                        # f"Contrib. Mag={anomaly.contribution_magnitude}"
-                    )
-            
             # ✅ Log de anomalías detectadas
             if anomaly_count > 0:
                 logger.warning(f"🚨 ANOMALÍAS DETECTADAS: {anomaly_count} de {saved_count} registros")
@@ -856,7 +852,10 @@ class AnomalyService:
                     logger.warning(
                         f"  🚨 Anomalía {i+1}: {anom.timestamp.isoformat()} - "
                         f"Likelihood={anom.anomaly_likelihood:.2f} > Threshold={anom.threshold:.2f}, "
-                        f"Severidad={anom.severidad}"
+                        f"Severidad={anom.severidad}, "
+                        f"Descripción={anom.descripcion}, "
+                        f"Most Infl. Var={anom.most_influential_variable}, "
+                        f"Contrib. Mag={anom.contribution_magnitude}"
                     )
             
             return {

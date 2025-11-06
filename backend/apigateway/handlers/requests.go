@@ -3186,3 +3186,7 @@ func ObtenerInfoQRHandler(c *gin.Context) {
 	// Retornar la información completa con el estado
 	c.JSON(http.StatusOK, activoInfo)
 }
+
+func CrearTicketHandler(c *gin.Context) {
+    authHeader := c.GetHeader("Authorization")
+}

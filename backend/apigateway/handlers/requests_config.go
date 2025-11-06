@@ -53,14 +53,14 @@ func getProxyRoutes() []proxy.ProxyRoute {
         //     RequiredScopes:     nil,
         //     RequiredValidation: "",
         // },
-        {
-            PathPrefix:         "/api/notificacion",
-            TargetEnvVar:       "NOTIFICATION_URL",
-            PrependPath:        "",
-            Protected:          false,
-            RequiredScopes:     nil,
-            RequiredValidation: "",
-        },
+        // {
+        //     PathPrefix:         "/api/notificacion",
+        //     TargetEnvVar:       "NOTIFICATION_URL",
+        //     PrependPath:        "",
+        //     Protected:          false,
+        //     RequiredScopes:     nil,
+        //     RequiredValidation: "",
+        // },
         {
             PathPrefix:         "/api/parser",
             TargetEnvVar:       "PARSER_URL",
@@ -136,6 +136,15 @@ func getProtectedProxyRoutes() []struct {
             Method:             "GET",
             Pattern:            "/api/gestion/edificios",
             TargetEnvVar:       "GESTION_URL",
+            PrependPath:        "",
+            RequiredScopes:     rootOnly(),
+            RequiredValidation: "",
+        },
+        // Rutas Notificaciones protegidas Sprint 3
+        {
+            Method:             "GET",
+            Pattern:            "/api/notification/tickets",
+            TargetEnvVar:       "NOTIFICATION_URL",
             PrependPath:        "",
             RequiredScopes:     rootOnly(),
             RequiredValidation: "",
@@ -385,6 +394,13 @@ func getSpecialHandlers() []SpecialHandler {
             Handler: ObtenerInfoQRHandler,
             Protected: false,
             RequiredScopes: nil, // Acceso abierto
+        },
+        { 
+            Method:  "POST",
+            Pattern: "/api/crear-ticket",
+            Handler: CrearTicketHandler,
+            Protected: true,
+            RequiredScopes: userTypes("Administrador", "Admin"), // Acceso abierto
         },
         // Aquí se agregan más handlers de manera fácil
         // {

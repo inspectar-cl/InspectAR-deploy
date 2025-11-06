@@ -37,10 +37,6 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
   const { startTour } = useDriverTour(tourKey);
 
   useEffect(() => {
-<<<<<<< HEAD
-    
-=======
->>>>>>> origin/feature-front
     if (isUserLoading || !user) {
       return;
     }
@@ -72,19 +68,11 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
 
         // Ajusta la ruta según tu API
         const url = `/anomalia-activo/${activoId}`;
-<<<<<<< HEAD
-        
-=======
->>>>>>> origin/feature-front
         const response = await gs.authorizedGet(
           url, 
           user.token
         ) as AnomaliasPaginadas;
 
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/feature-front
         const prediccionesTransformadas: Prediccion[] = (response.data ?? []).map((p) => ({
           id: p.id ?? 0,
           activoId: p.activo_id ?? activoId,

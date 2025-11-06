@@ -24,6 +24,9 @@ import {
 } from '@mui/material';
 import { paths } from '@/paths';
 import { useUserToken } from '@/hooks/use-usertoken';
+import Services from '@/modules/Services';
+
+const services = new Services();
 
 // Importa tus formularios
 import { EdificioDataForm } from '@/components/dashboard/agregar-datos/edificio-datos-form';
@@ -148,35 +151,22 @@ export default function PaginaAgregarDatos() {
 
       switch (data.tipoSolicitud) {
         case 'Activo':
-          endpoint = '/api/crear-activo';
+          endpoint = '/crear-activo';
           payload = transformarDatosActivo(data.datosEspecificos as ActivoData);
           break;
         case 'Edificio':
-          endpoint = '/api/crear-edificio'; 
+          endpoint = '/crear-edificio'; 
           payload = transformarDatosEdificio(data.datosEspecificos as EdificioData);
           break;
         case 'Técnico':
-          endpoint = '/api/crear-tecnico';
+          endpoint = '/crear-tecnico';
           payload = data.datosEspecificos as TecnicoData; // Asume transformación si es necesaria
           break;
         default:
           throw new Error('Tipo de formulario no reconocido');
       }
 
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.error || `Error del servidor: ${response.status}`);
-      }
+      await services.authorizedPost(endpoint, payload, user.token);
 
       // alert(`${data.tipoSolicitud} creado con éxito.`);
       methods.reset();

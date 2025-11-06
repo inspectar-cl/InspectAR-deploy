@@ -115,6 +115,98 @@ type TechnicianContactRequest struct {
 	Priority        string `json:"priority"`                                  // Prioridad: low, medium, high, urgent
 }
 
+// Ticket representa una solicitud de ingreso, modificación o eliminación
+type Ticket struct {
+	ID            uint   `gorm:"primaryKey" json:"id"`
+	TipoEntidad   string `gorm:"size:50;not null" json:"tipo_entidad"`               // edificio, activo, tecnico
+	TipoOperacion string `gorm:"size:50;not null" json:"tipo_operacion"`             // ingreso, modificacion, eliminacion
+	Estado        string `gorm:"size:50;not null;default:no_resuelto" json:"estado"` // resuelto, no_resuelto
+
+	// Usuario solicitante
+	UsuarioID    *uint  `gorm:"index" json:"usuario_id"`
+	UsuarioEmail string `gorm:"size:255;not null" json:"usuario_email"`
+
+	// Datos para EDIFICIO
+	EdificioID        *uint    `gorm:"index" json:"edificio_id,omitempty"`
+	EdificioNombre    string   `gorm:"size:255" json:"edificio_nombre,omitempty"`
+	EdificioDireccion string   `gorm:"size:255" json:"edificio_direccion,omitempty"`
+	EdificioLatitud   *float64 `json:"edificio_latitud,omitempty"`
+	EdificioLongitud  *float64 `json:"edificio_longitud,omitempty"`
+
+	// Datos para ACTIVO
+	ActivoID          *uint  `gorm:"index" json:"activo_id,omitempty"`
+	ActivoNombre      string `gorm:"size:255" json:"activo_nombre,omitempty"`
+	ActivoTipo        string `gorm:"size:100" json:"activo_tipo,omitempty"`
+	ActivoDescripcion string `gorm:"type:text" json:"activo_descripcion,omitempty"`
+	ActivoUbicacion   string `gorm:"size:255" json:"activo_ubicacion,omitempty"`
+	ActivoEdificioID  *uint  `json:"activo_edificio_id,omitempty"`
+
+	// Datos para TECNICO
+	TecnicoID           *int   `gorm:"index" json:"tecnico_id,omitempty"`
+	TecnicoNombre       string `gorm:"size:255" json:"tecnico_nombre,omitempty"`
+	TecnicoEmail        string `gorm:"size:255" json:"tecnico_email,omitempty"`
+	TecnicoTelefono     string `gorm:"size:20" json:"tecnico_telefono,omitempty"`
+	TecnicoEspecialidad string `gorm:"size:100" json:"tecnico_especialidad,omitempty"`
+	TecnicoAutorizado   *bool  `json:"tecnico_autorizado,omitempty"`
+
+	// Información adicional
+	Justificacion   string `gorm:"type:text" json:"justificacion,omitempty"`
+	ComentarioAdmin string `gorm:"type:text" json:"comentario_admin,omitempty"`
+
+	// Metadata
+	CreatedAt        time.Time  `json:"created_at"`
+	FechaResolucion  *time.Time `json:"fecha_resolucion,omitempty"`
+	ResueltoPor      *uint      `json:"resuelto_por,omitempty"`
+	ResueltoPorEmail string     `gorm:"size:255" json:"resuelto_por_email,omitempty"`
+}
+
+// CreateTicketRequest representa la estructura para crear un ticket
+type CreateTicketRequest struct {
+	TipoEntidad   string `json:"tipo_entidad" binding:"required,oneof=edificio activo tecnico"`
+	TipoOperacion string `json:"tipo_operacion" binding:"required,oneof=ingreso modificacion eliminacion"`
+	UsuarioEmail  string `json:"usuario_email" binding:"required,email"`
+
+	// Campos opcionales para edificio
+	EdificioID        *uint    `json:"edificio_id,omitempty"`
+	EdificioNombre    string   `json:"edificio_nombre,omitempty"`
+	EdificioDireccion string   `json:"edificio_direccion,omitempty"`
+	EdificioLatitud   *float64 `json:"edificio_latitud,omitempty"`
+	EdificioLongitud  *float64 `json:"edificio_longitud,omitempty"`
+
+	// Campos opcionales para activo
+	ActivoID          *uint  `json:"activo_id,omitempty"`
+	ActivoNombre      string `json:"activo_nombre,omitempty"`
+	ActivoTipo        string `json:"activo_tipo,omitempty"`
+	ActivoDescripcion string `json:"activo_descripcion,omitempty"`
+	ActivoUbicacion   string `json:"activo_ubicacion,omitempty"`
+	ActivoEdificioID  *uint  `json:"activo_edificio_id,omitempty"`
+
+	// Campos opcionales para técnico
+	TecnicoID           *int   `json:"tecnico_id,omitempty"`
+	TecnicoNombre       string `json:"tecnico_nombre,omitempty"`
+	TecnicoEmail        string `json:"tecnico_email,omitempty"`
+	TecnicoTelefono     string `json:"tecnico_telefono,omitempty"`
+	TecnicoEspecialidad string `json:"tecnico_especialidad,omitempty"`
+	TecnicoAutorizado   *bool  `json:"tecnico_autorizado,omitempty"`
+
+	Justificacion string `json:"justificacion,omitempty"`
+}
+
+// ResolveTicketRequest representa la estructura para resolver un ticket
+type ResolveTicketRequest struct {
+	ResueltoPorEmail string `json:"resuelto_por_email" binding:"required,email"`
+	ComentarioAdmin  string `json:"comentario_admin" binding:"required"`
+}
+
+// TicketsPaginationResponse representa la respuesta paginada de tickets
+type TicketsPaginationResponse struct {
+	Tickets        []Ticket `json:"tickets"`
+	TotalTickets   int64    `json:"total_tickets"`
+	TotalPaginas   int      `json:"total_paginas"`
+	PaginaActual   int      `json:"pagina_actual"`
+	ItemsPorPagina int      `json:"items_por_pagina"`
+}
+
 // TableName especifica el nombre de la tabla para GORM
 func (TipoNotificacion) TableName() string {
 	return "tipos_notificacion"
@@ -134,4 +226,8 @@ func (Activo) TableName() string {
 
 func (Notificacion) TableName() string {
 	return "notificaciones"
+}
+
+func (Ticket) TableName() string {
+	return "tickets"
 }

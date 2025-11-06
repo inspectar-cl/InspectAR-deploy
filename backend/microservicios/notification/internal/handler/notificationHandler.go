@@ -210,10 +210,88 @@ func (h *NotificationHandler) SendTechnicianContact(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":           "Solicitud de contacto técnico enviada exitosamente",
-		"technician_email":  request.TechnicianEmail,
-		"user_email":        request.UserEmail,
-		"activo_id":         request.ActivoID,
-		"priority":          request.Priority,
+		"message":          "Solicitud de contacto técnico enviada exitosamente",
+		"technician_email": request.TechnicianEmail,
+		"user_email":       request.UserEmail,
+		"activo_id":        request.ActivoID,
+		"priority":         request.Priority,
+	})
+}
+
+// POST /tickets - Crear nuevo ticket
+func (h *NotificationHandler) CreateTicket(c *gin.Context) {
+	var request models.CreateTicketRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Datos inválidos",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	ticket, err := h.notificationService.CreateTicket(request)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Error al crear ticket: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "Ticket creado exitosamente. Se ha enviado notificación a los administradores.",
+		"ticket":  ticket,
+	})
+}
+
+// GET /tickets?pagina=1 - Obtener tickets con paginación
+func (h *NotificationHandler) GetTickets(c *gin.Context) {
+	paginaStr := c.DefaultQuery("pagina", "1")
+	pagina, err := strconv.Atoi(paginaStr)
+	if err != nil || pagina < 1 {
+		pagina = 1
+	}
+
+	response, err := h.notificationService.GetTicketsPaginated(pagina)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Error al obtener tickets: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// PUT /tickets/:id/resolver - Resolver un ticket
+func (h *NotificationHandler) ResolveTicket(c *gin.Context) {
+	ticketIDStr := c.Param("id")
+	ticketID, err := strconv.ParseUint(ticketIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "ID de ticket inválido",
+		})
+		return
+	}
+
+	var request models.ResolveTicketRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Datos inválidos",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	ticket, err := h.notificationService.ResolveTicket(uint(ticketID), request)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Error al resolver ticket: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Ticket resuelto exitosamente",
+		"ticket":  ticket,
 	})
 }

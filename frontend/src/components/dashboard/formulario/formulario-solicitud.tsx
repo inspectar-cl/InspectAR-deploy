@@ -1,25 +1,82 @@
+'use client';
+
 import * as React from 'react';
 import { 
-    Stack, Button, FormControl, InputLabel, Select, MenuItem, TextField, Typography, Alert, Paper , Divider, CircularProgress
+    Grid, Stack, Button, FormControl, InputLabel, Select, MenuItem, TextField, Typography, Alert, Paper , Divider, CircularProgress
 } from '@mui/material';
 import { useForm, FormProvider } from 'react-hook-form';
 import { EdificioForm } from './edificio-form';
 import { ActivoForm } from './activo-form';
 import { TecnicoForm } from './tecnico-form';
-//import { SensorForm } from './sensor-form';
 
-import type { EdificioData, SolicitudFormData } from '@/types/formulario';
-
+import type { EdificioData, ActivoData, TecnicoData, SolicitudFormData } from '@/types/formulario'; // Importa todos los tipos
 import { useUserToken } from '@/hooks/use-usertoken';
+import {decodeJwtToken} from '@/hooks/use-auth'
 
 type TipoSolicitud = 'Edificio' | 'Activo' | 'Técnico';
+type TipoOperacion = 'Ingreso' | 'Modificacion' | 'Eliminacion'; // Tipos de operación
 
 const TIPOS_SOLICITUD: TipoSolicitud[] = ['Edificio', 'Activo', 'Técnico'];
+const TIPOS_OPERACION: TipoOperacion[] = ['Ingreso', 'Modificacion', 'Eliminacion'];
+
+function transformarDatosParaApi(data: SolicitudFormData, userEmail: string): any {
+  const { tipoSolicitud, asunto, detalles, datosEspecificos, tipoOperacion } = data;
+  
+  // Mapeo de 'Edificio' -> 'edificio'
+  const tipo_entidad = tipoSolicitud.toLowerCase();
+  
+  // Mapeo de 'Ingreso' -> 'ingreso'
+  const tipo_operacion = tipoOperacion.toLowerCase();
+
+  // Campos comunes
+  const payload: any = {
+    tipo_entidad,
+    tipo_operacion,
+    usuario_email: userEmail,
+    justificacion: detalles || asunto, // Usamos 'detalles' o 'asunto' como justificación
+  };
+
+  // Añadir campos específicos
+  switch (tipoSolicitud) {
+    case 'Edificio':
+      const edificio = datosEspecificos as EdificioData;
+      payload.edificio_nombre = edificio.nombre;
+      payload.edificio_direccion = edificio.direccion;
+      payload.edificio_latitud = edificio.latitud;
+      payload.edificio_longitud = edificio.longitud;
+      // 'edificio_id' solo se añadiría si la operación es 'modificacion' o 'eliminacion'
+      // Por ahora, asumimos que este formulario es solo para 'ingreso'
+      break;
+      
+    case 'Activo':
+      const activo = datosEspecificos as ActivoData;
+      payload.activo_nombre = activo.nombre; // <-- Añadido
+      payload.activo_tipo = activo.tipoActivo.toLowerCase().replace('deagua', ' de agua'); // 'BombaDeAgua' -> 'bomba de agua'
+      payload.activo_descripcion = activo.descripcion;
+      payload.activo_ubicacion = activo.ubicacion;
+      payload.activo_edificio_id = activo.edificioId;
+      break;
+
+    case 'Técnico':
+      const tecnico = datosEspecificos as TecnicoData;
+      payload.tecnico_nombre = tecnico.nombre;
+      payload.tecnico_email = tecnico.correo;
+      payload.tecnico_telefono = tecnico.telefono;
+      payload.tecnico_especialidad = tecnico.especialidad;
+      payload.tecnico_autorizado = true; // Valor fijo, según tu ejemplo de API
+      // 'activosAsociados' no parece ser parte del payload de solicitud
+      break;
+  }
+  
+  return payload;
+}
 
 export function FormularioSolicitud(): React.JSX.Element {
+
     const methods = useForm<SolicitudFormData>({
         defaultValues: {
             tipoSolicitud: 'Edificio',
+            tipoOperacion: 'Ingreso',
             asunto: '',
             detalles: '',
             datosEspecificos: {} as EdificioData
@@ -30,20 +87,22 @@ export function FormularioSolicitud(): React.JSX.Element {
 
     const tipoActual = watch("tipoSolicitud"); // Observar el campo de tipo de solicitud
     const { user} = useUserToken();
+    const [apiError, setApiError] = React.useState<string | null>(null);
 
     const onSubmit = async (data: SolicitudFormData): Promise<void> => {
-        const URL_ENDPOINT = '/api/solicitudes/crear'; // URL del backend
+        const decodedpayload = decodeJwtToken(user?.token);
+        const URL_ENDPOINT = '/api/crear-ticket'; // URL del backend
         const token = user?.token;
+        const email = decodedpayload?.email ?? '';
 
         if (!token) {
             //console.error("Token no disponible.");
+            setApiError('Token o email de usuario no disponible. Por favor, inicie sesión.');
             return;
         }
 
         try {
-            const payload = {
-                ...data,
-            };
+            const payload = transformarDatosParaApi(data, email);
 
             const response = await fetch(URL_ENDPOINT, {
                 method: 'POST',
@@ -64,6 +123,7 @@ export function FormularioSolicitud(): React.JSX.Element {
         } catch (error) {
             //console.error("Fallo al enviar el formulario:", error);
             //alert("Fallo al enviar el formulario. Vea la consola para más detalles.");
+            setApiError(error instanceof Error ? error.message : 'Fallo al enviar el formulario.');
         }
     };
 
@@ -92,20 +152,40 @@ export function FormularioSolicitud(): React.JSX.Element {
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <Stack spacing={3}>
                         
-                        <FormControl fullWidth required error={Boolean(errors.tipoSolicitud)}>
-                            <InputLabel id="tipo-solicitud-label">Tipo de Solicitud</InputLabel>
-                            <Select
-                                labelId="tipo-solicitud-label"
-                                label="Tipo de Solicitud"
-                                defaultValue="Edificio"
-                                {...register("tipoSolicitud", { required: "Debe seleccionar un tipo" })}
-                            >
-                                {TIPOS_SOLICITUD.map(tipo => (
-                                    <MenuItem key={tipo} value={tipo}>{tipo}</MenuItem>
-                                ))}
-                            </Select>
-                            {errors.tipoSolicitud && <Typography color="error" variant="caption">{errors.tipoSolicitud.message}</Typography>}
-                        </FormControl>
+                        <Grid container spacing={3}> {/* 4. Usa Grid para layout de 2 columnas */}
+                            <Grid size={{xs:12, sm: 6}}>
+                                <FormControl fullWidth required error={Boolean(errors.tipoSolicitud)}>
+                                    <InputLabel id="tipo-solicitud-label">Tipo de Entidad</InputLabel>
+                                    <Select
+                                        labelId="tipo-solicitud-label"
+                                        label="Tipo de Entidad"
+                                        defaultValue="Edificio"
+                                        {...register("tipoSolicitud", { required: "Debe seleccionar un tipo" })}
+                                    >
+                                        {TIPOS_SOLICITUD.map(tipo => (
+                                            <MenuItem key={tipo} value={tipo}>{tipo}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            
+                            <Grid size={{xs:12, sm: 6}}>
+                                {/* --- 5. NUEVO CAMPO 'TIPO OPERACIÓN' --- */}
+                                <FormControl fullWidth required error={Boolean(errors.tipoOperacion)}>
+                                    <InputLabel id="tipo-operacion-label">Tipo de Operación</InputLabel>
+                                    <Select
+                                        labelId="tipo-operacion-label"
+                                        label="Tipo de Operación"
+                                        defaultValue="Ingreso"
+                                        {...register("tipoOperacion", { required: "Debe seleccionar una operación" })}
+                                    >
+                                        {TIPOS_OPERACION.map(tipo => (
+                                            <MenuItem key={tipo} value={tipo}>{tipo}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                        </Grid>
 
                         <TextField
                             label="Asunto / Título"
@@ -117,11 +197,12 @@ export function FormularioSolicitud(): React.JSX.Element {
                         />
 
                         <TextField
-                            label="Detalles de la Solicitud"
+                            label="Justificación / Detalles"
                             fullWidth
                             multiline
                             rows={3}
                             {...register("detalles")}
+                            helperText="Esta información se usará como la 'justificación' de la solicitud."
                         />
                         
                         <Divider sx={{ my: 2 }} />
@@ -130,17 +211,23 @@ export function FormularioSolicitud(): React.JSX.Element {
                             Datos Específicos ({tipoActual})
                         </Typography>
 
+                        {/* Muestra errores de API aquí */}
+                        {apiError && (
+                          <Alert severity="error" sx={{ mb: 3 }}>
+                            {apiError}
+                          </Alert>
+                        )}
+
                         {renderFormularioEspecifico()}
 
                         <Button 
                             type="submit" 
                             variant="contained" 
-                            color="primary" 
                             fullWidth
                             disabled={isSubmitting}
                             sx={{ mt: 3 }}
                         >
-                            {isSubmitting ? <CircularProgress  /> : 'Enviar Solicitud'}
+                            {isSubmitting ? <CircularProgress size={24} color="inherit" /> : 'Enviar Solicitud'}
                         </Button>
                     </Stack>
                 </form>

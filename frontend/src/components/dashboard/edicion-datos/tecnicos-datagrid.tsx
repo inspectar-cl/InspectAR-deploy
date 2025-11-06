@@ -5,7 +5,8 @@ import {
   DataGrid,
   GridColDef,
   GridActionsCellItem,
-  GridRowId
+  GridRowId,
+  GridRenderCellParams,
 } from '@mui/x-data-grid';
 import {
   Box,
@@ -22,7 +23,6 @@ import {
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { paths } from '@/paths';
 import type { SolicitudFormData, TecnicoData, EspecialidadTecnico } from '@/types/edicion-data';
 import { useForm, FormProvider } from 'react-hook-form';
 import { useUserToken } from '@/hooks/use-usertoken';
@@ -32,38 +32,42 @@ import { TecnicoEditForm } from './tecnico-edit-form';
 interface TecnicoAPI {
   id: number;
   nombre: string;
-  correo: string;
+  apellido: string;
+  email: string;
   telefono: string;
-  especialidad: EspecialidadTecnico;
-  activosAsociados: number[]; // Array de IDs
+  especialidad: string;
+  autorizado: boolean;
+  empresa_id: number;
+  creado_en: string;
+  // 'activosAsociados' no viene en la respuesta de la API, se omite
 }
 
-const getEstadoChipColor = (
-  estado: 'Medio' | 'OK' | 'Crítico' | string
-) => {
-  if (estado === 'Crítico') return 'error';
-  if (estado === 'Medio') return 'warning';
-  if (estado === 'OK') return 'success';
-  return 'default';
-};
-
 function transformarApiAForm(tecnico: TecnicoAPI): SolicitudFormData {
+  const nombreCompleto = `${tecnico.nombre} ${tecnico.apellido}`;
+  
+  let especialidadForm: EspecialidadTecnico;
+  if (tecnico.especialidad === "Electricidad Industrial") {
+    especialidadForm = "Eléctrico";
+  } else if (tecnico.especialidad === "Sistemas HVAC") {
+    especialidadForm = "Climatización";
+  } else {
+    especialidadForm = "Mecánico"; // Ejemplo de fallback
+  }
+
   return {
-    tipoSolicitud: 'Técnico', // Relleno
+    tipoSolicitud: 'Técnico',
     asunto: '',
     detalles: '',
-    // Solo mapea los campos editables
     datosEspecificos: {
-      nombre: tecnico.nombre,
-      correo: tecnico.correo,
+      nombre: nombreCompleto,
+      correo: tecnico.email,
       telefono: tecnico.telefono,
-      especialidad: tecnico.especialidad,
+      especialidad: especialidadForm, 
     },
   } as unknown as SolicitudFormData;
 }
 
 export function TecnicosDataGrid() {
-  const router = useRouter();
   const { user } = useUserToken();
   const [rows, setRows] = React.useState<TecnicoAPI[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -82,11 +86,17 @@ export function TecnicosDataGrid() {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch('/api/gestion/tecnicos', {
+        const response = await fetch('/api/gestion/tecnicos', { // Ruta de tu API
           headers: { Authorization: `Bearer ${user.token}` },
         });
         if (!response.ok) throw new Error('Error al cargar los técnicos');
+        
         const data = await response.json();
+        
+        if (!Array.isArray(data)) {
+           throw new Error("El formato de respuesta de la API es incorrecto, se esperaba un array.");
+        }
+        
         setRows(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error desconocido');
@@ -101,7 +111,9 @@ export function TecnicosDataGrid() {
     const idNum = Number(id);
     const itemToEdit = rows.find((row) => row.id === idNum);
     if (!itemToEdit) return;
+
     const datosFormulario = transformarApiAForm(itemToEdit);
+
     setEditingId(idNum);
     modalFormMethods.reset(datosFormulario);
     setIsModalOpen(true);
@@ -116,24 +128,20 @@ export function TecnicosDataGrid() {
   const onModalSubmit = async (data: SolicitudFormData) => {
     if (!editingId || !user?.token) return;
 
-    // Aseguramos a TS que 'datosEspecificos' tiene la forma de TecnicoData
     const datosDelFormulario = data.datosEspecificos as TecnicoData;
 
-    // Creamos el payload para la API (solo 4 campos)
+    // Asumo que tu API de edición espera este payload
     const payload = {
       nombre: datosDelFormulario.nombre,
-      correo: datosDelFormulario.correo,
+      email: datosDelFormulario.correo,
       telefono: datosDelFormulario.telefono,
-      // --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
-      // Hacemos el cast del 'string' genérico al tipo 'EspecialidadTecnico'
-      especialidad: datosDelFormulario.especialidad as EspecialidadTecnico,
+      especialidad: datosDelFormulario.especialidad,
     };
     
     console.log('Enviando actualización para ID:', editingId, payload);
     modalFormMethods.clearErrors();
 
     try {
-      // Asumo que la ruta es /api/editar-tecnico/{id}
       const response = await fetch(`/api/editar-tecnico/${editingId}`, {
         method: 'PUT',
         headers: {
@@ -154,7 +162,7 @@ export function TecnicosDataGrid() {
       setRows((prevRows) =>
         prevRows.map((row) =>
           row.id === editingId
-            ? { ...row, ...payload } // Ahora 'payload' tiene el tipo correcto
+            ? { ...row, ...payload, email: payload.email } // Asegúrate de actualizar los campos correctos
             : row
         )
       );
@@ -179,15 +187,12 @@ export function TecnicosDataGrid() {
     setError(null);
 
     try {
-      // !!! Asumo esta ruta de API !!!
       const response = await fetch(`/api/eliminar-tecnico/${selectedId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${user.token}`,
-        },
+        headers: { 'Authorization': `Bearer ${user.token}` },
       });
 
-       if (!response.ok) {
+      if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         throw new Error(errorData?.error || `Error del servidor: ${response.status}`);
       }
@@ -205,34 +210,16 @@ export function TecnicosDataGrid() {
 
   const columns: GridColDef<TecnicoAPI>[] = [
     { field: 'id', headerName: 'ID', width: 90 },
-    { field: 'nombre', headerName: 'Nombre', flex: 1, minWidth: 200 },
     {
       field: 'especialidad',
       headerName: 'Especialidad',
-      width: 150,
-      renderCell: (params) => (
+      width: 180,
+      renderCell: (params: GridRenderCellParams<TecnicoAPI>) => (
         <Chip label={params.value} color="info" size="small" />
       ),
     },
-    { field: 'correo', headerName: 'Correo', flex: 1, minWidth: 200 },
+    { field: 'email', headerName: 'Email', flex: 1, minWidth: 200 }, // Usa 'email'
     { field: 'telefono', headerName: 'Teléfono', flex: 1, minWidth: 150 },
-    {
-      field: 'activosAsociados',
-      headerName: 'Activos Asignados',
-      width: 150,
-      type: 'number',
-      align: 'left',
-      headerAlign: 'left',
-      
-      valueGetter: (params: { row: TecnicoAPI }) =>
-        params.row.activosAsociados.length,
-
-      renderCell: (params: { row: TecnicoAPI; value?: number }) => (
-        <Tooltip title={params.row.activosAsociados.join(', ')}>
-          <span>{params.value ?? 0} activos</span>
-        </Tooltip>
-      ),
-    },
     {
       field: 'actions',
       type: 'actions',
@@ -244,7 +231,7 @@ export function TecnicosDataGrid() {
           <GridActionsCellItem
             icon={<EditIcon />}
             label="Editar"
-            onClick={() => {handleEdit(id)}}
+            onClick={() => handleEdit(id)}
             color="primary"
           />
         </Tooltip>,
@@ -252,7 +239,7 @@ export function TecnicosDataGrid() {
           <GridActionsCellItem
             icon={<DeleteIcon />}
             label="Eliminar"
-            onClick={() => {handleDelete(id)}}
+            onClick={() => handleDelete(id)}
             color="inherit"
           />
         </Tooltip>,
@@ -293,7 +280,6 @@ export function TecnicosDataGrid() {
                   {modalFormMethods.formState.errors.root.message}
                 </Alert>
               )}
-              {/* ¡Aquí usamos tu NUEVO formulario de edición simple! */}
               <TecnicoEditForm />
             </DialogContent>
             <DialogActions>

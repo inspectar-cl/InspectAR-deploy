@@ -72,7 +72,6 @@ export default function PrediccionClient() {
           setPredicciones(mockPredicciones);
           setError(null);
         } catch (err) {
-          console.error('Error al cargar datos simulados:', err);
           setError('Error al cargar datos simulados');
         } finally {
           setIsLoading(false);
@@ -108,7 +107,6 @@ export default function PrediccionClient() {
 
         setActivos(activosTransformados);
       } catch (err) {
-        console.error('Error al obtener activos:', err);
         setError('Error al cargar activos');
       }
     };
@@ -162,7 +160,6 @@ export default function PrediccionClient() {
         setPredicciones(prediccionesTransformadas);
         setError(null);
       } catch (err) {
-        console.error('Error al obtener predicciones:', err);
         setError('Error al cargar predicciones');
       } finally {
         setIsLoading(false);

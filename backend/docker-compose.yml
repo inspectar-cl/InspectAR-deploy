@@ -112,6 +112,7 @@ services:
     depends_on:
       - ia-db
       - iot-service
+      - data-sync-init
     volumes:
       - ia_service_models:/app/models  # Persistir modelos entrenados
       - ./microservicios/ia-service-python/config/config.docker.yaml:/app/config/config.yaml:ro  # Configuración

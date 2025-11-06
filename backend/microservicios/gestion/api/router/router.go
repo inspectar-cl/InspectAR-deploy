@@ -68,8 +68,8 @@ func SetupRouter(
 	})
 
 	r.GET("/tecnicos/:id", tecnicoHandler.ObtenerTecnico)
-	r.PUT("/tecnicos/:id", tecnicoHandler.ActualizarTecnico)                     // 🆕 Actualizar campos de técnico
-	r.DELETE("/tecnicos/:id", tecnicoHandler.EliminarTecnico)                    // 🆕 Eliminar técnico
+	r.PUT("/tecnicos/:id", tecnicoHandler.ActualizarTecnico)  // 🆕 Actualizar campos de técnico
+	r.DELETE("/tecnicos/:id", tecnicoHandler.EliminarTecnico) // 🆕 Eliminar técnico
 	r.PUT("/tecnicos/:id/autorizado", tecnicoHandler.ActualizarAutorizado)
 	r.POST("/activos/:activo_id/tecnicos", tecnicoHandler.AsignarTecnicoAActivo) // Asignar técnico a activo
 

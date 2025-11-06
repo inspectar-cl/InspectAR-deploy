@@ -22,18 +22,14 @@ const TIPOS_OPERACION: TipoOperacion[] = ['Ingreso', 'Modificacion', 'Eliminacio
 function transformarDatosParaApi(data: SolicitudFormData, userEmail: string): any {
   const { tipoSolicitud, asunto, detalles, datosEspecificos, tipoOperacion } = data;
   
-  // Mapeo de 'Edificio' -> 'edificio'
   const tipo_entidad = tipoSolicitud.toLowerCase();
-  
-  // Mapeo de 'Ingreso' -> 'ingreso'
   const tipo_operacion = tipoOperacion.toLowerCase();
 
-  // Campos comunes
   const payload: any = {
     tipo_entidad,
     tipo_operacion,
     usuario_email: userEmail,
-    justificacion: detalles || asunto, // Usamos 'detalles' o 'asunto' como justificación
+    justificacion: detalles || asunto,
   };
 
   // Añadir campos específicos

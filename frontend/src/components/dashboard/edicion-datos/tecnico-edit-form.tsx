@@ -12,7 +12,7 @@ import {
   FormHelperText,
 } from '@mui/material';
 import { useFormContext } from 'react-hook-form';
-import type { SolicitudFormData, TecnicoData, EspecialidadTecnico } from '@/types/formulario';
+import type { SolicitudFormData, EspecialidadTecnico } from '@/types/formulario';
 
 // Asegúrate de que estos tipos coincidan con tu formulario de creación
 const ESPECIALIDADES: EspecialidadTecnico[] = ['Climatización', 'Eléctrico', 'Mecánico'];
@@ -37,20 +37,6 @@ export function TecnicoEditForm(): React.JSX.Element {
 
   return (
     <Grid container spacing={2}>
-      
-      <Grid size={{ xs: 12 }}>
-        <TextField
-          label="Nombre del Técnico"
-          fullWidth
-          required
-          {...register('datosEspecificos.nombre' as const, {
-            required: 'El nombre es obligatorio',
-          })}
-          error={Boolean(formErrors?.nombre)}
-          helperText={formErrors?.nombre?.message ?? ''}
-          InputLabelProps={{ shrink: true }}
-        />
-      </Grid>
 
       <Grid size={{ xs: 12 }}>
         <FormControl fullWidth required error={Boolean(formErrors?.especialidad)}>

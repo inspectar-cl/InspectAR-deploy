@@ -102,31 +102,31 @@ func (h *TecnicoHandler) ObtenerTecnico(c *gin.Context) {
 
 // PUT /tecnicos/:id/autorizado - Actualizar estado autorizado de técnicos
 func (h *TecnicoHandler) ActualizarAutorizado(c *gin.Context) {
-    id, err := strconv.Atoi(c.Param("id"))
-    if err != nil || id <= 0 {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
-        return
-    }
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
 
-    var req models.UpdateAutorizadoTecnicoRequest
-    if err := c.ShouldBindJSON(&req); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos", "details": err.Error()})
-        return
-    }
+	var req models.UpdateAutorizadoTecnicoRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos", "details": err.Error()})
+		return
+	}
 
-    // Verificar que el puntero no sea nil
-    if req.Autorizado == nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'autorizado' es requerido"})
-        return
-    }
+	// Verificar que el puntero no sea nil
+	if req.Autorizado == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'autorizado' es requerido"})
+		return
+	}
 
-    // Desreferenciar el puntero
-    if err := h.service.ActualizarAutorizado(id, *req.Autorizado); err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo actualizar el estado autorizado"})
-        return
-    }
+	// Desreferenciar el puntero
+	if err := h.service.ActualizarAutorizado(id, *req.Autorizado); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo actualizar el estado autorizado"})
+		return
+	}
 
-    c.JSON(http.StatusOK, gin.H{"mensaje": "Estado autorizado actualizado correctamente"})
+	c.JSON(http.StatusOK, gin.H{"mensaje": "Estado autorizado actualizado correctamente"})
 }
 
 // POST /activos/:activo_id/tecnicos - Asignar técnico a activo (relación muchos a muchos)

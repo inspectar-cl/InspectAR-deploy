@@ -82,7 +82,7 @@ export function TecnicosDataGrid() {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch('/api/tecnicos/listar', {
+        const response = await fetch('/api/gestion/tecnicos', {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         if (!response.ok) throw new Error('Error al cargar los técnicos');

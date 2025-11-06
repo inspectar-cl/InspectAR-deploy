@@ -7,6 +7,7 @@ import { DetalleDatosEspecificos } from './detalles-datos';
 import { TIPO_TO_SLUG, transformarApiATipoFrontend } from '@/utils/solicitud-utils';
 import { useRouter } from 'next/navigation';
 import { useUserToken } from '@/hooks/use-usertoken';
+import { paths } from '@/paths'; // Importa tus paths
 
 // Helper para dar color a los chips (opcional)
 const getChipColor = (tipo: SolicitudAPI['tipoSolicitud']): ChipProps['color'] => {
@@ -25,33 +26,54 @@ interface SolicitudCardProps {
 }
 
 export function SolicitudCard({ solicitud, onTicketUpdated }: SolicitudCardProps): React.JSX.Element {
-  const { id, asunto, tipoSolicitud, detalles, datosEspecificos, fechaCreacion, estado } = solicitud;
+  const { id, asunto, tipoSolicitud, detalles, datosEspecificos, fechaCreacion, estado, tipoOperacion } = solicitud;
   const router = useRouter(); // Lo guardamos por si quieres añadir otro botón
   const { user } = useUserToken(); // Hook para obtener el token
   const [isResolving, setIsResolving] = React.useState(false);
 
   // --- 3. Lógica del botón "Resolver" (REEMPLAZADA) ---
-  const handleResolver = async (): Promise<void> => {
-    // Pedimos el comentario al usuario
-    const comentario = prompt(
-      'Por favor, ingresa un comentario de resolución:',
-      'Resuelto con éxito.'
-    );
+  const handleProcesar = (): void => {
+    const slug = TIPO_TO_SLUG[tipoSolicitud];
+    if (!slug) return;
 
-    // Si el usuario cancela el prompt, no hacemos nada
-    if (!comentario) {
-      return;
-    }
+    console.log(tipoOperacion)
 
-    if (!user?.token) {
-      alert('Error: Token de usuario no encontrado.');
-      return;
+    // --- Lógica Condicional ---
+    if (tipoOperacion === 'ingreso') {
+      // 1. Ir a "Agregar Datos" y pre-llenar el formulario
+      const targetPath = paths.dashboard.agregardatos;
+      
+      // Creamos un 'data' que SÍ coincide con SolicitudFormData
+      // (asunto, detalles, tipoSolicitud, datosEspecificos)
+      const dataParaFormulario = {
+        tipoSolicitud: solicitud.tipoSolicitud,
+        asunto: solicitud.asunto,
+        detalles: solicitud.detalles,
+        datosEspecificos: solicitud.datosEspecificos,
+      };
+      
+      const dataString = JSON.stringify(dataParaFormulario);
+      const encodedData = encodeURIComponent(dataString);
+      const fullUrl = `${targetPath}?tab=${solicitud.tipoSolicitud}&data=${encodedData}`;
+      router.push(fullUrl);
+      
+    } else {
+      const targetPath = paths.dashboard.gestion;
+      const tabValue = `${slug}s`; 
+      
+      const fullUrl = `${targetPath}?tab=${tabValue}`; 
+      router.push(fullUrl);
     }
+  };
+
+  const handleResolverApi = async (): Promise<void> => {
+    const comentario = prompt('Ingresa un comentario de resolución:', 'Resuelto con éxito.');
+    if (!comentario || !user?.token) return;
 
     setIsResolving(true);
     try {
       const response = await fetch(`/api/resolver-ticket/${id}`, {
-        method: 'PUT', // O 'POST'/'PATCH' según tu API
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${user.token}`,
@@ -65,13 +87,11 @@ export function SolicitudCard({ solicitud, onTicketUpdated }: SolicitudCardProps
       }
 
       const responseData: { message: string; ticket: ApiTicket } = await response.json();
-
-      // Transforma el ticket de la API al formato del frontend
       const updatedFrontendTicket = transformarApiATipoFrontend(responseData.ticket);
-
-      // Pasa el ticket actualizado al componente padre (ListaSolicitudes)
-      onTicketUpdated(updatedFrontendTicket);
       
+      // Llama a la función del padre para actualizar el estado
+      onTicketUpdated(updatedFrontendTicket);
+
     } catch (err) {
       console.error(err);
       alert(err instanceof Error ? err.message : 'Un error ocurrió.');
@@ -134,30 +154,25 @@ export function SolicitudCard({ solicitud, onTicketUpdated }: SolicitudCardProps
       </CardContent>
 
       <CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
-        
-        {/* Botón para NAVEGAR AL FORMULARIO (antes llamado "Resolver") */}
+        {/* Botón de NAVEGACIÓN */}
         <Button 
           variant="outlined" 
           color="secondary" 
-          onClick={handleNavigateToForm}
-          disabled={isResolved} // No puedes procesar algo resuelto
+          onClick={handleProcesar}
+          disabled={isResolved}
         >
           Procesar
         </Button>
-
-        {/* Botón para LLAMAR A LA API Y MARCAR COMO RESUELTO */}
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleResolver}
-          disabled={isResolving || isResolved} // Deshabilitado si está cargando o ya está resuelto
-          sx={{ minWidth: 120 }} // Evita que el botón cambie de tamaño
+        
+        {/* Botón de API */}
+        <Button 
+          variant="contained" 
+          color="primary" 
+          onClick={handleResolverApi}
+          disabled={isResolving || isResolved}
+          sx={{ minWidth: 120 }}
         >
-          {isResolving ? (
-            <CircularProgress size={24} color="inherit" />
-          ) : (
-            'Marcar Resuelto'
-          )}
+          {isResolving ? <CircularProgress size={24} color="inherit" /> : 'Resolver'}
         </Button>
       </CardActions>
 

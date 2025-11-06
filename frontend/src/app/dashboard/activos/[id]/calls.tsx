@@ -31,7 +31,7 @@ import {
 } from 'recharts';
 import dayjs from 'dayjs';
 
-import { type Activo } from '@/types/';
+import { type Activo, type Prediccion } from '@/types/';
 import { DownloadSimple } from '@phosphor-icons/react';
 import { useUserToken } from '@/hooks/use-usertoken';
 import ScoreChart from '@/components/dashboard/overview/score-chart';
@@ -46,6 +46,7 @@ import { useActivosWithSensors } from '@/hooks/use-activos-with-sensors';
 import Services from '@/modules/Services';
 import dataAlertas from '@/mocks/alerts.json';
 import type { SensorRow } from '@/hooks/use-activos-with-sensors';
+import { Cpu } from 'lucide-react';
 
 // Constantes globales
 const ESTADOS = ['OK', 'Medio', 'Crítico', 'NN'] as const;
@@ -65,6 +66,7 @@ export default function ActivoDetailClient({ id }: { id: number}) {
   const [activo, setActivo] = React.useState<Activo | null>(null)
   const [openChart, setOpenChart] = useState(false);
   const [selectedSensor, setSelectedSensor] = useState<SensorRow | null>(null);
+  const [alertas, setAlertas] = useState<Prediccion[]>([]);
 
   const filteredData = React.useMemo(() => {
     if (!selectedSensor?.history24h) return [];
@@ -106,6 +108,7 @@ export default function ActivoDetailClient({ id }: { id: number}) {
     //ta raro esto, a veces funciona con este codigo o a veces no
     //quitar el if y volver a colocarlo si no funca
     if (isLoading || !user) {return;}
+    
     const fetchData = async () => {
       try {
         interface ActivoResponse {
@@ -154,18 +157,77 @@ export default function ActivoDetailClient({ id }: { id: number}) {
       } 
     };
 
+    const fetchAlertas = async () => {
+      try {
+        console.log('🚀 Iniciando llamada a API de alertas para activo:', id);
+        
+        interface AnomaliasPaginadas {
+          activo_id?: number;
+          data?: Array<{
+            id?: number;
+            activo_id?: number;
+            timestamp?: string;
+            anomaly_score?: number;
+            anomaly_likelihood?: number;
+            severidad?: "Baja" | "Media" | "Alta";
+            descripcion?: string;
+            threshold?: number;
+            is_anomaly?: number | boolean;
+            most_influential_variable?: string;
+            contribution_magnitude?: number;
+          }>;
+          count?: number;
+          message?: string;
+          limit?: number;
+          offset?: number;
+        }
+
+        const response = await gs.authorizedGet(
+          `/anomalia-activo/${id}`, 
+          user.token
+        ) as AnomaliasPaginadas;
+
+        console.log('✅ Respuesta de alertas recibida:', response);
+
+        // Transformar y filtrar solo las anomalías
+        const alertasTransformadas = (response.data ?? [])
+          .map((p) => ({
+            id: p.id ?? 0,
+            activoId: p.activo_id ?? id,
+            timestamp: p.timestamp ?? new Date().toISOString(),
+            anomalyScore: Math.round(p.anomaly_score ?? 0),
+            anomalyLikelihood: Math.round(p.anomaly_likelihood ?? 0),
+            severidad: p.severidad ?? "Baja",
+            descripcion: p.descripcion ?? "Sin descripción",
+            threshold: Math.round(p.threshold ?? 50),
+            is_anomaly: p.is_anomaly === 1 || p.is_anomaly === true,
+            most_influential_variable: p.most_influential_variable ?? "N/A",
+            contribution_magnitude: p.contribution_magnitude ?? 0,
+          }))
+          .filter(a => a.is_anomaly);
+
+        console.log('📊 Alertas filtradas:', alertasTransformadas.length);
+
+        setAlertas(alertasTransformadas);
+      } catch (err) {
+        console.error('❌ Error al obtener las alertas:', err);
+        setAlertas([]);
+      }
+    };
+
     const fetchAll = async () => {
       await fetchData();
       await fetchDatos();
+      await fetchAlertas();
     };
 
     // Llamado inicial inmediato
     void fetchAll();
 
-    // Intervalo de actualización cada 5 segundos
+    // Intervalo de actualización cada 5 minutos
     const interval = setInterval(() => {
       void fetchAll();
-    }, 5000);
+    }, 300000); // 300,000 ms = 5 minutos
 
     // Limpieza del intervalo al desmontar componente
     return () => { clearInterval(interval); };
@@ -207,12 +269,9 @@ export default function ActivoDetailClient({ id }: { id: number}) {
     <Box sx={{ p: 2 }}>
       {/* FILA SUPERIOR */}
       <Grid container spacing={2}>
-        {/* Columna izquierda: Caudal y Presion */}
-
-
-        {/* Columna derecha: Tarjeta del activo */}
+        {/* Columna izquierda: Tarjeta del activo */}
         <Grid size={{md:8, xs:12}}>
-          <Card sx={{ display: 'flex', height: 400 }}>
+          <Card sx={{ display: 'flex', height: '100%', minHeight: 400 }}>
             {/* Imagen izquierda */}
             <CardMedia
               component="img"
@@ -249,8 +308,7 @@ export default function ActivoDetailClient({ id }: { id: number}) {
                   component="a"
                   href="/documentos/ficha_tecnica_bomba.pdf"
                   download="ficha_tecnica_bomba.pdf"
-                  target="_blank"
-                  rel="noopener"
+                  target
                   sx={{
                     textTransform: 'none',
                     borderRadius: 2,
@@ -265,50 +323,51 @@ export default function ActivoDetailClient({ id }: { id: number}) {
           </Card>
         </Grid>
         <Grid size={{md:4, xs:12}}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
             {/* Caudal */}
             <Caudal diff={parseFloat(caudalInfo.diff.toFixed(2))}
               trend={normalizeTrend(caudalInfo.trend)}
-              sx={{ height: 192 }}
+              sx={{ height: '50%', minHeight: 196 }}
               value={`${caudalInfo.valor.toFixed(2)} m³/h`}
             />
             {/* Presión */}
-            <Presion diff={parseFloat(presionInfo.diff.toFixed(2))} trend={normalizeTrend(presionInfo.trend)} sx={{ height: 192}} value={`${presionInfo.valor.toFixed(2)} Psi`} />
+            <Presion diff={parseFloat(presionInfo.diff.toFixed(2))} trend={normalizeTrend(presionInfo.trend)} sx={{ height: '50%', minHeight: 196 }} value={`${presionInfo.valor.toFixed(2)} Psi`} />
           </Box>
         </Grid>
       </Grid>
 
       {/* FILA INFERIOR */}
       <Grid container spacing={2} sx={{ mt: 2 }}>
-        {/* Scatter: 70% */}
+        {/* Scatter: 83.33% (10/12) */}
         <Grid size={{md:10, xs:12}}>
           <ScatterWithArgs sx={{ height: 500 }} dataCaudal={sensorCaud} dataPresion={sensorPres} dataTemp={sensorTemp} />
         </Grid>
-        {/* ScoreChart: 30% */}
+        {/* Temperatura: 16.67% (2/12) */}
         <Grid size={{md:2, xs:12}}>
-          {/* Temperatura */}
-          <TemperatureProgress value={temperatura} />
+          <Box sx={{ height: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <TemperatureProgress value={temperatura} />
+          </Box>
         </Grid>
+        
+        {/* ScoreChart: 25% (3/12) */}
         <Grid size={{md:3, xs:12}}>
           <ScoreChart sx={{ height: 450 }} />
         </Grid>
-      
-        <Grid size={{lg:9, md:6, xs:12}}>
+        {/* LatestAlerts: 75% (9/12) */}
+        <Grid size={{md:9, xs:12}}>
           <LatestAlerts
-
-            /* Aqui hay que modificar el como llegan las alertas */
-            products={
-              dataAlertas.alerts.map(alerta => ({
-                id: alerta.id,
-                name: alerta.name,
-                icon: <WarningIcon size={32} weight="fill" color="#ff0000" />,
-                updatedAt: dayjs(alerta.updatedAt).toDate()
-              }))
-            }
+            products={alertas.map(alerta => ({
+              id: alerta.id,
+              name: alerta.descripcion ?? `Anomalía - Severidad: ${alerta.severidad}`,
+              icon: <WarningIcon size={32} weight="fill" color="#ff0000" />,
+              updatedAt: new Date(alerta.timestamp)
+            }))}
             sx={{ height: 450 }}
           />
         </Grid>
-        <Grid size={{md:4, xs:12}}>
+        
+        {/* ChatBot: 100% (12/12) */}
+        <Grid size={{md:12, xs:12}}>
           <ChatBotCard id={activo.id_ficha_tecnica}/>
         </Grid>
       </Grid>
@@ -328,8 +387,8 @@ export default function ActivoDetailClient({ id }: { id: number}) {
               ) : (
                 <Box
                   sx={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))',
                     gap: 2,
                   }}
                 >
@@ -338,13 +397,20 @@ export default function ActivoDetailClient({ id }: { id: number}) {
                     const hora = s.lastSeen
                       ? dayjs(s.lastSeen).format('HH:mm:ss')
                       : 'Sin datos';
+                    
                     return (
                       <Card
                         key={s.id}
                         sx={{
-                          width: 240,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          height: 230,
+                          p: 2,
+                          borderRadius: 3,
+                          boxShadow: 3,
                           cursor: 'pointer',
-                          p: 1,
                           '&:hover': { boxShadow: 6 },
                         }}
                         onClick={() => {
@@ -352,15 +418,62 @@ export default function ActivoDetailClient({ id }: { id: number}) {
                           setOpenChart(true);
                         }}
                       >
-                        <CardContent>
-                          <Typography variant="h6">{s.name}</Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Último valor: {s.lastValue} {s.unit}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {hora}
-                          </Typography>
-                        </CardContent>
+                        {/* Ícono del sensor */}
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            bgcolor: 'primary.main',
+                            color: 'white',
+                            borderRadius: '50%',
+                            width: 48,
+                            height: 48,
+                          }}
+                        >
+                          <Cpu size={24} />
+                        </Box>
+
+                        {/* Nombre del sensor */}
+                        <Typography 
+                          variant="subtitle2" 
+                          sx={{ 
+                            mt: 1, 
+                            color: 'text.secondary', 
+                            textAlign: 'center',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            width: '100%',
+                          }}
+                        >
+                          {s.name}
+                        </Typography>
+
+                        {/* Valor actual */}
+                        <Typography 
+                          variant="h4" 
+                          sx={{ 
+                            mb: 2,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            width: '100%',
+                            textAlign: 'center',
+                          }}
+                        >
+                          {s.lastValue.toFixed(1)} {s.unit}
+                        </Typography>
+
+                        <Box sx={{ flexGrow: 1 }} />
+
+                        {/* Hora */}
+                        <Typography 
+                          variant="caption" 
+                          sx={{ color: 'text.secondary' }}
+                        >
+                          {hora}
+                        </Typography>
                       </Card>
                     );
                   })}

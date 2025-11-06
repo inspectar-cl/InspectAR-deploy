@@ -28,6 +28,7 @@ export interface SolicitudAPI {
   estado: 'Pendiente' | 'EnProgreso' | 'Resuelta' | string;
   fechaCreacion: string;
   tipoSolicitud: TipoSolicitud;
+  tipoOperacion: string;
   asunto: string;
   detalles?: string;
   datosEspecificos: EdificioData | ActivoDataAPI | TecnicoData;

@@ -2,8 +2,8 @@
 
 import { Box, Typography, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { useState } from 'react';
+import type React from 'react';
 import {
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -119,7 +119,7 @@ export default function TrendChart({ variable }: TrendChartProps) {
               };
               return [`${value.toFixed(2)} ${variable.unidad}`, nombres[name] || name];
             }}
-            labelFormatter={(label) => new Date(label).toLocaleString('es-ES')}
+            labelFormatter={(label: string | number) => new Date(label).toLocaleString('es-ES')}
             contentStyle={{ 
               backgroundColor: 'var(--mui-palette-background-paper)', 
               borderRadius: '8px',

@@ -21,13 +21,17 @@ export default function AdministradorHome(): React.JSX.Element {
       <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
         <Button
           variant="contained"
-          onClick={() => router.push('/dashboard/formulario')}
+          onClick={() => {
+            router.push('/dashboard/formulario');
+          }}
         >
           Ver Formularios
         </Button>
         <Button
           variant="outlined"
-          onClick={() => router.push('/dashboard/reportes-tecnicos')}
+          onClick={() => {
+            router.push('/dashboard/reportes-tecnicos');
+          }}
         >
           Reportes Técnicos
         </Button>

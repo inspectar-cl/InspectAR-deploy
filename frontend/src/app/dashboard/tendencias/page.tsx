@@ -9,16 +9,14 @@ import {
   Select,
   MenuItem,
   Divider,
-  Chip,
-  Alert
+  Chip
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { 
   Activity as ActivityIcon, 
   TrendingUp as TrendingUpIcon,
   AlertTriangle as AlertIcon,
-  Gauge as GaugeIcon,
-  Zap as ZapIcon
+  Gauge as GaugeIcon
 } from 'lucide-react';
 import MetricCard from '@/components/dashboard/tendencias/MetricCard';
 import TendenciasCards from '@/components/dashboard/tendencias/TendenciasCards';
@@ -30,7 +28,7 @@ import type { Variable, TendenciaDataPoint } from '@/types/tendencias';
 const generarDatosTendencia = (
   baseValue: number, 
   variabilidad: number, 
-  puntos: number = 288
+  puntos = 288
 ): TendenciaDataPoint[] => {
   const now = new Date();
   const data: TendenciaDataPoint[] = [];

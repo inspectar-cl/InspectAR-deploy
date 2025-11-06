@@ -161,12 +161,8 @@ export default function ActivoDetailClient({ id }: { id: number}) {
     };
 
     const fetchAlertas = async () => {
-<<<<<<< HEAD
       try {
         
-=======
-      try {   
->>>>>>> origin/feature-front
         interface AnomaliasPaginadas {
           activo_id?: number;
           data?: {
@@ -192,11 +188,8 @@ export default function ActivoDetailClient({ id }: { id: number}) {
           `/anomalia-activo/${id}`, 
           user.token
         ) as AnomaliasPaginadas;
-<<<<<<< HEAD
 
 
-=======
->>>>>>> origin/feature-front
         // Transformar y filtrar solo las anomalías
         const alertasTransformadas = (response.data ?? [])
           .map((p) => ({
@@ -213,11 +206,8 @@ export default function ActivoDetailClient({ id }: { id: number}) {
             contribution_magnitude: p.contribution_magnitude ?? 0,
           }))
           .filter(a => a.is_anomaly);
-<<<<<<< HEAD
 
 
-=======
->>>>>>> origin/feature-front
         setAlertas(alertasTransformadas);
       } catch (err) {
         setAlertas([]);
@@ -330,10 +320,6 @@ export default function ActivoDetailClient({ id }: { id: number}) {
                   component="a"
                   href="/documentos/ficha_tecnica_bomba.pdf"
                   download="ficha_tecnica_bomba.pdf"
-<<<<<<< HEAD
-=======
-                  target="_blank"
->>>>>>> origin/feature-front
                   sx={{
                     textTransform: 'none',
                     borderRadius: 2,
@@ -382,7 +368,7 @@ export default function ActivoDetailClient({ id }: { id: number}) {
         <Grid size={{md:9, xs:12}} id="tour-latest-alerts">
           <LatestAlerts
             products={alertas.map(alerta => ({
-              id: String(alerta.id),
+              id: alerta.id,
               name: alerta.descripcion ?? `Anomalía - Severidad: ${alerta.severidad}`,
               icon: <WarningIcon size={32} weight="fill" color="#ff0000" />,
               updatedAt: new Date(alerta.timestamp)

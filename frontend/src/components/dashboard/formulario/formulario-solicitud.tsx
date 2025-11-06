@@ -84,7 +84,7 @@ export function FormularioSolicitud(): React.JSX.Element {
         }
     });
 
-    const { register, handleSubmit, watch, formState: { errors, isSubmitting }, reset } = methods; // <-- 2. Obtén 'reset'
+    const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = methods;
 
     const tipoActual = watch("tipoSolicitud");
     const { user } = useUserToken();
@@ -104,7 +104,9 @@ export function FormularioSolicitud(): React.JSX.Element {
         const timer = setTimeout(() => {
           setAlertState(prev => ({ ...prev, open: false }));
         }, 4000); // Cierra después de 4 segundos
-        return () => clearTimeout(timer); // Limpia el timer si el componente se desmonta
+        return () => {
+          clearTimeout(timer);
+        }; // Limpia el timer si el componente se desmonta
       }
     }, [alertState.open]);
 
@@ -116,7 +118,7 @@ export function FormularioSolicitud(): React.JSX.Element {
         const email = decodedpayload?.email ?? '';
 
         if (!token || !email) {
-            setAlertState({ // <-- 5. Usa setAlertState para errores
+            setAlertState({
               open: true,
               title: 'Error de Autenticación',
               message: 'Token o email de usuario no disponible. Por favor, inicie sesión.',
@@ -141,34 +143,18 @@ export function FormularioSolicitud(): React.JSX.Element {
                 throw new Error(errorData?.error || 'Error en el backend al crear la solicitud.');
             }
 
-<<<<<<< HEAD
             //console.log("Solicitud creada con éxito:", payload);
             //// alert("Solicitud enviada con éxito.");
             methods.reset();
         } catch (error) {
             //console.error("Fallo al enviar el formulario:", error);
             //// alert("Fallo al enviar el formulario. Vea la consola para más detalles.");
-            setApiError(error instanceof Error ? error.message : 'Fallo al enviar el formulario.');
-=======
-            // --- 6. Muestra el pop-up de ÉXITO ---
             setAlertState({
               open: true,
-              title: '¡Éxito!',
-              message: `Solicitud para ${data.tipoSolicitud} enviada correctamente.`,
-              severity: 'success',
-            });
-            reset(); // Resetea el formulario
-
-        } catch (error) {
-            console.error("Fallo al enviar el formulario:", error);
-            // --- 7. Muestra el pop-up de ERROR ---
-            setAlertState({
-              open: true,
-              title: 'Error al Enviar',
+              title: 'Error al enviar',
               message: error instanceof Error ? error.message : 'Fallo al enviar el formulario.',
               severity: 'error',
             });
->>>>>>> origin/feature-front
         }
     };
 
@@ -194,14 +180,18 @@ export function FormularioSolicitud(): React.JSX.Element {
               message={alertState.message}
               severity={alertState.severity}
               open={alertState.open}
-              onClose={() => setAlertState(prev => ({ ...prev, open: false }))}
+              onClose={() => {
+                setAlertState(prev => ({ ...prev, open: false }));
+              }}
             />
             <Typography variant="h5" component="h1" gutterBottom>
                 Crear Nueva Solicitud
             </Typography>
             <Divider sx={{ my: 2 }} />
             <FormProvider {...methods}>
-                <form onSubmit={handleSubmit(onSubmit)}>
+                <form onSubmit={(e) => {
+                    void handleSubmit(onSubmit)(e);
+                }}>
                     <Stack spacing={3}>
                         
                         <Grid container spacing={3}> {/* 4. Usa Grid para layout de 2 columnas */}
@@ -263,14 +253,6 @@ export function FormularioSolicitud(): React.JSX.Element {
                             Datos Específicos ({tipoActual})
                         </Typography>
 
-<<<<<<< HEAD
-                        {/* Muestra errores de API aquí */}
-                        {apiError ? <Alert severity="error" sx={{ mb: 3 }}>
-                            {apiError}
-                          </Alert> : null}
-
-=======
->>>>>>> origin/feature-front
                         {renderFormularioEspecifico()}
 
                         <Button 

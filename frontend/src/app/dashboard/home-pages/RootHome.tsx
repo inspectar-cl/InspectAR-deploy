@@ -21,13 +21,17 @@ export default function RootHome(): React.JSX.Element {
       <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
         <Button
           variant="contained"
-          onClick={() => router.push('/dashboard/gestion')}
+          onClick={() => {
+            router.push('/dashboard/gestion');
+          }}
         >
           Gestión General
         </Button>
         <Button
           variant="outlined"
-          onClick={() => router.push('/dashboard/agregardatos')}
+          onClick={() => {
+            router.push('/dashboard/agregardatos');
+          }}
         >
           Añadir Datos
         </Button>

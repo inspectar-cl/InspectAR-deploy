@@ -1,14 +1,12 @@
 'use client';
 
 import React from 'react';
-import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useDriverTour } from "@/components/tutorial/use-driver-tour";
 import type { TourKey } from "@/components/tutorial/tour-config";
 import { TourButton } from "@/components/tutorial/tour-button";
-import { useUserToken } from '@/hooks/use-usertoken';
 import ContentActivosPage from './contentpage';
-import { Box, Button } from '@mui/material';
+import { Box } from '@mui/material';
 
 export default function ActivosPage(): React.JSX.Element {
   const tourKey: TourKey = 'lista-activos';

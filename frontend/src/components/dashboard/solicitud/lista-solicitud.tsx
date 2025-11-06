@@ -15,7 +15,14 @@ import {
     MenuItem
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
-import type { SolicitudAPI, TipoSolicitud } from '@/types/form-solicitud';
+import type { 
+  SolicitudAPI, 
+  TipoSolicitud, 
+  ApiTicket,
+  EdificioData,
+  ActivoDataAPI,
+  TecnicoData
+} from '@/types/form-solicitud';
 import { SolicitudCard } from './solicitud-card';
 
 import { MOCK_SOLICITUDES } from '@/mocks/solicitudes';
@@ -25,17 +32,81 @@ const TIPOS_FILTRO: (TipoSolicitud | 'Todas')[] = ['Todas', 'Edificio', 'Activo'
 type EstadoSolicitud = 'Pendiente' | 'EnProgreso' | 'Resuelta';
 const TIPOS_ESTADO: ('Todos' | EstadoSolicitud)[] = ['Todos', 'Pendiente', 'EnProgreso', 'Resuelta'];
 
+function transformarApiATipoFrontend(ticket: ApiTicket): SolicitudAPI {
+  let tipoSolicitud: TipoSolicitud;
+  let datosEspecificos: any = {};
+  
+  // Mapea el estado (Backend "resuelto" -> Frontend "Resuelta")
+  let estadoFrontend: EstadoSolicitud = 'Pendiente';
+  if (ticket.estado === 'resuelto') estadoFrontend = 'Resuelta';
+  if (ticket.estado === 'en progreso') estadoFrontend = 'EnProgreso';
+  
+  // Mapea la entidad y extrae los datos específicos
+  switch (ticket.tipo_entidad) {
+    case 'edificio':
+      tipoSolicitud = 'Edificio';
+      datosEspecificos = {
+        nombre: ticket.edificio_nombre,
+        direccion: ticket.edificio_direccion,
+        latitud: ticket.edificio_latitud,
+        longitud: ticket.edificio_longitud,
+      } as EdificioData;
+      break;
+      
+    case 'activo':
+      tipoSolicitud = 'Activo';
+      // Mapea el tipo de activo (ej. 'bomba de agua' -> 'BombaDeAgua')
+      let tipoActivoForm: string = ticket.activo_tipo || '';
+      if (tipoActivoForm === 'bomba de agua') tipoActivoForm = 'BombaDeAgua';
+      if (tipoActivoForm === 'ascensor') tipoActivoForm = 'Ascensor';
+      if (tipoActivoForm === 'panel electrico') tipoActivoForm = 'PanelElectrico';
+      
+      datosEspecificos = {
+        tipoActivo: tipoActivoForm,
+        edificioId: ticket.activo_edificio_id,
+        ubicacion: ticket.activo_ubicacion,
+        descripcion: ticket.activo_descripcion,
+        imagen: null, // La API no parece enviar imagen
+      } as ActivoDataAPI;
+      break;
+      
+    case 'tecnico':
+      tipoSolicitud = 'Técnico';
+      datosEspecificos = {
+        nombre: ticket.tecnico_nombre,
+        correo: ticket.tecnico_email,
+        telefono: ticket.tecnico_telefono,
+        especialidad: ticket.tecnico_especialidad,
+        activosAsociados: [], // La API no parece enviar esto
+      } as TecnicoData;
+      break;
+      
+    default:
+      // Fallback por si llega un tipo no esperado
+      tipoSolicitud = 'Edificio'; 
+      datosEspecificos = { nombre: 'Error: Tipo no reconocido' };
+  }
+
+  return {
+    id: ticket.id,
+    estado: estadoFrontend,
+    fechaCreacion: ticket.created_at,
+    tipoSolicitud: tipoSolicitud,
+    asunto: `${ticket.tipo_operacion.toUpperCase()} ${ticket.tipo_entidad}`,
+    detalles: ticket.justificacion,
+    datosEspecificos: datosEspecificos,
+  };
+}
+
 export function ListaSolicitudes(): React.JSX.Element {
   const { user } = useUserToken();
-  
-  // --- Estados ---
+
   const [allSolicitudes, setAllSolicitudes] = React.useState<SolicitudAPI[]>([]);
   const [filtroActual, setFiltroActual] = React.useState<TipoSolicitud | 'Todas'>('Todas');
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [filtroEstado, setFiltroEstado] = React.useState<'Todos' | EstadoSolicitud>('Todos');
 
-  // --- 1. Carga de Datos (API Call) ---
   React.useEffect(() => {
     if (!user?.token) return;
 
@@ -43,63 +114,62 @@ export function ListaSolicitudes(): React.JSX.Element {
       setIsLoading(true);
       setError(null);
 
-      /* //Aqui deberia estar el llamado de la api para obtener todas las solicitudes del back
       try {
-        const response = await fetch('/api/obtener-solicitudes', {
+        const response = await fetch('/api/notification/tickets', {
+          method: 'GET',
           headers: {
             'Authorization': `Bearer ${user.token}`,
           },
         });
         if (!response.ok) {
-          throw new Error('Error al obtener las solicitudes');
+          const errData = await response.json().catch(() => null);
+          throw new Error(errData?.error || 'Error al obtener las solicitudes');
         }
-        const data: SolicitudAPI[] = await response.json();
-        setAllSolicitudes(data);
+
+        const data = await response.json();
+        let ticketsArray: ApiTicket[];
+
+        if (Array.isArray(data)) {
+          ticketsArray = data as ApiTicket[];
+        } 
+        else if (data && typeof data === 'object' && Array.isArray(data.tickets)) {
+          ticketsArray = data.tickets as ApiTicket[];
+        } 
+        else {
+          throw new Error("No hay tickets o solicitudes");
+        }
+
+        const solicitudesTransformadas = ticketsArray.map(transformarApiATipoFrontend);
+        setAllSolicitudes(solicitudesTransformadas);
+
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ocurrió un error desconocido');
       } finally {
         setIsLoading(false);
       }
-        */
-
-      try {
-          //console.warn("Usando datos MOCK para simular la API");
-          await new Promise((resolve) => {
-            setTimeout(resolve, 1000);
-          });
-          setAllSolicitudes(MOCK_SOLICITUDES);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Ocurrió un error desconocido');
-        } finally {
-            setIsLoading(false);
-        }
-
     };
 
-     void fetchSolicitudes();
+    void fetchSolicitudes();
   }, [user]);
 
   // Filtros
   const filteredSolicitudes = React.useMemo(() => {
-    
     let solicitudesFiltradas = allSolicitudes;
 
-    // filtro de TIPO (Tabs)
     if (filtroActual !== 'Todas') {
       solicitudesFiltradas = solicitudesFiltradas.filter(
         s => s.tipoSolicitud === filtroActual
       );
     }
 
-    // filtro de ESTADO (Select)
     if (filtroEstado !== 'Todos') {
       solicitudesFiltradas = solicitudesFiltradas.filter(
-        s => s.estado === filtroEstado
+        // Compara sin importar mayúsculas/minúsculas
+        s => s.estado.toLowerCase() === filtroEstado.toLowerCase()
       );
     }
 
     return solicitudesFiltradas;
-
   }, [allSolicitudes, filtroActual, filtroEstado]);
 
   // Los tabs de navegacion
@@ -114,6 +184,14 @@ export function ListaSolicitudes(): React.JSX.Element {
     event: SelectChangeEvent<'Todos' | EstadoSolicitud>,
   ): void => {
     setFiltroEstado(event.target.value as 'Todos' | EstadoSolicitud);
+  };
+
+  const handleTicketUpdated = (updatedTicket: SolicitudAPI) => {
+    setAllSolicitudes((currentList) =>
+      currentList.map((solicitud) =>
+        solicitud.id === updatedTicket.id ? updatedTicket : solicitud
+      )
+    );
   };
 
   const renderContent = (): React.JSX.Element => {
@@ -136,7 +214,7 @@ export function ListaSolicitudes(): React.JSX.Element {
       <Grid container spacing={3} sx={{ pt: 3 }}>
         {filteredSolicitudes.map((solicitud) => (
           <Grid key={solicitud.id} size={{ xs: 12, sm: 6, md: 4 }}>
-            <SolicitudCard solicitud={solicitud} />
+            <SolicitudCard solicitud={solicitud} onTicketUpdated={handleTicketUpdated}/>
           </Grid>
         ))}
       </Grid>
@@ -168,7 +246,6 @@ export function ListaSolicitudes(): React.JSX.Element {
               </Select>
             </FormControl>
           </Grid>
-          {/* Aqui luego podrian agregarse más filtros */}
         </Grid>
       </Paper>
 
@@ -181,7 +258,6 @@ export function ListaSolicitudes(): React.JSX.Element {
         </Tabs>
       </Box>
 
-      {/* contenido o tarjetas*/}
       {renderContent()}
     </Container>
   );

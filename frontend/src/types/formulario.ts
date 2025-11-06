@@ -1,4 +1,12 @@
+// types/formulario.ts
+
 export type TipoSolicitud = 'Edificio' | 'Activo' | 'Técnico';
+export type TipoActivo = 'Ascensor' | 'BombaDeAgua' | 'PanelElectrico';
+export type EspecialidadTecnico = 'Climatización' | 'Eléctrico' | 'Mecánico';
+export type TipoSensor = 'Temperatura' | 'Presión' | 'Vibración';
+
+// --- 1. AÑADE ESTE NUEVO TIPO ---
+export type TipoOperacion = 'Ingreso' | 'Modificacion' | 'Eliminacion';
 
 export interface EdificioData {
   nombre: string;
@@ -7,7 +15,6 @@ export interface EdificioData {
   longitud: number;
 }
 
-export type TipoActivo = 'Ascensor' | 'BombaDeAgua' | 'PanelElectrico';
 export interface ActivoData {
   nombre: string;
   tipoActivo: TipoActivo;
@@ -17,7 +24,6 @@ export interface ActivoData {
   imagen: FileList | null;
 }
 
-export type EspecialidadTecnico = 'Climatización' | 'Eléctrico' | 'Mecánico';
 export interface TecnicoData {
   nombre: string;
   activosAsociados: number[]; // Array de IDs de Activos asociados
@@ -26,7 +32,6 @@ export interface TecnicoData {
   especialidad: string;
 }
 
-export type TipoSensor = 'Temperatura' | 'Presión' | 'Vibración'; // Cambiar si es necesario
 export interface SensorData {
   nombre: string;
   tipoSnsor: TipoSensor;
@@ -35,6 +40,8 @@ export interface SensorData {
 
 export interface SolicitudFormData {
   tipoSolicitud: TipoSolicitud;
+  // --- 2. AÑADE ESTA LÍNEA ---
+  tipoOperacion: TipoOperacion; 
   asunto: string;
   detalles?: string;
   datosEspecificos: EdificioData | ActivoData | TecnicoData | SensorData;

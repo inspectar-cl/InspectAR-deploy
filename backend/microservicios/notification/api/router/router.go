@@ -34,5 +34,10 @@ func SetupRouter(notificationHandler *handlers.NotificationHandler) *gin.Engine 
 	r.GET("/edificio/:id/usuarios", notificationHandler.GetUsuariosByEdificioID)
 	r.GET("/edificio/:id/activos", notificationHandler.GetActivosByEdificioID)
 
+	// Rutas para tickets
+	r.POST("/tickets", notificationHandler.CreateTicket)              // Crear ticket
+	r.GET("/tickets", notificationHandler.GetTickets)                 // Obtener tickets paginados
+	r.PUT("/tickets/:id/resolver", notificationHandler.ResolveTicket) // Resolver ticket
+
 	return r
 }

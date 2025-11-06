@@ -1,0 +1,428 @@
+{
+	"info": {
+		"_postman_id": "notification-tickets-001",
+		"name": "Notification Service - Tickets",
+		"description": "Colección de Postman para el sistema de tickets del microservicio de notificaciones.\n\nIncluye rutas para:\n- Crear tickets (edificios, activos, técnicos)\n- Obtener tickets con paginación\n- Resolver tickets con justificación\n\nBase URL: http://localhost:8091",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "inspectAR"
+	},
+	"item": [
+		{
+			"name": "Tickets",
+			"item": [
+				{
+					"name": "Crear Ticket - Edificio (Ingreso)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tipo_entidad\": \"edificio\",\n  \"tipo_operacion\": \"ingreso\",\n  \"usuario_email\": \"admin@inspectAR.com\",\n  \"edificio_nombre\": \"Torre Empresarial Norte\",\n  \"edificio_direccion\": \"Av. Córdoba 2500, CABA\",\n  \"edificio_latitud\": -34.5989,\n  \"edificio_longitud\": -58.3931,\n  \"justificacion\": \"Nuevo edificio corporativo con 15 pisos que requiere sistema de monitoreo completo de activos.\"\n}"
+						},
+						"url": {
+							"raw": "{{NOTIFICATION_URL}}/tickets",
+							"host": [
+								"{{NOTIFICATION_URL}}"
+							],
+							"path": [
+								"tickets"
+							]
+						},
+						"description": "Crea un ticket para solicitar el ingreso de un nuevo edificio al sistema.\n\n**Campos requeridos:**\n- tipo_entidad: \"edificio\"\n- tipo_operacion: \"ingreso\"\n- usuario_email: Email del solicitante\n- edificio_nombre: Nombre del edificio\n- edificio_direccion: Dirección completa\n- edificio_latitud: Coordenada de latitud\n- edificio_longitud: Coordenada de longitud\n- justificacion: Razón de la solicitud\n\n**Resultado:**\n- Crea el ticket en la base de datos\n- Envía email automático a todos los administradores (scope='admin' o 'root')\n- Retorna el ticket creado con status 201"
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Ticket - Edificio (Modificación)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tipo_entidad\": \"edificio\",\n  \"tipo_operacion\": \"modificacion\",\n  \"usuario_email\": \"admin@inspectAR.com\",\n  \"edificio_id\": 1,\n  \"edificio_nombre\": \"Torre Empresarial Norte - Actualizado\",\n  \"edificio_direccion\": \"Av. Córdoba 2500, CABA\",\n  \"justificacion\": \"Actualización del nombre del edificio por rebranding corporativo.\"\n}"
+						},
+						"url": {
+							"raw": "{{NOTIFICATION_URL}}/tickets",
+							"host": [
+								"{{NOTIFICATION_URL}}"
+							],
+							"path": [
+								"tickets"
+							]
+						},
+						"description": "Crea un ticket para solicitar la modificación de un edificio existente."
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Ticket - Edificio (Eliminación)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tipo_entidad\": \"edificio\",\n  \"tipo_operacion\": \"eliminacion\",\n  \"usuario_email\": \"admin@inspectAR.com\",\n  \"edificio_id\": 5,\n  \"justificacion\": \"Edificio vendido a otra empresa, ya no forma parte de nuestro portafolio.\"\n}"
+						},
+						"url": {
+							"raw": "{{NOTIFICATION_URL}}/tickets",
+							"host": [
+								"{{NOTIFICATION_URL}}"
+							],
+							"path": [
+								"tickets"
+							]
+						},
+						"description": "Crea un ticket para solicitar la eliminación de un edificio del sistema."
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Ticket - Activo (Ingreso)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tipo_entidad\": \"activo\",\n  \"tipo_operacion\": \"ingreso\",\n  \"usuario_email\": \"tecnico@inspectAR.com\",\n  \"activo_nombre\": \"Bomba de Agua Principal\",\n  \"activo_tipo\": \"bomba de agua\",\n  \"activo_descripcion\": \"Bomba centrífuga de 50HP para sistema de agua potable\",\n  \"activo_ubicacion\": \"Sala de máquinas - Subsuelo\",\n  \"activo_edificio_id\": 1,\n  \"justificacion\": \"Nueva bomba instalada para reemplazar equipo obsoleto. Requiere monitoreo continuo de temperatura y vibración.\"\n}"
+						},
+						"url": {
+							"raw": "{{NOTIFICATION_URL}}/tickets",
+							"host": [
+								"{{NOTIFICATION_URL}}"
+							],
+							"path": [
+								"tickets"
+							]
+						},
+						"description": "Crea un ticket para solicitar el ingreso de un nuevo activo al sistema.\n\n**Campos requeridos:**\n- tipo_entidad: \"activo\"\n- tipo_operacion: \"ingreso\"\n- usuario_email: Email del solicitante\n- activo_nombre: Nombre del activo\n- activo_tipo: Tipo/categoría del activo\n- activo_descripcion: Descripción detallada (opcional)\n- activo_ubicacion: Ubicación física (opcional)\n- activo_edificio_id: ID del edificio donde está el activo\n- justificacion: Razón de la solicitud"
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Ticket - Activo (Modificación)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tipo_entidad\": \"activo\",\n  \"tipo_operacion\": \"modificacion\",\n  \"usuario_email\": \"tecnico@inspectAR.com\",\n  \"activo_id\": 2,\n  \"activo_nombre\": \"Bomba de Agua Principal - Refaccionada\",\n  \"activo_ubicacion\": \"Sala de máquinas nueva - Piso 1\",\n  \"justificacion\": \"Actualización de ubicación tras mudanza de sala de máquinas.\"\n}"
+						},
+						"url": {
+							"raw": "{{NOTIFICATION_URL}}/tickets",
+							"host": [
+								"{{NOTIFICATION_URL}}"
+							],
+							"path": [
+								"tickets"
+							]
+						},
+						"description": "Crea un ticket para solicitar la modificación de un activo existente."
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Ticket - Activo (Eliminación)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tipo_entidad\": \"activo\",\n  \"tipo_operacion\": \"eliminacion\",\n  \"usuario_email\": \"tecnico@inspectAR.com\",\n  \"activo_id\": 10,\n  \"justificacion\": \"Equipo dado de baja por obsolescencia. Reemplazado por modelo más eficiente.\"\n}"
+						},
+						"url": {
+							"raw": "{{NOTIFICATION_URL}}/tickets",
+							"host": [
+								"{{NOTIFICATION_URL}}"
+							],
+							"path": [
+								"tickets"
+							]
+						},
+						"description": "Crea un ticket para solicitar la eliminación de un activo del sistema."
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Ticket - Técnico (Ingreso)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tipo_entidad\": \"tecnico\",\n  \"tipo_operacion\": \"ingreso\",\n  \"usuario_email\": \"admin@inspectAR.com\",\n  \"tecnico_nombre\": \"Juan Carlos Pérez\",\n  \"tecnico_email\": \"jcperez@tecnicosAR.com\",\n  \"tecnico_telefono\": \"+5491123456789\",\n  \"tecnico_especialidad\": \"Electricidad y sistemas de climatización\",\n  \"tecnico_autorizado\": true,\n  \"justificacion\": \"Técnico certificado con 10 años de experiencia en sistemas HVAC. Requiere acceso para mantenimiento preventivo.\"\n}"
+						},
+						"url": {
+							"raw": "{{NOTIFICATION_URL}}/tickets",
+							"host": [
+								"{{NOTIFICATION_URL}}"
+							],
+							"path": [
+								"tickets"
+							]
+						},
+						"description": "Crea un ticket para solicitar el ingreso de un nuevo técnico al sistema.\n\n**Campos requeridos:**\n- tipo_entidad: \"tecnico\"\n- tipo_operacion: \"ingreso\"\n- usuario_email: Email del solicitante\n- tecnico_nombre: Nombre completo del técnico\n- tecnico_email: Email de contacto\n- tecnico_telefono: Teléfono de contacto\n- tecnico_especialidad: Área de expertise\n- tecnico_autorizado: true/false\n- justificacion: Razón de la solicitud"
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Ticket - Técnico (Modificación)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tipo_entidad\": \"tecnico\",\n  \"tipo_operacion\": \"modificacion\",\n  \"usuario_email\": \"admin@inspectAR.com\",\n  \"tecnico_id\": 3,\n  \"tecnico_telefono\": \"+5491198765432\",\n  \"tecnico_especialidad\": \"Electricidad, HVAC y sistemas de bombeo\",\n  \"justificacion\": \"Actualización de datos de contacto y especialidades.\"\n}"
+						},
+						"url": {
+							"raw": "{{NOTIFICATION_URL}}/tickets",
+							"host": [
+								"{{NOTIFICATION_URL}}"
+							],
+							"path": [
+								"tickets"
+							]
+						},
+						"description": "Crea un ticket para solicitar la modificación de un técnico existente."
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Ticket - Técnico (Eliminación)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tipo_entidad\": \"tecnico\",\n  \"tipo_operacion\": \"eliminacion\",\n  \"usuario_email\": \"admin@inspectAR.com\",\n  \"tecnico_id\": 7,\n  \"justificacion\": \"Técnico retirado. Ya no presta servicios para la empresa.\"\n}"
+						},
+						"url": {
+							"raw": "{{NOTIFICATION_URL}}/tickets",
+							"host": [
+								"{{NOTIFICATION_URL}}"
+							],
+							"path": [
+								"tickets"
+							]
+						},
+						"description": "Crea un ticket para solicitar la eliminación de un técnico del sistema."
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Todos los Tickets (Sin paginación)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{NOTIFICATION_URL}}/tickets",
+							"host": [
+								"{{NOTIFICATION_URL}}"
+							],
+							"path": [
+								"tickets"
+							]
+						},
+						"description": "Obtiene todos los tickets del sistema sin paginación (por defecto retorna página 1).\n\n**Respuesta:**\n- tickets: Array de tickets\n- total_tickets: Total de tickets en el sistema\n- total_paginas: Cantidad total de páginas\n- pagina_actual: Número de página actual\n- items_por_pagina: 10 (fijo)\n\n**Nota:** Por defecto retorna la primera página (10 items)."
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Tickets - Página 1",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{NOTIFICATION_URL}}/tickets?pagina=1",
+							"host": [
+								"{{NOTIFICATION_URL}}"
+							],
+							"path": [
+								"tickets"
+							],
+							"query": [
+								{
+									"key": "pagina",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Obtiene la primera página de tickets (10 items).\n\n**Query Parameters:**\n- pagina: Número de página a obtener (default: 1)\n\n**Sistema de paginación:**\n- 10 items por página\n- Ordenados por fecha de creación descendente (más recientes primero)\n- Incluye metadata de paginación en la respuesta"
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Tickets - Página 2",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{NOTIFICATION_URL}}/tickets?pagina=2",
+							"host": [
+								"{{NOTIFICATION_URL}}"
+							],
+							"path": [
+								"tickets"
+							],
+							"query": [
+								{
+									"key": "pagina",
+									"value": "2"
+								}
+							]
+						},
+						"description": "Obtiene la segunda página de tickets (items 11-20)."
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Tickets - Página 3",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{NOTIFICATION_URL}}/tickets?pagina=3",
+							"host": [
+								"{{NOTIFICATION_URL}}"
+							],
+							"path": [
+								"tickets"
+							],
+							"query": [
+								{
+									"key": "pagina",
+									"value": "3"
+								}
+							]
+						},
+						"description": "Obtiene la tercera página de tickets (items 21-30)."
+					},
+					"response": []
+				},
+				{
+					"name": "Resolver Ticket",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"resuelto_por_email\": \"admin@inspectAR.com\",\n  \"comentario_admin\": \"Solicitud aprobada y procesada exitosamente. El edificio ha sido agregado al sistema con todos los permisos correspondientes. Se ha notificado al solicitante.\"\n}"
+						},
+						"url": {
+							"raw": "{{NOTIFICATION_URL}}/tickets/:id/resolver",
+							"host": [
+								"{{NOTIFICATION_URL}}"
+							],
+							"path": [
+								"tickets",
+								":id",
+								"resolver"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1",
+									"description": "ID del ticket a resolver"
+								}
+							]
+						},
+						"description": "Marca un ticket como resuelto y agrega un comentario del administrador.\n\n**Path Parameters:**\n- id: ID del ticket a resolver\n\n**Body Parameters:**\n- resuelto_por_email: Email del administrador que resuelve\n- comentario_admin: Justificación o comentario sobre la resolución\n\n**Resultado:**\n- Cambia el estado del ticket a 'resuelto'\n- Registra quien resolvió (ID y email)\n- Registra la fecha de resolución\n- Guarda el comentario del admin\n- Retorna el ticket actualizado"
+					},
+					"response": []
+				}
+			],
+			"description": "Sistema completo de tickets para solicitudes de ingreso, modificación y eliminación de edificios, activos y técnicos.\n\n**Características:**\n- Creación de tickets con validaciones según tipo de entidad\n- Notificación automática por email a administradores\n- Paginación de 10 items por página\n- Resolución con justificación del admin\n- Registro de metadata completo"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"// Script de pre-request global",
+					"// Aquí puedes agregar lógica que se ejecute antes de cada request"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"// Tests automáticos globales",
+					"pm.test(\"Status code es exitoso\", function () {",
+					"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+					"});",
+					"",
+					"pm.test(\"Response time es menor a 2000ms\", function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+					"});"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "NOTIFICATION_URL",
+			"value": "http://localhost:8091",
+			"type": "string"
+		},
+		{
+			"key": "ticket_id",
+			"value": "1",
+			"type": "string"
+		}
+	]
+}

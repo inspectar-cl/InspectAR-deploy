@@ -424,3 +424,83 @@ COMMENT ON TABLE firmas_digitales IS 'Firmas digitales de usuarios para firma de
 COMMENT ON TABLE logs_auditoria IS 'Registro de auditoría de todas las acciones realizadas por usuarios en el sistema';
 
 -- Comentarios sobre las tablas creadas
+
+-- ============================================================================
+-- SISTEMA DE TICKETS PARA SOLICITUDES DE INGRESO/MODIFICACIÓN/ELIMINACIÓN
+-- ============================================================================
+
+-- Tabla de tickets para solicitudes de edificios y activos
+CREATE TABLE IF NOT EXISTS tickets (
+    id SERIAL PRIMARY KEY,
+    
+    -- Tipo de solicitud
+    tipo_entidad VARCHAR(50) NOT NULL CHECK (tipo_entidad IN ('edificio', 'activo')),
+    tipo_operacion VARCHAR(50) NOT NULL CHECK (tipo_operacion IN ('ingreso', 'modificacion', 'eliminacion')),
+    
+    -- Estado del ticket
+    estado VARCHAR(50) NOT NULL DEFAULT 'no_resuelto' CHECK (estado IN ('resuelto', 'no_resuelto')),
+    
+    -- Usuario que crea el ticket
+    usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    usuario_email VARCHAR(255) NOT NULL,
+    
+    -- Datos para EDIFICIO (solo si tipo_entidad = 'edificio')
+    edificio_id INTEGER REFERENCES edificios(id) ON DELETE SET NULL, -- Para modificación/eliminación
+    edificio_nombre VARCHAR(255),
+    edificio_direccion VARCHAR(255),
+    edificio_latitud DECIMAL(10, 8),
+    edificio_longitud DECIMAL(11, 8),
+    
+    -- Datos para ACTIVO (solo si tipo_entidad = 'activo')
+    activo_id INTEGER REFERENCES activos(id) ON DELETE SET NULL, -- Para modificación/eliminación
+    activo_nombre VARCHAR(255),
+    activo_tipo VARCHAR(100),
+    activo_descripcion TEXT,
+    activo_ubicacion VARCHAR(255),
+    activo_edificio_id INTEGER, -- Para nuevos activos
+    
+    -- Información adicional
+    justificacion TEXT, -- Razón de la solicitud
+    comentario_admin TEXT, -- Comentario del administrador al resolver
+    
+    -- Metadata
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_resolucion TIMESTAMP,
+    resuelto_por INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    resuelto_por_email VARCHAR(255),
+    
+    -- Constraints para validar datos según tipo de entidad
+    CONSTRAINT chk_edificio_data CHECK (
+        (tipo_entidad = 'edificio' AND tipo_operacion = 'ingreso' AND 
+         edificio_nombre IS NOT NULL AND edificio_direccion IS NOT NULL AND 
+         edificio_latitud IS NOT NULL AND edificio_longitud IS NOT NULL) OR
+        (tipo_entidad = 'edificio' AND tipo_operacion IN ('modificacion', 'eliminacion') AND 
+         edificio_id IS NOT NULL) OR
+        (tipo_entidad = 'activo')
+    ),
+    CONSTRAINT chk_activo_data CHECK (
+        (tipo_entidad = 'activo' AND tipo_operacion = 'ingreso' AND 
+         activo_nombre IS NOT NULL AND activo_tipo IS NOT NULL) OR
+        (tipo_entidad = 'activo' AND tipo_operacion IN ('modificacion', 'eliminacion') AND 
+         activo_id IS NOT NULL) OR
+        (tipo_entidad = 'edificio')
+    )
+);
+
+-- Índices para mejorar rendimiento en búsquedas
+CREATE INDEX IF NOT EXISTS idx_tickets_tipo_entidad ON tickets(tipo_entidad);
+CREATE INDEX IF NOT EXISTS idx_tickets_tipo_operacion ON tickets(tipo_operacion);
+CREATE INDEX IF NOT EXISTS idx_tickets_estado ON tickets(estado);
+CREATE INDEX IF NOT EXISTS idx_tickets_usuario ON tickets(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_tickets_fecha_creacion ON tickets(fecha_creacion);
+CREATE INDEX IF NOT EXISTS idx_tickets_edificio_id ON tickets(edificio_id);
+CREATE INDEX IF NOT EXISTS idx_tickets_activo_id ON tickets(activo_id);
+CREATE INDEX IF NOT EXISTS idx_tickets_estado_fecha ON tickets(estado, fecha_creacion);
+
+COMMENT ON TABLE tickets IS 'Sistema de tickets para solicitudes de ingreso, modificación y eliminación de edificios y activos';
+COMMENT ON COLUMN tickets.tipo_entidad IS 'Tipo de entidad: edificio o activo';
+COMMENT ON COLUMN tickets.tipo_operacion IS 'Tipo de operación: ingreso, modificacion o eliminacion';
+COMMENT ON COLUMN tickets.estado IS 'Estado del ticket: resuelto o no_resuelto';
+COMMENT ON COLUMN tickets.justificacion IS 'Razón o justificación de la solicitud';
+COMMENT ON COLUMN tickets.comentario_admin IS 'Comentario del administrador al resolver el ticket';
+

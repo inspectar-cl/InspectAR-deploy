@@ -3,13 +3,29 @@
 ## Descripción
 Microservicio desarrollado en Go que gestiona notificaciones automáticas para el sistema InspectAR. Envía alertas por email a los usuarios de un edificio cuando se detectan problemas en los activos.
 
+## 🎯 Estado Actual: COMPLETAMENTE IMPLEMENTADO
+
+**📊 Estadísticas de Implementación:**
+- **14 rutas totales** configuradas ✅
+- **14 rutas funcionando** (100% operativas) ✅
+- **Sistema de alertas de sensores** 🆕
+- **Sistema de contacto con técnicos** 🆕
+- **Sistema de tickets completo** 🆕
+- **0 rutas con issues**
+- **0 rutas pendientes** de implementación
+
 ## Características
-- 🗄️ **Base de datos PostgreSQL** con relaciones entre edificios, usuarios, activos y notificaciones
+- 🗄️ **Base de datos PostgreSQL** con relaciones entre edificios, usuarios, activos, notificaciones y tickets
 - 📧 **Envío automático de emails** con plantillas HTML responsivas
-- 🔗 **API REST completa** con 7 endpoints
+- 🔗 **API REST completa** con 14 endpoints
 - 🐳 **Containerizado con Docker** y orquestado con Docker Compose
 - ⚙️ **Configuración por variables de entorno** con fallback a archivos YAML
 - 🎯 **Notificaciones inteligentes** que obtienen automáticamente los usuarios del edificio
+- 🚨 **Sistema de alertas de sensores** con integración IoT 🆕
+- 👨‍🔧 **Sistema de contacto con técnicos** para emergencias 🆕
+- 🎫 **Sistema de tickets completo** para solicitudes de edificios, activos y técnicos 🆕
+- 📨 **Notificaciones a administradores** cuando se crean tickets 🆕
+- 📄 **Paginación de tickets** para mejor gestión 🆕
 
 ## Arquitectura
 
@@ -33,11 +49,188 @@ Microservicio desarrollado en Go que gestiona notificaciones automáticas para e
 - **usuarios**: Usuarios del sistema con email
 - **activos**: Activos/sensores de cada edificio
 - **notificaciones**: Registro de todas las notificaciones
+- **tickets**: Sistema de solicitudes de ingreso/modificación/eliminación 🆕
 
 ### Relaciones:
 - Un edificio tiene muchos usuarios y activos
 - Una notificación pertenece a un activo
 - Cada notificación se envía a todos los usuarios del edificio
+- Los tickets pueden relacionarse con edificios, activos o técnicos 🆕
+
+## 📋 Tabla de Rutas - Vista Rápida
+
+### 📧 Rutas de Notificaciones
+
+| Método | Endpoint | Descripción | Estado |
+|--------|----------|-------------|---------|
+| `POST` | `/notification` | Crear nueva notificación y enviar emails | ✅ Funcionando |
+| `POST` | `/sensor/alert` | **Crear alerta desde sensor IoT** 🆕 | ✅ Funcionando |
+| `GET` | `/notification/:activo_id` | Obtener notificaciones por activo | ✅ Funcionando |
+| `PUT` | `/notification/:notification_id/send` | Reenviar notificación por email | ✅ Funcionando |
+| `GET` | `/tipos-notificacion` | **Obtener tipos de notificación disponibles** 🆕 | ✅ Funcionando |
+
+### 👨‍🔧 Rutas de Comunicación con Técnicos
+
+| Método | Endpoint | Descripción | Estado |
+|--------|----------|-------------|---------|
+| `POST` | `/technician/contact` | **Enviar solicitud de contacto a técnico** 🆕 | ✅ Funcionando |
+
+### 🏢 Rutas de Edificios
+
+| Método | Endpoint | Descripción | Estado |
+|--------|----------|-------------|---------|
+| `GET` | `/edificios` | Listar todos los edificios | ✅ Funcionando |
+| `GET` | `/edificio/:id` | Obtener edificio específico | ✅ Funcionando |
+| `GET` | `/edificio/:id/usuarios` | Obtener usuarios de un edificio | ✅ Funcionando |
+| `GET` | `/edificio/:id/activos` | Obtener activos de un edificio | ✅ Funcionando |
+
+### 🎫 Rutas de Tickets (Sistema de Solicitudes) 🆕
+
+| Método | Endpoint | Descripción | Estado |
+|--------|----------|-------------|---------|
+| `POST` | `/tickets` | **Crear ticket** (envía email a admins) � | ✅ Funcionando |
+| `GET` | `/tickets?pagina=N` | **Obtener tickets paginados** (10 por página) 🆕 | ✅ Funcionando |
+| `PUT` | `/tickets/:id/resolver` | **Resolver ticket** con justificación 🆕 | ✅ Funcionando |
+
+### �🎯 Resumen de Estado
+
+- **✅ Funcionando**: 14 rutas operativas (100%)
+- **🔧 Pendientes**: 0 rutas
+- **🆕 Nuevas**: 6 rutas (alertas de sensores, tipos de notificación, contacto técnico, sistema de tickets)
+- **Total**: 14 rutas configuradas
+
+### ⚡ Tests Rápidos
+
+```bash
+# Verificar servicio
+curl http://localhost:8091/health
+
+# ========================================
+# NOTIFICACIONES
+# ========================================
+
+# Crear notificación (envía emails automáticamente)
+curl -X POST http://localhost:8091/notification \
+  -H "Content-Type: application/json" \
+  -d '{"activo_id": 1}'
+
+# 🆕 Crear alerta desde sensor IoT
+curl -X POST http://localhost:8091/sensor/alert \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sensor_id": "TEMP_1_1762359975_D27A",
+    "activo_id": 1,
+    "tipo": "temperatura",
+    "valor": 85.5,
+    "umbral": 80.0,
+    "mensaje": "Temperatura crítica detectada"
+  }'
+
+# Obtener notificaciones de un activo
+curl http://localhost:8091/notification/1
+
+# Reenviar notificación
+curl -X PUT http://localhost:8091/notification/1/send
+
+# 🆕 Obtener tipos de notificación disponibles
+curl http://localhost:8091/tipos-notificacion
+
+# ========================================
+# COMUNICACIÓN CON TÉCNICOS
+# ========================================
+
+# 🆕 Enviar solicitud de contacto a técnico
+curl -X POST http://localhost:8091/technician/contact \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tecnico_id": 1,
+    "tecnico_email": "tecnico@example.com",
+    "activo_id": 1,
+    "edificio_id": 1,
+    "asunto": "Urgente: Falla en bomba de agua",
+    "mensaje": "Se requiere revisión inmediata de la bomba principal",
+    "prioridad": "alta"
+  }'
+
+# ========================================
+# EDIFICIOS
+# ========================================
+
+# Listar edificios
+curl http://localhost:8091/edificios
+
+# Obtener edificio específico
+curl http://localhost:8091/edificio/1
+
+# Obtener usuarios de un edificio
+curl http://localhost:8091/edificio/1/usuarios
+
+# Obtener activos de un edificio
+curl http://localhost:8091/edificio/1/activos
+
+# ========================================
+# TICKETS - SISTEMA DE SOLICITUDES 🆕
+# ========================================
+
+# 🆕 Crear ticket para nuevo edificio
+curl -X POST http://localhost:8091/tickets \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tipo_entidad": "edificio",
+    "tipo_operacion": "ingreso",
+    "usuario_email": "admin@example.com",
+    "edificio_nombre": "Edificio Central",
+    "edificio_direccion": "Av. Principal 123",
+    "edificio_latitud": -34.6037,
+    "edificio_longitud": -58.3816,
+    "justificacion": "Nuevo edificio para monitoreo"
+  }'
+
+# 🆕 Crear ticket para nuevo activo
+curl -X POST http://localhost:8091/tickets \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tipo_entidad": "activo",
+    "tipo_operacion": "ingreso",
+    "usuario_email": "tecnico@example.com",
+    "activo_nombre": "Bomba de Agua Principal",
+    "activo_tipo": "bomba de agua",
+    "activo_descripcion": "Bomba centrífuga 50HP",
+    "activo_ubicacion": "Sala de máquinas",
+    "activo_edificio_id": 1,
+    "justificacion": "Nuevo equipo instalado"
+  }'
+
+# 🆕 Crear ticket para nuevo técnico
+curl -X POST http://localhost:8091/tickets \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tipo_entidad": "tecnico",
+    "tipo_operacion": "ingreso",
+    "usuario_email": "admin@example.com",
+    "tecnico_nombre": "Juan Pérez",
+    "tecnico_email": "juan.perez@example.com",
+    "tecnico_telefono": "+54911234567",
+    "tecnico_especialidad": "electricidad",
+    "tecnico_autorizado": true,
+    "justificacion": "Técnico certificado en sistemas eléctricos"
+  }'
+
+# 🆕 Obtener todos los tickets (primera página)
+curl http://localhost:8091/tickets
+
+# 🆕 Obtener tickets con paginación
+curl "http://localhost:8091/tickets?pagina=1"
+curl "http://localhost:8091/tickets?pagina=2"
+
+# 🆕 Resolver ticket con justificación
+curl -X PUT http://localhost:8091/tickets/1/resolver \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resuelto_por_email": "admin@example.com",
+    "comentario_admin": "Solicitud aprobada y procesada exitosamente. El edificio ha sido agregado al sistema."
+  }'
+```
 
 ## API Endpoints
 

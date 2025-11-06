@@ -25,6 +25,7 @@ func userTypes(roles ...string) []string {
     // Siempre incluir Root al inicio
     scopes := make([]string, 0, len(roles)+1)
     scopes = append(scopes, "user-type:Root")
+    scopes = append(scopes, "user-type:Administrador") // Temporal xd -Vixo 06-11-2025
     
     // Agregar los demás roles especificados
     for _, role := range roles {
@@ -406,7 +407,7 @@ func getSpecialHandlers() []SpecialHandler {
             Pattern: "/api/anomalia-activo/:id_activo",
             Handler: ObtenerAnomaliaActivoHandler,
             Protected: true,
-            RequiredScopes: rootOnly(),
+            RequiredScopes: userTypes("Analista"),
         },
         { 
             Method:  "POST",

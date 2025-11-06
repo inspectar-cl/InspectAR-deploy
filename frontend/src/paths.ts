@@ -13,7 +13,6 @@ export const paths = {
     reporteFallas: '/dashboard/reporte-fallas',
     sensores: '/dashboard/sensores',
     reportesTecnicos: '/dashboard/reportes-tecnicos',
-    planos: '/errors/not-found',
     contactos: '/dashboard/contactos',
     graficos: '/dashboard/graficos',
     ml: '/dashboard/prediccion',

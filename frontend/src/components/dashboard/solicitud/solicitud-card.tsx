@@ -8,6 +8,9 @@ import { TIPO_TO_SLUG, transformarApiATipoFrontend } from '@/utils/solicitud-uti
 import { useRouter } from 'next/navigation';
 import { useUserToken } from '@/hooks/use-usertoken';
 import { paths } from '@/paths'; // Importa tus paths
+import Services from '@/modules/Services';
+
+const services = new Services();
 
 // Helper para dar color a los chips (opcional)
 const getChipColor = (tipo: SolicitudAPI['tipoSolicitud']): ChipProps['color'] => {
@@ -71,21 +74,12 @@ export function SolicitudCard({ solicitud, onTicketUpdated }: SolicitudCardProps
 
     setIsResolving(true);
     try {
-      const response = await fetch(`/api/resolver-ticket/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`,
-        },
-        body: JSON.stringify({ comentario_admin: comentario }),
-      });
+      const responseData = await services.authorizedPut(
+        `/resolver-ticket/${id}`,
+        { comentario_admin: comentario },
+        user.token
+      ) as { message: string; ticket: ApiTicket };
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => null) as { error?: string } | null;
-        throw new Error(errData?.error ?? 'Error al resolver el ticket');
-      }
-
-      const responseData = await response.json() as { message: string; ticket: ApiTicket };
       const updatedFrontendTicket = transformarApiATipoFrontend(responseData.ticket);
       
       // Llama a la función del padre para actualizar el estado

@@ -25,13 +25,11 @@ import {
 import { paths } from '@/paths';
 import { useUserToken } from '@/hooks/use-usertoken';
 import Services from '@/modules/Services';
-
-const services = new Services();
-
-// Importa tus formularios
 import { EdificioDataForm } from '@/components/dashboard/agregar-datos/edificio-datos-form';
 import { ActivoForm } from '@/components/dashboard/agregar-datos/activo-datos-form';
 import { TecnicoForm } from '@/components/dashboard/agregar-datos/tecnico-datos-form';
+
+const services = new Services();
 
 type TabValue = 'Edificio' | 'Activo' | 'Técnico';
 const TABS: { value: TabValue; label: string }[] = [

@@ -10,7 +10,9 @@ import {
 import { useFormContext } from 'react-hook-form';
 import type { SolicitudFormData, TecnicoData, EspecialidadTecnico } from '@/types/formulario';
 import { useUserToken } from '@/hooks/use-usertoken';
+import Services from '@/modules/Services';
 
+const services = new Services();
 const ESPECIALIDADES: EspecialidadTecnico[] = ['Climatización', 'Eléctrico', 'Mecánico'];
 
 export function TecnicoForm(): React.JSX.Element {
@@ -29,10 +31,7 @@ export function TecnicoForm(): React.JSX.Element {
 
     const fetchActivos = async (): Promise<void> => {
       try {
-        const res = await fetch('/api/obtener-todos-activos?sensores=true', {
-          headers: { Authorization: `Bearer ${user.token}` },
-        });
-        if (!res.ok) throw new Error('Error al obtener los activos del usuario.');
+        await services.authorizedGet('/obtener-todos-activos?sensores=true', user.token);
       } catch (_err: unknown) {
         // Error silenciado
       }

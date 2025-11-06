@@ -14,6 +14,9 @@ import type { EdificioData, ActivoData, TecnicoData, SolicitudFormData } from '@
 import { useUserToken } from '@/hooks/use-usertoken';
 import {decodeJwtToken} from '@/hooks/use-auth'
 import { CustomAlert } from '@/components/dashboard/alert-popups/CustomAlertPopup';
+import Services from '@/modules/Services';
+
+const services = new Services();
 
 type TipoSolicitud = 'Edificio' | 'Activo' | 'Técnico';
 type TipoOperacion = 'Ingreso' | 'Modificacion' | 'Eliminacion'; // Tipos de operación
@@ -129,19 +132,7 @@ export function FormularioSolicitud(): React.JSX.Element {
 
         try {
             const payload = transformarDatosParaApi(data, email);
-            const response = await fetch(URL_ENDPOINT, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => null);
-                throw new Error(errorData?.error || 'Error en el backend al crear la solicitud.');
-            }
+            await services.authorizedPost(URL_ENDPOINT, payload, token);
 
             //console.log("Solicitud creada con éxito:", payload);
             //// alert("Solicitud enviada con éxito.");

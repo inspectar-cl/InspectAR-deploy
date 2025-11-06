@@ -27,7 +27,9 @@ import type {
 import { SolicitudCard } from './solicitud-card';
 
 import { useUserToken } from '@/hooks/use-usertoken';
+import Services from '@/modules/Services';
 
+const services = new Services();
 const TIPOS_FILTRO: (TipoSolicitud | 'Todas')[] = ['Todas', 'Edificio', 'Activo', 'Técnico'];
 type EstadoSolicitud = 'Pendiente' | 'EnProgreso' | 'Resuelta';
 const TIPOS_ESTADO: ('Todos' | EstadoSolicitud)[] = ['Todos', 'Pendiente', 'EnProgreso', 'Resuelta'];
@@ -119,18 +121,7 @@ export function ListaSolicitudes(): React.JSX.Element {
       setError(null);
 
       try {
-        const response = await fetch('/api/notification/tickets', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${user.token}`,
-          },
-        });
-        if (!response.ok) {
-          const errData = await response.json().catch(() => null);
-          throw new Error(errData?.error || 'Error al obtener las solicitudes');
-        }
-
-        const data = await response.json();
+        const data = await services.authorizedGet('/notification/tickets', user.token);
         let ticketsArray: ApiTicket[];
 
         if (Array.isArray(data)) {

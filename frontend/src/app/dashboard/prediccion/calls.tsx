@@ -72,6 +72,7 @@ export default function PrediccionClient() {
           setPredicciones(mockPredicciones);
           setError(null);
         } catch (err) {
+          // eslint-disable-next-line no-console -- Development debugging
           console.error('Error al cargar datos simulados:', err);
           setError('Error al cargar datos simulados');
         } finally {

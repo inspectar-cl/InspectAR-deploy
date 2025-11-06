@@ -165,6 +165,8 @@ export const mockPredicciones: Prediccion[] = [
 ];
 
 // Función para simular delay de red
-export const simulateNetworkDelay = (ms: number = 1000): Promise<void> => {
-  return new Promise(resolve => setTimeout(resolve, ms));
+export const simulateNetworkDelay = (ms = 1000): Promise<void> => {
+  return new Promise(resolve => {
+    setTimeout(resolve, ms);
+  });
 };

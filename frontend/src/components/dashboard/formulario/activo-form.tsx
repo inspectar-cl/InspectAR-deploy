@@ -14,7 +14,9 @@ import {
 import { useFormContext } from 'react-hook-form';
 import type { SolicitudFormData, ActivoData, TipoActivo } from '@/types/formulario';
 import { useUserToken } from '@/hooks/use-usertoken'; // Importa tu hook
+import Services from '@/modules/Services';
 
+const services = new Services();
 const TIPOS_ACTIVO: TipoActivo[] = ['Ascensor', 'BombaDeAgua', 'PanelElectrico'];
 
 interface EdificioSimple {
@@ -48,11 +50,7 @@ export function ActivoForm(): React.JSX.Element {
       setIsLoading(true);
       setFetchError(null);
       try {
-        const response = await fetch('/api/gestion/edificios', { // Ruta de tu API
-          headers: { 'Authorization': `Bearer ${userContext.token}` },
-        });
-        if (!response.ok) throw new Error('No se pudieron cargar los edificios');
-        const data = (await response.json()) as EdificiosApiResponse;
+        const data = await services.authorizedGet('/gestion/edificios', userContext.token) as EdificiosApiResponse;
         setEdificios(data.edificios);
       } catch (err) {
         setFetchError(err instanceof Error ? err.message : 'Error desconocido');

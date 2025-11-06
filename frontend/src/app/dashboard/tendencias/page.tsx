@@ -187,7 +187,7 @@ export default function TendenciasPage() {
       <Box display="flex" alignItems="center" gap={2} mb={2}>
         <TrendingUpIcon size={32} color="#2196f3" />
         <Typography variant="h4" fontWeight="bold">
-          Tendencias y Predicciones IA
+          Tendencias y Predicciones
         </Typography>
       </Box>
 
@@ -316,12 +316,6 @@ export default function TendenciasPage() {
           <Box display="flex" gap={2} flexWrap="wrap">
             <Typography variant="body2" color="text.secondary">
               📍 {activoActual.ubicacion}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              🏢 {activoActual.id_edificio}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              ⚙️ {activoActual.tipoActivo}
             </Typography>
           </Box>
         </Box>

@@ -47,7 +47,7 @@ func obtenerEdificiosUsuario(email string, userType string) []interface{} {
 
     // Construir URL para obtener edificios
     var url string
-    if userType != "user-type:Root" {
+    if userType != "user-type:Root" && userType != "user-type:Administrador" {
         url = fmt.Sprintf("%s/usuarios/edificios/%s", gestionURL, email)
     } else {
         url = fmt.Sprintf("%s/edificios", gestionURL)

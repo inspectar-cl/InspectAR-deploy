@@ -11,4 +11,4 @@ server:
 
 services:
   parser_url: "http://iot-service:8090"
-  base_url: "https://anita-submicroscopic-overgently.ngrok-free.app"
+  base_url: "https://inspect-ar-deploy.vercel.app"

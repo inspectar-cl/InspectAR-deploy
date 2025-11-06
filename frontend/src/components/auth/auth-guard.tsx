@@ -79,11 +79,9 @@ export function AuthGuard({ children }: AuthGuardProps): React.JSX.Element | nul
     setIsChecking(false);
   };
 
-  React.useEffect(() => {
-    checkPermissions().catch(() => { /* noop */ });
-    // We disable the exhaustive-deps check because checkPermissions (a function) is recreated on every render, but we only track the external state dependencies (user, error, isLoading, pathname) to control execution.
-    // //eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, error, isLoading, pathname]); // depende de pathname
+React.useEffect(() => {
+  checkPermissions().catch(() => { /* noop */ });
+}, [user, error, isLoading, pathname, checkPermissions]);
 
   if (isChecking) return null;
 

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
 'use client';
 
+import { useAuthUser } from '@/contexts/user-context';
 import * as React from 'react';
 import { paths } from '@/paths';
 import Box from '@mui/material/Box';
@@ -94,7 +95,7 @@ export default function DataGridDemo({
   const { user } = useUserToken();
   const [activosList, setActivosList] = React.useState<Activo[]>([]);
   const [error, setError] = React.useState<string | null>(null);
-
+  const { user: authUser, changeSelectedEdificio } = useAuthUser();
   const getActivos = async (authToken: string) => {
     if (!authToken) {
       return;
@@ -164,6 +165,7 @@ export default function DataGridDemo({
     edificio_id: false,
   });
 
+
   return (
     <Card sx={sx}>
       <CardHeader title="Estado de Activos" subheader={error ? `⚠️ ${error}` : undefined} />
@@ -172,8 +174,20 @@ export default function DataGridDemo({
           <DataGrid
             columnVisibilityModel={columnVisibilityModel}
             onColumnVisibilityModelChange={(newModel) => { setColumnVisibilityModel(newModel); }}
-            onRowClick={(params: GridRowParams<Activo>) => {
-              window.location.href = paths.dashboard.activoDetail(params.row.id.toString());
+            onRowClick={async (params: GridRowParams<Activo>) => {
+              try {
+                const edificioEncontrado = authUser?.edificio?.find(
+                  (e) => e.id === params.row.edificio_id
+                );
+
+                if (!edificioEncontrado) {
+                  return;
+                }
+
+                await changeSelectedEdificio(edificioEncontrado );
+                window.location.href = paths.dashboard.activoDetail(params.row.id.toString());
+              } catch (err) { return;
+              }
             }}
             showToolbar
             rows={activosList}

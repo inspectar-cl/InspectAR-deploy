@@ -59,6 +59,7 @@ export interface SensorRow {
 }
 
 export interface ActivoWithSensors {
+  id: number;
   assetName: string;
   imageUrl: string;
   sensores: SensorRow[];
@@ -175,6 +176,7 @@ export function useActivosWithSensors() {
         });
 
         return {
+          id: activo.id,
           assetName: `${activo.nombre} — ${activo.ubicacion}`,
           imageUrl: TIPO_IMAGENES[activo.tipo.toLowerCase()] || TIPO_IMAGENES.transformador,
           sensores: sensoresTransformados,

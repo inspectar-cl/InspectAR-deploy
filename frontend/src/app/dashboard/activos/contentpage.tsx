@@ -15,15 +15,14 @@ export default function ContentActivosPage(): React.JSX.Element {
   const [edificioSeleccionado, setEdificioSeleccionado] = useState<string | null>(null);
 
   return (
-    <Stack spacing={2}>
+    <Stack spacing={2} id="tour-mapa-activos">
       <Grid size={{lg:8, md:6, xs:12}}>
         <MapaActivos onSeleccionarEdificio={(id) =>
             { setEdificioSeleccionado((prev) => (prev === id ? null : id)); }
         }/>
       </Grid>
-
-      <Grid size={{lg:20, md:10, xs:20}}>
-          <DataGridDemo sx={{ height: '100%' }} edificioSeleccionado={edificioSeleccionado}/>
+      <Grid id="tour-lista-activos" size={{lg:20, md:10, xs:20}}>
+          <DataGridDemo sx={{ height: '100%' }} edificioSeleccionado={edificioSeleccionado} />
       </Grid>
     </Stack>
   );

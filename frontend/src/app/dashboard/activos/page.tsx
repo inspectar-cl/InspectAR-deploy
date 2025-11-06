@@ -1,23 +1,39 @@
+'use client';
+
 import React from 'react';
-import type { Metadata } from 'next';
-import { config } from '@/config';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-
+import { useDriverTour } from "@/components/tutorial/use-driver-tour";
+import type { TourKey } from "@/components/tutorial/tour-config";
+import { TourButton } from "@/components/tutorial/tour-button";
+import { useUserToken } from '@/hooks/use-usertoken';
 import ContentActivosPage from './contentpage';
-
-export const metadata = { title: `Activos | Dashboard | ${config.site.name}` } satisfies Metadata;
+import { Box, Button } from '@mui/material';
 
 export default function ActivosPage(): React.JSX.Element {
+  const tourKey: TourKey = 'lista-activos';
+  const { startTour } = useDriverTour(tourKey);
 
   return (
-    <Stack spacing={2}>
-      <div>
-        <Typography variant="h4">Lista de Activos</Typography>
-      </div>
+    <Box p={2}>
+      <Box 
+          display="flex" 
+          justifyContent="space-between" 
+          alignItems="center" 
+          mb={3}
+          id="tour-header-activos" 
+      >
+          <Typography variant="h4">
+              Lista de Activos
+          </Typography>
 
-      <ContentActivosPage/>
-
-    </Stack>
+          <TourButton 
+            onClick={startTour}
+            tooltipTitle="Iniciar Tutorial de Activos"
+            style="pulse 3s infinite"
+          />
+      </Box>
+      <ContentActivosPage />
+    </Box>
   );
 }

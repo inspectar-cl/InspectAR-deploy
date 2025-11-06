@@ -1,7 +1,7 @@
 import type { DriveStep } from 'driver.js';
 
 //Palabras clave a utilizar para identificar los diferentes tours disponibles en la aplicación.
-export type TourKey = 'home' | 'activo' | 'predicciones-filtros';
+export type TourKey = 'home' | 'activo' | 'predicciones-filtros' | 'lista-activos';
 
 export type TourSteps = DriveStep[];
 
@@ -21,8 +21,64 @@ const HOME_TOUR_STEPS: TourSteps = [
 const ACTIVO_TOUR_STEPS: TourSteps = [
   { 
     element: '.activo-summary-card', 
-    popover: { title: 'Resumen de Activos', description: 'Vista general de tu inventario.', side: 'top' } 
+    popover: { title: 'Resumen de Activos', description: 'Vista general de tu activo, donde podras encontrar en detalle toda la informacion necesaria.', side: 'top' } 
   },
+    {
+    element: '#card-activo',
+    popover: {
+      title: 'Detalles del Activo',
+        description: 'Aquí puedes ver información detallada sobre el activo seleccionado.',
+        side: 'bottom'
+    }
+    },
+    {
+    element: '#tour-caudal-presion',
+    popover: {
+      title: 'Caudal y Presión',
+        description: 'Visualiza las métricas clave de caudal y presión en tiempo real.',
+        side: 'top'
+    }
+    },
+    {
+    element: '#tour-grafico-tiempo-real',
+    popover: {
+      title: 'Gráfico en Tiempo Real',
+        description: 'Monitorea las tendencias de tus sensores en tiempo real.',
+        side: 'top'
+    }
+    },
+    {
+    element: '#tour-temperature-progress',
+    popover: {
+      title: 'Progreso de Temperatura',
+        description: 'Observa el estado actual de la temperatura del activo.',  
+        side: 'left'
+    }
+    },
+    {
+    element: '#tour-score-chart',
+    popover: {
+      title: 'Gráfico de Puntuación',
+        description: 'Evalúa el rendimiento del activo mediante puntuaciones visuales.',
+        side: 'right'
+    }
+    },
+    {
+    element: '#tour-latest-alerts',
+    popover: { 
+        title: 'Últimas Alertas',
+        description: 'Mantente informado sobre las alertas más recientes relacionadas con tu activo.',
+        side: 'top'
+    }
+    },
+    {
+    element: '#tour-sensores-activo',
+    popover: {  
+        title: 'Sensores del Activo',
+        description: 'Revisa los sensores asociados a este activo para un monitoreo detallado.',
+        side: 'top'
+    }
+    },
   // ...
 ];
 
@@ -94,12 +150,41 @@ const PREDICCIONES_FILTROS_TOUR_STEPS: TourSteps = [
     },
 ];
 
+const LISTA_ACTIVOS_TOUR_STEPS: TourSteps = [
+    { 
+        element: '#header-lista-activos',
+        popover: { 
+            title: 'Lista de Activos', 
+            description: 'Esta sección te permite visualizar y gestionar todos los activos registrados en tu sistema.',
+            side: 'bottom'
+        }
+    },
+    { 
+        element: '#tour-mapa-activos',
+        popover: {
+            title: 'Mapa de Activos',
+            description: 'Interactúa con el mapa para seleccionar diferentes edificios y ver los activos asociados a cada uno.',
+            side: 'right'
+        }
+    },
+    {
+        element: '#tour-lista-activos',
+        popover: {
+            title: 'Tabla de Activos',
+            description: 'Aquí puedes ver una lista detallada de los activos. Selecciona un edificio en el mapa para filtrar la lista según el edificio seleccionado.',
+            side: 'left'
+        }
+    },
+    // Puedes agregar más pasos específicos para el tour de "lista-activos" aquí.
+];
+
 //Mapeo de todas las claves de tour a sus respectivos pasos.
 
 const ALL_TOUR_STEPS: Record<TourKey, TourSteps> = {
     'home': HOME_TOUR_STEPS,
     'activo': ACTIVO_TOUR_STEPS,
     'predicciones-filtros': PREDICCIONES_FILTROS_TOUR_STEPS,
+    'lista-activos': LISTA_ACTIVOS_TOUR_STEPS,
 };
 
 // Devuelve los pasos del tour segun la clave proporcionada.

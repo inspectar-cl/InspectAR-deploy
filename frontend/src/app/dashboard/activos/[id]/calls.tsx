@@ -30,7 +30,6 @@ import {
   CartesianGrid,
 } from 'recharts';
 import dayjs from 'dayjs';
-
 import { type Activo, type Prediccion } from '@/types/';
 import { DownloadSimple } from '@phosphor-icons/react';
 import { useUserToken } from '@/hooks/use-usertoken';
@@ -44,9 +43,11 @@ import { ScatterWithArgs } from '@/components/dashboard/overview/MedicionTiempoR
 import { ChatBotCard } from '@/components/dashboard/overview/chatbot';
 import { useActivosWithSensors } from '@/hooks/use-activos-with-sensors';
 import Services from '@/modules/Services';
-import dataAlertas from '@/mocks/alerts.json';
 import type { SensorRow } from '@/hooks/use-activos-with-sensors';
 import { Cpu } from 'lucide-react';
+import type { TourKey } from "@/components/tutorial/tour-config";
+import { TourButton } from "@/components/tutorial/tour-button";
+import { useDriverTour } from "@/components/tutorial/use-driver-tour";
 
 // Constantes globales
 const ESTADOS = ['OK', 'Medio', 'Crítico', 'NN'] as const;
@@ -67,6 +68,8 @@ export default function ActivoDetailClient({ id }: { id: number}) {
   const [openChart, setOpenChart] = useState(false);
   const [selectedSensor, setSelectedSensor] = useState<SensorRow | null>(null);
   const [alertas, setAlertas] = useState<Prediccion[]>([]);
+  const tourKey: TourKey = 'activo';
+  const { startTour } = useDriverTour(tourKey);
 
   const filteredData = React.useMemo(() => {
     if (!selectedSensor?.history24h) return [];
@@ -158,9 +161,7 @@ export default function ActivoDetailClient({ id }: { id: number}) {
     };
 
     const fetchAlertas = async () => {
-      try {
-        console.log('🚀 Iniciando llamada a API de alertas para activo:', id);
-        
+      try {   
         interface AnomaliasPaginadas {
           activo_id?: number;
           data?: Array<{
@@ -186,9 +187,6 @@ export default function ActivoDetailClient({ id }: { id: number}) {
           `/anomalia-activo/${id}`, 
           user.token
         ) as AnomaliasPaginadas;
-
-        console.log('✅ Respuesta de alertas recibida:', response);
-
         // Transformar y filtrar solo las anomalías
         const alertasTransformadas = (response.data ?? [])
           .map((p) => ({
@@ -205,12 +203,8 @@ export default function ActivoDetailClient({ id }: { id: number}) {
             contribution_magnitude: p.contribution_magnitude ?? 0,
           }))
           .filter(a => a.is_anomaly);
-
-        console.log('📊 Alertas filtradas:', alertasTransformadas.length);
-
         setAlertas(alertasTransformadas);
       } catch (err) {
-        console.error('❌ Error al obtener las alertas:', err);
         setAlertas([]);
       }
     };
@@ -268,9 +262,22 @@ export default function ActivoDetailClient({ id }: { id: number}) {
     
     <Box sx={{ p: 2 }}>
       {/* FILA SUPERIOR */}
+      <Box 
+          display="flex" 
+          justifyContent="space-between" 
+          alignItems="center" 
+          mb={3}
+          id="tour-header" 
+      >
+          <TourButton 
+            onClick={startTour}
+            tooltipTitle="Iniciar Tutorial del Activo"
+            style="pulse 3s infinite"
+          />
+      </Box>
       <Grid container spacing={2}>
         {/* Columna izquierda: Tarjeta del activo */}
-        <Grid size={{md:8, xs:12}}>
+        <Grid size={{md:8, xs:12}} id="card-activo">
           <Card sx={{ display: 'flex', height: '100%', minHeight: 400 }}>
             {/* Imagen izquierda */}
             <CardMedia
@@ -308,7 +315,7 @@ export default function ActivoDetailClient({ id }: { id: number}) {
                   component="a"
                   href="/documentos/ficha_tecnica_bomba.pdf"
                   download="ficha_tecnica_bomba.pdf"
-                  target
+                  target="_blank"
                   sx={{
                     textTransform: 'none',
                     borderRadius: 2,
@@ -322,7 +329,7 @@ export default function ActivoDetailClient({ id }: { id: number}) {
             </Box>
           </Card>
         </Grid>
-        <Grid size={{md:4, xs:12}}>
+        <Grid size={{md:4, xs:12}} id="tour-caudal-presion">
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
             {/* Caudal */}
             <Caudal diff={parseFloat(caudalInfo.diff.toFixed(2))}
@@ -339,22 +346,22 @@ export default function ActivoDetailClient({ id }: { id: number}) {
       {/* FILA INFERIOR */}
       <Grid container spacing={2} sx={{ mt: 2 }}>
         {/* Scatter: 83.33% (10/12) */}
-        <Grid size={{md:10, xs:12}}>
+        <Grid size={{md:10, xs:12}} id="tour-grafico-tiempo-real">
           <ScatterWithArgs sx={{ height: 500 }} dataCaudal={sensorCaud} dataPresion={sensorPres} dataTemp={sensorTemp} />
         </Grid>
         {/* Temperatura: 16.67% (2/12) */}
-        <Grid size={{md:2, xs:12}}>
+        <Grid size={{md:2, xs:12}} id="tour-temperature-progress">
           <Box sx={{ height: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <TemperatureProgress value={temperatura} />
           </Box>
         </Grid>
         
         {/* ScoreChart: 25% (3/12) */}
-        <Grid size={{md:3, xs:12}}>
+        <Grid size={{md:3, xs:12}} id="tour-score-chart">
           <ScoreChart sx={{ height: 450 }} />
         </Grid>
         {/* LatestAlerts: 75% (9/12) */}
-        <Grid size={{md:9, xs:12}}>
+        <Grid size={{md:9, xs:12}} id="tour-latest-alerts">
           <LatestAlerts
             products={alertas.map(alerta => ({
               id: alerta.id,
@@ -367,14 +374,14 @@ export default function ActivoDetailClient({ id }: { id: number}) {
         </Grid>
         
         {/* ChatBot: 100% (12/12) */}
-        <Grid size={{md:12, xs:12}}>
+        <Grid size={{md:12, xs:12}} id="tour-chatbot-card">
           <ChatBotCard id={activo.id_ficha_tecnica}/>
         </Grid>
       </Grid>
         {activos
           .filter((a) => a.id === activo.id)
           .map((act) => (
-            <Box key={act.assetName} sx={{ mt: 4 }}>
+            <Box key={act.assetName} sx={{ mt: 4 }} id="tour-sensores-activo">
               <Typography variant="h5" gutterBottom>
                 Sensores del activo
               </Typography>

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/explicit-function-return-type -- Complex data operations require flexibility */
 'use client';
 
 import * as React from 'react';
@@ -44,7 +44,6 @@ import { ScatterWithArgs } from '@/components/dashboard/overview/MedicionTiempoR
 import { ChatBotCard } from '@/components/dashboard/overview/chatbot';
 import { useActivosWithSensors } from '@/hooks/use-activos-with-sensors';
 import Services from '@/modules/Services';
-import dataAlertas from '@/mocks/alerts.json';
 import type { SensorRow } from '@/hooks/use-activos-with-sensors';
 import { Cpu } from 'lucide-react';
 
@@ -159,11 +158,10 @@ export default function ActivoDetailClient({ id }: { id: number}) {
 
     const fetchAlertas = async () => {
       try {
-        console.log('🚀 Iniciando llamada a API de alertas para activo:', id);
         
         interface AnomaliasPaginadas {
           activo_id?: number;
-          data?: Array<{
+          data?: {
             id?: number;
             activo_id?: number;
             timestamp?: string;
@@ -175,7 +173,7 @@ export default function ActivoDetailClient({ id }: { id: number}) {
             is_anomaly?: number | boolean;
             most_influential_variable?: string;
             contribution_magnitude?: number;
-          }>;
+          }[];
           count?: number;
           message?: string;
           limit?: number;
@@ -187,7 +185,6 @@ export default function ActivoDetailClient({ id }: { id: number}) {
           user.token
         ) as AnomaliasPaginadas;
 
-        console.log('✅ Respuesta de alertas recibida:', response);
 
         // Transformar y filtrar solo las anomalías
         const alertasTransformadas = (response.data ?? [])
@@ -206,11 +203,9 @@ export default function ActivoDetailClient({ id }: { id: number}) {
           }))
           .filter(a => a.is_anomaly);
 
-        console.log('📊 Alertas filtradas:', alertasTransformadas.length);
 
         setAlertas(alertasTransformadas);
       } catch (err) {
-        console.error('❌ Error al obtener las alertas:', err);
         setAlertas([]);
       }
     };

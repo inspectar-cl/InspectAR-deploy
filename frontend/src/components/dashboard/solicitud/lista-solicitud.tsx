@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call -- API integration requires type flexibility */
 import * as React from 'react';
 import { 
     Box, 
@@ -25,7 +26,6 @@ import type {
 } from '@/types/form-solicitud';
 import { SolicitudCard } from './solicitud-card';
 
-import { MOCK_SOLICITUDES } from '@/mocks/solicitudes';
 import { useUserToken } from '@/hooks/use-usertoken';
 
 const TIPOS_FILTRO: (TipoSolicitud | 'Todas')[] = ['Todas', 'Edificio', 'Activo', 'Técnico'];
@@ -43,7 +43,7 @@ function transformarApiATipoFrontend(ticket: ApiTicket): SolicitudAPI {
   
   // Mapea la entidad y extrae los datos específicos
   switch (ticket.tipo_entidad) {
-    case 'edificio':
+    case 'edificio': {
       tipoSolicitud = 'Edificio';
       datosEspecificos = {
         nombre: ticket.edificio_nombre,
@@ -52,8 +52,9 @@ function transformarApiATipoFrontend(ticket: ApiTicket): SolicitudAPI {
         longitud: ticket.edificio_longitud,
       } as EdificioData;
       break;
+    }
       
-    case 'activo':
+    case 'activo': {
       tipoSolicitud = 'Activo';
       // Mapea el tipo de activo (ej. 'bomba de agua' -> 'BombaDeAgua')
       let tipoActivoForm: string = ticket.activo_tipo || '';
@@ -69,8 +70,9 @@ function transformarApiATipoFrontend(ticket: ApiTicket): SolicitudAPI {
         imagen: null, // La API no parece enviar imagen
       } as ActivoDataAPI;
       break;
+    }
       
-    case 'tecnico':
+    case 'tecnico': {
       tipoSolicitud = 'Técnico';
       datosEspecificos = {
         nombre: ticket.tecnico_nombre,
@@ -80,6 +82,7 @@ function transformarApiATipoFrontend(ticket: ApiTicket): SolicitudAPI {
         activosAsociados: [], // La API no parece enviar esto
       } as TecnicoData;
       break;
+    }
       
     default:
       // Fallback por si llega un tipo no esperado

@@ -7,11 +7,11 @@ import { useFormContext } from 'react-hook-form';
 import type { SolicitudFormData } from '@/types/formulario';
 
 // Definimos los campos que este formulario SÍ edita
-type ActivoEditData = {
+interface ActivoEditData {
   nombre: string;
   ubicacion: string;
   descripcion?: string;
-};
+}
 
 export function ActivoEditForm(): React.JSX.Element {
   const {

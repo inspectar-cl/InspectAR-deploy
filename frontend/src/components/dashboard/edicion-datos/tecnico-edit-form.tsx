@@ -18,12 +18,12 @@ import type { SolicitudFormData, EspecialidadTecnico } from '@/types/formulario'
 const ESPECIALIDADES: EspecialidadTecnico[] = ['Climatización', 'Eléctrico', 'Mecánico'];
 
 // Definimos los campos que este formulario SÍ edita
-type TecnicoEditData = {
+interface TecnicoEditData {
   nombre: string;
   correo: string;
   telefono: string;
   especialidad: EspecialidadTecnico;
-};
+}
 
 export function TecnicoEditForm(): React.JSX.Element {
   const {

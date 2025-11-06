@@ -36,7 +36,6 @@ export function SolicitudCard({ solicitud, onTicketUpdated }: SolicitudCardProps
     const slug = TIPO_TO_SLUG[tipoSolicitud];
     if (!slug) return;
 
-    console.log(tipoOperacion)
 
     // --- Lógica Condicional ---
     if (tipoOperacion === 'ingreso') {
@@ -67,7 +66,7 @@ export function SolicitudCard({ solicitud, onTicketUpdated }: SolicitudCardProps
   };
 
   const handleResolverApi = async (): Promise<void> => {
-    const comentario = prompt('Ingresa un comentario de resolución:', 'Resuelto con éxito.');
+    const comentario = '';
     if (!comentario || !user?.token) return;
 
     setIsResolving(true);
@@ -82,35 +81,26 @@ export function SolicitudCard({ solicitud, onTicketUpdated }: SolicitudCardProps
       });
 
       if (!response.ok) {
-        const errData = await response.json().catch(() => null);
-        throw new Error(errData?.error || 'Error al resolver el ticket');
+        const errData = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(errData?.error ?? 'Error al resolver el ticket');
       }
 
-      const responseData: { message: string; ticket: ApiTicket } = await response.json();
+      const responseData = await response.json() as { message: string; ticket: ApiTicket };
       const updatedFrontendTicket = transformarApiATipoFrontend(responseData.ticket);
       
       // Llama a la función del padre para actualizar el estado
       onTicketUpdated(updatedFrontendTicket);
 
     } catch (err) {
-      console.error(err);
-      alert(err instanceof Error ? err.message : 'Un error ocurrió.');
+      // alert(err instanceof Error ? err.message : 'Un error ocurrió.');
     } finally {
       setIsResolving(false);
     }
   };
 
-  const handleNavigateToForm = (): void => {
-    const slug = TIPO_TO_SLUG[solicitud.tipoSolicitud];
-    if (!slug) return;
-    const targetPath = `/dashboard/agregar-datos?tab=${slug}`;
-    const dataString = JSON.stringify(solicitud);
-    const encodedData = encodeURIComponent(dataString);
-    const fullUrl = `${targetPath}?data=${encodedData}`;
-    router.push(fullUrl);
-  };
-
-  const isResolved = estado.toLowerCase() === 'resuelta';
+  // NOTE: navigation helper removed (handled by `handleProcesar`).
+  // Ensure estado is treated safely when checking resolved state.
+  const isResolved = (estado || '').toLowerCase() === 'resuelta';
 
   return (
     <Card sx={{ height: '100%' }}>

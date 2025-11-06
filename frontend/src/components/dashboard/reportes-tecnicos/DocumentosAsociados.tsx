@@ -192,11 +192,9 @@ function DocumentosAsociados() {
               onChange={(e) => { setArchivo(e.target.files ? e.target.files[0] : null); }}
             />
           </Button>
-          {archivo && (
-            <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}>
+          {archivo ? <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}>
               📄 {archivo.name}
-            </Typography>
-          )}
+            </Typography> : null}
         </Box>
 
         {/* Selector de categoría */}

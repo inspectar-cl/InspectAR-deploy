@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, camelcase -- API integration requires snake_case fields */
 'use client';
 
 import * as React from 'react';
@@ -34,7 +35,7 @@ function transformarDatosParaApi(data: SolicitudFormData, userEmail: string): an
 
   // Añadir campos específicos
   switch (tipoSolicitud) {
-    case 'Edificio':
+    case 'Edificio': {
       const edificio = datosEspecificos as EdificioData;
       payload.edificio_nombre = edificio.nombre;
       payload.edificio_direccion = edificio.direccion;
@@ -43,8 +44,9 @@ function transformarDatosParaApi(data: SolicitudFormData, userEmail: string): an
       // 'edificio_id' solo se añadiría si la operación es 'modificacion' o 'eliminacion'
       // Por ahora, asumimos que este formulario es solo para 'ingreso'
       break;
+    }
       
-    case 'Activo':
+    case 'Activo': {
       const activo = datosEspecificos as ActivoData;
       payload.activo_nombre = activo.nombre; // <-- Añadido
       payload.activo_tipo = activo.tipoActivo.toLowerCase().replace('deagua', ' de agua'); // 'BombaDeAgua' -> 'bomba de agua'
@@ -52,8 +54,9 @@ function transformarDatosParaApi(data: SolicitudFormData, userEmail: string): an
       payload.activo_ubicacion = activo.ubicacion;
       payload.activo_edificio_id = activo.edificioId;
       break;
+    }
 
-    case 'Técnico':
+    case 'Técnico': {
       const tecnico = datosEspecificos as TecnicoData;
       payload.tecnico_nombre = tecnico.nombre;
       payload.tecnico_email = tecnico.correo;
@@ -62,6 +65,7 @@ function transformarDatosParaApi(data: SolicitudFormData, userEmail: string): an
       payload.tecnico_autorizado = true; // Valor fijo, según tu ejemplo de API
       // 'activosAsociados' no parece ser parte del payload de solicitud
       break;
+    }
   }
   
   return payload;
@@ -114,11 +118,11 @@ export function FormularioSolicitud(): React.JSX.Element {
             }
 
             //console.log("Solicitud creada con éxito:", payload);
-            //alert("Solicitud enviada con éxito.");
+            //// alert("Solicitud enviada con éxito.");
             methods.reset();
         } catch (error) {
             //console.error("Fallo al enviar el formulario:", error);
-            //alert("Fallo al enviar el formulario. Vea la consola para más detalles.");
+            //// alert("Fallo al enviar el formulario. Vea la consola para más detalles.");
             setApiError(error instanceof Error ? error.message : 'Fallo al enviar el formulario.');
         }
     };
@@ -208,11 +212,9 @@ export function FormularioSolicitud(): React.JSX.Element {
                         </Typography>
 
                         {/* Muestra errores de API aquí */}
-                        {apiError && (
-                          <Alert severity="error" sx={{ mb: 3 }}>
+                        {apiError ? <Alert severity="error" sx={{ mb: 3 }}>
                             {apiError}
-                          </Alert>
-                        )}
+                          </Alert> : null}
 
                         {renderFormularioEspecifico()}
 

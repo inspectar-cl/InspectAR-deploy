@@ -6,27 +6,16 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Chip,
-  Box,
-  CircularProgress,
-  Typography,
 } from '@mui/material';
-import { Controller, useFormContext } from 'react-hook-form';
+import { useFormContext } from 'react-hook-form';
 import type { SolicitudFormData, TecnicoData, EspecialidadTecnico } from '@/types/formulario';
 import { useUserToken } from '@/hooks/use-usertoken';
 
 const ESPECIALIDADES: EspecialidadTecnico[] = ['Climatización', 'Eléctrico', 'Mecánico'];
 
-interface ActivoResumen {
-  id: number;
-  nombre: string;
-  tipoActivo?: string;
-}
-
 export function TecnicoForm(): React.JSX.Element {
   const {
     register,
-    control,
     formState: { errors },
   } = useFormContext<SolicitudFormData>();
 
@@ -35,36 +24,22 @@ export function TecnicoForm(): React.JSX.Element {
     | undefined;
   const { user } = useUserToken();
 
-  const [activos, setActivos] = React.useState<ActivoResumen[]>([]);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-
   React.useEffect(() => {
     if (!user?.token) return;
 
     const fetchActivos = async (): Promise<void> => {
-      setLoading(true);
-      setError(null);
       try {
         const res = await fetch('/api/obtener-todos-activos?sensores=true', {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         if (!res.ok) throw new Error('Error al obtener los activos del usuario.');
-
-        const data = (await res.json()) as { activos?: ActivoResumen[] };
-        setActivos(data.activos ?? []);
-      } catch (err: unknown) {
-        //console.error(err);
-        setError('No se pudieron cargar los activos.');
-      } finally {
-        setLoading(false);
+      } catch (_err: unknown) {
+        // Error silenciado
       }
     };
 
     void fetchActivos();
   }, [user?.token]);
-
-  const ITEM_HEIGHT = 35;
 
   return (
     <Grid container spacing={2}>

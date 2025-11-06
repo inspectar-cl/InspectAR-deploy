@@ -1,11 +1,12 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access -- API response types are dynamic */
 
 import * as React from 'react';
 import {
   DataGrid,
-  GridColDef,
+  type GridColDef,
   GridActionsCellItem,
-  GridRowId
+  type GridRowId
 } from '@mui/x-data-grid';
 import {
   Box,
@@ -20,9 +21,7 @@ import {
   Tooltip,
   Chip,
 } from '@mui/material';
-import { useRouter } from 'next/navigation';
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { paths } from '@/paths';
 import type { SolicitudFormData, TecnicoData, EspecialidadTecnico } from '@/types/edicion-data';
 import { useForm, FormProvider } from 'react-hook-form';
 import { useUserToken } from '@/hooks/use-usertoken';
@@ -38,14 +37,15 @@ interface TecnicoAPI {
   activosAsociados: number[]; // Array de IDs
 }
 
-const getEstadoChipColor = (
-  estado: 'Medio' | 'OK' | 'Crítico' | string
-) => {
-  if (estado === 'Crítico') return 'error';
-  if (estado === 'Medio') return 'warning';
-  if (estado === 'OK') return 'success';
-  return 'default';
-};
+// Función auxiliar para determinar color de chip según estado (no usada actualmente)
+// const getEstadoChipColor = (
+//   estado: 'Medio' | 'OK' | 'Crítico' | string
+// ): 'error' | 'warning' | 'success' | 'default' => {
+//   if (estado === 'Crítico') return 'error';
+//   if (estado === 'Medio') return 'warning';
+//   if (estado === 'OK') return 'success';
+//   return 'default';
+// };
 
 function transformarApiAForm(tecnico: TecnicoAPI): SolicitudFormData {
   return {
@@ -63,7 +63,7 @@ function transformarApiAForm(tecnico: TecnicoAPI): SolicitudFormData {
 }
 
 export function TecnicosDataGrid() {
-  const router = useRouter();
+  // // const router = useRouter();
   const { user } = useUserToken();
   const [rows, setRows] = React.useState<TecnicoAPI[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -129,7 +129,6 @@ export function TecnicosDataGrid() {
       especialidad: datosDelFormulario.especialidad as EspecialidadTecnico,
     };
     
-    console.log('Enviando actualización para ID:', editingId, payload);
     modalFormMethods.clearErrors();
 
     try {
@@ -148,7 +147,7 @@ export function TecnicosDataGrid() {
         throw new Error(errorData?.error || `Error del servidor: ${response.status}`);
       }
 
-      alert('Técnico actualizado con éxito.');
+      // alert('Técnico actualizado con éxito.');
 
       // Actualiza la fila en la tabla localmente
       setRows((prevRows) =>
@@ -161,7 +160,6 @@ export function TecnicosDataGrid() {
 
       handleCloseModal();
     } catch (err) {
-      console.error('Error al actualizar:', err);
       modalFormMethods.setError('root', {
         type: 'manual',
         message: err instanceof Error ? err.message : 'Error al guardar',
@@ -192,10 +190,9 @@ export function TecnicosDataGrid() {
         throw new Error(errorData?.error || `Error del servidor: ${response.status}`);
       }
       
-      alert('Técnico eliminado con éxito.');
+      // alert('Técnico eliminado con éxito.');
       setRows((prevRows) => prevRows.filter((row) => row.id !== selectedId));
     } catch (err) {
-      console.error('Error al eliminar:', err);
       setError(err instanceof Error ? err.message : 'No se pudo eliminar el elemento.');
     } finally {
       setOpenDeleteDialog(false);
@@ -288,11 +285,9 @@ export function TecnicosDataGrid() {
         <FormProvider {...modalFormMethods}>
           <form onSubmit={modalFormMethods.handleSubmit(onModalSubmit)}>
             <DialogContent>
-              {modalFormMethods.formState.errors.root && (
-                <Alert severity="error" sx={{ mb: 2 }}>
+              {modalFormMethods.formState.errors.root ? <Alert severity="error" sx={{ mb: 2 }}>
                   {modalFormMethods.formState.errors.root.message}
-                </Alert>
-              )}
+                </Alert> : null}
               {/* ¡Aquí usamos tu NUEVO formulario de edición simple! */}
               <TecnicoEditForm />
             </DialogContent>
@@ -315,7 +310,7 @@ export function TecnicosDataGrid() {
       </Dialog>
 
       {/* --- Diálogo de Confirmación --- */}
-      <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
+      <Dialog open={openDeleteDialog} onClose={() => { setOpenDeleteDialog(false); }}>
         <DialogTitle>Confirmar Eliminación</DialogTitle>
         <DialogContent>
           <DialogContentText>
@@ -324,7 +319,8 @@ export function TecnicosDataGrid() {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDeleteDialog(false)}>Cancelar</Button>
+          <Button onClick={() => { setOpenDeleteDialog(false); }}>Cancelar</Button>
+          {/* eslint-disable-next-line jsx-a11y/no-autofocus -- Delete confirmation requires focus for UX */}
           <Button onClick={confirmDelete} color="error" autoFocus>
             Eliminar
           </Button>

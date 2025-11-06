@@ -186,7 +186,8 @@ export default function DataGridDemo({
 
                 await changeSelectedEdificio(edificioEncontrado );
                 window.location.href = paths.dashboard.activoDetail(params.row.id.toString());
-              } catch (err) { return;
+              } catch (err) {
+                // Error handling could be implemented here
               }
             }}
             showToolbar

@@ -38,18 +38,6 @@ export function DetalleDatosEspecificos({ tipo, datos }: DetalleProps): React.JS
         </Box>
       );
     }
-    {/*
-    case 'Sensor': {
-      const dSensor = datos as SensorData;
-      return (
-        <Box>
-          <DatoItem label="Nombre" value={dSensor.nombre} />
-          <DatoItem label="Tipo" value={dSensor.tipoSnsor} />
-          <DatoItem label="ID Activo" value={dSensor.activoAsociadoId} />
-        </Box>
-      );
-     }
-     */}
     case 'Técnico': {
       const dTecnico = datos as TecnicoData;
       return (

@@ -125,11 +125,9 @@ export function SensorForm(): React.JSX.Element {
               )}
             </Select>
           )}
-          {sensorErrors?.activoAsociadoId && (
-            <Typography color="error" variant="caption">
+          {sensorErrors?.activoAsociadoId ? <Typography color="error" variant="caption">
               {sensorErrors.activoAsociadoId.message ?? ''}
-            </Typography>
-          )}
+            </Typography> : null}
         </FormControl>
       </Grid>
     </Grid>

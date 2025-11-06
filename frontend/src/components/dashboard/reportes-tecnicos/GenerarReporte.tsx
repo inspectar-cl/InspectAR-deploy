@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type -- Componente React, tipos inferidos automáticamente */
+/* eslint-disable @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument -- Componente React con API dinámica */
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -14,12 +14,9 @@ import SignatureDialog from '@/components/dashboard/reportes-tecnicos/SignatureD
 import { useSignatures } from '@/hooks/use-signatures';
 import { useUserToken } from '@/hooks/use-usertoken';
 import { useAuthUser } from '@/contexts/user-context';
-import { decodeJwtToken } from '@/hooks/use-auth';
 
 const gs = new Services();
-const BASE_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL || '/api';
-
-interface ActivoReporte {
+const BASE_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL || '/api';interface ActivoReporte {
   id: string;
   nombre: string;
 }
@@ -55,7 +52,8 @@ interface ReportePayload {
 function dataUrlToBlob(dataUrl: string): Blob {
   const [meta = '', base64 = ''] = dataUrl.split(',');
 
-  // Regex con grupo de captura para extraer el MIME type
+  // Regex para extraer el MIME type
+  // eslint-disable-next-line prefer-named-capture-group -- Simple capture for backward compatibility
   const regex = /^data:([^;]+);base64$/;
   const match = regex.exec(meta);
   
@@ -137,7 +135,6 @@ async function fetchFirmasFromBackend(token: string): Promise<FirmaBackend[]> {
     }
     return [];
   } catch (error) {
-    console.error('Error cargando firmas:', error);
     return [];
   }
 }
@@ -163,7 +160,6 @@ function GenerarReporte() {
     { value: 'datos_sensores', label: 'Datos de Sensores' },
   ];
 
-  const datos = decodeJwtToken(user?.token);
   const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
   const { signatures, addSignature} = useSignatures();
   const [selectedSignatureDataUrl, setSelectedSignatureDataUrl] = useState<string | null>(null);

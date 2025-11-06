@@ -1,11 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { DataGrid, GridColDef, GridActionsCellItem, GridRowId } from '@mui/x-data-grid';
+import { DataGrid, type GridColDef, GridActionsCellItem, type GridRowId } from '@mui/x-data-grid';
 import { Box, Alert, CircularProgress, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Tooltip } from '@mui/material';
-import { useRouter } from 'next/navigation';
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { paths } from '@/paths';
 import { useUserToken } from '@/hooks/use-usertoken';
 import { useForm, FormProvider } from 'react-hook-form';
 import type { SolicitudFormData, EdificioData } from '@/types/formulario';
@@ -38,7 +36,7 @@ function transformarApiAForm(edificio: EdificioAPI): SolicitudFormData {
 }
 
 export function EdificiosDataGrid() {
-  const router = useRouter();
+  // // const router = useRouter();
   const { user } = useUserToken();
   const [rows, setRows] = React.useState<EdificioAPI[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -66,13 +64,12 @@ export function EdificiosDataGrid() {
         });
         if (!response.ok) throw new Error('Error al cargar los edificios');
         
-        const data: { edificios: EdificioAPI[] } = await response.json();
+        const data = await response.json() as { edificios: EdificioAPI[] };
         
         if (!data.edificios) {
            throw new Error("El formato de respuesta de la API es incorrecto.");
         }
 
-        console.log("Datos recibidos:", data.edificios);
         setRows(data.edificios);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error desconocido');
@@ -109,7 +106,6 @@ export function EdificiosDataGrid() {
     if (!editingId || !user?.token) return;
 
     const datosParaApi = data.datosEspecificos as EdificioData;
-    console.log('Enviando actualización para ID:', editingId, datosParaApi);
 
     modalFormMethods.clearErrors();
 
@@ -124,8 +120,8 @@ export function EdificiosDataGrid() {
       });
 
       if (!response.ok) {
-         const errorData = await response.json().catch(() => null);
-         throw new Error(errorData?.error || `Error del servidor: ${response.status}`);
+         const errorData = await response.json().catch(() => null) as { error?: string } | null;
+         throw new Error(errorData?.error ?? `Error del servidor: ${response.status}`);
       }
 
       // Éxito: actualiza la fila en la tabla localmente
@@ -137,10 +133,9 @@ export function EdificiosDataGrid() {
         )
       );
       handleCloseModal(); // Cierra el modal
-      alert('Edificio actualizado con éxito.');
+      // alert('Edificio actualizado con éxito.');
 
     } catch (err) {
-      console.error('Error al actualizar:', err);
       // Muestra el error dentro del modal
       modalFormMethods.setError('root', { 
         type: 'manual', 
@@ -167,15 +162,14 @@ export function EdificiosDataGrid() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.error || `Error del servidor: ${response.status}`);
+        const errorData = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(errorData?.error ?? `Error del servidor: ${response.status}`);
       }
 
       setRows((prevRows) => prevRows.filter((row) => row.id !== selectedId));
-      alert('Edificio eliminado con éxito.');
+      // alert('Edificio eliminado con éxito.');
 
     } catch (err) {
-      console.error('Error al eliminar:', err);
       setError(err instanceof Error ? err.message : 'No se pudo eliminar el elemento.');
     } finally {
       setOpenDeleteDialog(false);
@@ -257,7 +251,7 @@ export function EdificiosDataGrid() {
       </Dialog>
 
       {/* --- Diálogo de Confirmación de Borrado --- */}
-      <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
+      <Dialog open={openDeleteDialog} onClose={() => { setOpenDeleteDialog(false); }}>
         <DialogTitle>Confirmar Eliminación</DialogTitle>
         <DialogContent>
           <DialogContentText>
@@ -265,7 +259,8 @@ export function EdificiosDataGrid() {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDeleteDialog(false)}>Cancelar</Button>
+          <Button onClick={() => { setOpenDeleteDialog(false); }}>Cancelar</Button>
+          {/* eslint-disable-next-line jsx-a11y/no-autofocus -- Delete confirmation requires focus for UX */}
           <Button onClick={confirmDelete} color="error" autoFocus>
             Eliminar
           </Button>

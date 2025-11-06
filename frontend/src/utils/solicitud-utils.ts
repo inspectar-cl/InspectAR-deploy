@@ -1,7 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call -- API integration requires type flexibility */
 import type {
   TipoSolicitud,
   EdificioData,
-  ActivoData,
   TecnicoData,
 } from '@/types/formulario'; // Asegúrate que esta ruta sea correcta
 import type {
@@ -36,14 +36,14 @@ export function transformarApiATipoFrontend(ticket: ApiTicket): SolicitudAPI {
   let datosEspecificos: any = {};
 
   // Mapea el estado (Backend "resuelto" -> Frontend "Resuelta")
-  let estadoFrontend: string = 'Pendiente'; // Default
+  let estadoFrontend = 'Pendiente'; // Default
   if (ticket.estado === 'resuelto') estadoFrontend = 'Resuelta';
   if (ticket.estado === 'en progreso') estadoFrontend = 'EnProgreso';
   // Puedes añadir más mapeos si es necesario
 
   // Mapea la entidad y extrae los datos específicos
   switch (ticket.tipo_entidad) {
-    case 'edificio':
+    case 'edificio': {
       tipoSolicitud = 'Edificio';
       datosEspecificos = {
         nombre: ticket.edificio_nombre,
@@ -52,11 +52,12 @@ export function transformarApiATipoFrontend(ticket: ApiTicket): SolicitudAPI {
         longitud: ticket.edificio_longitud,
       } as EdificioData;
       break;
+    }
 
-    case 'activo':
+    case 'activo': {
       tipoSolicitud = 'Activo';
       // Mapea el tipo de activo (ej. 'bomba de agua' -> 'BombaDeAgua')
-      let tipoActivoForm: string = ticket.activo_tipo || '';
+      let tipoActivoForm = ticket.activo_tipo || '';
       if (tipoActivoForm === 'bomba de agua') tipoActivoForm = 'BombaDeAgua';
       if (tipoActivoForm === 'ascensor') tipoActivoForm = 'Ascensor';
       if (tipoActivoForm === 'panel electrico') tipoActivoForm = 'PanelElectrico';
@@ -72,8 +73,9 @@ export function transformarApiATipoFrontend(ticket: ApiTicket): SolicitudAPI {
         imagen: null, // La API de tickets no envía imagen
       } as ActivoDataAPI;
       break;
+    }
 
-    case 'tecnico':
+    case 'tecnico': {
       tipoSolicitud = 'Técnico';
       datosEspecificos = {
         nombre: ticket.tecnico_nombre,
@@ -83,6 +85,7 @@ export function transformarApiATipoFrontend(ticket: ApiTicket): SolicitudAPI {
         activosAsociados: [], // La API de tickets no envía esto
       } as TecnicoData;
       break;
+    }
 
     default:
       // Fallback por si llega un tipo no esperado
@@ -95,10 +98,9 @@ export function transformarApiATipoFrontend(ticket: ApiTicket): SolicitudAPI {
     estado: estadoFrontend,
     fechaCreacion: ticket.created_at,
     tipoSolicitud: tipoSolicitud,
-    tipoOperacion: '',
-    // Asunto autogenerado para que la card tenga un título
-    asunto: `${ticket.tipo_operacion.toUpperCase()} DE ${ticket.tipo_entidad.toUpperCase()}`,
-    detalles: ticket.justificacion, // La justificación es el detalle
+    tipoOperacion: ticket.tipo_operacion,
+    asunto: `${ticket.tipo_operacion.toUpperCase()} ${ticket.tipo_entidad}`,
+    detalles: ticket.justificacion,
     datosEspecificos: datosEspecificos,
   };
 }

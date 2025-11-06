@@ -32,21 +32,18 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log('🔍 useEffect ejecutado', { activoId, isUserLoading, user: !!user });
     
     if (isUserLoading || !user) {
-      console.log('⏸️ Esperando usuario o cargando...', { isUserLoading, hasUser: !!user });
       return;
     }
 
     const fetchAnomalias = async () => {
       try {
-        console.log('🚀 Iniciando llamada a API para activo:', activoId);
         setIsLoading(true);
         
         interface AnomaliasPaginadas {
           activo_id?: number;
-          data?: Array<{
+          data?: {
             id?: number;
             activo_id?: number;
             timestamp?: string;
@@ -58,7 +55,7 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
             is_anomaly?: number | boolean;
             most_influential_variable?: string;
             contribution_magnitude?: number;
-          }>;
+          }[];
           count?: number;
           message?: string;
           limit?: number;
@@ -67,15 +64,12 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
 
         // Ajusta la ruta según tu API
         const url = `/anomalia-activo/${activoId}`;
-        console.log('📡 URL de API:', url);
-        console.log('🔑 Token presente:', !!user.token);
         
         const response = await gs.authorizedGet(
           url, 
           user.token
         ) as AnomaliasPaginadas;
 
-        console.log('✅ Respuesta de API recibida:', response);
 
         const prediccionesTransformadas: Prediccion[] = (response.data ?? []).map((p) => ({
           id: p.id ?? 0,
@@ -91,7 +85,6 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
           contribution_magnitude: p.contribution_magnitude ?? 0,
         }));
 
-        console.log('📊 Predicciones transformadas:', prediccionesTransformadas.length);
 
         // Ordenar por timestamp descendente
         prediccionesTransformadas.sort((a, b) => 
@@ -101,7 +94,6 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
         setPredicciones(prediccionesTransformadas);
         setError(null);
       } catch (err) {
-        console.error('❌ Error al obtener anomalías:', err);
         setError('Error al cargar anomalías del activo');
       } finally {
         setIsLoading(false);
@@ -109,18 +101,15 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
     };
 
     // Llamado inicial inmediato
-    console.log('🎬 Ejecutando fetch inicial...');
     void fetchAnomalias();
 
     // Actualización periódica cada 5 minutos
     const interval = setInterval(() => {
-      console.log('🔄 Ejecutando fetch periódico...');
       void fetchAnomalias();
     }, 300000);
 
     // Limpieza del intervalo al desmontar componente
     return () => { 
-      console.log('🧹 Limpiando intervalo');
       clearInterval(interval); 
     };
   }, [activoId, isUserLoading, user]);

@@ -133,17 +133,13 @@ export function ActivoForm(): React.JSX.Element {
             }}
           >
             {/* --- 4. RENDERIZADO CONDICIONAL MEJORADO --- */}
-            {isLoading && (
-              <MenuItem disabled value="">
+            {isLoading ? <MenuItem disabled value="">
                 <CircularProgress size={20} sx={{ mr: 1, verticalAlign: 'middle' }} />
                 <em>Cargando edificios...</em>
-              </MenuItem>
-            )}
-            {fetchError && (
-              <MenuItem disabled value="">
+              </MenuItem> : null}
+            {fetchError ? <MenuItem disabled value="">
                 <em>Error al cargar edificios</em>
-              </MenuItem>
-            )}
+              </MenuItem> : null}
             {!isLoading && !fetchError && edificios.length === 0 && (
               <MenuItem disabled value="">
                 <em>No hay edificios disponibles</em>

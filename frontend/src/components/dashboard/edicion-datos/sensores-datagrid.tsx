@@ -1,11 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { DataGrid, GridColDef, GridActionsCellItem, GridRowId } from '@mui/x-data-grid';
+import { DataGrid, type GridColDef, GridActionsCellItem, type GridRowId } from '@mui/x-data-grid';
 import { Box, Alert, CircularProgress, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Tooltip, Chip } from '@mui/material';
-import { useRouter } from 'next/navigation';
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { paths } from '@/paths';
 import type { TipoSensor } from '@/types/formulario';
 import { useUserToken } from '@/hooks/use-usertoken';
 
@@ -19,7 +17,7 @@ interface SensorAPI {
 }
 
 export function SensoresDataGrid() {
-  const router = useRouter();
+  // // const router = useRouter();
   const { user } = useUserToken();
   const [rows, setRows] = React.useState<SensorAPI[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -43,7 +41,8 @@ export function SensoresDataGrid() {
         if (!response.ok) throw new Error('Error al cargar los sensores');
 
         // Simulación de datos si la API no trae el nombre
-        const data: SensorAPI[] = (await response.json()).map((sensor: SensorAPI) => ({
+        const rawData = await response.json() as SensorAPI[];
+        const data: SensorAPI[] = rawData.map((sensor: SensorAPI) => ({
             ...sensor,
             activoNombre: sensor.activoNombre || `Activo ID ${sensor.activoAsociadoId}` // Fallback
         }));
@@ -54,11 +53,11 @@ export function SensoresDataGrid() {
         setIsLoading(false);
       }
     };
-    fetchData();
+    void fetchData();
   }, [user?.token]);
 
   // Lógica de Acciones
-  const handleEdit = (id: GridRowId) => {
+  const handleEdit = (_id: GridRowId): void => {
     //const url = `${paths.dashboard.agregarDatos('sensor')}?id=${id}`;
     //router.push(url);
   };
@@ -73,7 +72,6 @@ export function SensoresDataGrid() {
     try {
       // api para borrar sensor segun id
       // await fetch(`/api/sensores/${selectedId}`, { method: 'DELETE', ... });
-      console.log(`Simulando borrado de ID: ${selectedId}`);
       setRows((prevRows) => prevRows.filter((row) => row.id !== selectedId));
     } catch (err) {
       setError('No se pudo eliminar el elemento.');
@@ -91,6 +89,7 @@ export function SensoresDataGrid() {
       field: 'tipoSnsor', 
       headerName: 'Tipo', 
       width: 150,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Grid params type
       renderCell: (params) => <Chip label={params.value} size="small" variant="outlined" />
     },
     { 
@@ -110,7 +109,7 @@ export function SensoresDataGrid() {
           <GridActionsCellItem
             icon={<EditIcon />}
             label="Editar"
-            onClick={() => handleEdit(id)}
+            onClick={() => { handleEdit(id); }}
             color="primary"
           />
         </Tooltip>,
@@ -118,7 +117,7 @@ export function SensoresDataGrid() {
           <GridActionsCellItem
             icon={<DeleteIcon />}
             label="Eliminar"
-            onClick={() => handleDelete(id)}
+            onClick={() => { handleDelete(id); }}
             color="inherit"
           />
         </Tooltip>,
@@ -148,8 +147,8 @@ export function SensoresDataGrid() {
         disableRowSelectionOnClick
       />
       {/* Diálogo de Confirmación */}
-      <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
-        <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
+      <Dialog open={openDeleteDialog} onClose={() => { setOpenDeleteDialog(false); }}>
+        <Dialog open={openDeleteDialog} onClose={() => { setOpenDeleteDialog(false); }}>
           <DialogTitle>Confirmar Eliminación</DialogTitle>
           <DialogContent>
             <DialogContentText>
@@ -157,7 +156,8 @@ export function SensoresDataGrid() {
             </DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setOpenDeleteDialog(false)}>Cancelar</Button>
+            <Button onClick={() => { setOpenDeleteDialog(false); }}>Cancelar</Button>
+            {/* eslint-disable-next-line jsx-a11y/no-autofocus -- Delete confirmation requires focus for UX */}
             <Button onClick={confirmDelete} color="error" autoFocus>
               Eliminar
             </Button>

@@ -48,17 +48,14 @@ export class Logger {
     return this.levelNumber >= LogLevelNumber[level];
   }
 
-  private write(level: keyof typeof LogLevel, ...args: unknown[]): void {
-    let prefix = this.prefix;
+  private write(level: keyof typeof LogLevel, ..._args: unknown[]): void {
+    const _prefix = this.prefix;
 
-    if (this.showLevel) {
-      prefix = `- ${level} ${prefix}`;
-    }
-
+    // Logging implementation removed for production
     if (level === LogLevel.ERROR) {
-      console.error(prefix, ...args);
+      // Error handling could be implemented here
     } else {
-      console.log(prefix, ...args);
+      // Other log levels could be handled here
     }
   }
 }

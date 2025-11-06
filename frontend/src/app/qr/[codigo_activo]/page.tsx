@@ -17,7 +17,7 @@ import { WarningIcon } from '@phosphor-icons/react/dist/csr/Warning';
 import Services from '@/modules/Services';
 
 // Función para obtener el color y texto del estado
-const getEstadoConfig = (estado?: string) => {
+const getEstadoConfig = (estado?: string): { color: string; bgcolor: string; text: string } | null => {
   if (!estado) return null;
   
   switch (estado.toLowerCase()) {
@@ -69,20 +69,20 @@ export default function QRInfoPage(): React.JSX.Element {
   const [activoInfo, setActivoInfo] = React.useState<ActivoInfo | null>(null);
 
   React.useEffect(() => {
-    const fetchData = async () => {
+    const fetchData = async (): Promise<void> => {
       try {
         setLoading(true);
         setError(null);
 
         const services = new Services();
-        const data = await services.get(`/codigo_qr/${codigoActivo}`);
+        const data: unknown = await services.get(`/codigo_qr/${codigoActivo}`);
 
         // Verificar si hubo error
-        if (data.error || data.mensaje === 'error inesperado') {
+        if ((data as { error?: string }).error || (data as { mensaje?: string }).mensaje === 'error inesperado') {
           throw new Error('No se pudo obtener la información del activo');
         }
 
-        setActivoInfo(data);
+        setActivoInfo(data as ActivoInfo);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error desconocido');
       } finally {
@@ -151,7 +151,7 @@ export default function QRInfoPage(): React.JSX.Element {
                   </Typography>
                 </Box>
                 {/* Estado del activo */}
-                {activoInfo.estado && (() => {
+                {activoInfo.estado !== null && activoInfo.estado !== undefined && (() => {
                   const estadoConfig = getEstadoConfig(activoInfo.estado);
                   return estadoConfig ? (
                     <Box

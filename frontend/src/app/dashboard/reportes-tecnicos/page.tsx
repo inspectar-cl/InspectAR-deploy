@@ -73,7 +73,6 @@ export default function ReportesPage() {
         }
 
       } catch (err) {
-        console.error('Error al obtener el rol del usuario:', err);
         setError('No se pudo cargar la información del usuario');
         // Fallback: usar un rol por defecto o extraer del token
         setUserRole('root');
@@ -159,11 +158,9 @@ export default function ReportesPage() {
     <Stack spacing={2}>
       <div>
         <Typography variant="h4">Reportes Técnicos</Typography>
-        {userRole && (
-          <Typography variant="caption" color="text.secondary">
+        {userRole ? <Typography variant="caption" color="text.secondary">
             Rol: {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
-          </Typography>
-        )}
+          </Typography> : null}
       </div>
       
       <Container maxWidth="lg">

@@ -77,7 +77,6 @@ export default function PrediccionClient() {
 
         setActivos(activosTransformados);
       } catch (err) {
-        console.error('Error al obtener activos:', err);
         setError('Error al cargar activos');
       }
     };
@@ -88,7 +87,7 @@ export default function PrediccionClient() {
         
         interface AnomaliasPaginadas {
           activo_id?: number;
-          data?: Array<{
+          data?: {
             id?: number;
             activo_id?: number;
             timestamp?: string;
@@ -100,7 +99,7 @@ export default function PrediccionClient() {
             is_anomaly?: number | boolean;
             most_influential_variable?: string;
             contribution_magnitude?: number;
-          }>;
+          }[];
           count?: number;
           message?: string;
           limit?: number;
@@ -131,7 +130,6 @@ export default function PrediccionClient() {
         setPredicciones(prediccionesTransformadas);
         setError(null);
       } catch (err) {
-        console.error('Error al obtener predicciones:', err);
         setError('Error al cargar predicciones');
       } finally {
         setIsLoading(false);

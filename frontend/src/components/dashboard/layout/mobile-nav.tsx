@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument -- Navigation config requires dynamic typing */
 'use client';
 
 import * as React from 'react';
@@ -143,7 +144,7 @@ export function MobileNav({ open, onClose }: MobileNavProps): React.JSX.Element 
                   {edificioNombre}
               </Typography>
           </Box>
-          {isSelectable && <CaretUpDownIcon />} 
+          {isSelectable ? <CaretUpDownIcon /> : null} 
         </Box>
 
         <Menu

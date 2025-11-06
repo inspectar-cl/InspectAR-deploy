@@ -140,6 +140,14 @@ func getProtectedProxyRoutes() []struct {
             RequiredScopes:     rootOnly(),
             RequiredValidation: "",
         },
+        {
+            Method:             "GET",
+            Pattern:            "/api/gestion/tecnicos",
+            TargetEnvVar:       "GESTION_URL",
+            PrependPath:        "",
+            RequiredScopes:     rootOnly(),
+            RequiredValidation: "",
+        },
         // Rutas Notificaciones protegidas Sprint 3
         {
             Method:             "GET",

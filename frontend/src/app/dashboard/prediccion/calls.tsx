@@ -27,6 +27,9 @@ import { TourButton } from "@/components/tutorial/tour-button";
 import { useUserToken } from '@/hooks/use-usertoken';
 import Services from '@/modules/Services';
 
+// Importar datos simulados
+import { mockActivos, mockPredicciones, simulateNetworkDelay } from '@/mocks/prediccion-data';
+
 // Tipos
 interface Activo {
   id: number;
@@ -36,6 +39,9 @@ interface Activo {
 }
 
 const gs = new Services();
+
+// Flag para activar/desactivar modo de datos simulados
+const USE_MOCK_DATA = true; // Cambiar a false para usar datos reales
 
 export default function PrediccionClient() {
   const { user, isLoading: isUserLoading } = useUserToken();
@@ -55,6 +61,31 @@ export default function PrediccionClient() {
 
   // Fetch de activos y predicciones
   useEffect(() => {
+    if (USE_MOCK_DATA) {
+      // Usar datos simulados
+      const fetchMockData = async () => {
+        try {
+          setIsLoading(true);
+          await simulateNetworkDelay(800); // Simular delay de red
+          
+          setActivos(mockActivos);
+          setPredicciones(mockPredicciones);
+          setError(null);
+        } catch (err) {
+          console.error('Error al cargar datos simulados:', err);
+          setError('Error al cargar datos simulados');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      void fetchMockData();
+      
+      // No usar intervalo con datos mock
+      return;
+    }
+
+    // Código original para datos reales
     if (isUserLoading || !user) return;
 
     const fetchActivos = async () => {

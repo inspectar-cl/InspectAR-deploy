@@ -17,6 +17,9 @@ import MetricCard from '@/components/dashboard/prediccion/MetricCard';
 import PrediccionCards from '@/components/dashboard/prediccion/PrediccionCards';
 import AnomalyChart from '@/components/dashboard/prediccion/AnomalyChart';
 import Services from '@/modules/Services';
+import { useDriverTour } from "@/components/tutorial/use-driver-tour";
+import type { TourKey } from "@/components/tutorial/tour-config";
+import { TourButton } from "@/components/tutorial/tour-button";
 
 const gs = new Services();
 
@@ -30,9 +33,14 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
   const [predicciones, setPredicciones] = useState<Prediccion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const tourKey: TourKey = 'prediccion-activo';
+  const { startTour } = useDriverTour(tourKey);
 
   useEffect(() => {
+<<<<<<< HEAD
     
+=======
+>>>>>>> origin/feature-front
     if (isUserLoading || !user) {
       return;
     }
@@ -64,13 +72,19 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
 
         // Ajusta la ruta según tu API
         const url = `/anomalia-activo/${activoId}`;
+<<<<<<< HEAD
         
+=======
+>>>>>>> origin/feature-front
         const response = await gs.authorizedGet(
           url, 
           user.token
         ) as AnomaliasPaginadas;
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/feature-front
         const prediccionesTransformadas: Prediccion[] = (response.data ?? []).map((p) => ({
           id: p.id ?? 0,
           activoId: p.activo_id ?? activoId,
@@ -156,15 +170,20 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
     <Box>
       <Divider sx={{ my: 4 }} />
       
-      <Box display="flex" alignItems="center" gap={2} mb={3}>
+      <Box display="flex" alignItems="center" gap={2} mb={3} id="tour-resumen-predicciones-activo">
         <Typography variant="h4">
           Predicciones de Anomalías (ML)
         </Typography>
+        <TourButton 
+            onClick={startTour}
+            tooltipTitle="Iniciar Tutorial de Predicciones"
+            style="pulse 3s infinite"
+          />
       </Box>
 
       <Grid container spacing={3}>
         {/* Métricas principales de la última predicción */}
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }} id="tour-metricas-anomaly-score">
           <MetricCard
             title="Último Anomaly Score"
             value={ultimaPrediccion.anomalyScore}
@@ -174,7 +193,7 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
           />
         </Grid>
         
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }} id='tour-metricas-anomaly-likelihood'>
           <MetricCard
             title="Último Anomaly Likelihood"
             value={ultimaPrediccion.anomalyLikelihood}
@@ -184,7 +203,7 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
           />
         </Grid>
         
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }} id='tour-metricas-total-anomalias'>
           <MetricCard
             title="Total Anomalías"
             value={totalAnomalias}
@@ -221,7 +240,7 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
         </Grid>
 
         {/* Gráfico de anomalías */}
-        <Grid size={{ xs: 12 }}>
+        <Grid size={{ xs: 12 }} id='tour-grafico-anomalias'>
           <AnomalyChart 
             predicciones={predicciones} 
             activoNombre={activoNombre} 
@@ -230,7 +249,7 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
 
         {/* Tarjetas de predicciones detalladas */}
         <Grid size={{ xs: 12 }}>
-          <Typography variant="h6" mb={2}>
+          <Typography variant="h6" mb={2} id="tour-ultimas-anomalias">
             Últimas 10 Anomalías Detectadas
           </Typography>
           {anomaliasDetectadas.length > 0 ? (

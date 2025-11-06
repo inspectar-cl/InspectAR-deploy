@@ -8,6 +8,9 @@ export const rolePermissions: Record<string, string[]> = {
     paths.dashboard.ml,
     paths.dashboard.account,
     paths.dashboard.settings,
+    paths.dashboard.formulario,
+    paths.dashboard.solicitudes,
+    paths.dashboard.gestion,
   ],
   tecnico: [
     paths.dashboard.inicio,
@@ -26,13 +29,9 @@ export const rolePermissions: Record<string, string[]> = {
     paths.dashboard.reporteFallas,
     paths.dashboard.formulario,
     paths.dashboard.solicitudes,
-    paths.dashboard.agregarDatos('edificio'),
-    paths.dashboard.agregarDatos('sensor'),
-    paths.dashboard.agregarDatos('tecnico'),
-    paths.dashboard.agregarDatos('activo'),
     paths.dashboard.gestion,
   ],           
-  admin: [
+  root: [
     paths.dashboard.inicio,
     paths.dashboard.account,
     paths.dashboard.alertas,
@@ -44,6 +43,10 @@ export const rolePermissions: Record<string, string[]> = {
     paths.dashboard.graficos,
     paths.dashboard.settings,
     paths.dashboard.activoDetail(':id'),
+    paths.dashboard.formulario,
+    paths.dashboard.solicitudes,
+    paths.dashboard.agregardatos,
+    paths.dashboard.gestion,
     paths.errors.notFound
   ]
 };

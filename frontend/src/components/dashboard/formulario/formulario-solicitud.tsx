@@ -6,15 +6,15 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { EdificioForm } from './edificio-form';
 import { ActivoForm } from './activo-form';
 import { TecnicoForm } from './tecnico-form';
-import { SensorForm } from './sensor-form';
+//import { SensorForm } from './sensor-form';
 
 import type { EdificioData, SolicitudFormData } from '@/types/formulario';
 
 import { useUserToken } from '@/hooks/use-usertoken';
 
-type TipoSolicitud = 'Edificio' | 'Activo' | 'Sensor' | 'Técnico';
+type TipoSolicitud = 'Edificio' | 'Activo' | 'Técnico';
 
-const TIPOS_SOLICITUD: TipoSolicitud[] = ['Edificio', 'Activo', 'Sensor', 'Técnico'];
+const TIPOS_SOLICITUD: TipoSolicitud[] = ['Edificio', 'Activo', 'Técnico'];
 
 export function FormularioSolicitud(): React.JSX.Element {
     const methods = useForm<SolicitudFormData>({
@@ -75,8 +75,8 @@ export function FormularioSolicitud(): React.JSX.Element {
                 return <ActivoForm />;
             case 'Técnico':
                 return <TecnicoForm />;
-            case 'Sensor':
-                return <SensorForm />;
+            //case 'Sensor':
+                //return <SensorForm />;
             default:
                 return <Alert severity="error">Seleccione un tipo de solicitud válido.</Alert>;
         }

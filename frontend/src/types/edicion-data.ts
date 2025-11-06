@@ -9,18 +9,16 @@ export interface EdificioData {
 
 export type TipoActivo = 'Ascensor' | 'BombaDeAgua' | 'PanelElectrico';
 export interface ActivoData {
-  nombre: string;
+  nombre: string | null;
   tipoActivo: TipoActivo;
   edificioId: number;
   ubicacion: string;
   descripcion?: string;
-  imagen: FileList | null;
 }
 
 export type EspecialidadTecnico = 'Climatización' | 'Eléctrico' | 'Mecánico';
 export interface TecnicoData {
   nombre: string;
-  activosAsociados: number[]; // Array de IDs de Activos asociados
   correo: string;
   telefono: string;
   especialidad: string;

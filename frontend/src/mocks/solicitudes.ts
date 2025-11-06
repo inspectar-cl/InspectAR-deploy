@@ -31,19 +31,6 @@ export const MOCK_SOLICITUDES: SolicitudAPI[] = [
     }
   },
   {
-    id: 3,
-    estado: 'Resuelta',
-    fechaCreacion: '2025-10-28T09:15:00Z',
-    tipoSolicitud: 'Sensor',
-    asunto: 'Sensor de vibración del Ascensor 3 sin datos',
-    detalles: 'Dejó de reportar datos ayer a las 5 PM.',
-    datosEspecificos: {
-      nombre: 'VIB-ASC-03',
-      tipoSnsor: 'Vibración',
-      activoAsociadoId: 102
-    }
-  },
-  {
     id: 4,
     estado: 'Pendiente',
     fechaCreacion: '2025-10-31T11:00:00Z',

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import type { SolicitudAPI, TipoSolicitud, ActivoDataAPI,  TecnicoData, SensorData, EdificioData } from '@/types/form-solicitud';
+import type { SolicitudAPI, TipoSolicitud, ActivoDataAPI,  TecnicoData, EdificioData } from '@/types/form-solicitud';
 
 interface DetalleProps {
   tipo: TipoSolicitud;
@@ -38,6 +38,7 @@ export function DetalleDatosEspecificos({ tipo, datos }: DetalleProps): React.JS
         </Box>
       );
     }
+    {/*
     case 'Sensor': {
       const dSensor = datos as SensorData;
       return (
@@ -47,7 +48,8 @@ export function DetalleDatosEspecificos({ tipo, datos }: DetalleProps): React.JS
           <DatoItem label="ID Activo" value={dSensor.activoAsociadoId} />
         </Box>
       );
-    }
+     }
+     */}
     case 'Técnico': {
       const dTecnico = datos as TecnicoData;
       return (

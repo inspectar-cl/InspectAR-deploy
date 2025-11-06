@@ -8,7 +8,7 @@ interface Edificio {
 }
 
 interface AuthInfo {
-    role: 'residente' | 'admin' | 'analista' | 'tecnico' | null;
+    role: 'residente' | 'root' | 'analista' | 'tecnico' | null;
     edificio: Edificio[];
     token: string;
 }

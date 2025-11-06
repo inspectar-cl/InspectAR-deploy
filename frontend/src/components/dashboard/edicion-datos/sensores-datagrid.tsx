@@ -59,8 +59,8 @@ export function SensoresDataGrid() {
 
   // Lógica de Acciones
   const handleEdit = (id: GridRowId) => {
-    const url = `${paths.dashboard.agregarDatos('sensor')}?id=${id}`;
-    router.push(url);
+    //const url = `${paths.dashboard.agregarDatos('sensor')}?id=${id}`;
+    //router.push(url);
   };
 
   const handleDelete = (id: GridRowId) => {

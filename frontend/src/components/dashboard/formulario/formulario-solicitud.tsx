@@ -12,6 +12,7 @@ import { TecnicoForm } from './tecnico-form';
 import type { EdificioData, ActivoData, TecnicoData, SolicitudFormData } from '@/types/formulario'; // Importa todos los tipos
 import { useUserToken } from '@/hooks/use-usertoken';
 import {decodeJwtToken} from '@/hooks/use-auth'
+import { CustomAlert } from '@/components/dashboard/alert-popups/CustomAlertPopup';
 
 type TipoSolicitud = 'Edificio' | 'Activo' | 'Técnico';
 type TipoOperacion = 'Ingreso' | 'Modificacion' | 'Eliminacion'; // Tipos de operación
@@ -79,27 +80,49 @@ export function FormularioSolicitud(): React.JSX.Element {
         }
     });
 
-    const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = methods;
+    const { register, handleSubmit, watch, formState: { errors, isSubmitting }, reset } = methods; // <-- 2. Obtén 'reset'
 
-    const tipoActual = watch("tipoSolicitud"); // Observar el campo de tipo de solicitud
-    const { user} = useUserToken();
-    const [apiError, setApiError] = React.useState<string | null>(null);
+    const tipoActual = watch("tipoSolicitud");
+    const { user } = useUserToken();
+    // const [apiError, setApiError] = React.useState<string | null>(null); // <-- Reemplazado por alertState
+
+    // --- 3. Añade el estado para tu CustomAlert ---
+    const [alertState, setAlertState] = React.useState({
+      open: false,
+      title: '',
+      message: '',
+      severity: 'success' as 'success' | 'info' | 'warning' | 'error',
+    });
+
+    // --- 4. useEffect para cerrar el pop-up automáticamente ---
+    React.useEffect(() => {
+      if (alertState.open) {
+        const timer = setTimeout(() => {
+          setAlertState(prev => ({ ...prev, open: false }));
+        }, 4000); // Cierra después de 4 segundos
+        return () => clearTimeout(timer); // Limpia el timer si el componente se desmonta
+      }
+    }, [alertState.open]);
+
 
     const onSubmit = async (data: SolicitudFormData): Promise<void> => {
         const decodedpayload = decodeJwtToken(user?.token);
-        const URL_ENDPOINT = '/api/crear-ticket'; // URL del backend
+        const URL_ENDPOINT = '/api/crear-ticket';
         const token = user?.token;
         const email = decodedpayload?.email ?? '';
 
-        if (!token) {
-            //console.error("Token no disponible.");
-            setApiError('Token o email de usuario no disponible. Por favor, inicie sesión.');
+        if (!token || !email) {
+            setAlertState({ // <-- 5. Usa setAlertState para errores
+              open: true,
+              title: 'Error de Autenticación',
+              message: 'Token o email de usuario no disponible. Por favor, inicie sesión.',
+              severity: 'error',
+            });
             return;
         }
 
         try {
             const payload = transformarDatosParaApi(data, email);
-
             const response = await fetch(URL_ENDPOINT, {
                 method: 'POST',
                 headers: {
@@ -110,16 +133,28 @@ export function FormularioSolicitud(): React.JSX.Element {
             });
 
             if (!response.ok) {
-                throw new Error('Error en el backend al crear la solicitud.');
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.error || 'Error en el backend al crear la solicitud.');
             }
 
-            //console.log("Solicitud creada con éxito:", payload);
-            //alert("Solicitud enviada con éxito.");
-            methods.reset();
+            // --- 6. Muestra el pop-up de ÉXITO ---
+            setAlertState({
+              open: true,
+              title: '¡Éxito!',
+              message: `Solicitud para ${data.tipoSolicitud} enviada correctamente.`,
+              severity: 'success',
+            });
+            reset(); // Resetea el formulario
+
         } catch (error) {
-            //console.error("Fallo al enviar el formulario:", error);
-            //alert("Fallo al enviar el formulario. Vea la consola para más detalles.");
-            setApiError(error instanceof Error ? error.message : 'Fallo al enviar el formulario.');
+            console.error("Fallo al enviar el formulario:", error);
+            // --- 7. Muestra el pop-up de ERROR ---
+            setAlertState({
+              open: true,
+              title: 'Error al Enviar',
+              message: error instanceof Error ? error.message : 'Fallo al enviar el formulario.',
+              severity: 'error',
+            });
         }
     };
 
@@ -140,6 +175,13 @@ export function FormularioSolicitud(): React.JSX.Element {
 
     return (
         <Paper elevation={3} sx={{ p: 4, width: "80%", margin: '0 auto' }}>
+            <CustomAlert
+              title={alertState.title}
+              message={alertState.message}
+              severity={alertState.severity}
+              open={alertState.open}
+              onClose={() => setAlertState(prev => ({ ...prev, open: false }))}
+            />
             <Typography variant="h5" component="h1" gutterBottom>
                 Crear Nueva Solicitud
             </Typography>
@@ -206,13 +248,6 @@ export function FormularioSolicitud(): React.JSX.Element {
                         <Typography variant="h6" gutterBottom>
                             Datos Específicos ({tipoActual})
                         </Typography>
-
-                        {/* Muestra errores de API aquí */}
-                        {apiError && (
-                          <Alert severity="error" sx={{ mb: 3 }}>
-                            {apiError}
-                          </Alert>
-                        )}
 
                         {renderFormularioEspecifico()}
 

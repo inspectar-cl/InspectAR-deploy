@@ -120,7 +120,7 @@ Obtiene anomalías de un activo específico con paginación.
 - `activo_id` (int): ID del activo
 
 **Parámetros de query:**
-- `limit` (int, opcional): Número de resultados (default: 50, max: 1000)
+- `limit` (int, opcional): Número de resultados (default: 1000, max: 1000)
 - `offset` (int, opcional): Offset para paginación (default: 0)
 - `only_anomalies` (bool, opcional): Solo anomalías confirmadas (default: false)
 

@@ -522,6 +522,136 @@ curl -X PUT http://localhost:8092/tecnicos/1/autorizado \
 }
 ```
 
+#### 🆕 Actualizar técnico (campos editables)
+```bash
+# Actualizar todos los campos
+curl -X PUT http://localhost:8092/tecnicos/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Juan Pérez Actualizado",
+    "email": "juan.perez.nuevo@inspectar.com",
+    "telefono": "+56999888777",
+    "especialidad": "Sistemas Hidráulicos Avanzados"
+  }'
+```
+**Respuesta:**
+```json
+{
+  "mensaje": "Técnico actualizado correctamente",
+  "tecnico": {
+    "id": 1,
+    "nombre": "Juan Pérez Actualizado",
+    "apellido": "",
+    "email": "juan.perez.nuevo@inspectar.com",
+    "telefono": "+56999888777",
+    "especialidad": "Sistemas Hidráulicos Avanzados",
+    "autorizado": true,
+    "empresa_id": 1,
+    "empresa": {
+      "id": 0,
+      "nombre": "",
+      "rut": "",
+      "telefono": "",
+      "email": ""
+    },
+    "creado_en": "2025-08-20T22:49:18.024565Z"
+  }
+}
+```
+
+**Actualización parcial (solo campos específicos):**
+```bash
+# Solo actualizar nombre
+curl -X PUT http://localhost:8092/tecnicos/1 \
+  -H "Content-Type: application/json" \
+  -d '{"nombre": "Juan Carlos Pérez"}'
+
+# Solo actualizar teléfono y especialidad
+curl -X PUT http://localhost:8092/tecnicos/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "telefono": "+56955667788",
+    "especialidad": "Calderas y Sistemas de Vapor"
+  }'
+
+# Solo actualizar email
+curl -X PUT http://localhost:8092/tecnicos/1 \
+  -H "Content-Type: application/json" \
+  -d '{"email": "jpgonzalez@inspectar.com"}'
+```
+
+**Características:**
+- ✅ **Actualización parcial** - Solo actualiza los campos enviados
+- ✅ **Campos actualizables:** `nombre`, `email`, `telefono`, `especialidad`
+- ✅ Los campos no enviados mantienen su valor actual (uso de COALESCE en SQL)
+- ✅ Validación de que el técnico existe
+- ✅ Validación de ID válido
+
+**Códigos de error:**
+```bash
+# 400 Bad Request - Sin campos para actualizar
+{"error": "Debe proporcionar al menos un campo para actualizar"}
+
+# 400 Bad Request - ID inválido
+{"error": "ID inválido"}
+
+# 404 Not Found - Técnico no existe
+{"error": "Técnico no encontrado"}
+```
+
+#### 🆕 Eliminar técnico
+```bash
+curl -X DELETE http://localhost:8092/tecnicos/1
+```
+**Respuesta:**
+```json
+{
+  "mensaje": "Técnico eliminado correctamente"
+}
+```
+
+**Características:**
+- ✅ **Eliminación en cascada** - También elimina las relaciones en `activos_tecnicos`
+- ✅ Validación de que el técnico existe
+- ✅ Validación de ID válido
+- ⚠️ **Importante:** Esta operación es permanente y no se puede deshacer
+
+**Códigos de error:**
+```bash
+# 400 Bad Request - ID inválido
+{"error": "ID inválido"}
+
+# 404 Not Found - Técnico no existe
+{"error": "Técnico no encontrado"}
+```
+
+**Flujo completo de ejemplo:**
+```bash
+# 1. Crear técnico
+curl -X POST http://localhost:8092/tecnicos \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "María López",
+    "email": "maria.lopez@inspectar.com",
+    "telefono": "+56988776655",
+    "especialidad": "Electricidad Industrial"
+  }'
+
+# 2. Actualizar datos del técnico
+curl -X PUT http://localhost:8092/tecnicos/2 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "telefono": "+56999887766",
+    "especialidad": "Electricidad y Automatización"
+  }'
+
+# 3. Verificar actualización
+curl -X GET http://localhost:8092/tecnicos/2
+
+# 4. Eliminar técnico
+curl -X DELETE http://localhost:8092/tecnicos/2
+```
+
 #### Asignar técnico a activo
 ```bash
 curl -X POST http://localhost:8092/activos/1/tecnicos \

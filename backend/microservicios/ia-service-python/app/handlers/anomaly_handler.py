@@ -39,7 +39,7 @@ def get_service(repo: AnomalyRepository = Depends(get_repository)) -> AnomalySer
 @router.get("/anomalies/activo/{activo_id}", response_model=AnomalyListResponse)
 async def get_anomalies_by_activo(
     activo_id: int,
-    limit: int = Query(50, ge=1, le=1000, description="Número de resultados"),
+    limit: int = Query(1000, ge=1, le=5000, description="Número de resultados"),
     offset: int = Query(0, ge=0, description="Offset para paginación"),
     only_anomalies: bool = Query(False, description="Solo anomalías confirmadas"),
     repo: AnomalyRepository = Depends(get_repository)
@@ -48,7 +48,7 @@ async def get_anomalies_by_activo(
     Obtiene anomalías de un activo con paginación
     
     - **activo_id**: ID del activo
-    - **limit**: Cantidad máxima de resultados (default: 50, max: 1000)
+    - **limit**: Cantidad máxima de resultados (default: 1000, max: 5000)
     - **offset**: Desplazamiento para paginación (default: 0)
     - **only_anomalies**: Solo retornar anomalías confirmadas (is_anomaly=1)
     """

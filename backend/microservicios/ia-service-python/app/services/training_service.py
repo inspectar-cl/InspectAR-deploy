@@ -230,7 +230,7 @@ class TrainingService:
         # Calcular cuándo debe ser el primer entrenamiento
         if not model_manager.is_trained:
             # Si no hay modelo, entrenar en 3 minutos
-            first_run = datetime.now() + timedelta(minutes=3)
+            first_run = datetime.now() + timedelta(minutes=5)
             logger.info("🎓 Modelo no entrenado. Primer entrenamiento en 3 minutos")
         else:
             # Si hay modelo, esperar el intervalo completo

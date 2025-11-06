@@ -15,7 +15,11 @@ function AnomalyChart({ predicciones, activoNombre }: { predicciones: Prediccion
   const options = {
     chart: { type: "line" as const, zoom: { enabled: true } },
     xaxis: { type: "datetime" as const },
-    yaxis: [{ title: { text: "Anomaly Score" } }, { opposite: true, title: { text: "Likelihood" } }],
+    yaxis: [
+      { title: { text: "Anomaly Score" } }, 
+      { opposite: true, title: { text: "Likelihood" } },
+      { opposite: true, title: { text: "Threshold" }, show: false }
+    ],
     tooltip: { 
       shared: true, 
       intersect: false,

@@ -8,6 +8,8 @@ import { useUserToken } from '@/hooks/use-usertoken';
 import ResidenteHome from './home-pages/ResidenteHome';
 import TecnicoHome from './home-pages/TecnicoHome';
 import AnalistaHome from './home-pages/AnalistaHome';
+import AdministradorHome from './home-pages/AdministradorHome';
+import RootHome from './home-pages/RootHome';
 
 export default function Page(): React.JSX.Element {
   const { user, isLoading, error } = useUserToken();
@@ -34,6 +36,8 @@ export default function Page(): React.JSX.Element {
   if (role === 'residente') return <ResidenteHome />;
   if (role === 'tecnico') return <TecnicoHome />;
   if (role === 'analista') return <AnalistaHome />;
+  if (role === 'administrador') return <AdministradorHome />;
+  if (role === 'root') return <RootHome />;
 
   // Fallback: si llega un rol desconocido
   return (

@@ -552,7 +552,7 @@ func (s *NotificationService) SendTechnicianContactRequest(request models.Techni
 
 	// Crear el template del correo para el técnico
 	subject := fmt.Sprintf("🔧 Solicitud de Contacto Técnico - Activo: %s", activoNombre)
-	
+
 	htmlBody := fmt.Sprintf(`
 <!DOCTYPE html>
 <html>
@@ -646,4 +646,422 @@ func (s *NotificationService) getPriorityColor(priority string) string {
 		return color
 	}
 	return "#ff9800" // Default naranja
+}
+
+// ============================================================================
+// MÉTODOS PARA GESTIÓN DE TICKETS
+// ============================================================================
+
+// CreateTicket crea un nuevo ticket y envía notificación a administradores
+func (s *NotificationService) CreateTicket(request models.CreateTicketRequest) (*models.Ticket, error) {
+	db, err := s.connectToPostgres()
+	if err != nil {
+		return nil, fmt.Errorf("error conectando a PostgreSQL: %v", err)
+	}
+	defer db.Close()
+
+	// Buscar usuario ID por email
+	var usuarioID *uint
+	err = db.QueryRow("SELECT id FROM usuarios WHERE correo = $1", request.UsuarioEmail).Scan(&usuarioID)
+	if err != nil && err != sql.ErrNoRows {
+		log.Printf("⚠️  No se encontró usuario con email %s, continuando sin usuario_id", request.UsuarioEmail)
+	}
+
+	// Preparar la consulta de inserción
+	query := `
+		INSERT INTO tickets (
+			tipo_entidad, tipo_operacion, usuario_id, usuario_email,
+			edificio_id, edificio_nombre, edificio_direccion, edificio_latitud, edificio_longitud,
+			activo_id, activo_nombre, activo_tipo, activo_descripcion, activo_ubicacion, activo_edificio_id,
+			tecnico_id, tecnico_nombre, tecnico_email, tecnico_telefono, tecnico_especialidad, tecnico_autorizado,
+			justificacion, created_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NOW())
+		RETURNING id, created_at`
+
+	var ticketID uint
+	var createdAt time.Time
+
+	err = db.QueryRow(
+		query,
+		request.TipoEntidad, request.TipoOperacion, usuarioID, request.UsuarioEmail,
+		request.EdificioID, request.EdificioNombre, request.EdificioDireccion, request.EdificioLatitud, request.EdificioLongitud,
+		request.ActivoID, request.ActivoNombre, request.ActivoTipo, request.ActivoDescripcion, request.ActivoUbicacion, request.ActivoEdificioID,
+		request.TecnicoID, request.TecnicoNombre, request.TecnicoEmail, request.TecnicoTelefono, request.TecnicoEspecialidad, request.TecnicoAutorizado,
+		request.Justificacion,
+	).Scan(&ticketID, &createdAt)
+
+	if err != nil {
+		return nil, fmt.Errorf("error al insertar ticket: %v", err)
+	}
+
+	// Crear objeto ticket para retornar
+	ticket := &models.Ticket{
+		ID:                  ticketID,
+		TipoEntidad:         request.TipoEntidad,
+		TipoOperacion:       request.TipoOperacion,
+		Estado:              "no_resuelto",
+		UsuarioID:           usuarioID,
+		UsuarioEmail:        request.UsuarioEmail,
+		EdificioID:          request.EdificioID,
+		EdificioNombre:      request.EdificioNombre,
+		EdificioDireccion:   request.EdificioDireccion,
+		EdificioLatitud:     request.EdificioLatitud,
+		EdificioLongitud:    request.EdificioLongitud,
+		ActivoID:            request.ActivoID,
+		ActivoNombre:        request.ActivoNombre,
+		ActivoTipo:          request.ActivoTipo,
+		ActivoDescripcion:   request.ActivoDescripcion,
+		ActivoUbicacion:     request.ActivoUbicacion,
+		ActivoEdificioID:    request.ActivoEdificioID,
+		TecnicoID:           request.TecnicoID,
+		TecnicoNombre:       request.TecnicoNombre,
+		TecnicoEmail:        request.TecnicoEmail,
+		TecnicoTelefono:     request.TecnicoTelefono,
+		TecnicoEspecialidad: request.TecnicoEspecialidad,
+		TecnicoAutorizado:   request.TecnicoAutorizado,
+		Justificacion:       request.Justificacion,
+		CreatedAt:           createdAt,
+	}
+
+	// Enviar notificación a administradores
+	go s.sendTicketNotificationToAdmins(ticket)
+
+	log.Printf("✅ Ticket #%d creado exitosamente: %s - %s", ticketID, request.TipoEntidad, request.TipoOperacion)
+
+	return ticket, nil
+}
+
+// GetTicketsPaginated obtiene tickets con paginación
+func (s *NotificationService) GetTicketsPaginated(pagina int) (*models.TicketsPaginationResponse, error) {
+	db, err := s.connectToPostgres()
+	if err != nil {
+		return nil, fmt.Errorf("error conectando a PostgreSQL: %v", err)
+	}
+	defer db.Close()
+
+	itemsPorPagina := 10
+	offset := (pagina - 1) * itemsPorPagina
+
+	// Contar total de tickets
+	var totalTickets int64
+	err = db.QueryRow("SELECT COUNT(*) FROM tickets").Scan(&totalTickets)
+	if err != nil {
+		return nil, fmt.Errorf("error contando tickets: %v", err)
+	}
+
+	// Obtener tickets de la página actual
+	query := `
+		SELECT 
+			id, tipo_entidad, tipo_operacion, estado, usuario_id, usuario_email,
+			edificio_id, edificio_nombre, edificio_direccion, edificio_latitud, edificio_longitud,
+			activo_id, activo_nombre, activo_tipo, activo_descripcion, activo_ubicacion, activo_edificio_id,
+			tecnico_id, tecnico_nombre, tecnico_email, tecnico_telefono, tecnico_especialidad, tecnico_autorizado,
+			justificacion, comentario_admin, created_at, fecha_resolucion, resuelto_por, resuelto_por_email
+		FROM tickets
+		ORDER BY created_at DESC
+		LIMIT $1 OFFSET $2`
+
+	rows, err := db.Query(query, itemsPorPagina, offset)
+	if err != nil {
+		return nil, fmt.Errorf("error consultando tickets: %v", err)
+	}
+	defer rows.Close()
+
+	var tickets []models.Ticket
+	for rows.Next() {
+		var ticket models.Ticket
+		err := rows.Scan(
+			&ticket.ID, &ticket.TipoEntidad, &ticket.TipoOperacion, &ticket.Estado, &ticket.UsuarioID, &ticket.UsuarioEmail,
+			&ticket.EdificioID, &ticket.EdificioNombre, &ticket.EdificioDireccion, &ticket.EdificioLatitud, &ticket.EdificioLongitud,
+			&ticket.ActivoID, &ticket.ActivoNombre, &ticket.ActivoTipo, &ticket.ActivoDescripcion, &ticket.ActivoUbicacion, &ticket.ActivoEdificioID,
+			&ticket.TecnicoID, &ticket.TecnicoNombre, &ticket.TecnicoEmail, &ticket.TecnicoTelefono, &ticket.TecnicoEspecialidad, &ticket.TecnicoAutorizado,
+			&ticket.Justificacion, &ticket.ComentarioAdmin, &ticket.CreatedAt, &ticket.FechaResolucion, &ticket.ResueltoPor, &ticket.ResueltoPorEmail,
+		)
+		if err != nil {
+			log.Printf("⚠️  Error escaneando ticket: %v", err)
+			continue
+		}
+		tickets = append(tickets, ticket)
+	}
+
+	totalPaginas := int((totalTickets + int64(itemsPorPagina) - 1) / int64(itemsPorPagina))
+
+	response := &models.TicketsPaginationResponse{
+		Tickets:        tickets,
+		TotalTickets:   totalTickets,
+		TotalPaginas:   totalPaginas,
+		PaginaActual:   pagina,
+		ItemsPorPagina: itemsPorPagina,
+	}
+
+	return response, nil
+}
+
+// ResolveTicket resuelve un ticket y registra la resolución
+func (s *NotificationService) ResolveTicket(ticketID uint, request models.ResolveTicketRequest) (*models.Ticket, error) {
+	db, err := s.connectToPostgres()
+	if err != nil {
+		return nil, fmt.Errorf("error conectando a PostgreSQL: %v", err)
+	}
+	defer db.Close()
+
+	// Buscar usuario ID por email
+	var resueltoPoID *uint
+	err = db.QueryRow("SELECT id FROM usuarios WHERE correo = $1", request.ResueltoPorEmail).Scan(&resueltoPoID)
+	if err != nil && err != sql.ErrNoRows {
+		log.Printf("⚠️  No se encontró usuario con email %s", request.ResueltoPorEmail)
+	}
+
+	// Actualizar el ticket
+	query := `
+		UPDATE tickets 
+		SET estado = 'resuelto',
+		    comentario_admin = $1,
+		    fecha_resolucion = NOW(),
+		    resuelto_por = $2,
+		    resuelto_por_email = $3
+		WHERE id = $4
+		RETURNING tipo_entidad, tipo_operacion, usuario_email, created_at`
+
+	var tipoEntidad, tipoOperacion, usuarioEmail string
+	var createdAt time.Time
+
+	err = db.QueryRow(query, request.ComentarioAdmin, resueltoPoID, request.ResueltoPorEmail, ticketID).Scan(
+		&tipoEntidad, &tipoOperacion, &usuarioEmail, &createdAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("ticket no encontrado")
+		}
+		return nil, fmt.Errorf("error al actualizar ticket: %v", err)
+	}
+
+	// Obtener el ticket completo actualizado
+	ticket, err := s.getTicketByID(db, ticketID)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener ticket actualizado: %v", err)
+	}
+
+	log.Printf("✅ Ticket #%d resuelto exitosamente por %s", ticketID, request.ResueltoPorEmail)
+
+	return ticket, nil
+}
+
+// getTicketByID obtiene un ticket por su ID
+func (s *NotificationService) getTicketByID(db *sql.DB, ticketID uint) (*models.Ticket, error) {
+	query := `
+		SELECT 
+			id, tipo_entidad, tipo_operacion, estado, usuario_id, usuario_email,
+			edificio_id, edificio_nombre, edificio_direccion, edificio_latitud, edificio_longitud,
+			activo_id, activo_nombre, activo_tipo, activo_descripcion, activo_ubicacion, activo_edificio_id,
+			tecnico_id, tecnico_nombre, tecnico_email, tecnico_telefono, tecnico_especialidad, tecnico_autorizado,
+			justificacion, comentario_admin, created_at, fecha_resolucion, resuelto_por, resuelto_por_email
+		FROM tickets
+		WHERE id = $1`
+
+	var ticket models.Ticket
+	err := db.QueryRow(query, ticketID).Scan(
+		&ticket.ID, &ticket.TipoEntidad, &ticket.TipoOperacion, &ticket.Estado, &ticket.UsuarioID, &ticket.UsuarioEmail,
+		&ticket.EdificioID, &ticket.EdificioNombre, &ticket.EdificioDireccion, &ticket.EdificioLatitud, &ticket.EdificioLongitud,
+		&ticket.ActivoID, &ticket.ActivoNombre, &ticket.ActivoTipo, &ticket.ActivoDescripcion, &ticket.ActivoUbicacion, &ticket.ActivoEdificioID,
+		&ticket.TecnicoID, &ticket.TecnicoNombre, &ticket.TecnicoEmail, &ticket.TecnicoTelefono, &ticket.TecnicoEspecialidad, &ticket.TecnicoAutorizado,
+		&ticket.Justificacion, &ticket.ComentarioAdmin, &ticket.CreatedAt, &ticket.FechaResolucion, &ticket.ResueltoPor, &ticket.ResueltoPorEmail,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &ticket, nil
+}
+
+// sendTicketNotificationToAdmins envía email a todos los administradores
+func (s *NotificationService) sendTicketNotificationToAdmins(ticket *models.Ticket) {
+	db, err := s.connectToPostgres()
+	if err != nil {
+		log.Printf("❌ Error conectando a PostgreSQL para notificar admins: %v", err)
+		return
+	}
+	defer db.Close()
+
+	// Obtener todos los usuarios administradores
+	rows, err := db.Query("SELECT correo FROM usuarios WHERE scope = 'admin' OR scope = 'root'")
+	if err != nil {
+		log.Printf("❌ Error obteniendo administradores: %v", err)
+		return
+	}
+	defer rows.Close()
+
+	var adminEmails []string
+	for rows.Next() {
+		var email string
+		if err := rows.Scan(&email); err == nil {
+			adminEmails = append(adminEmails, email)
+		}
+	}
+
+	if len(adminEmails) == 0 {
+		log.Printf("⚠️  No se encontraron administradores para notificar")
+		return
+	}
+
+	// Generar HTML del email
+	htmlBody := s.generateTicketEmailHTML(ticket)
+	subject := fmt.Sprintf("🎫 Nueva Solicitud: %s de %s",
+		s.getOperacionDisplay(ticket.TipoOperacion),
+		s.getEntidadDisplay(ticket.TipoEntidad))
+
+	// Enviar a cada administrador
+	for _, email := range adminEmails {
+		err := s.emailService.SendAlertEmail(email, subject, htmlBody)
+		if err != nil {
+			log.Printf("❌ Error enviando email a %s: %v", email, err)
+		} else {
+			log.Printf("✅ Email de ticket enviado a: %s", email)
+		}
+	}
+}
+
+// generateTicketEmailHTML genera el HTML para el email del ticket
+func (s *NotificationService) generateTicketEmailHTML(ticket *models.Ticket) string {
+	operacionDisplay := s.getOperacionDisplay(ticket.TipoOperacion)
+	entidadDisplay := s.getEntidadDisplay(ticket.TipoEntidad)
+
+	// Generar detalles específicos según el tipo de entidad
+	detallesHTML := ""
+
+	switch ticket.TipoEntidad {
+	case "edificio":
+		if ticket.TipoOperacion == "ingreso" {
+			detallesHTML = fmt.Sprintf(`
+				<p><strong>📍 Nombre:</strong> %s</p>
+				<p><strong>📍 Dirección:</strong> %s</p>
+				<p><strong>🌍 Coordenadas:</strong> Lat: %.6f, Lng: %.6f</p>`,
+				ticket.EdificioNombre, ticket.EdificioDireccion,
+				*ticket.EdificioLatitud, *ticket.EdificioLongitud)
+		} else {
+			detallesHTML = fmt.Sprintf(`<p><strong>🏢 Edificio ID:</strong> %d</p>`, *ticket.EdificioID)
+		}
+	case "activo":
+		if ticket.TipoOperacion == "ingreso" {
+			detallesHTML = fmt.Sprintf(`
+				<p><strong>📦 Nombre:</strong> %s</p>
+				<p><strong>🏷️ Tipo:</strong> %s</p>
+				<p><strong>📋 Descripción:</strong> %s</p>
+				<p><strong>📍 Ubicación:</strong> %s</p>
+				<p><strong>🏢 Edificio ID:</strong> %d</p>`,
+				ticket.ActivoNombre, ticket.ActivoTipo, ticket.ActivoDescripcion,
+				ticket.ActivoUbicacion, *ticket.ActivoEdificioID)
+		} else {
+			detallesHTML = fmt.Sprintf(`<p><strong>📦 Activo ID:</strong> %d</p>`, *ticket.ActivoID)
+		}
+	case "tecnico":
+		if ticket.TipoOperacion == "ingreso" {
+			autorizado := "No"
+			if ticket.TecnicoAutorizado != nil && *ticket.TecnicoAutorizado {
+				autorizado = "Sí"
+			}
+			detallesHTML = fmt.Sprintf(`
+				<p><strong>👤 Nombre:</strong> %s</p>
+				<p><strong>📧 Email:</strong> %s</p>
+				<p><strong>📱 Teléfono:</strong> %s</p>
+				<p><strong>🔧 Especialidad:</strong> %s</p>
+				<p><strong>✅ Autorizado:</strong> %s</p>`,
+				ticket.TecnicoNombre, ticket.TecnicoEmail, ticket.TecnicoTelefono,
+				ticket.TecnicoEspecialidad, autorizado)
+		} else {
+			detallesHTML = fmt.Sprintf(`<p><strong>👤 Técnico ID:</strong> %d</p>`, *ticket.TecnicoID)
+		}
+	}
+
+	return fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); color: white; padding: 30px; text-align: center; }
+        .header h1 { margin: 0; font-size: 28px; }
+        .content { padding: 30px; }
+        .badge { display: inline-block; padding: 8px 16px; border-radius: 20px; font-weight: bold; margin: 10px 0; }
+        .badge-ingreso { background-color: #4caf50; color: white; }
+        .badge-modificacion { background-color: #ff9800; color: white; }
+        .badge-eliminacion { background-color: #f44336; color: white; }
+        .section { background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .section h3 { margin-top: 0; color: #667eea; }
+        .btn { display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); color: white; text-decoration: none; border-radius: 25px; font-weight: bold; margin-top: 20px; }
+        .footer { background-color: #f9f9f9; padding: 20px; text-align: center; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎫 Nueva Solicitud de Ticket</h1>
+            <p>Sistema InspectAR</p>
+        </div>
+        
+        <div class="content">
+            <h2>Detalles de la Solicitud</h2>
+            
+            <p><strong>📋 Tipo de Solicitud:</strong> 
+                <span class="badge badge-%s">%s de %s</span>
+            </p>
+            
+            <p><strong>👤 Solicitante:</strong> %s</p>
+            <p><strong>🆔 Ticket ID:</strong> #%d</p>
+            <p><strong>📅 Fecha:</strong> %s</p>
+            
+            <div class="section">
+                <h3>📝 Detalles de %s</h3>
+                %s
+            </div>
+            
+            <div class="section">
+                <h3>💬 Justificación</h3>
+                <p>%s</p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="http://localhost:8091/tickets" class="btn">
+                    Ver Todos los Tickets
+                </a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Este correo fue generado automáticamente por el sistema InspectAR</p>
+            <p>Por favor, revise y gestione esta solicitud lo antes posible</p>
+        </div>
+    </div>
+</body>
+</html>`,
+		ticket.TipoOperacion, operacionDisplay, entidadDisplay,
+		ticket.UsuarioEmail, ticket.ID, ticket.CreatedAt.Format("2006-01-02 15:04:05"),
+		entidadDisplay, detallesHTML,
+		ticket.Justificacion)
+}
+
+// getOperacionDisplay retorna el texto display de la operación
+func (s *NotificationService) getOperacionDisplay(operacion string) string {
+	displays := map[string]string{
+		"ingreso":      "Ingreso",
+		"modificacion": "Modificación",
+		"eliminacion":  "Eliminación",
+	}
+	if display, exists := displays[operacion]; exists {
+		return display
+	}
+	return operacion
+}
+
+// getEntidadDisplay retorna el texto display de la entidad
+func (s *NotificationService) getEntidadDisplay(entidad string) string {
+	displays := map[string]string{
+		"edificio": "Edificio",
+		"activo":   "Activo",
+		"tecnico":  "Técnico",
+	}
+	if display, exists := displays[entidad]; exists {
+		return display
+	}
+	return entidad
 }

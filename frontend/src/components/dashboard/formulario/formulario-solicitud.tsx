@@ -116,7 +116,7 @@ export function FormularioSolicitud(): React.JSX.Element {
 
     const onSubmit = async (data: SolicitudFormData): Promise<void> => {
         const decodedpayload = decodeJwtToken(user?.token);
-        const URL_ENDPOINT = '/api/crear-ticket';
+        const URL_ENDPOINT = '/crear-ticket';
         const token = user?.token;
         const email = decodedpayload?.email ?? '';
 

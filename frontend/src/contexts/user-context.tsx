@@ -6,7 +6,7 @@ import type { User } from '@/types/user';
 import { authClient } from '@/lib/auth/client';
 import { logger } from '@/lib/default-logger';
 
-type Role = 'analista' | 'tecnico' | 'residente' | 'root';
+type Role = 'analista' | 'tecnico' | 'residente' | 'root' | 'administrador';
 
 interface Edificio {
   id: number;

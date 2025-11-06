@@ -16,7 +16,7 @@ import Avatar from '@mui/material/Avatar';
 import dayjs from 'dayjs';
 
 export interface Alert {
-  id: string;
+  id: number;
   icon?: React.ReactElement;
   name: string;
   updatedAt: Date;

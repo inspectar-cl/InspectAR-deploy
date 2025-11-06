@@ -99,8 +99,14 @@ export function transformarApiATipoFrontend(ticket: ApiTicket): SolicitudAPI {
     fechaCreacion: ticket.created_at,
     tipoSolicitud: tipoSolicitud,
     tipoOperacion: ticket.tipo_operacion,
+<<<<<<< HEAD
     asunto: `${ticket.tipo_operacion.toUpperCase()} ${ticket.tipo_entidad}`,
     detalles: ticket.justificacion,
+=======
+    // Asunto autogenerado para que la card tenga un título
+    asunto: `${ticket.tipo_operacion.toUpperCase()} DE ${ticket.tipo_entidad.toUpperCase()}`,
+    detalles: ticket.justificacion, // La justificación es el detalle
+>>>>>>> origin/feature-front
     datosEspecificos: datosEspecificos,
   };
 }

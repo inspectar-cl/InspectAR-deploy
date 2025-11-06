@@ -12,7 +12,7 @@ import Typography from '@mui/material/Typography';
 import { useUserToken } from '@/hooks/use-usertoken';
 import { decodeJwtToken } from '@/hooks/use-auth'
 
-type Role = 'residente' | 'root' | 'analista' | 'tecnico' | null;
+type Role = 'residente' | 'root' | 'analista' | 'tecnico' | 'administrador' | null;
 
 const capitalizeRole = (role: Role): string => {
   if (role === null) {
@@ -22,6 +22,7 @@ const capitalizeRole = (role: Role): string => {
   const roleMap: Record<NonNullable<Role>, string> = {
     'residente': 'Residente',
     'root': 'Admin',
+    'administrador': 'Dueño de edificio',
     'analista': 'Analista',
     'tecnico': 'Técnico', 
   };

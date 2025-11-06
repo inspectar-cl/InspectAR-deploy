@@ -14,8 +14,14 @@ export const navItems = [
   { key: 'graficos', title: 'Gráficos', href: paths.dashboard.graficos, icon: 'chart-line' },
   { key: 'reportes-tecnicos', title: 'Reportes técnicos', href: paths.dashboard.reportesTecnicos, icon: 'file-text' },
   { key: 'reporte-fallas', title: 'Reporte de fallas', href: paths.dashboard.reporteFallas, icon: 'siren' },
+<<<<<<< HEAD
+=======
+  //{ key: 'planos', title: 'Planos', href: paths.dashboard.planos, icon: 'blueprint' },
+>>>>>>> origin/feature-front
   { key: 'contactos', title: 'Contactos', href: paths.dashboard.contactos, icon: 'adressBook' },
   { key: 'settings', title: 'Settings', href: paths.dashboard.settings, icon: 'gear-six' },
   { key: 'account', title: 'Account', href: paths.dashboard.account, icon: 'user' },
   { key: 'ml', title: 'Predicción', href: paths.dashboard.ml, icon: 'brain' },
+  { key: 'tendencias', title: 'Tendencias', href: paths.dashboard.tendencias, icon: 'trend-up' },
+
 ] satisfies NavItemConfig[];

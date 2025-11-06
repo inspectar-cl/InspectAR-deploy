@@ -11,13 +11,13 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 - Testing completo exitoso en todas las rutas
 
 **📊 Estadísticas de Implementación:**
-- **61 rutas totales** configuradas 🆕
-- **61 rutas funcionando** (100% operativas) ✅
+- **64 rutas totales** configuradas 🆕
+- **64 rutas funcionando** (100% operativas) ✅
 - **0 rutas con issues** 
 - **0 rutas pendientes** de implementación
-- **31 nuevas rutas agregadas** (6 observaciones + 3 usuarios/edificios/acceso + 3 activos + 3 HU22 + 9 administrador + 3 QR + 3 gestión usuarios-edificios + 1 edificios públicos) 🎉
+- **34 nuevas rutas agregadas** (6 observaciones + 3 usuarios/edificios/acceso + 3 activos + 3 HU22 + 9 administrador + 3 QR + 3 gestión usuarios-edificios + 1 edificios públicos + 1 asignar activo-edificio + 1 crear usuario admin + 1 registro residente) 🎉
 
-**🚀 Última Actualización:** 4 de Noviembre 2025 - **Ruta GET /edificios para Listado Público de Edificios** 🆕
+**🚀 Última Actualización:** 5 de Noviembre 2025 - **Rutas de Registro: POST /tecnicos y POST /usuarios/registro** 🆕
 
 ## Funcionalidades
 
@@ -194,9 +194,11 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 | `POST` | `/admin/sensores` | **Crear sensor** en ParserService | ✅ **NUEVO** |
 | `PUT` | `/admin/sensores/:id` | **Actualizar sensor** en ParserService | ✅ **NUEVO** |
 | `GET` | `/admin/logs` | **Consultar logs de auditoría** (con filtros) | ✅ **NUEVO** |
+| `POST` | `/admin/usuarios` | **Crear usuario administrador de edificios** | ✅ **NUEVO** 🆕 |
 | `POST` | `/admin/usuarios/edificios` | **Asignar usuario a edificio** | ✅ **NUEVO** |
 | `DELETE` | `/admin/usuarios/edificios` | **Remover usuario de edificio** | ✅ **NUEVO** |
 | `GET` | `/admin/edificios/:edificio_id/usuarios` | **Obtener usuarios de un edificio** | ✅ **NUEVO** |
+| `PUT` | `/admin/activos/edificio` | **Asignar/reasignar activo a edificio** | ✅ **NUEVO** |
 
 ### 📱 Rutas de Códigos QR - 🆕 **SISTEMA COMPLETO IMPLEMENTADO**
 
@@ -228,11 +230,11 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 
 ### 🎯 Resumen de Estado
 
-- **✅ Funcionando**: 61 rutas operativas (100% IMPLEMENTADAS) 🆕
+- **✅ Funcionando**: 63 rutas operativas (100% IMPLEMENTADAS) 🆕
 - **🔧 No implementado**: 0 rutas pendientes  
 - **⚠️ Issue DB**: 0 rutas con problema de schema
-- **🎉 Nuevas rutas**: 1 ruta edificios públicos + 30 anteriores 🆕
-- **Total**: 61 rutas configuradas 🆕
+- **🎉 Nuevas rutas**: 1 ruta crear usuario admin + 32 anteriores 🆕
+- **Total**: 63 rutas configuradas 🆕
 
 ### ⚡ Tests Rápidos
 
@@ -289,7 +291,12 @@ curl http://localhost:8092/usuarios/edificios/residente.especial@example.com
 # 🏢 NUEVA RUTA: Obtener todos los edificios disponibles
 curl http://localhost:8092/edificios
 
-# 🔒 NUEVAS RUTAS: Verificar acceso de usuario a edificios y activos
+# � NUEVA RUTA: Asignar/reasignar activo a edificio
+curl -X PUT http://localhost:8092/admin/activos/edificio \
+  -H "Content-Type: application/json" \
+  -d '{"activo_id": 7, "edificio_id": 4, "admin_email": "admin@example.com"}'
+
+# �🔒 NUEVAS RUTAS: Verificar acceso de usuario a edificios y activos
 curl http://localhost:8092/usuarios/admin@example.com/edificio/1/acceso
 curl http://localhost:8092/usuarios/residente.especial@example.com/edificio/1/acceso
 curl http://localhost:8092/usuarios/residente.especial@example.com/edificio/2/acceso
@@ -3205,7 +3212,386 @@ Esta ruta complementa las siguientes funcionalidades:
 
 ---
 
-## 👥 Gestión de Relaciones Usuarios-Edificios
+## � Asignación de Activos a Edificios
+
+### Descripción
+
+Nueva ruta de administración para asignar y reasignar activos a edificios de manera controlada, con auditoría completa de todos los cambios realizados.
+
+### Características
+
+- ✅ **Asignación inicial** de activos a edificios
+- ✅ **Reasignación** de activos entre edificios
+- ✅ **Validación automática** de existencia de activo y edificio
+- ✅ **Auditoría completa** con registro del edificio anterior y nuevo
+- ✅ **Logs detallados** con descripción del cambio
+- ✅ **Captura de IP y User-Agent** del administrador
+- ✅ **Diferenciación de acciones** (ASIGNAR vs REASIGNAR)
+
+### Ruta Implementada
+
+#### ✅ Asignar Activo a Edificio
+
+```bash
+PUT /admin/activos/edificio
+```
+
+**Descripción:** Asigna un activo existente a un edificio, o lo reasigna si ya estaba en otro edificio.
+
+**Request:**
+```bash
+curl -X PUT http://localhost:8092/admin/activos/edificio \
+  -H "Content-Type: application/json" \
+  -d '{
+    "activo_id": 7,
+    "edificio_id": 4,
+    "admin_email": "admin@example.com"
+  }'
+```
+
+**Body Parameters:**
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|-----------|-------------|
+| `activo_id` | integer | ✅ Sí | ID del activo a asignar |
+| `edificio_id` | integer | ✅ Sí | ID del edificio destino |
+| `admin_email` | string | ✅ Sí | Email del administrador (para auditoría) |
+
+**Response exitoso (200 OK):**
+
+**Caso 1: Asignación inicial (activo sin edificio previo)**
+```json
+{
+  "message": "Activo asignado al edificio exitosamente",
+  "activo": {
+    "id": 7,
+    "nombre": "Ascensor Central"
+  },
+  "edificio_anterior": {
+    "id": 0,
+    "nombre": ""
+  },
+  "edificio_nuevo": {
+    "id": 4,
+    "nombre": "Centro de Distribución"
+  }
+}
+```
+
+**Caso 2: Reasignación (activo cambia de edificio)**
+```json
+{
+  "message": "Activo asignado al edificio exitosamente",
+  "activo": {
+    "id": 7,
+    "nombre": "Ascensor Central"
+  },
+  "edificio_anterior": {
+    "id": 1,
+    "nombre": "Edificio Central"
+  },
+  "edificio_nuevo": {
+    "id": 4,
+    "nombre": "Centro de Distribución"
+  }
+}
+```
+
+**Response en caso de error:**
+
+**404 Not Found - Activo no encontrado:**
+```json
+{
+  "error": "Activo no encontrado"
+}
+```
+
+**404 Not Found - Edificio no encontrado:**
+```json
+{
+  "error": "Edificio no encontrado"
+}
+```
+
+**500 Internal Server Error:**
+```json
+{
+  "error": "Error al asignar activo al edificio",
+  "details": "mensaje de error específico"
+}
+```
+
+### Flujo de Operación
+
+```
+1. Recibir Request
+   ↓
+2. Validar activo_id (verificar existencia)
+   ↓
+3. Validar edificio_id (verificar existencia)
+   ↓
+4. Obtener edificio anterior (para auditoría)
+   ↓
+5. Actualizar activo.edificio_id
+   ↓
+6. Registrar log de auditoría
+   - Acción: ASIGNAR_ACTIVO_EDIFICIO o REASIGNAR_ACTIVO_EDIFICIO
+   - Datos anteriores: {edificio_id, edificio_nombre}
+   - Datos nuevos: {edificio_id, edificio_nombre}
+   - IP y User-Agent del administrador
+   ↓
+7. Retornar respuesta con detalles completos
+```
+
+### Ejemplos de Uso
+
+#### 1. Asignar activo nuevo a edificio
+
+```bash
+# Asignar activo 15 al Edificio Central (ID: 1)
+curl -X PUT http://localhost:8092/admin/activos/edificio \
+  -H "Content-Type: application/json" \
+  -d '{
+    "activo_id": 15,
+    "edificio_id": 1,
+    "admin_email": "admin@example.com"
+  }'
+```
+
+#### 2. Reasignar activo a otro edificio
+
+```bash
+# Mover activo 15 del Edificio Central a Torre Norte (ID: 2)
+curl -X PUT http://localhost:8092/admin/activos/edificio \
+  -H "Content-Type: application/json" \
+  -d '{
+    "activo_id": 15,
+    "edificio_id": 2,
+    "admin_email": "admin@example.com"
+  }'
+```
+
+#### 3. Verificar la asignación
+
+```bash
+# Ver el activo actualizado
+curl http://localhost:8092/activos/15 | jq '{id, nombre, edificio_id}'
+
+# Ver todos los activos del edificio
+curl http://localhost:8092/activos/edificio/2 | jq '.activos[] | {id, nombre}'
+```
+
+#### 4. Consultar logs de auditoría
+
+```bash
+# Ver historial de asignaciones del activo
+curl "http://localhost:8092/admin/logs?entidad=activo_edificio&entidad_id=15" | jq '.logs[] | {accion, descripcion, fecha: .creado_en}'
+```
+
+### Casos de Uso
+
+#### Reorganización de inventario
+
+```bash
+#!/bin/bash
+# Mover todos los activos de un edificio a otro
+
+EDIFICIO_ORIGEN=1
+EDIFICIO_DESTINO=2
+ADMIN_EMAIL="admin@example.com"
+
+# Obtener activos del edificio origen
+ACTIVOS=$(curl -s http://localhost:8092/activos/edificio/$EDIFICIO_ORIGEN | jq -r '.activos[].id')
+
+# Reasignar cada activo
+for ACTIVO_ID in $ACTIVOS; do
+  echo "Moviendo activo $ACTIVO_ID..."
+  curl -X PUT http://localhost:8092/admin/activos/edificio \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"activo_id\": $ACTIVO_ID,
+      \"edificio_id\": $EDIFICIO_DESTINO,
+      \"admin_email\": \"$ADMIN_EMAIL\"
+    }"
+  sleep 0.5
+done
+
+echo "✅ Todos los activos movidos de edificio $EDIFICIO_ORIGEN a $EDIFICIO_DESTINO"
+```
+
+#### Gestión de traslados
+
+```typescript
+// React/TypeScript - Formulario de traslado de activo
+interface TrasladoForm {
+  activoId: number;
+  edificioDestinoId: number;
+  adminEmail: string;
+}
+
+async function trasladarActivo(data: TrasladoForm) {
+  const response = await fetch('http://localhost:8092/admin/activos/edificio', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      activo_id: data.activoId,
+      edificio_id: data.edificioDestinoId,
+      admin_email: data.adminEmail
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error('Error al trasladar activo');
+  }
+
+  const result = await response.json();
+  console.log(`✅ Activo ${result.activo.nombre} movido`);
+  console.log(`   De: ${result.edificio_anterior.nombre}`);
+  console.log(`   A:  ${result.edificio_nuevo.nombre}`);
+  
+  return result;
+}
+```
+
+### Logs de Auditoría
+
+#### Estructura del Log
+
+```json
+{
+  "id": 123,
+  "usuario_id": 1,
+  "usuario_email": "admin@example.com",
+  "accion": "REASIGNAR_ACTIVO_EDIFICIO",
+  "entidad": "activo_edificio",
+  "entidad_id": 7,
+  "datos_anteriores": {
+    "edificio_id": 1,
+    "edificio_nombre": "Edificio Central"
+  },
+  "datos_nuevos": {
+    "edificio_id": 4,
+    "edificio_nombre": "Centro de Distribución"
+  },
+  "descripcion": "Activo Ascensor Central reasignado de Edificio Central a Centro de Distribución",
+  "ip_origen": "192.168.1.100",
+  "user_agent": "Mozilla/5.0...",
+  "creado_en": "2025-11-04T16:30:00Z"
+}
+```
+
+#### Tipos de Acciones
+
+| Acción | Cuándo se registra |
+|--------|-------------------|
+| `ASIGNAR_ACTIVO_EDIFICIO` | Cuando se asigna un activo por primera vez (edificio_anterior = 0) |
+| `REASIGNAR_ACTIVO_EDIFICIO` | Cuando se mueve un activo de un edificio a otro |
+
+#### Consultas de Logs
+
+```bash
+# Todos los cambios de activos a edificios
+curl "http://localhost:8092/admin/logs?entidad=activo_edificio"
+
+# Historial de un activo específico
+curl "http://localhost:8092/admin/logs?entidad=activo_edificio&entidad_id=7"
+
+# Asignaciones realizadas por un admin
+curl "http://localhost:8092/admin/logs?usuario_email=admin@example.com&accion=ASIGNAR_ACTIVO_EDIFICIO"
+
+# Reasignaciones del último mes
+curl "http://localhost:8092/admin/logs?accion=REASIGNAR_ACTIVO_EDIFICIO&fecha_desde=2025-10-01"
+```
+
+### Tests Automatizados
+
+Se ha creado un script completo de validación en:
+```bash
+backend/microservicios/gestion/tests/testAsignarActivoEdificio.sh
+```
+
+**Ejecución:**
+```bash
+chmod +x tests/testAsignarActivoEdificio.sh
+./tests/testAsignarActivoEdificio.sh
+```
+
+**Validaciones incluidas:**
+- ✅ Servicio funcionando correctamente
+- ✅ Obtención de edificios disponibles
+- ✅ Asignación inicial de activo
+- ✅ Verificación de asignación en BD
+- ✅ Reasignación a otro edificio
+- ✅ Verificación de reasignación
+- ✅ Consulta de logs de auditoría
+- ✅ Verificación de activos por edificio
+
+**Resultado esperado:**
+```
+✅ TODAS LAS PRUEBAS PASARON EXITOSAMENTE
+
+Resumen de operaciones:
+- Asignación inicial: ✓
+- Verificación de asignación: ✓
+- Reasignación: ✓
+- Verificación de reasignación: ✓
+- Logs de auditoría: ✓
+- Activos por edificio: ✓
+```
+
+### Integración con Otras Rutas
+
+Esta ruta complementa las siguientes funcionalidades:
+
+1. **Ver activos de un edificio:**
+   ```bash
+   GET /activos/edificio/{edificio_id}
+   ```
+
+2. **Ver todos los edificios:**
+   ```bash
+   GET /edificios
+   ```
+
+3. **Crear activo con edificio:**
+   ```bash
+   POST /admin/activos
+   {
+     "nombre": "...",
+     "tipo": "...",
+     "edificio_id": 1,  // ← asignación inicial
+     ...
+   }
+   ```
+
+4. **Consultar logs de auditoría:**
+   ```bash
+   GET /admin/logs?entidad=activo_edificio
+   ```
+
+### Notas de Implementación
+
+**Archivos modificados/creados:**
+- ✅ `internal/handlers/admin_handler.go` (método AsignarActivoAEdificio agregado)
+- ✅ `api/router/router.go` (ruta PUT /admin/activos/edificio agregada)
+- ✅ `tests/testAsignarActivoEdificio.sh` (nuevo script de pruebas)
+- ✅ `README.md` (documentación actualizada)
+
+**Validaciones implementadas:**
+- Verificación de existencia del activo
+- Verificación de existencia del edificio
+- Captura del estado anterior para auditoría
+- Diferenciación entre asignación y reasignación
+- Registro detallado en logs con IP y User-Agent
+
+**Seguridad:**
+- Requiere email de administrador (validado en logs)
+- Registra IP de origen de la operación
+- Captura User-Agent para trazabilidad
+- Todos los cambios quedan registrados en logs_auditoria
+
+---
+
+## �👥 Gestión de Relaciones Usuarios-Edificios
 
 ### Descripción
 
@@ -3517,6 +3903,249 @@ cd /home/joytan/repo/InspectAR/backend/microservicios/gestion
 ✅ **IP y User-Agent** capturados  
 ✅ **Idempotencia** para evitar duplicados  
 ✅ **Trazabilidad completa** de cambios en permisos  
+
+---
+
+
+## 👤 Creación de Usuarios Administradores de Edificios
+
+### Descripción
+
+Ruta de administración que permite crear nuevos usuarios administradores de edificios. Estos usuarios pueden luego ser asignados a edificios específicos para gestionar sus activos y operaciones.
+
+### Ruta: POST /admin/usuarios
+
+**Request:**
+```bash
+curl -X POST http://localhost:8092/admin/usuarios \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "admin_torre_norte",
+    "email": "admin.torre.norte@inspectAR.cl",
+    "admin_email": "admin@example.com"
+  }'
+```
+
+**Response (201 Created):**
+```json
+{
+  "message": "Usuario administrador creado exitosamente",
+  "usuario": {
+    "id": 10,
+    "username": "admin_torre_norte",
+    "email": "admin.torre.norte@inspectAR.cl",
+    "creado_en": "2025-11-05T01:54:34.55754Z"
+  }
+}
+```
+
+### Características
+
+✅ **Validación de email único** (no permite duplicados)  
+✅ **Validación de campos** con Gin binding  
+✅ **Auditoría completa** con logs automáticos (acción: CREAR_USUARIO_ADMINISTRADOR)  
+✅ **Registro de IP y User-Agent** del administrador  
+✅ **Integración inmediata** con sistema de asignación de edificios  
+
+### Flujo Completo
+
+```bash
+# 1. Crear usuario administrador
+curl -X POST http://localhost:8092/admin/usuarios \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin_norte", "email": "admin.norte@inspectAR.cl", "admin_email": "admin@example.com"}'
+
+# 2. Asignar edificio(s) al usuario
+curl -X POST http://localhost:8092/admin/usuarios/edificios \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin.norte@inspectAR.cl", "edificio_id": 2, "admin_email": "admin@example.com"}'
+
+# 3. Verificar edificios asignados
+curl http://localhost:8092/usuarios/edificios/admin.norte@inspectAR.cl
+
+# 4. Verificar acceso
+curl http://localhost:8092/usuarios/admin.norte@inspectAR.cl/edificio/2/acceso
+```
+
+### Tests
+
+Script de prueba: `tests/testCrearUsuarioAdmin.sh`
+
+**Validaciones:**
+- ✅ Creación de usuario
+- ✅ Validación de email duplicado
+- ✅ Asignación de edificio
+- ✅ Verificación de edificios del usuario
+- ✅ Verificación de acceso
+- ✅ Usuarios por edificio
+- ✅ Logs de auditoría
+- ✅ Validaciones de entrada (username vacío, email inválido, etc.)
+
+---
+
+---
+
+## 👥 Registro de Técnicos y Residentes
+
+Sistema de registro público para técnicos especializados y residentes de edificios.
+
+### POST /tecnicos - Registrar Técnico
+
+Permite el registro de un nuevo técnico especializado en el sistema.
+
+**Ruta:** `POST /tecnicos`
+
+**Request Body:**
+```json
+{
+  "nombre": "Carlos Martinez",
+  "email": "carlos.martinez@techservices.cl",
+  "telefono": "+56912345678",
+  "especialidad": "Calderas Industriales"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "id": 9,
+  "nombre": "Carlos Martinez",
+  "apellido": "",
+  "email": "carlos.martinez@techservices.cl",
+  "telefono": "+56912345678",
+  "especialidad": "Calderas Industriales",
+  "autorizado": true,
+  "empresa_id": 1,
+  "empresa": {
+    "id": 0,
+    "nombre": "",
+    "rut": "",
+    "telefono": "",
+    "email": ""
+  },
+  "creado_en": "2025-11-05T02:19:08.063048Z"
+}
+```
+
+**Características:**
+- ✅ Validación de email único
+- ✅ Auto-autorización del técnico (`autorizado: true`)
+- ✅ Asignación automática a empresa por defecto (ID: 1)
+- ✅ Especialidad requerida para categorización
+- ✅ Validación de formato de email
+- ✅ Campos opcionales: apellido, teléfono
+
+---
+
+### POST /usuarios/registro - Registrar Residente
+
+Permite a un usuario/residente crear su cuenta en el sistema mediante auto-registro.
+
+**Ruta:** `POST /usuarios/registro`
+
+**Request Body:**
+```json
+{
+  "username": "maria_gonzalez",
+  "email": "maria.gonzalez@residentes.cl"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "mensaje": "Usuario registrado exitosamente",
+  "usuario": {
+    "id": 11,
+    "username": "maria_gonzalez",
+    "email": "maria.gonzalez@residentes.cl",
+    "creado_en": "2025-11-05T02:19:34.082139Z"
+  }
+}
+```
+
+**Response (409 Conflict) - Email duplicado:**
+```json
+{
+  "error": "El email ya está registrado",
+  "mensaje": "Este correo electrónico ya pertenece a un usuario registrado"
+}
+```
+
+**Características:**
+- ✅ Auto-registro sin aprobación administrativa
+- ✅ Validación de email único
+- ✅ Validación de formato de email
+- ✅ Username requerido (identificador de usuario)
+- ✅ Sin asignación automática a edificios (requiere asignación posterior por admin)
+- ✅ Diferenciado de POST /admin/usuarios (que sí requiere admin_email)
+
+---
+
+### 🔍 Diferencias Clave
+
+| Aspecto | Técnicos | Residentes |
+|---------|----------|------------|
+| **Ruta** | `POST /tecnicos` | `POST /usuarios/registro` |
+| **Campos requeridos** | nombre, email, especialidad | username, email |
+| **Tabla BD** | `tecnicos` | `usuarios` |
+| **Autorización** | Automática (`autorizado: true`) | No aplica |
+| **Empresa** | Asignación automática (ID: 1) | No aplica |
+| **Edificios** | Asignación por activos | Asignación por admin posterior |
+| **Uso típico** | Profesionales de mantención | Habitantes de edificios |
+
+---
+
+### 🧪 Tests Automatizados
+
+**Script de testing:** `tests/testRegistroTecnicosYResidentes.sh`
+
+```bash
+cd /home/joytan/repo/InspectAR/backend/microservicios/gestion
+chmod +x tests/testRegistroTecnicosYResidentes.sh
+./tests/testRegistroTecnicosYResidentes.sh
+```
+
+**Validaciones incluidas:**
+1. ✅ Crear técnico con especialidad
+2. ✅ Verificar técnico en lista
+3. ✅ Obtener técnico por ID
+4. ✅ Validar rechazo de email inválido (técnico)
+5. ✅ Registrar residente
+6. ✅ Validar rechazo de email duplicado
+7. ✅ Validar rechazo de username vacío
+8. ✅ Validar rechazo de email inválido (residente)
+9. ✅ Crear múltiples residentes
+10. ✅ Verificar independencia entre registros
+
+**Resultado esperado:** 10/10 pruebas pasadas ✅
+
+---
+
+### 📝 Flujo Completo
+
+#### Flujo Técnico:
+1. **Registro:** Técnico se registra con POST /tecnicos
+2. **Listado:** Aparece en GET /tecnicos
+3. **Asignación:** Admin asigna técnico a activos con POST /activos/:activo_id/tecnicos
+4. **Trabajo:** Técnico accede a sus activos con GET /activos-de-tecnico/:tecnico_id
+
+#### Flujo Residente:
+1. **Registro:** Residente se registra con POST /usuarios/registro
+2. **Asignación:** Admin asigna residente a edificio con POST /admin/usuarios/edificios
+3. **Verificación:** Residente verifica su acceso con GET /usuarios/:email/edificio/:edificio_id/acceso
+4. **Consulta:** Residente consulta sus edificios con GET /usuarios/edificios/:email
+
+---
+
+### 🔐 Seguridad
+
+- ✅ Validación de email único en base de datos
+- ✅ Validación de formato de email (RFC 5322)
+- ✅ Username obligatorio para identificación
+- ✅ Sin exposición de datos sensibles en responses
+- ✅ Logs de auditoría NO se generan (son registros públicos)
+- ⚠️ **Nota:** Estas rutas son públicas, no requieren autenticación
 
 ---
 

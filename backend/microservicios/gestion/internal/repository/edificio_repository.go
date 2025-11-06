@@ -15,7 +15,7 @@ func NewEdificioRepository(db *sql.DB) *EdificioRepository {
 
 func (r *EdificioRepository) GetByID(id int) (*models.Edificio, error) {
 	query := `
-		SELECT id, nombre, direccion, creado_en 
+		SELECT id, nombre, direccion, latitud, longitud, creado_en 
 		FROM edificios 
 		WHERE id = $1
 	`
@@ -25,6 +25,8 @@ func (r *EdificioRepository) GetByID(id int) (*models.Edificio, error) {
 		&edificio.ID,
 		&edificio.Nombre,
 		&edificio.Direccion,
+		&edificio.Latitud,
+		&edificio.Longitud,
 		&edificio.CreadoEn,
 	)
 
@@ -37,7 +39,7 @@ func (r *EdificioRepository) GetByID(id int) (*models.Edificio, error) {
 
 func (r *EdificioRepository) GetAll() ([]models.Edificio, error) {
 	query := `
-		SELECT id, nombre, direccion, creado_en 
+		SELECT id, nombre, direccion, latitud, longitud, creado_en 
 		FROM edificios 
 		ORDER BY nombre
 	`
@@ -55,6 +57,8 @@ func (r *EdificioRepository) GetAll() ([]models.Edificio, error) {
 			&edificio.ID,
 			&edificio.Nombre,
 			&edificio.Direccion,
+			&edificio.Latitud,
+			&edificio.Longitud,
 			&edificio.CreadoEn,
 		)
 		if err != nil {

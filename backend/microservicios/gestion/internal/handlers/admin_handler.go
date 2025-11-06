@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"gestion/internal/models"
@@ -11,6 +12,8 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -500,18 +503,38 @@ func (h *AdminHandler) CrearSensor(c *gin.Context) {
 	}
 
 	// Verificar que el activo existe
-	_, err := h.activoRepo.GetByID(req.ActivoID)
+	activo, err := h.activoRepo.GetByID(req.ActivoID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Activo no encontrado"})
 		return
 	}
 
+	// Generar sensor_id único con formato: TIPO_ACTIVO_TIMESTAMP_RANDOM
+	// Ejemplo: TEMP_15_1699123456_A3F2
+	timestamp := time.Now().Unix()
+	randomBytes := make([]byte, 2)
+	rand.Read(randomBytes)
+	randomHex := fmt.Sprintf("%X", randomBytes)
+
+	// Normalizar tipo para ID (sin espacios, mayúsculas, máximo 4 caracteres)
+	tipoNormalizado := strings.ToUpper(strings.ReplaceAll(req.Tipo, " ", ""))
+	if len(tipoNormalizado) > 4 {
+		tipoNormalizado = tipoNormalizado[:4]
+	}
+
+	sensorID := fmt.Sprintf("%s_%d_%d_%s", tipoNormalizado, activo.ID, timestamp, randomHex)
+
 	// Crear sensor en ParserService
 	parserReq := map[string]interface{}{
 		"id_activo": req.ActivoID,
-		"nombre":    req.Nombre,
+		"sensor_id": sensorID, // ID generado automáticamente
 		"tipo":      req.Tipo,
 		"unidad":    req.Unidad,
+	}
+
+	// Agregar nombre solo si se proporciona
+	if req.Nombre != "" {
+		parserReq["nombre"] = req.Nombre
 	}
 
 	jsonData, _ := json.Marshal(parserReq)
@@ -533,27 +556,33 @@ func (h *AdminHandler) CrearSensor(c *gin.Context) {
 	json.NewDecoder(resp.Body).Decode(&parserResp)
 
 	// Registrar en log
+	logData := map[string]interface{}{
+		"activo_id": req.ActivoID,
+		"sensor_id": sensorID,
+		"tipo":      req.Tipo,
+		"unidad":    req.Unidad,
+	}
+	if req.Nombre != "" {
+		logData["nombre"] = req.Nombre
+	}
+
 	log := models.LogAuditoria{
 		UsuarioEmail: req.Email,
 		Accion:       "crear",
 		Entidad:      "sensor",
 		EntidadID:    req.ActivoID, // Usar activo_id como referencia
-		DatosNuevos: map[string]interface{}{
-			"activo_id": req.ActivoID,
-			"nombre":    req.Nombre,
-			"tipo":      req.Tipo,
-			"unidad":    req.Unidad,
-		},
-		Descripcion: fmt.Sprintf("Usuario %s creó el sensor '%s' para activo ID %d", req.Email, req.Nombre, req.ActivoID),
-		IPOrigen:    stringPtr(c.ClientIP()),
-		UserAgent:   stringPtr(c.Request.UserAgent()),
+		DatosNuevos:  logData,
+		Descripcion:  fmt.Sprintf("Usuario %s creó el sensor '%s' (ID: %s) para activo ID %d", req.Email, req.Tipo, sensorID, req.ActivoID),
+		IPOrigen:     stringPtr(c.ClientIP()),
+		UserAgent:    stringPtr(c.Request.UserAgent()),
 	}
 
 	h.logRepo.CrearLog(log)
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "Sensor creado exitosamente",
-		"sensor":  parserResp,
+		"message":   "Sensor creado exitosamente",
+		"sensor_id": sensorID,
+		"sensor":    parserResp,
 	})
 }
 
@@ -810,6 +839,165 @@ func (h *AdminHandler) ObtenerUsuariosDeEdificio(c *gin.Context) {
 		"edificio_id": edificioID,
 		"usuarios":    usuarios,
 		"total":       len(usuarios),
+	})
+}
+
+// AsignarActivoAEdificio asigna o reasigna un activo a un edificio
+func (h *AdminHandler) AsignarActivoAEdificio(c *gin.Context) {
+	var req struct {
+		ActivoID   int    `json:"activo_id" binding:"required"`
+		EdificioID int    `json:"edificio_id" binding:"required"`
+		AdminEmail string `json:"admin_email" binding:"required,email"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 1. Verificar que el activo existe
+	activoActual, err := h.activoRepo.GetByID(req.ActivoID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Activo no encontrado"})
+		return
+	}
+
+	// 2. Verificar que el edificio destino existe
+	edificio, err := h.edificioRepo.GetByID(req.EdificioID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Edificio no encontrado"})
+		return
+	}
+
+	// 3. Guardar estado anterior para auditoría
+	edificioAnteriorID := activoActual.EdificioID
+	var edificioAnteriorNombre string
+	if edificioAnteriorID > 0 {
+		edificioAnterior, _ := h.edificioRepo.GetByID(edificioAnteriorID)
+		if edificioAnterior != nil {
+			edificioAnteriorNombre = edificioAnterior.Nombre
+		}
+	}
+
+	// 4. Actualizar edificio del activo
+	activoActual.EdificioID = req.EdificioID
+	if err := h.activoRepo.Actualizar(activoActual.ID, *activoActual); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Error al asignar activo al edificio",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// 5. Registrar log de auditoría
+	adminUsuario, _ := h.usuarioRepo.GetByEmail(req.AdminEmail)
+	if adminUsuario != nil {
+		datosAnteriores := map[string]interface{}{
+			"edificio_id":     edificioAnteriorID,
+			"edificio_nombre": edificioAnteriorNombre,
+		}
+		datosNuevos := map[string]interface{}{
+			"edificio_id":     edificio.ID,
+			"edificio_nombre": edificio.Nombre,
+		}
+
+		accion := "ASIGNAR_ACTIVO_EDIFICIO"
+		descripcion := fmt.Sprintf("Activo %s asignado al edificio %s", activoActual.Nombre, edificio.Nombre)
+		if edificioAnteriorID > 0 {
+			accion = "REASIGNAR_ACTIVO_EDIFICIO"
+			descripcion = fmt.Sprintf("Activo %s reasignado de %s a %s", activoActual.Nombre, edificioAnteriorNombre, edificio.Nombre)
+		}
+
+		h.logRepo.CrearLog(models.LogAuditoria{
+			UsuarioID:       &adminUsuario.ID,
+			UsuarioEmail:    req.AdminEmail,
+			Accion:          accion,
+			Entidad:         "activo_edificio",
+			EntidadID:       activoActual.ID,
+			DatosAnteriores: datosAnteriores,
+			DatosNuevos:     datosNuevos,
+			Descripcion:     descripcion,
+			IPOrigen:        stringPtr(c.ClientIP()),
+			UserAgent:       stringPtr(c.Request.UserAgent()),
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Activo asignado al edificio exitosamente",
+		"activo": gin.H{
+			"id":     activoActual.ID,
+			"nombre": activoActual.Nombre,
+		},
+		"edificio_anterior": gin.H{
+			"id":     edificioAnteriorID,
+			"nombre": edificioAnteriorNombre,
+		},
+		"edificio_nuevo": gin.H{
+			"id":     edificio.ID,
+			"nombre": edificio.Nombre,
+		},
+	})
+}
+
+// CrearUsuarioAdministrador crea un nuevo usuario administrador de edificios
+func (h *AdminHandler) CrearUsuarioAdministrador(c *gin.Context) {
+	var req struct {
+		Username   string `json:"username" binding:"required"`
+		Email      string `json:"email" binding:"required,email"`
+		AdminEmail string `json:"admin_email" binding:"required,email"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Verificar que el email no esté ya registrado
+	usuarioExistente, _ := h.usuarioRepo.GetByEmail(req.Email)
+	if usuarioExistente != nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "El email ya está registrado"})
+		return
+	}
+
+	// Crear el usuario
+	nuevoUsuario := models.Usuario{
+		Username: req.Username,
+		Email:    req.Email,
+	}
+
+	usuarioCreado, err := h.usuarioRepo.Crear(nuevoUsuario)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Error al crear usuario",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Registrar log de auditoría
+	adminUsuario, _ := h.usuarioRepo.GetByEmail(req.AdminEmail)
+	if adminUsuario != nil {
+		logData := map[string]interface{}{
+			"usuario_id": usuarioCreado.ID,
+			"username":   usuarioCreado.Username,
+			"email":      usuarioCreado.Email,
+		}
+		h.logRepo.CrearLog(models.LogAuditoria{
+			UsuarioID:    &adminUsuario.ID,
+			UsuarioEmail: req.AdminEmail,
+			Accion:       "CREAR_USUARIO_ADMINISTRADOR",
+			Entidad:      "usuario",
+			EntidadID:    usuarioCreado.ID,
+			DatosNuevos:  logData,
+			Descripcion:  fmt.Sprintf("Usuario administrador %s (%s) creado", usuarioCreado.Username, usuarioCreado.Email),
+			IPOrigen:     stringPtr(c.ClientIP()),
+			UserAgent:    stringPtr(c.Request.UserAgent()),
+		})
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "Usuario administrador creado exitosamente",
+		"usuario": usuarioCreado,
 	})
 }
 

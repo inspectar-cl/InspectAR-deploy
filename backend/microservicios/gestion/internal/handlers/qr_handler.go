@@ -42,13 +42,15 @@ func (h *QRHandler) ObtenerInfoPorCodigo(c *gin.Context) {
 		return
 	}
 
-	// Retornar solo descripción y tipo como solicitado
+	// Retornar información completa del activo incluyendo ID
 	response := gin.H{
+		"id":          activo.ID,
 		"codigo":      activo.CodigoActivo,
 		"tipo":        activo.Tipo,
 		"descripcion": activo.Descripcion,
 		"nombre":      activo.Nombre,
 		"ubicacion":   activo.Ubicacion,
+		"edificio_id": activo.EdificioID,
 	}
 
 	c.JSON(http.StatusOK, response)

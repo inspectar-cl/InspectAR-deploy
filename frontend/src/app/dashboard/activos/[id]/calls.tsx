@@ -1,17 +1,37 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type -- Función generadora de UI, tipo inferido*/
-'use client'
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+'use client';
 
 import * as React from 'react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Card from '@mui/material/Card';
 import CardMedia from '@mui/material/CardMedia';
 import CardContent from '@mui/material/CardContent';
 import CardActions from '@mui/material/CardActions';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
-import Box from '@mui/material/Box'
+import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Alert from '@mui/material/Alert';
+import Select from '@mui/material/Select'
+import MenuItem from '@mui/material/MenuItem'
+import FormControl from '@mui/material/FormControl'
+import InputLabel from '@mui/material/InputLabel'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from 'recharts';
 import dayjs from 'dayjs';
-import { type Activo } from '@/types/'
+
+import { type Activo } from '@/types/';
 import { DownloadSimple } from '@phosphor-icons/react';
 import { useUserToken } from '@/hooks/use-usertoken';
 import ScoreChart from '@/components/dashboard/overview/score-chart';
@@ -20,14 +40,12 @@ import { Presion } from '@/components/dashboard/overview/presion';
 import { TemperatureProgress } from '@/components/dashboard/overview/temperature';
 import { LatestAlerts } from '@/components/dashboard/overview/latest-alerts';
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr/Warning';
-import Grid from '@mui/material/Grid';
-import { ScatterWithArgs} from '@/components/dashboard/overview/MedicionTiempoReal'
-import { ChatBotCard } from '@/components/dashboard/overview/chatbot'
-
-// Configuración rutas de obtención de datos desde db.
-import Services from '@/modules/Services'
-
-import dataAlertas from '@/mocks/alerts.json'
+import { ScatterWithArgs } from '@/components/dashboard/overview/MedicionTiempoReal';
+import { ChatBotCard } from '@/components/dashboard/overview/chatbot';
+import { useActivosWithSensors } from '@/hooks/use-activos-with-sensors';
+import Services from '@/modules/Services';
+import dataAlertas from '@/mocks/alerts.json';
+import type { SensorRow } from '@/hooks/use-activos-with-sensors';
 
 // Constantes globales
 const ESTADOS = ['OK', 'Medio', 'Crítico', 'NN'] as const;
@@ -41,8 +59,32 @@ function normalizeTrend(t: unknown): Trend {
 const gs = new Services()
 
 export default function ActivoDetailClient({ id }: { id: number}) {
+  const [rangoMinutos, setRangoMinutos] = useState(30); 
+  const { activos} = useActivosWithSensors();
   const { user, isLoading} = useUserToken();
   const [activo, setActivo] = React.useState<Activo | null>(null)
+  const [openChart, setOpenChart] = useState(false);
+  const [selectedSensor, setSelectedSensor] = useState<SensorRow | null>(null);
+
+  const filteredData = React.useMemo(() => {
+    if (!selectedSensor?.history24h) return [];
+
+    if (rangoMinutos === 0) {
+      return selectedSensor.history24h.map((d) => ({
+        time: dayjs(d.ts).format('DD/MM HH:mm'),
+        value: d.value,
+      }));
+    }
+
+    const limite = dayjs().subtract(rangoMinutos, 'minute');
+    return selectedSensor.history24h
+      .filter((d) => dayjs(d.ts).isAfter(limite))
+      .map((d) => ({
+        time: dayjs(d.ts).format('HH:mm:ss'),
+        value: d.value,
+      }));
+  }, [selectedSensor, rangoMinutos]);
+
   interface SensorDato {
     valor: number;
     tiempo: string;
@@ -106,7 +148,6 @@ export default function ActivoDetailClient({ id }: { id: number}) {
     const fetchDatos = async () => {
       try {
         const datos = await gs.get('/parser/lectura/1/datos') as { sensores?: Sensor[] };
-        //console.log("Datos de sensores", datos);
         setSensores(datos.sensores ?? []);
       } catch (err) {
         //console.error('Error al obtener los datos de sensores', err);
@@ -155,7 +196,6 @@ export default function ActivoDetailClient({ id }: { id: number}) {
 
   const presionInfo = getDiffInfo('pres1')
   const caudalInfo = getDiffInfo('caud1')
-
   if (!activo) {
     return <div style={{ padding: '1rem' }}>No se encontró el activo con ID: {`${id}`}</div>;
   }
@@ -163,6 +203,7 @@ export default function ActivoDetailClient({ id }: { id: number}) {
     return <div>Loading...</div>; // o skeleton / placeholder
 }
   return (
+    
     <Box sx={{ p: 2 }}>
       {/* FILA SUPERIOR */}
       <Grid container spacing={2}>
@@ -271,6 +312,135 @@ export default function ActivoDetailClient({ id }: { id: number}) {
           <ChatBotCard id={activo.id_ficha_tecnica}/>
         </Grid>
       </Grid>
+        {activos
+          .filter((a) => a.id === activo.id)
+          .map((act) => (
+            <Box key={act.assetName} sx={{ mt: 4 }}>
+              <Typography variant="h5" gutterBottom>
+                Sensores del activo
+              </Typography>
+
+              {/* Si el activo no tiene sensores */}
+              {(!act.sensores || act.sensores.length === 0) ? (
+                <Alert severity="info">
+                  No se encontraron sensores para este activo.
+                </Alert>
+              ) : (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 2,
+                  }}
+                >
+                  {/* Mapeo de los sensores asociados al activo */}
+                  {act.sensores.map((s) => {
+                    const hora = s.lastSeen
+                      ? dayjs(s.lastSeen).format('HH:mm:ss')
+                      : 'Sin datos';
+                    return (
+                      <Card
+                        key={s.id}
+                        sx={{
+                          width: 240,
+                          cursor: 'pointer',
+                          p: 1,
+                          '&:hover': { boxShadow: 6 },
+                        }}
+                        onClick={() => {
+                          setSelectedSensor(s);
+                          setOpenChart(true);
+                        }}
+                      >
+                        <CardContent>
+                          <Typography variant="h6">{s.name}</Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Último valor: {s.lastValue} {s.unit}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {hora}
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </Box>
+              )}
+            </Box>
+          ))}
+
+          <Dialog
+            fullWidth
+            maxWidth="md"
+            open={openChart}
+            onClose={() => { setOpenChart(false); }}
+          >
+            <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              {selectedSensor
+                ? `Histórico de ${selectedSensor.name}`
+                : 'Cargando...'}
+
+              {/* Selector de rango de tiempo */}
+              <FormControl size="small" sx={{ minWidth: 200 }}>
+                <InputLabel id="rango-label">Rango de tiempo</InputLabel>
+                <Select
+                  labelId="rango-label"
+                  value={rangoMinutos}
+                  label="Rango de tiempo"
+                  onChange={(e) => {
+                  setRangoMinutos(Number(e.target.value));
+                }}
+                >
+                  <MenuItem value={0}>Todo</MenuItem>
+                  <MenuItem value={3}>Últimos 3 minutos</MenuItem>
+                  <MenuItem value={30}>Últimos 30 minutos</MenuItem>
+                  <MenuItem value={60}>Última hora</MenuItem>
+                  <MenuItem value={240}>Últimas 4 horas</MenuItem>
+                  <MenuItem value={720}>Últimas 12 horas</MenuItem>
+                </Select>
+              </FormControl>
+            </DialogTitle>
+
+            <DialogContent dividers>
+              {filteredData.length > 0 ? (
+                <Box sx={{ width: '100%', height: 400 }}>
+                  <ResponsiveContainer>
+                    <LineChart
+                      data={filteredData}
+                      margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="time" />
+                      <YAxis
+                        label={{
+                          value: selectedSensor?.unit ?? 'Unidad',
+                          angle: -90,
+                          position: 'insideLeft',
+                        }}
+                      />
+                      <Tooltip />
+                      <Line
+                        type="monotone"
+                        dataKey="value"
+                        stroke="#1976d2"
+                        dot={false}
+                        strokeWidth={2}
+                        isAnimationActive={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </Box>
+              ) : (
+                <Alert severity="info">
+                  No hay datos en el rango seleccionado.
+                </Alert>
+              )}
+            </DialogContent>
+
+            <DialogActions>
+              <Button onClick={() => { setOpenChart(false); }}>Cerrar</Button>
+            </DialogActions>
+          </Dialog>
     </Box>
   );
 }

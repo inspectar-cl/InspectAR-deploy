@@ -3121,6 +3121,68 @@ func ObtenerInfoQRHandler(c *gin.Context) {
 		return
 	}
 
-	// Reenviar respuesta tal cual
-	c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), body)
+	// Si la respuesta no es exitosa, retornarla tal cual
+	if resp.StatusCode != http.StatusOK {
+		c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), body)
+		return
+	}
+
+	// Parsear la respuesta para obtener el ID del activo
+	var activoInfo map[string]interface{}
+	if err := json.Unmarshal(body, &activoInfo); err != nil {
+		log.Printf("Error parseando respuesta: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando información del activo"})
+		return
+	}
+
+	// Extraer el ID del activo
+	activoID, ok := activoInfo["id"]
+	if !ok {
+		log.Printf("ID del activo no encontrado en la respuesta")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ID del activo no encontrado"})
+		return
+	}
+
+	// Convertir el ID a string para la URL
+	var activoIDStr string
+	switch v := activoID.(type) {
+	case float64:
+		activoIDStr = fmt.Sprintf("%.0f", v)
+	case int:
+		activoIDStr = fmt.Sprintf("%d", v)
+	default:
+		activoIDStr = fmt.Sprintf("%v", v)
+	}
+
+	// Obtener el estado del activo desde el Parser
+	parserURL := fmt.Sprintf("%s/activo/%s", parserURL, activoIDStr)
+	parserReq, err := http.NewRequest("GET", parserURL, nil)
+	if err != nil {
+		log.Printf("Error creando request al parser: %v", err)
+		// Si falla, retornar la info sin estado
+		c.JSON(http.StatusOK, activoInfo)
+		return
+	}
+
+	parserResp, err := httpClient.Do(parserReq)
+	if err != nil {
+		log.Printf("Error llamando al parser: %v", err)
+		// Si falla, retornar la info sin estado
+		c.JSON(http.StatusOK, activoInfo)
+		return
+	}
+	defer parserResp.Body.Close()
+
+	// Si el parser responde exitosamente, extraer el estado
+	if parserResp.StatusCode == http.StatusOK {
+		var parserData map[string]interface{}
+		if err := json.NewDecoder(parserResp.Body).Decode(&parserData); err == nil {
+			if estado, exists := parserData["estado"]; exists {
+				activoInfo["estado"] = estado
+			}
+		}
+	}
+
+	// Retornar la información completa con el estado
+	c.JSON(http.StatusOK, activoInfo)
 }

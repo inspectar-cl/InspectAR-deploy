@@ -17,6 +17,7 @@ import { BrainIcon } from '@phosphor-icons/react/dist/ssr/Brain';
 import { ClipboardTextIcon } from '@phosphor-icons/react/dist/ssr/ClipboardText';
 import { CloudArrowUpIcon } from '@phosphor-icons/react/dist/ssr/CloudArrowUp';
 import { FileCloudIcon } from '@phosphor-icons/react/dist/ssr/FileCloud';
+import { TrendUpIcon as TrendUpIcon } from '@phosphor-icons/react/dist/ssr/TrendUp';
 
 export const navIcons = {
   'chart-pie': ChartPieIcon,
@@ -35,6 +36,7 @@ export const navIcons = {
   'clipboard-text': ClipboardTextIcon,
   'cloud-arrow-up': CloudArrowUpIcon,
   'file-cloud': FileCloudIcon,
+  'trend-up': TrendUpIcon,
   user: UserIcon,
   users: UsersIcon,
 } as Record<string, Icon>;

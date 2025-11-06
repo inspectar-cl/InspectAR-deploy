@@ -17,6 +17,7 @@ export const rolePermissions: Record<string, string[]> = {
     paths.dashboard.reportesTecnicos,
     paths.dashboard.account,
     paths.dashboard.settings,
+    paths.dashboard.tendencias,
   ],
   residente: [
     paths.dashboard.inicio,
@@ -46,5 +47,6 @@ export const rolePermissions: Record<string, string[]> = {
     paths.dashboard.agregardatos,
     paths.dashboard.gestion,
     paths.dashboard.ml,
+    paths.dashboard.tendencias,
   ]
 };

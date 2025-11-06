@@ -1,7 +1,7 @@
 import type { DriveStep } from 'driver.js';
 
 //Palabras clave a utilizar para identificar los diferentes tours disponibles en la aplicación.
-export type TourKey = 'home' | 'activo' | 'predicciones-filtros' | 'lista-activos';
+export type TourKey = 'home' | 'activo' | 'predicciones-filtros' | 'lista-activos' | 'prediccion-activo';
 
 export type TourSteps = DriveStep[];
 
@@ -150,6 +150,57 @@ const PREDICCIONES_FILTROS_TOUR_STEPS: TourSteps = [
     },
 ];
 
+const PREDICCIONES_POR_ACTIVO_TOUR_STEPS: TourSteps = [
+    { 
+        element: '#tour-resumen-predicciones-activo', 
+        popover: {
+            title: 'Resumen de Predicciones del Activo',
+            description: 'Aquí puedes ver un resumen de las predicciones de anomalías específicas para el activo seleccionado.',
+            side: 'bottom'
+        }
+    },
+    {
+        element: '#tour-metricas-anomaly-score',
+        popover: {
+            title: 'Métrica: Anomaly Score',    
+            description: 'Esta métrica indica el nivel de anomalía detectada en el activo. Un valor más alto sugiere un mayor nivel de anomalía.',
+            side: 'top'
+        }
+    },
+    {
+        element: '#tour-metricas-anomaly-likelihood',
+        popover: { 
+            title: 'Métrica: Anomaly Likelihood',
+            description: 'Esta métrica representa la probabilidad de que una anomalía ocurra en el activo. Un valor más alto indica una mayor probabilidad de anomalía.',
+            side: 'top'
+        }
+    },
+    {
+        element: '#tour-metricas-total-anomalias',
+        popover: {
+            title: 'Métrica: Total de Anomalías',
+            description: 'Esta métrica muestra el total de anomalías detectadas para el activo seleccionado.',
+            side: 'top'
+        }
+    },
+    {
+        element: '#tour-grafico-anomalias',
+        popover: {
+            title: 'Gráfico de Anomalías',
+            description: 'Este gráfico visualiza las anomalías detectadas a lo largo del tiempo para el activo seleccionado con las metricas mencionadas anteriormente.',
+            side: 'bottom'
+        }
+    },
+    {
+        element: '#tour-ultimas-anomalias',
+        popover: {
+            title: 'Últimas Anomalías Detectadas',
+            description: 'Aquí puedes ver un resumen detallado de las últimas anomalías detectadas para el activo seleccionado con su variable mas influyente.',
+            side: 'top'
+        }
+    },
+];
+
 const LISTA_ACTIVOS_TOUR_STEPS: TourSteps = [
     { 
         element: '#header-lista-activos',
@@ -184,6 +235,7 @@ const ALL_TOUR_STEPS: Record<TourKey, TourSteps> = {
     'home': HOME_TOUR_STEPS,
     'activo': ACTIVO_TOUR_STEPS,
     'predicciones-filtros': PREDICCIONES_FILTROS_TOUR_STEPS,
+    'prediccion-activo': PREDICCIONES_POR_ACTIVO_TOUR_STEPS,
     'lista-activos': LISTA_ACTIVOS_TOUR_STEPS,
 };
 

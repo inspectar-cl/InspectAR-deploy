@@ -17,6 +17,9 @@ import MetricCard from '@/components/dashboard/prediccion/MetricCard';
 import PrediccionCards from '@/components/dashboard/prediccion/PrediccionCards';
 import AnomalyChart from '@/components/dashboard/prediccion/AnomalyChart';
 import Services from '@/modules/Services';
+import { useDriverTour } from "@/components/tutorial/use-driver-tour";
+import type { TourKey } from "@/components/tutorial/tour-config";
+import { TourButton } from "@/components/tutorial/tour-button";
 
 const gs = new Services();
 
@@ -30,18 +33,16 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
   const [predicciones, setPredicciones] = useState<Prediccion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const tourKey: TourKey = 'prediccion-activo';
+  const { startTour } = useDriverTour(tourKey);
 
   useEffect(() => {
-    console.log('🔍 useEffect ejecutado', { activoId, isUserLoading, user: !!user });
-    
     if (isUserLoading || !user) {
-      console.log('⏸️ Esperando usuario o cargando...', { isUserLoading, hasUser: !!user });
       return;
     }
 
     const fetchAnomalias = async () => {
       try {
-        console.log('🚀 Iniciando llamada a API para activo:', activoId);
         setIsLoading(true);
         
         interface AnomaliasPaginadas {
@@ -67,15 +68,10 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
 
         // Ajusta la ruta según tu API
         const url = `/anomalia-activo/${activoId}`;
-        console.log('📡 URL de API:', url);
-        console.log('🔑 Token presente:', !!user.token);
-        
         const response = await gs.authorizedGet(
           url, 
           user.token
         ) as AnomaliasPaginadas;
-
-        console.log('✅ Respuesta de API recibida:', response);
 
         const prediccionesTransformadas: Prediccion[] = (response.data ?? []).map((p) => ({
           id: p.id ?? 0,
@@ -101,7 +97,6 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
         setPredicciones(prediccionesTransformadas);
         setError(null);
       } catch (err) {
-        console.error('❌ Error al obtener anomalías:', err);
         setError('Error al cargar anomalías del activo');
       } finally {
         setIsLoading(false);
@@ -109,18 +104,15 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
     };
 
     // Llamado inicial inmediato
-    console.log('🎬 Ejecutando fetch inicial...');
     void fetchAnomalias();
 
     // Actualización periódica cada 5 minutos
     const interval = setInterval(() => {
-      console.log('🔄 Ejecutando fetch periódico...');
       void fetchAnomalias();
     }, 300000);
 
     // Limpieza del intervalo al desmontar componente
     return () => { 
-      console.log('🧹 Limpiando intervalo');
       clearInterval(interval); 
     };
   }, [activoId, isUserLoading, user]);
@@ -167,15 +159,20 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
     <Box>
       <Divider sx={{ my: 4 }} />
       
-      <Box display="flex" alignItems="center" gap={2} mb={3}>
+      <Box display="flex" alignItems="center" gap={2} mb={3} id="tour-resumen-predicciones-activo">
         <Typography variant="h4">
           Predicciones de Anomalías (ML)
         </Typography>
+        <TourButton 
+            onClick={startTour}
+            tooltipTitle="Iniciar Tutorial de Predicciones"
+            style="pulse 3s infinite"
+          />
       </Box>
 
       <Grid container spacing={3}>
         {/* Métricas principales de la última predicción */}
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }} id="tour-metricas-anomaly-score">
           <MetricCard
             title="Último Anomaly Score"
             value={ultimaPrediccion.anomalyScore}
@@ -185,7 +182,7 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
           />
         </Grid>
         
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }} id='tour-metricas-anomaly-likelihood'>
           <MetricCard
             title="Último Anomaly Likelihood"
             value={ultimaPrediccion.anomalyLikelihood}
@@ -195,7 +192,7 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
           />
         </Grid>
         
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }} id='tour-metricas-total-anomalias'>
           <MetricCard
             title="Total Anomalías"
             value={totalAnomalias}
@@ -232,7 +229,7 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
         </Grid>
 
         {/* Gráfico de anomalías */}
-        <Grid size={{ xs: 12 }}>
+        <Grid size={{ xs: 12 }} id='tour-grafico-anomalias'>
           <AnomalyChart 
             predicciones={predicciones} 
             activoNombre={activoNombre} 
@@ -241,7 +238,7 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
 
         {/* Tarjetas de predicciones detalladas */}
         <Grid size={{ xs: 12 }}>
-          <Typography variant="h6" mb={2}>
+          <Typography variant="h6" mb={2} id="tour-ultimas-anomalias">
             Últimas 10 Anomalías Detectadas
           </Typography>
           {anomaliasDetectadas.length > 0 ? (

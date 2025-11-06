@@ -151,7 +151,7 @@ async def trigger_anomaly_detection(
     activo_id: int,
     background_tasks: BackgroundTasks,
     page: int = Query(1, ge=1, description="Página de datos"),
-    limit: int = Query(1000, ge=1, le=5000, description="Cantidad de registros"),
+    limit: int = Query(5000, ge=1, le=5000, description="Cantidad de registros"),
     async_mode: bool = Query(False, description="Ejecutar en segundo plano"),
     service: AnomalyService = Depends(get_service)
 ):
@@ -160,7 +160,7 @@ async def trigger_anomaly_detection(
     
     - **activo_id**: ID del activo a analizar
     - **page**: Página de datos a procesar
-    - **limit**: Cantidad de registros a analizar
+    - **limit**: Cantidad de registros a analizar (default: 5000)
     - **async_mode**: Si es True, ejecuta en segundo plano
     """
     try:

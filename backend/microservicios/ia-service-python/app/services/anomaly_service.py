@@ -89,7 +89,7 @@ class AnomalyService:
         self,
         activo_id: int,
         page: int = 1,
-        limit: int = 1000,
+        limit: int = 5000,
     ) -> ParserResponse:
         """
         Obtiene datos del ParserService (iot-service)
@@ -97,7 +97,7 @@ class AnomalyService:
         Args:
             activo_id: ID del activo
             page: Página de resultados
-            limit: Cantidad de registros por página
+            limit: Cantidad de registros por página (default: 5000)
             
         Returns:
             ParserResponse con los datos del activo
@@ -879,7 +879,7 @@ class AnomalyService:
         self,
         activo_id: int,
         page: int = 1,
-        limit: int = 1000
+        limit: int = 5000
     ) -> Dict[str, Any]:
         """
         Flujo completo de detección de anomalías:
@@ -891,7 +891,7 @@ class AnomalyService:
         Args:
             activo_id: ID del activo a analizar
             page: Página de datos a obtener
-            limit: Cantidad de registros
+            limit: Cantidad de registros (default: 5000)
             
         Returns:
             Dict con el resultado de la operación

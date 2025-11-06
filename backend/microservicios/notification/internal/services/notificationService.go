@@ -770,34 +770,34 @@ func (s *NotificationService) GetTicketsPaginated(pagina int) (*models.TicketsPa
 	var tickets []models.Ticket
 	for rows.Next() {
 		var ticket models.Ticket
-		
+
 		// Usar sql.NullXXX para manejar valores NULL correctamente
 		var (
-			usuarioID          sql.NullInt64
-			edificioID         sql.NullInt64
-			edificioNombre     sql.NullString
-			edificioDireccion  sql.NullString
-			edificioLatitud    sql.NullFloat64
-			edificioLongitud   sql.NullFloat64
-			activoID           sql.NullInt64
-			activoNombre       sql.NullString
-			activoTipo         sql.NullString
-			activoDescripcion  sql.NullString
-			activoUbicacion    sql.NullString
-			activoEdificioID   sql.NullInt64
-			tecnicoID          sql.NullInt32
-			tecnicoNombre      sql.NullString
-			tecnicoEmail       sql.NullString
-			tecnicoTelefono    sql.NullString
+			usuarioID           sql.NullInt64
+			edificioID          sql.NullInt64
+			edificioNombre      sql.NullString
+			edificioDireccion   sql.NullString
+			edificioLatitud     sql.NullFloat64
+			edificioLongitud    sql.NullFloat64
+			activoID            sql.NullInt64
+			activoNombre        sql.NullString
+			activoTipo          sql.NullString
+			activoDescripcion   sql.NullString
+			activoUbicacion     sql.NullString
+			activoEdificioID    sql.NullInt64
+			tecnicoID           sql.NullInt32
+			tecnicoNombre       sql.NullString
+			tecnicoEmail        sql.NullString
+			tecnicoTelefono     sql.NullString
 			tecnicoEspecialidad sql.NullString
-			tecnicoAutorizado  sql.NullBool
-			justificacion      sql.NullString
-			comentarioAdmin    sql.NullString
-			fechaResolucion    sql.NullTime
-			resueltoPor        sql.NullInt64
-			resueltoPorEmail   sql.NullString
+			tecnicoAutorizado   sql.NullBool
+			justificacion       sql.NullString
+			comentarioAdmin     sql.NullString
+			fechaResolucion     sql.NullTime
+			resueltoPor         sql.NullInt64
+			resueltoPorEmail    sql.NullString
 		)
-		
+
 		err := rows.Scan(
 			&ticket.ID, &ticket.TipoEntidad, &ticket.TipoOperacion, &ticket.Estado, &usuarioID, &ticket.UsuarioEmail,
 			&edificioID, &edificioNombre, &edificioDireccion, &edificioLatitud, &edificioLongitud,
@@ -809,7 +809,7 @@ func (s *NotificationService) GetTicketsPaginated(pagina int) (*models.TicketsPa
 			log.Printf("⚠️  Error escaneando ticket: %v", err)
 			continue
 		}
-		
+
 		// Asignar valores NULL convertidos a punteros o strings
 		if usuarioID.Valid {
 			uid := uint(usuarioID.Int64)
@@ -860,7 +860,7 @@ func (s *NotificationService) GetTicketsPaginated(pagina int) (*models.TicketsPa
 			ticket.ResueltoPor = &rp
 		}
 		ticket.ResueltoPorEmail = resueltoPorEmail.String
-		
+
 		tickets = append(tickets, ticket)
 	}
 

@@ -3,7 +3,7 @@ IA Service Python - FastAPI Application
 Microservicio de detección de anomalías con Machine Learning
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
@@ -126,9 +126,13 @@ async def get_training_status():
 
 
 @app.post("/training/train")
-async def trigger_training():
-    """Dispara un entrenamiento manual del modelo"""
-    result = await training_service.train_model()
+async def trigger_training(
+    activo_id: int = Query(2, description="ID del activo a usar para entrenamiento"),
+    page: int = Query(1, ge=1, description="Página a solicitar al IOT Service"),
+    limit: int = Query(5000, ge=1, le=5000, description="Límite de registros a solicitar (max 5000)"),
+):
+    """Dispara un entrenamiento manual del modelo con parámetros configurables"""
+    result = await training_service.train_model(activo_id=activo_id, page=page, limit=limit)
     return result
 
 

@@ -70,7 +70,7 @@ class AnomalyRepository:
     def get_by_activo(
         self,
         activo_id: int,
-        limit: int = 50,
+        limit: int = 1000,
         offset: int = 0,
         only_anomalies: bool = False
     ) -> Tuple[List[AnomalyDB], int]:

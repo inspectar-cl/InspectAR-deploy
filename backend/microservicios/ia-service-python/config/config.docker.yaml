@@ -34,5 +34,5 @@ scaler_x_filename: "scaler_X.pkl"
 scaler_y_filename: "scaler_Y.pkl"
 
 # Data Window
-window_size: 1000
+window_size: 5000
 window_page: 1

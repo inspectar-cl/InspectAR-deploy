@@ -29,9 +29,14 @@ class TrainingService:
         self.last_training_status = None
         self.is_training = False
     
-    async def train_model(self) -> Dict[str, Any]:
+    async def train_model(self, activo_id: int = 2, page: int = 1, limit: int = 5000) -> Dict[str, Any]:
         """
         Entrena el modelo con datos reales del IOT Service
+        
+        Args:
+            activo_id: ID del activo a usar para entrenamiento (default: 2)
+            page: Página de datos a solicitar (default: 1)
+            limit: Límite de registros a solicitar (default: 5000)
         
         Returns:
             Dict con el resultado del entrenamiento
@@ -53,12 +58,11 @@ class TrainingService:
             logger.info("=" * 70)
             
             # Fase 1: Obtener datos del IOT Service
-            logger.info("📊 Fase 1: Obtención de datos")
-            activo_id = 2
+            logger.info(f"📊 Fase 1: Obtención de datos (activo_id={activo_id}, limit={limit})")
             url = f"{config.iot_service_url}/lectura/{activo_id}/window"
             
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(url, params={"page": 1, "limit": 500})
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.get(url, params={"page": page, "limit": limit})
                 response.raise_for_status()
                 parser_response = ParserResponse(**response.json())
             
@@ -149,13 +153,31 @@ class TrainingService:
             if model_manager.model is None:
                 model_manager._initialize_new_model()
             
-            model_manager.scaler_X.fit(X)
-            model_manager.scaler_Y.fit(y.reshape(-1, 1))
+            # Intentar entrenar, si falla por cambio de features, reinicializar todo
+            try:
+                model_manager.scaler_X.fit(X)
+                model_manager.scaler_Y.fit(y.reshape(-1, 1))
+                
+                X_scaled = model_manager.scaler_X.transform(X)
+                y_scaled = model_manager.scaler_Y.transform(y.reshape(-1, 1)).ravel()
+                
+                model_manager.model.partial_fit(X_scaled, y_scaled)
+            except ValueError as e:
+                if "features" in str(e).lower() or "fitted" in str(e).lower():
+                    logger.warning(f"⚠️  Reinicializando modelo y scalers: {e}")
+                    model_manager._initialize_new_model()
+                    
+                    # Rehacer todo el entrenamiento
+                    model_manager.scaler_X.fit(X)
+                    model_manager.scaler_Y.fit(y.reshape(-1, 1))
+                    
+                    X_scaled = model_manager.scaler_X.transform(X)
+                    y_scaled = model_manager.scaler_Y.transform(y.reshape(-1, 1)).ravel()
+                    
+                    model_manager.model.partial_fit(X_scaled, y_scaled)
+                else:
+                    raise
             
-            X_scaled = model_manager.scaler_X.transform(X)
-            y_scaled = model_manager.scaler_Y.transform(y.reshape(-1, 1)).ravel()
-            
-            model_manager.model.partial_fit(X_scaled, y_scaled)
             logger.info("   ✓ Modelo entrenado")
             
             # Fase 4: Evaluación

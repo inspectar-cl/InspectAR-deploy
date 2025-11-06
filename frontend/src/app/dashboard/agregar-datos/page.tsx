@@ -72,7 +72,41 @@ export default function PaginaAgregarDatos() {
   const [apiError, setApiError] = React.useState<string | null>(null);
   
   // --- 1. Estado del Tab (controlado por query param) ---
-  const [activeTab, setActiveTab] = React.useState<TabValue>('Edificio');
+  const tabParam = searchParams.get('tab') as TabValue;
+  const dataParam = searchParams.get('data'); // <-- ¡Lee el 'data' param!
+  
+  const [activeTab, setActiveTab] = React.useState<TabValue>(tabParam || 'Edificio');
+
+  const defaultValues = React.useMemo(() => {
+    // Caso 1: Vienes de una solicitud (pre-llenar)
+    if (dataParam) {
+      try {
+        const decodedString = decodeURIComponent(dataParam);
+        const solicitud = JSON.parse(decodedString) as SolicitudFormData;
+        
+        // Sincroniza el tab con los datos recibidos
+        setActiveTab(solicitud.tipoSolicitud); 
+        
+        return {
+          tipoSolicitud: solicitud.tipoSolicitud,
+          asunto: solicitud.asunto,
+          detalles: solicitud.detalles,
+          datosEspecificos: solicitud.datosEspecificos,
+        } as SolicitudFormData;
+      } catch (e) {
+        console.error("Error al parsear datos:", e);
+        // Fallback a formulario vacío si los datos son corruptos
+        return { tipoSolicitud: activeTab, datosEspecificos: {} } as SolicitudFormData;
+      }
+    }
+    
+    // Caso 2: Vienes del Sidebar (formulario vacío)
+    return { tipoSolicitud: activeTab, datosEspecificos: {} } as SolicitudFormData;
+  }, [dataParam, activeTab]);
+
+  const methods = useForm<SolicitudFormData>({
+    defaultValues,
+  });
 
   // Sincronizar el estado del tab con un query param ?tab=...
   React.useEffect(() => {
@@ -82,29 +116,15 @@ export default function PaginaAgregarDatos() {
     }
   }, [searchParams]);
 
-  // --- 2. Instancia ÚNICA de React Hook Form ---
-  const methods = useForm<SolicitudFormData>({
-    // Establece el 'tipoSolicitud' por defecto basado en el tab activo
-    defaultValues: {
-      tipoSolicitud: activeTab,
-      datosEspecificos: {},
-    },
-  });
-
-  // --- 3. Sincronizar 'tipoSolicitud' cuando el Tab cambia ---
   React.useEffect(() => {
-    // Cuando el 'activeTab' cambia, actualiza el valor 'tipoSolicitud' en el formulario
-    // y resetea los 'datosEspecificos' para limpiar campos de otros tabs.
-    methods.reset({
-      tipoSolicitud: activeTab,
-      datosEspecificos: {},
-    });
-  }, [activeTab, methods]);
-
+    // Resetea el formulario solo si los defaultValues cambian
+    // (Ej: al cargar la página con ?data=... o al cambiar de tab)
+    methods.reset(defaultValues);
+  }, [defaultValues, methods]);
 
   const handleTabChange = (event: React.SyntheticEvent, newTab: TabValue) => {
     setActiveTab(newTab);
-    // Actualiza la URL
+    // Limpia la URL (quita el ?data=...) al cambiar de tab manualmente
     router.push(`${paths.dashboard.agregardatos}?tab=${newTab}`);
   };
 

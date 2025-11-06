@@ -92,6 +92,7 @@ function transformarApiATipoFrontend(ticket: ApiTicket): SolicitudAPI {
     estado: estadoFrontend,
     fechaCreacion: ticket.created_at,
     tipoSolicitud: tipoSolicitud,
+    tipoOperacion: ticket.tipo_operacion,
     asunto: `${ticket.tipo_operacion.toUpperCase()} ${ticket.tipo_entidad}`,
     detalles: ticket.justificacion,
     datosEspecificos: datosEspecificos,

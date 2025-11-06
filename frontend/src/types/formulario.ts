@@ -40,7 +40,6 @@ export interface SensorData {
 
 export interface SolicitudFormData {
   tipoSolicitud: TipoSolicitud;
-  // --- 2. AÑADE ESTA LÍNEA ---
   tipoOperacion: TipoOperacion; 
   asunto: string;
   detalles?: string;

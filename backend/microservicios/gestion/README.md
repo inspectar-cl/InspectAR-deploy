@@ -11,13 +11,13 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 - Testing completo exitoso en todas las rutas
 
 **📊 Estadísticas de Implementación:**
-- **64 rutas totales** configuradas 🆕
-- **64 rutas funcionando** (100% operativas) ✅
+- **66 rutas totales** configuradas 🆕
+- **66 rutas funcionando** (100% operativas) ✅
 - **0 rutas con issues** 
 - **0 rutas pendientes** de implementación
-- **34 nuevas rutas agregadas** (6 observaciones + 3 usuarios/edificios/acceso + 3 activos + 3 HU22 + 9 administrador + 3 QR + 3 gestión usuarios-edificios + 1 edificios públicos + 1 asignar activo-edificio + 1 crear usuario admin + 1 registro residente) 🎉
+- **36 nuevas rutas agregadas** (6 observaciones + 3 usuarios/edificios/acceso + 3 activos + 3 HU22 + 9 administrador + 3 QR + 3 gestión usuarios-edificios + 1 edificios públicos + 1 asignar activo-edificio + 1 crear usuario admin + 1 registro residente + 2 técnicos update/delete) 🎉
 
-**🚀 Última Actualización:** 5 de Noviembre 2025 - **Rutas de Registro: POST /tecnicos y POST /usuarios/registro** 🆕
+**🚀 Última Actualización:** 6 de Noviembre 2025 - **Rutas de Técnicos: PUT /tecnicos/:id y DELETE /tecnicos/:id** 🆕
 
 ## Funcionalidades
 
@@ -27,6 +27,8 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 - ✅ Listar técnicos relacionados con un activo específico
 - ✅ Listar técnicos relacionados con un edificio (indirectamente a través de activos)
 - ✅ Consultar información de un técnico específico
+- ✅ Actualizar campos de técnico (nombre, email, teléfono, especialidad) 🆕
+- ✅ Eliminar técnico (con eliminación en cascada de relaciones) 🆕
 - ✅ Actualizar estado autorizado de técnicos
 - ✅ Asignar técnicos a activos (relación muchos a muchos)
 - 🎯 **✅ Obtener activos asociados a un técnico** (`GET /activos-de-tecnico/{tecnico_id}`)
@@ -98,6 +100,8 @@ Microservicio encargado de la gestión de técnicos especializados, acciones de 
 | `POST` | `/tecnicos` | Crear nuevo técnico | ✅ Funcionando |
 | `GET` | `/tecnicos` | Listar todos los técnicos | ✅ Funcionando |
 | `GET` | `/tecnicos/{id}` | Obtener técnico por ID | ✅ Funcionando |
+| `PUT` | `/tecnicos/{id}` | **🆕 Actualizar campos de técnico** | ✅ **NUEVO** |
+| `DELETE` | `/tecnicos/{id}` | **🆕 Eliminar técnico** | ✅ **NUEVO** |
 | `PUT` | `/tecnicos/{id}/autorizado` | Actualizar autorización de técnico | ✅ Funcionando |
 | `GET` | `/tecnicos/activo/{activo_id}` | Técnicos autorizados por activo | ✅ Funcionando |
 | `GET` | `/tecnicos/edificio/{edificio_id}` | Técnicos autorizados por edificio | ✅ Funcionando |

@@ -47,6 +47,7 @@ export const rolePermissions: Record<string, string[]> = {
     paths.dashboard.solicitudes,
     paths.dashboard.agregardatos,
     paths.dashboard.gestion,
+    paths.dashboard.ml,
     paths.errors.notFound
   ]
 };

@@ -61,7 +61,7 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
 
         // Ajusta la ruta según tu API
         const response = await gs.authorizedGet(
-          `/anomalia-activo/${activoId}?page=1&limit=50`, 
+          `/anomalia-activo/${activoId}`, 
           user.token
         ) as AnomaliasPaginadas;
 

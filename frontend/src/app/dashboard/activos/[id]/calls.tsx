@@ -303,7 +303,6 @@ export default function ActivoDetailClient({ id }: { id: number}) {
                   component="a"
                   href="/documentos/ficha_tecnica_bomba.pdf"
                   download="ficha_tecnica_bomba.pdf"
-                  target
                   sx={{
                     textTransform: 'none',
                     borderRadius: 2,
@@ -352,7 +351,7 @@ export default function ActivoDetailClient({ id }: { id: number}) {
         <Grid size={{md:9, xs:12}}>
           <LatestAlerts
             products={alertas.map(alerta => ({
-              id: alerta.id,
+              id: String(alerta.id),
               name: alerta.descripcion ?? `Anomalía - Severidad: ${alerta.severidad}`,
               icon: <WarningIcon size={32} weight="fill" color="#ff0000" />,
               updatedAt: new Date(alerta.timestamp)

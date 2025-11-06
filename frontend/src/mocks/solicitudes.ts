@@ -6,6 +6,7 @@ export const MOCK_SOLICITUDES: SolicitudAPI[] = [
     estado: 'Pendiente',
     fechaCreacion: '2025-10-30T10:00:00Z',
     tipoSolicitud: 'Edificio',
+    tipoOperacion: 'ingreso',
     asunto: 'Instalar nueva unidad de A/C en el techo',
     detalles: 'La unidad actual está fallando y necesita reemplazo antes del verano.',
     datosEspecificos: {
@@ -20,6 +21,7 @@ export const MOCK_SOLICITUDES: SolicitudAPI[] = [
     estado: 'EnProgreso',
     fechaCreacion: '2025-10-29T14:30:00Z',
     tipoSolicitud: 'Activo',
+    tipoOperacion: 'modificacion',
     asunto: 'Revisión de bomba de agua Sótano 2',
     detalles: 'Se reporta un ruido extraño al operar.',
     datosEspecificos: {
@@ -35,6 +37,7 @@ export const MOCK_SOLICITUDES: SolicitudAPI[] = [
     estado: 'Pendiente',
     fechaCreacion: '2025-10-31T11:00:00Z',
     tipoSolicitud: 'Técnico',
+    tipoOperacion: 'ingreso',
     asunto: 'Asignar técnico a revisión de panel eléctrico',
     detalles: 'Se necesita un especialista eléctrico para el panel del piso 5.',
     datosEspecificos: {
@@ -50,6 +53,7 @@ export const MOCK_SOLICITUDES: SolicitudAPI[] = [
     estado: 'Pendiente',
     fechaCreacion: '2025-10-31T12:00:00Z',
     tipoSolicitud: 'Edificio',
+    tipoOperacion: 'ingreso',
     asunto: 'Fuga en cañería piso 3',
     detalles: 'Goteo constante en el baño de hombres.',
     datosEspecificos: {

@@ -11,7 +11,7 @@ server:
 
 services:
   parser_url: "http://localhost:8090"
-  base_url: "https://interbanded-kole-sneeringly.ngrok-free.app"
+  base_url: "https://anita-submicroscopic-overgently.ngrok-free.app"
 
 # Para conexión externa (cuando esté en Google Cloud)
 # postgres:

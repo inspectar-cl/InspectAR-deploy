@@ -406,7 +406,7 @@ func getSpecialHandlers() []SpecialHandler {
             Pattern: "/api/anomalia-activo/:id_activo",
             Handler: ObtenerAnomaliaActivoHandler,
             Protected: true,
-            RequiredScopes: rootOnly(),
+            RequiredScopes: userTypes("Analista"),
         },
         { 
             Method:  "POST",

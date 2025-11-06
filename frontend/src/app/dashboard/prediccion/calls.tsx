@@ -203,8 +203,8 @@ export default function PrediccionClient() {
               onChange={(e) => { setFiltroActivo(e.target.value); }}
             >
               <MenuItem value="Todos">Todos ({activos.length} activos)</MenuItem>
-              {activos.map((a) => (
-                <MenuItem key={a.id} value={a.nombre}>
+              {activos.map((a, index) => (
+                <MenuItem key={`activo-${a.id}-${index}`} value={a.nombre}>
                   {a.nombre}
                 </MenuItem>
               ))}
@@ -249,7 +249,7 @@ export default function PrediccionClient() {
         const totalAnomalias = predActivo.filter(p => p.is_anomaly).length;
 
         return (
-          <Box key={activo.id} mb={4} p={2} sx={{ borderRadius: 2 }}>
+          <Box key={`activo-${activo.id}`} mb={4} p={2} sx={{ borderRadius: 2 }}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
               <Typography variant="h6">
                 {activo.nombre}
@@ -261,7 +261,7 @@ export default function PrediccionClient() {
 
             {/* Métricas principales */}
             <Grid container spacing={3} mb={3} id="tour-metricas-principales">
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} id="tour-anomaly-score">
+              <Grid key={`score-${activo.id}`} size={{ xs: 12, sm: 6, md: 4 }} id="tour-anomaly-score">
                 <MetricCard
                   title="Último Anomaly Score"
                   value={ultimaPred.anomalyScore}
@@ -270,7 +270,7 @@ export default function PrediccionClient() {
                   suffix=""
                 />
               </Grid>
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} id="tour-anomaly-likelihood">
+              <Grid key={`likelihood-${activo.id}`} size={{ xs: 12, sm: 6, md: 4 }} id="tour-anomaly-likelihood">
                 <MetricCard
                   title="Último Anomaly Likelihood"
                   value={ultimaPred.anomalyLikelihood}
@@ -279,7 +279,7 @@ export default function PrediccionClient() {
                   suffix=""
                 />
               </Grid>
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} id="tour-anomaly">
+              <Grid key={`total-${activo.id}`} size={{ xs: 12, sm: 6, md: 4 }} id="tour-anomaly">
                 <MetricCard
                   title="Total Anomalías"
                   value={totalAnomalias}
@@ -292,12 +292,12 @@ export default function PrediccionClient() {
 
             {/* Gráfico */}
             <Grid container spacing={2} id="tour-grafico-predicciones">
-              <Grid size={{ xs: 12 }}>
+              <Grid key={`chart-${activo.id}`} size={{ xs: 12 }}>
                 <AnomalyChart predicciones={predActivo} activoNombre={activo.nombre} />
               </Grid>
 
               {/* Tarjetas de predicciones */}
-              <Grid size={{ xs: 12 }} id="tour-ultimas-anomalias">
+              <Grid key={`cards-${activo.id}`} size={{ xs: 12 }} id="tour-ultimas-anomalias">
                 <Typography variant="h6" mb={2}>
                   Últimas 10 Anomalías
                 </Typography>

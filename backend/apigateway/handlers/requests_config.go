@@ -148,6 +148,38 @@ func getProtectedProxyRoutes() []struct {
             RequiredScopes:     rootOnly(),
             RequiredValidation: "",
         },
+        {
+            Method:             "PUT",
+            Pattern:            "/api/gestion/tecnicos/:id_tecnico",
+            TargetEnvVar:       "GESTION_URL",
+            PrependPath:        "",
+            RequiredScopes:     rootOnly(),
+            RequiredValidation: "",
+        },
+        {
+            Method:             "DELETE",
+            Pattern:            "/api/gestion/tecnicos/:id_tecnico",
+            TargetEnvVar:       "GESTION_URL",
+            PrependPath:        "",
+            RequiredScopes:     rootOnly(),
+            RequiredValidation: "",
+        },
+        {
+            Method:             "POST",
+            Pattern:            "/api/gestion/tecnicos",
+            TargetEnvVar:       "GESTION_URL",
+            PrependPath:        "",
+            RequiredScopes:     rootOnly(),
+            RequiredValidation: "",
+        },
+        {
+            Method:             "GET",
+            Pattern:            "/api/gestion/tecnicos/:id_tecnico",
+            TargetEnvVar:       "GESTION_URL",
+            PrependPath:        "",
+            RequiredScopes:     rootOnly(),
+            RequiredValidation: "",
+        },
         // Rutas Notificaciones protegidas Sprint 3
         {
             Method:             "GET",
@@ -157,6 +189,7 @@ func getProtectedProxyRoutes() []struct {
             RequiredScopes:     rootOnly(),
             RequiredValidation: "",
         },
+    
     }
 }
 

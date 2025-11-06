@@ -245,41 +245,21 @@ COMMENT ON TABLE activos IS 'Activos asociados a edificios';
 COMMENT ON TABLE notificaciones IS 'Notificaciones y alertas del sistema';
 
 -- Sistema de tickets
-COMMENT ON TABLE tickets IS 
-    'Sistema de tickets para solicitudes de ingreso, modificación y eliminación ' ||
-    'de edificios, activos y técnicos';
+COMMENT ON TABLE tickets IS 'Sistema de tickets para solicitudes de ingreso, modificación y eliminación de edificios, activos y técnicos';
 
-COMMENT ON COLUMN tickets.tipo_entidad IS 
-    'Tipo de entidad del ticket: edificio, activo o tecnico';
+COMMENT ON COLUMN tickets.tipo_entidad IS 'Tipo de entidad del ticket: edificio, activo o tecnico';
 
-COMMENT ON COLUMN tickets.tipo_operacion IS 
-    'Tipo de operación solicitada: ingreso, modificacion o eliminacion';
+COMMENT ON COLUMN tickets.tipo_operacion IS 'Tipo de operación solicitada: ingreso, modificacion o eliminacion';
 
-COMMENT ON COLUMN tickets.estado IS 
-    'Estado actual del ticket: resuelto o no_resuelto';
+COMMENT ON COLUMN tickets.estado IS 'Estado actual del ticket: resuelto o no_resuelto';
 
-COMMENT ON COLUMN tickets.justificacion IS 
-    'Razón o justificación detallada de la solicitud';
+COMMENT ON COLUMN tickets.justificacion IS 'Razón o justificación detallada de la solicitud';
 
-COMMENT ON COLUMN tickets.comentario_admin IS 
-    'Comentario del administrador al momento de resolver el ticket';
+COMMENT ON COLUMN tickets.comentario_admin IS 'Comentario del administrador al momento de resolver el ticket';
 
 -- Campos de técnico
-COMMENT ON COLUMN tickets.tecnico_nombre IS 
-    'Nombre completo del técnico';
-
-COMMENT ON COLUMN tickets.tecnico_email IS 
-    'Correo electrónico de contacto del técnico';
-
-COMMENT ON COLUMN tickets.tecnico_telefono IS 
-    'Número de teléfono de contacto del técnico';
-
-COMMENT ON COLUMN tickets.tecnico_especialidad IS 
-    'Especialidad técnica o área de expertise (ej: electricidad, plomería, HVAC)';
-
-COMMENT ON COLUMN tickets.tecnico_autorizado IS 
-    'Indica si el técnico está autorizado (true) o pendiente de autorización (false)';
-el técnico';
-COMMENT ON COLUMN tickets.tecnico_telefono IS 'Teléfono de contacto del técnico';
-COMMENT ON COLUMN tickets.tecnico_especialidad IS 'Especialidad o área de expertise del técnico';
-COMMENT ON COLUMN tickets.tecnico_autorizado IS 'Indica si el técnico está autorizado (true) o no (false)';
+COMMENT ON COLUMN tickets.tecnico_nombre IS 'Nombre completo del técnico';
+COMMENT ON COLUMN tickets.tecnico_email IS 'Correo electrónico de contacto del técnico';
+COMMENT ON COLUMN tickets.tecnico_telefono IS 'Número de teléfono de contacto del técnico';
+COMMENT ON COLUMN tickets.tecnico_especialidad IS 'Especialidad técnica o área de expertise del técnico';
+COMMENT ON COLUMN tickets.tecnico_autorizado IS 'Indica si el técnico está autorizado o no';

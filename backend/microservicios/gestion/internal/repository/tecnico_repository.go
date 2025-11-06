@@ -179,3 +179,51 @@ func (r *TecnicoRepository) ObtenerActivosPorTecnico(tecnicoID int) ([]models.Ac
 
 	return activos, nil
 }
+
+// Update - Actualizar campos de un técnico
+func (r *TecnicoRepository) Update(id int, req *models.UpdateTecnicoRequest) (*models.Tecnico, error) {
+	query := `
+		UPDATE tecnicos 
+		SET nombre = COALESCE(NULLIF($1, ''), nombre),
+		    email = COALESCE(NULLIF($2, ''), email),
+		    telefono = COALESCE(NULLIF($3, ''), telefono),
+		    especialidad = COALESCE(NULLIF($4, ''), especialidad)
+		WHERE id = $5
+		RETURNING id, nombre, apellido, email, telefono, especialidad, autorizado, empresa_id, fecha_registro`
+
+	var tecnico models.Tecnico
+	err := r.db.QueryRow(query, req.Nombre, req.Email, req.Telefono, req.Especialidad, id).Scan(
+		&tecnico.ID, &tecnico.Nombre, &tecnico.Apellido, &tecnico.Email, &tecnico.Telefono,
+		&tecnico.Especialidad, &tecnico.Autorizado, &tecnico.EmpresaID, &tecnico.CreadoEn,
+	)
+
+	return &tecnico, err
+}
+
+// Delete - Eliminar un técnico
+func (r *TecnicoRepository) Delete(id int) error {
+	// Primero eliminar las relaciones en activos_tecnicos
+	deleteRelations := `DELETE FROM activos_tecnicos WHERE tecnico_id = $1`
+	_, err := r.db.Exec(deleteRelations, id)
+	if err != nil {
+		return err
+	}
+
+	// Luego eliminar el técnico
+	query := `DELETE FROM tecnicos WHERE id = $1`
+	result, err := r.db.Exec(query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}

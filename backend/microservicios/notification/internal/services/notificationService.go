@@ -770,17 +770,97 @@ func (s *NotificationService) GetTicketsPaginated(pagina int) (*models.TicketsPa
 	var tickets []models.Ticket
 	for rows.Next() {
 		var ticket models.Ticket
+		
+		// Usar sql.NullXXX para manejar valores NULL correctamente
+		var (
+			usuarioID          sql.NullInt64
+			edificioID         sql.NullInt64
+			edificioNombre     sql.NullString
+			edificioDireccion  sql.NullString
+			edificioLatitud    sql.NullFloat64
+			edificioLongitud   sql.NullFloat64
+			activoID           sql.NullInt64
+			activoNombre       sql.NullString
+			activoTipo         sql.NullString
+			activoDescripcion  sql.NullString
+			activoUbicacion    sql.NullString
+			activoEdificioID   sql.NullInt64
+			tecnicoID          sql.NullInt32
+			tecnicoNombre      sql.NullString
+			tecnicoEmail       sql.NullString
+			tecnicoTelefono    sql.NullString
+			tecnicoEspecialidad sql.NullString
+			tecnicoAutorizado  sql.NullBool
+			justificacion      sql.NullString
+			comentarioAdmin    sql.NullString
+			fechaResolucion    sql.NullTime
+			resueltoPor        sql.NullInt64
+			resueltoPorEmail   sql.NullString
+		)
+		
 		err := rows.Scan(
-			&ticket.ID, &ticket.TipoEntidad, &ticket.TipoOperacion, &ticket.Estado, &ticket.UsuarioID, &ticket.UsuarioEmail,
-			&ticket.EdificioID, &ticket.EdificioNombre, &ticket.EdificioDireccion, &ticket.EdificioLatitud, &ticket.EdificioLongitud,
-			&ticket.ActivoID, &ticket.ActivoNombre, &ticket.ActivoTipo, &ticket.ActivoDescripcion, &ticket.ActivoUbicacion, &ticket.ActivoEdificioID,
-			&ticket.TecnicoID, &ticket.TecnicoNombre, &ticket.TecnicoEmail, &ticket.TecnicoTelefono, &ticket.TecnicoEspecialidad, &ticket.TecnicoAutorizado,
-			&ticket.Justificacion, &ticket.ComentarioAdmin, &ticket.CreatedAt, &ticket.FechaResolucion, &ticket.ResueltoPor, &ticket.ResueltoPorEmail,
+			&ticket.ID, &ticket.TipoEntidad, &ticket.TipoOperacion, &ticket.Estado, &usuarioID, &ticket.UsuarioEmail,
+			&edificioID, &edificioNombre, &edificioDireccion, &edificioLatitud, &edificioLongitud,
+			&activoID, &activoNombre, &activoTipo, &activoDescripcion, &activoUbicacion, &activoEdificioID,
+			&tecnicoID, &tecnicoNombre, &tecnicoEmail, &tecnicoTelefono, &tecnicoEspecialidad, &tecnicoAutorizado,
+			&justificacion, &comentarioAdmin, &ticket.CreatedAt, &fechaResolucion, &resueltoPor, &resueltoPorEmail,
 		)
 		if err != nil {
 			log.Printf("⚠️  Error escaneando ticket: %v", err)
 			continue
 		}
+		
+		// Asignar valores NULL convertidos a punteros o strings
+		if usuarioID.Valid {
+			uid := uint(usuarioID.Int64)
+			ticket.UsuarioID = &uid
+		}
+		if edificioID.Valid {
+			eid := uint(edificioID.Int64)
+			ticket.EdificioID = &eid
+		}
+		ticket.EdificioNombre = edificioNombre.String
+		ticket.EdificioDireccion = edificioDireccion.String
+		if edificioLatitud.Valid {
+			ticket.EdificioLatitud = &edificioLatitud.Float64
+		}
+		if edificioLongitud.Valid {
+			ticket.EdificioLongitud = &edificioLongitud.Float64
+		}
+		if activoID.Valid {
+			aid := uint(activoID.Int64)
+			ticket.ActivoID = &aid
+		}
+		ticket.ActivoNombre = activoNombre.String
+		ticket.ActivoTipo = activoTipo.String
+		ticket.ActivoDescripcion = activoDescripcion.String
+		ticket.ActivoUbicacion = activoUbicacion.String
+		if activoEdificioID.Valid {
+			aeid := uint(activoEdificioID.Int64)
+			ticket.ActivoEdificioID = &aeid
+		}
+		if tecnicoID.Valid {
+			tid := int(tecnicoID.Int32)
+			ticket.TecnicoID = &tid
+		}
+		ticket.TecnicoNombre = tecnicoNombre.String
+		ticket.TecnicoEmail = tecnicoEmail.String
+		ticket.TecnicoTelefono = tecnicoTelefono.String
+		ticket.TecnicoEspecialidad = tecnicoEspecialidad.String
+		if tecnicoAutorizado.Valid {
+			ticket.TecnicoAutorizado = &tecnicoAutorizado.Bool
+		}
+		ticket.Justificacion = justificacion.String
+		ticket.ComentarioAdmin = comentarioAdmin.String
+		if fechaResolucion.Valid {
+			ticket.FechaResolucion = &fechaResolucion.Time
+		}
+		if resueltoPor.Valid {
+			rp := uint(resueltoPor.Int64)
+			ticket.ResueltoPor = &rp
+		}
+		ticket.ResueltoPorEmail = resueltoPorEmail.String
+		
 		tickets = append(tickets, ticket)
 	}
 

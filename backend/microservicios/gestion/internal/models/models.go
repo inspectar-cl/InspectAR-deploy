@@ -187,6 +187,13 @@ type CreateTecnicoRequest struct {
 	Especialidad string `json:"especialidad" binding:"required"`
 }
 
+type UpdateTecnicoRequest struct {
+	Nombre       string `json:"nombre,omitempty"`
+	Email        string `json:"email,omitempty"`
+	Telefono     string `json:"telefono,omitempty"`
+	Especialidad string `json:"especialidad,omitempty"`
+}
+
 type CreateActivoRequest struct {
 	Nombre     string `json:"nombre" binding:"required"`
 	Tipo       string `json:"tipo" binding:"required"`

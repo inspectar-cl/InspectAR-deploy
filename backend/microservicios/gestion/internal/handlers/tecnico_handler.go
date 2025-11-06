@@ -172,3 +172,59 @@ func (h *TecnicoHandler) ObtenerActivosPorTecnico(c *gin.Context) {
 func (h *TecnicoHandler) ObtenerActivosDirecto(tecnicoID int) (interface{}, error) {
 	return h.service.ObtenerActivosPorTecnico(tecnicoID)
 }
+
+// PUT /tecnicos/:id - Actualizar campos de un técnico
+func (h *TecnicoHandler) ActualizarTecnico(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+
+	var req models.UpdateTecnicoRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos", "details": err.Error()})
+		return
+	}
+
+	// Validar que al menos un campo esté presente
+	if req.Nombre == "" && req.Email == "" && req.Telefono == "" && req.Especialidad == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Debe proporcionar al menos un campo para actualizar"})
+		return
+	}
+
+	tecnico, err := h.service.ActualizarTecnico(id, &req)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Técnico no encontrado"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo actualizar el técnico", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"mensaje": "Técnico actualizado correctamente",
+		"tecnico": tecnico,
+	})
+}
+
+// DELETE /tecnicos/:id - Eliminar un técnico
+func (h *TecnicoHandler) EliminarTecnico(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+
+	if err := h.service.EliminarTecnico(id); err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Técnico no encontrado"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo eliminar el técnico", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"mensaje": "Técnico eliminado correctamente"})
+}

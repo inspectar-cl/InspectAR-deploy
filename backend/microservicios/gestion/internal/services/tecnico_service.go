@@ -52,3 +52,13 @@ func (s *TecnicoService) AsignarTecnicoAActivo(activoID, tecnicoID int) error {
 func (s *TecnicoService) ObtenerActivosPorTecnico(tecnicoID int) ([]models.Activo, error) {
 	return s.repo.ObtenerActivosPorTecnico(tecnicoID)
 }
+
+// Actualizar campos de un técnico
+func (s *TecnicoService) ActualizarTecnico(id int, req *models.UpdateTecnicoRequest) (*models.Tecnico, error) {
+	return s.repo.Update(id, req)
+}
+
+// Eliminar un técnico
+func (s *TecnicoService) EliminarTecnico(id int) error {
+	return s.repo.Delete(id)
+}

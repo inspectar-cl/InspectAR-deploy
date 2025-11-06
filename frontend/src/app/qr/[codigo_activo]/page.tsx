@@ -11,7 +11,6 @@ import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
-import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid';
 import { QrCodeIcon } from '@phosphor-icons/react/dist/csr/QrCode';
 import { WarningIcon } from '@phosphor-icons/react/dist/csr/Warning';

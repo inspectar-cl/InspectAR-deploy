@@ -8,6 +8,9 @@ import { useUserToken } from '@/hooks/use-usertoken';
 import { useForm, FormProvider } from 'react-hook-form';
 import type { SolicitudFormData, EdificioData } from '@/types/formulario';
 import { EdificioDataForm } from '@/components/dashboard/agregar-datos/edificio-datos-form';
+import Services from '@/modules/Services';
+
+const services = new Services();
 
 // Asumo un tipo de dato simple
 interface EdificioAPI {
@@ -59,12 +62,7 @@ export function EdificiosDataGrid() {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch('/api/gestion/edificios', {
-          headers: { Authorization: `Bearer ${user.token}` },
-        });
-        if (!response.ok) throw new Error('Error al cargar los edificios');
-        
-        const data = await response.json() as { edificios: EdificioAPI[] };
+        const data = await services.authorizedGet('/gestion/edificios', user.token) as { edificios: EdificioAPI[] };
         
         if (!data.edificios) {
            throw new Error("El formato de respuesta de la API es incorrecto.");
@@ -110,19 +108,7 @@ export function EdificiosDataGrid() {
     modalFormMethods.clearErrors();
 
     try {
-      const response = await fetch(`/api/actualizar-edificio/${editingId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${user.token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(datosParaApi),
-      });
-
-      if (!response.ok) {
-         const errorData = await response.json().catch(() => null) as { error?: string } | null;
-         throw new Error(errorData?.error ?? `Error del servidor: ${response.status}`);
-      }
+      await services.authorizedPut(`/actualizar-edificio/${editingId}`, datosParaApi, user.token);
 
       // Éxito: actualiza la fila en la tabla localmente
       setRows((prevRows) =>
@@ -154,17 +140,7 @@ export function EdificiosDataGrid() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/eliminar-edificio/${selectedId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${user.token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null) as { error?: string } | null;
-        throw new Error(errorData?.error ?? `Error del servidor: ${response.status}`);
-      }
+      await services.authorizedDelete(`/eliminar-edificio/${selectedId}`, user.token);
 
       setRows((prevRows) => prevRows.filter((row) => row.id !== selectedId));
       // alert('Edificio eliminado con éxito.');

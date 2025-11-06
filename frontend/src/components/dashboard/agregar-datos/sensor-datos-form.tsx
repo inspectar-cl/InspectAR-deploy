@@ -13,7 +13,9 @@ import {
 import { useFormContext } from 'react-hook-form';
 import type { SolicitudFormData, SensorData, TipoSensor } from '@/types/formulario';
 import { useUserToken } from '@/hooks/use-usertoken';
+import Services from '@/modules/Services';
 
+const services = new Services();
 const TIPOS_SENSOR: TipoSensor[] = ['Temperatura', 'Presión', 'Vibración'];
 
 interface ActivoSimple {
@@ -43,12 +45,7 @@ export function SensorForm(): React.JSX.Element {
       setIsLoading(true);
       setFetchError(null);
       try {
-        // Aqui debe ir una ruta para obtener los activos de los usuarios (A menos que compliquemos un poco más el form agregandole primero la selccion de usuario)
-        const response = await fetch('/api/activos/del-usuario', {
-          headers: { 'Authorization': `Bearer ${userContext.token}` },
-        });
-        if (!response.ok) throw new Error('No se pudieron cargar los activos');
-        const data = (await response.json()) as ActivoSimple[];
+        const data = await services.authorizedGet('/activos/del-usuario', userContext.token) as ActivoSimple[];
         setActivos(data);
       } catch (err) {
         setFetchError(err instanceof Error ? err.message : 'Error desconocido');

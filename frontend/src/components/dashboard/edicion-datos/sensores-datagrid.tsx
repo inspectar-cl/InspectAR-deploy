@@ -6,6 +6,9 @@ import { Box, Alert, CircularProgress, Dialog, DialogTitle, DialogContent, Dialo
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import type { TipoSensor } from '@/types/formulario';
 import { useUserToken } from '@/hooks/use-usertoken';
+import Services from '@/modules/Services';
+
+const services = new Services();
 
 // Asumo un tipo de dato que viene de la API
 interface SensorAPI {
@@ -34,14 +37,7 @@ export function SensoresDataGrid() {
       setIsLoading(true);
       setError(null);
       try {
-        // Api para mostrar lista de todos los sensores
-        const response = await fetch('/api/sensores/listar', {
-            headers: { 'Authorization': `Bearer ${user.token}` }
-        });
-        if (!response.ok) throw new Error('Error al cargar los sensores');
-
-        // Simulación de datos si la API no trae el nombre
-        const rawData = await response.json() as SensorAPI[];
+        const rawData = await services.authorizedGet('/sensores/listar', user.token) as SensorAPI[];
         const data: SensorAPI[] = rawData.map((sensor: SensorAPI) => ({
             ...sensor,
             activoNombre: sensor.activoNombre || `Activo ID ${sensor.activoAsociadoId}` // Fallback

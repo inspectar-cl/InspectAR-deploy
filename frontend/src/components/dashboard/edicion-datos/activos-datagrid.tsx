@@ -9,6 +9,9 @@ import { useUserToken } from '@/hooks/use-usertoken';
 import type { SolicitudFormData } from '@/types/formulario';
 import { useForm, FormProvider } from 'react-hook-form';
 import { ActivoEditForm } from './activo-edit-form';
+import Services from '@/modules/Services';
+
+const services = new Services();
 
 // Asumo un tipo de dato que viene de la API
 interface SensorAnidado {
@@ -72,16 +75,7 @@ export function ActivosDataGrid() {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch(
-          '/api/obtener-todos-activos?sensores=true', // URL correcta
-          {
-            headers: { Authorization: `Bearer ${user.token}` },
-          }
-        );
-        if (!response.ok) throw new Error('Error al cargar los activos');
-
-        // La API devuelve un objeto { activos: [...] }, extraemos el array
-        const data: { activos: ActivoAPI[] } = await response.json();
+        const data = await services.authorizedGet('/obtener-todos-activos?sensores=true', user.token) as { activos: ActivoAPI[] };
 
         if (!data.activos) {
           throw new Error("La respuesta de la API no tiene el formato esperado.");
@@ -128,15 +122,7 @@ export function ActivosDataGrid() {
     if (!editingId || !user?.token) return;
 
     try {
-      const response = await fetch(`/api/editar-activo/${editingId}`, {
-        method: 'PUT',
-        headers: { 
-          'Authorization': `Bearer ${user.token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data.datosEspecificos),
-      });
-      if (!response.ok) throw new Error('Falló la actualización');
+      await services.authorizedPut(`/editar-activo/${editingId}`, data.datosEspecificos, user.token);
       
       // Simulación de éxito
       // alert('Activo actualizado');
@@ -159,13 +145,7 @@ export function ActivosDataGrid() {
   const confirmDelete = async () => {
     if (!selectedId || !user?.token) return;
     try {
-      // Aqui api para el borrado de activos
-      await fetch(`/api/eliminar-activo/${selectedId}`, 
-      { method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${user.token}`,
-        },
-      });
+      await services.authorizedDelete(`/eliminar-activo/${selectedId}`, user.token);
       setRows((prevRows) => prevRows.filter((row) => row.id !== selectedId));
     } catch (err) {
       setError('No se pudo eliminar el elemento.');

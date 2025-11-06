@@ -15,7 +15,9 @@ import {
 import { useFormContext } from 'react-hook-form';
 import type { SolicitudFormData, TecnicoData, EspecialidadTecnico } from '@/types/formulario';
 import { useUserToken } from '@/hooks/use-usertoken';
+import Services from '@/modules/Services';
 
+const services = new Services();
 const ESPECIALIDADES: EspecialidadTecnico[] = ['Climatización', 'Eléctrico', 'Mecánico'];
 
 interface ActivoResumen {
@@ -45,12 +47,7 @@ export function TecnicoForm(): React.JSX.Element {
       setIsLoading(true);
       setFetchError(null);
       try {
-        const response = await fetch('/api/obtener-todos-activos?sensores=true', {
-          headers: { Authorization: `Bearer ${userContext.token}` },
-        });
-
-        if (!response.ok) throw new Error('No se pudieron cargar los activos');
-        const data = (await response.json()) as { activos?: ActivoResumen[] };
+        const data = await services.authorizedGet('/obtener-todos-activos?sensores=true', userContext.token) as { activos?: ActivoResumen[] };
         setActivos(data.activos ?? []);
       } catch (err) {
         setFetchError(err instanceof Error ? err.message : 'Error desconocido');

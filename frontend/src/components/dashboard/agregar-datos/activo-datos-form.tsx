@@ -15,7 +15,9 @@ import {
 import { useFormContext } from 'react-hook-form';
 import type { SolicitudFormData, ActivoData, TipoActivo } from '@/types/edicion-data';
 import { useUserToken } from '@/hooks/use-usertoken';
+import Services from '@/modules/Services';
 
+const services = new Services();
 const TIPOS_ACTIVO: TipoActivo[] = ['Ascensor', 'BombaDeAgua', 'PanelElectrico'];
 
 interface EdificioSimple {
@@ -49,12 +51,7 @@ export function ActivoForm(): React.JSX.Element {
       setIsLoading(true);
       setFetchError(null);
       try {
-        const response = await fetch('/api/gestion/edificios', { 
-          headers: { 'Authorization': `Bearer ${userContext.token}` },
-        });
-        if (!response.ok) throw new Error('No se pudieron cargar los edificios');
-        
-        const data = (await response.json()) as EdificiosApiResponse; 
+        const data = await services.authorizedGet('/gestion/edificios', userContext.token) as EdificiosApiResponse; 
         
         if (!data.edificios) {
           throw new Error("El formato de respuesta de la API es incorrecto.");

@@ -27,6 +27,9 @@ import type { SolicitudFormData, TecnicoData, EspecialidadTecnico } from '@/type
 import { useForm, FormProvider } from 'react-hook-form';
 import { useUserToken } from '@/hooks/use-usertoken';
 import { TecnicoEditForm } from './tecnico-edit-form';
+import Services from '@/modules/Services';
+
+const services = new Services();
 
 // Interfaz para los datos que vienen de la API
 interface TecnicoAPI {
@@ -86,12 +89,7 @@ export function TecnicosDataGrid() {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch('/api/gestion/tecnicos', { // Ruta de tu API
-          headers: { Authorization: `Bearer ${user.token}` },
-        });
-        if (!response.ok) throw new Error('Error al cargar los técnicos');
-        
-        const data = await response.json();
+        const data = await services.authorizedGet('/gestion/tecnicos', user.token);
         
         if (!Array.isArray(data)) {
            throw new Error("El formato de respuesta de la API es incorrecto, se esperaba un array.");
@@ -142,19 +140,7 @@ export function TecnicosDataGrid() {
     modalFormMethods.clearErrors();
 
     try {
-      const response = await fetch(`/api/editar-tecnico/${editingId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${user.token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.error || `Error del servidor: ${response.status}`);
-      }
+      await services.authorizedPut(`/editar-tecnico/${editingId}`, payload, user.token);
 
       alert('Técnico actualizado con éxito.');
 
@@ -187,15 +173,7 @@ export function TecnicosDataGrid() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/eliminar-tecnico/${selectedId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${user.token}` },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.error || `Error del servidor: ${response.status}`);
-      }
+      await services.authorizedDelete(`/eliminar-tecnico/${selectedId}`, user.token);
       
       alert('Técnico eliminado con éxito.');
       setRows((prevRows) => prevRows.filter((row) => row.id !== selectedId));

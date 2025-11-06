@@ -1,4 +1,3 @@
- 
 import React from "react";
 import { Grid, Card, CardContent, Typography, Chip } from "@mui/material";
 import { severidadColor } from "@/utils/SeverityUtils";
@@ -29,6 +28,12 @@ function PrediccionCards({ predicciones }: { predicciones: Prediccion[] }): Reac
               />
               <Typography variant="body2">
                 Probabilidad: {(p.anomalyLikelihood).toFixed(1)}%
+              </Typography>
+              <Typography variant="body2" color="textSecondary" mt={1}>
+                Variable más influyente: {p.most_influential_variable}
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                Contribución: {p.contribution_magnitude.toFixed(1)}%
               </Typography>
             </CardContent>
           </Card>

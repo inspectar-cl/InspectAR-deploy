@@ -112,11 +112,11 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
     console.log('🎬 Ejecutando fetch inicial...');
     void fetchAnomalias();
 
-    // Actualización periódica cada 30 segundos
+    // Actualización periódica cada 5 minutos
     const interval = setInterval(() => {
       console.log('🔄 Ejecutando fetch periódico...');
       void fetchAnomalias();
-    }, 30000);
+    }, 300000);
 
     // Limpieza del intervalo al desmontar componente
     return () => { 

@@ -149,7 +149,7 @@ export default function PrediccionClient() {
     // Intervalo de actualización cada 30 segundos
     const interval = setInterval(() => {
       void fetchAll();
-    }, 30000);
+    }, 300000);
 
     // Limpieza del intervalo al desmontar componente
     return () => { clearInterval(interval); };

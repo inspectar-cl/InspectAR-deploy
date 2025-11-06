@@ -22,6 +22,7 @@ var (
     documentacionURL    string
     oauth2URL           string
     mlURL               string
+    notificationURL     string
 	httpClient          *http.Client
 )
 
@@ -31,6 +32,7 @@ func init() {
     documentacionURL = os.Getenv("DOCUMENTATION_URL")
     oauth2URL = os.Getenv("OAUTH2_URL")
     mlURL = os.Getenv("ML_URL")
+    notificationURL = os.Getenv("NOTIFICATION_URL")
     httpClient = &http.Client{
         Timeout: 15 * time.Second,
     }
@@ -3188,5 +3190,230 @@ func ObtenerInfoQRHandler(c *gin.Context) {
 }
 
 func CrearTicketHandler(c *gin.Context) {
-    authHeader := c.GetHeader("Authorization")
+	// Extraer el email desde el token JWT
+	authHeader := c.GetHeader("Authorization")
+	email, _ := extractClaimFromToken(authHeader, "email")
+	if email == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
+		return
+	}
+	fmt.Printf("Usuario creando ticket: %s\n", email)
+
+	// Leer el body de la request
+	var ticketData map[string]interface{}
+	if err := c.ShouldBindJSON(&ticketData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+		return
+	}
+
+	// Validar campos obligatorios
+	tipoEntidad, existeTipo := ticketData["tipo_entidad"]
+	if !existeTipo || tipoEntidad == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'tipo_entidad' es requerido"})
+		return
+	}
+
+	tipoOperacion, existeOperacion := ticketData["tipo_operacion"]
+	if !existeOperacion || tipoOperacion == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'tipo_operacion' es requerido"})
+		return
+	}
+
+	justificacion, existeJustificacion := ticketData["justificacion"]
+	if !existeJustificacion || justificacion == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'justificacion' es requerido"})
+		return
+	}
+
+	// Validar valores permitidos
+	tipoEntidadStr := fmt.Sprintf("%v", tipoEntidad)
+	tipoOperacionStr := fmt.Sprintf("%v", tipoOperacion)
+
+	if tipoEntidadStr != "edificio" && tipoEntidadStr != "activo" && tipoEntidadStr != "tecnico" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "tipo_entidad debe ser 'edificio', 'activo' o 'tecnico'"})
+		return
+	}
+
+	if tipoOperacionStr != "ingreso" && tipoOperacionStr != "modificacion" && tipoOperacionStr != "eliminacion" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "tipo_operacion debe ser 'ingreso', 'modificacion' o 'eliminacion'"})
+		return
+	}
+
+	fmt.Printf("Creando ticket de %s para %s\n", tipoOperacionStr, tipoEntidadStr)
+
+	// Construir el body para el microservicio de notificaciones
+	// Siempre incluir los campos base
+	bodyData := map[string]interface{}{
+		"tipo_entidad":    tipoEntidad,
+		"tipo_operacion":  tipoOperacion,
+		"usuario_email":   email,
+		"justificacion":   justificacion,
+	}
+
+	// Agregar campos específicos según la entidad y operación
+	// Para modificación y eliminación, el ID es obligatorio
+	if tipoOperacionStr == "modificacion" || tipoOperacionStr == "eliminacion" {
+		var idKey string
+		switch tipoEntidadStr {
+		case "edificio":
+			idKey = "edificio_id"
+		case "activo":
+			idKey = "activo_id"
+		case "tecnico":
+			idKey = "tecnico_id"
+		}
+
+		if _, exists := ticketData[idKey]; !exists {
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Campo '%s' es requerido para %s", idKey, tipoOperacionStr)})
+			return
+		}
+		bodyData[idKey] = ticketData[idKey]
+	}
+
+	// Agregar todos los demás campos que vengan en el request
+	// (campos específicos de edificio, activo o técnico)
+	for key, value := range ticketData {
+		// Saltar los campos que ya agregamos
+		if key == "tipo_entidad" || key == "tipo_operacion" || key == "justificacion" {
+			continue
+		}
+		// Agregar el resto de campos (edificio_nombre, activo_tipo, etc.)
+		bodyData[key] = value
+	}
+
+	// Convertir a JSON
+	jsonData, err := json.Marshal(bodyData)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando datos"})
+		return
+	}
+
+	fmt.Printf("DEBUG: Enviando ticket: %+v\n", bodyData)
+
+	// Hacer POST al microservicio de notificaciones
+	url := fmt.Sprintf("%s/tickets", notificationURL)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		fmt.Println("Error creando ticket: ", err)
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al crear el ticket"})
+		return
+	}
+	defer resp.Body.Close()
+
+	fmt.Printf("DEBUG: Status code de respuesta: %d\n", resp.StatusCode)
+
+	// Verificar si la respuesta es exitosa
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		var errorData map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&errorData); err == nil {
+			c.JSON(resp.StatusCode, errorData)
+			return
+		}
+		c.JSON(resp.StatusCode, gin.H{"error": "Error al crear el ticket"})
+		return
+	}
+
+	// Leer la respuesta exitosa
+	var responseData map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+		fmt.Println("Error decodificando respuesta: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando respuesta"})
+		return
+	}
+
+	// Retornar la respuesta del microservicio
+	c.JSON(resp.StatusCode, responseData)
+}
+
+func ResolverTicketHandler(c *gin.Context) {
+	// Obtener el ID del ticket desde los parámetros de la URL
+	idTicket := c.Param("id_ticket")
+	if idTicket == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID del ticket es requerido"})
+		return
+	}
+
+	// Extraer el email desde el token JWT
+	authHeader := c.GetHeader("Authorization")
+	email, _ := extractClaimFromToken(authHeader, "email")
+	if email == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Email no encontrado en el token"})
+		return
+	}
+	fmt.Printf("Usuario resolviendo ticket %s: %s\n", idTicket, email)
+
+	// Leer el body de la request
+	var resolverData map[string]interface{}
+	if err := c.ShouldBindJSON(&resolverData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+		return
+	}
+
+	// Validar campo obligatorio
+	comentarioAdmin, existeComentario := resolverData["comentario_admin"]
+	if !existeComentario || comentarioAdmin == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Campo 'comentario_admin' es requerido"})
+		return
+	}
+
+	fmt.Printf("Resolviendo ticket con comentario: %v\n", comentarioAdmin)
+
+	// Construir el body para el microservicio de notificaciones
+	bodyData := map[string]interface{}{
+		"resuelto_por_email": email,
+		"comentario_admin":   comentarioAdmin,
+	}
+
+	// Convertir a JSON
+	jsonData, err := json.Marshal(bodyData)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando datos"})
+		return
+	}
+
+	fmt.Printf("DEBUG: Enviando resolución de ticket: %+v\n", bodyData)
+
+	// Hacer PUT al microservicio de notificaciones
+	url := fmt.Sprintf("%s/tickets/%s/resolver", notificationURL, idTicket)
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creando request"})
+		return
+	}
+
+	// Establecer headers
+	req.Header.Set("Content-Type", "application/json")
+
+	// Ejecutar la petición
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		fmt.Println("Error resolviendo ticket: ", err)
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Error al resolver el ticket"})
+		return
+	}
+	defer resp.Body.Close()
+
+	fmt.Printf("DEBUG: Status code de respuesta: %d\n", resp.StatusCode)
+
+	// Verificar si la respuesta es exitosa
+	if resp.StatusCode != http.StatusOK {
+		var errorData map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&errorData); err == nil {
+			c.JSON(resp.StatusCode, errorData)
+			return
+		}
+		c.JSON(resp.StatusCode, gin.H{"error": "Error al resolver el ticket"})
+		return
+	}
+
+	// Leer la respuesta exitosa
+	var responseData map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+		fmt.Println("Error decodificando respuesta: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error procesando respuesta"})
+		return
+	}
+
+	// Retornar la respuesta del microservicio
+	c.JSON(http.StatusOK, responseData)
 }

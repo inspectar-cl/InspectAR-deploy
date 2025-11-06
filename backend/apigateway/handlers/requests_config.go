@@ -400,7 +400,14 @@ func getSpecialHandlers() []SpecialHandler {
             Pattern: "/api/crear-ticket",
             Handler: CrearTicketHandler,
             Protected: true,
-            RequiredScopes: userTypes("Administrador", "Admin"), // Acceso abierto
+            RequiredScopes: userTypes("Administrador", "Admin"),
+        },
+        { 
+            Method:  "PUT",
+            Pattern: "/api/resolver-ticket/:id_ticket",
+            Handler: ResolverTicketHandler,
+            Protected: true,
+            RequiredScopes: userTypes("Administrador", "Admin"),
         },
         // Aquí se agregan más handlers de manera fácil
         // {

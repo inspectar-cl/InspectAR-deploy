@@ -16,12 +16,48 @@ import { QrCodeIcon } from '@phosphor-icons/react/dist/csr/QrCode';
 import { WarningIcon } from '@phosphor-icons/react/dist/csr/Warning';
 import Services from '@/modules/Services';
 
+// Función para obtener el color y texto del estado
+const getEstadoConfig = (estado?: string) => {
+  if (!estado) return null;
+  
+  switch (estado.toLowerCase()) {
+    case 'ok':
+    case 'operativo':
+      return {
+        color: 'success.main',
+        bgcolor: 'success.lighter',
+        text: 'Operativo',
+      };
+    case 'medio':
+    case 'advertencia':
+      return {
+        color: 'warning.main',
+        bgcolor: 'warning.lighter',
+        text: 'Medio',
+      };
+    case 'critico':
+    case 'crítico':
+      return {
+        color: 'error.main',
+        bgcolor: 'error.lighter',
+        text: 'Crítico',
+      };
+    default:
+      return {
+        color: 'text.secondary',
+        bgcolor: 'action.hover',
+        text: estado,
+      };
+  }
+};
+
 interface ActivoInfo {
   codigo: string;
   nombre: string;
   tipo: string;
   descripcion: string;
   ubicacion: string;
+  estado?: string;
 }
 
 export default function QRInfoPage(): React.JSX.Element {
@@ -114,6 +150,30 @@ export default function QRInfoPage(): React.JSX.Element {
                     Código: {activoInfo.codigo}
                   </Typography>
                 </Box>
+                {/* Estado del activo */}
+                {activoInfo.estado && (() => {
+                  const estadoConfig = getEstadoConfig(activoInfo.estado);
+                  return estadoConfig ? (
+                    <Box
+                      sx={{
+                        px: 2,
+                        py: 1,
+                        borderRadius: 2,
+                        bgcolor: estadoConfig.bgcolor,
+                        border: '1px solid',
+                        borderColor: estadoConfig.color,
+                      }}
+                    >
+                      <Typography
+                        variant="body2"
+                        fontWeight="bold"
+                        sx={{ color: estadoConfig.color }}
+                      >
+                        {estadoConfig.text}
+                      </Typography>
+                    </Box>
+                  ) : null;
+                })()}
               </Stack>
 
               <Divider sx={{ my: 2 }} />

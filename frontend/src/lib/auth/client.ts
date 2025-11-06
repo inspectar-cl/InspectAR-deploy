@@ -4,7 +4,7 @@ import type { User } from '@/types/user';
 import Services from '@/modules/Services';
 import {decodeJwtToken} from '@/hooks/use-auth'
 
-type Role = 'analista' | 'tecnico' | 'residente' | 'admin';
+type Role = 'analista' | 'tecnico' | 'residente' | 'root';
 
 interface Edificio {
   id: number;
@@ -59,7 +59,7 @@ export interface ResetPasswordParams {
 }
 
 function isRole(v: unknown): v is Role {
-  return v === 'analista' || v === 'tecnico' || v === 'residente' || v === 'admin';
+  return v === 'analista' || v === 'tecnico' || v === 'residente' || v === 'root';
 }
 
 function isEdificio(v: unknown): v is Edificio {

@@ -12,7 +12,7 @@ const getChipColor = (tipo: SolicitudAPI['tipoSolicitud']): ChipProps['color'] =
   switch (tipo) {
     case 'Edificio': return 'primary';
     case 'Activo': return 'secondary';
-    case 'Sensor': return 'warning';
+    //case 'Sensor': return 'warning';
     case 'Técnico': return 'info';
     default: return 'default';
   }

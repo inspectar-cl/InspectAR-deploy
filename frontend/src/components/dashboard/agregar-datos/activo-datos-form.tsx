@@ -10,9 +10,10 @@ import {
   Select,
   MenuItem,
   FormHelperText,
+  CircularProgress,
 } from '@mui/material';
 import { useFormContext } from 'react-hook-form';
-import type { SolicitudFormData, ActivoData, TipoActivo } from '@/types/formulario';
+import type { SolicitudFormData, ActivoData, TipoActivo } from '@/types/edicion-data';
 import { useUserToken } from '@/hooks/use-usertoken';
 
 const TIPOS_ACTIVO: TipoActivo[] = ['Ascensor', 'BombaDeAgua', 'PanelElectrico'];
@@ -20,6 +21,11 @@ const TIPOS_ACTIVO: TipoActivo[] = ['Ascensor', 'BombaDeAgua', 'PanelElectrico']
 interface EdificioSimple {
   id: number;
   nombre: string;
+}
+
+interface EdificiosApiResponse {
+  edificios: EdificioSimple[];
+  total: number;
 }
 
 export function ActivoForm(): React.JSX.Element {
@@ -43,13 +49,19 @@ export function ActivoForm(): React.JSX.Element {
       setIsLoading(true);
       setFetchError(null);
       try {
-        // Aqui debe ir una ruta para obtener todos los edificios
-        const response = await fetch('/api/edificios/listar', {
+        const response = await fetch('/api/gestion/edificios', { 
           headers: { 'Authorization': `Bearer ${userContext.token}` },
         });
         if (!response.ok) throw new Error('No se pudieron cargar los edificios');
-        const data = (await response.json()) as EdificioSimple[];
-        setEdificios(data);
+        
+        const data = (await response.json()) as EdificiosApiResponse; 
+        
+        if (!data.edificios) {
+          throw new Error("El formato de respuesta de la API es incorrecto.");
+        }
+        
+        setEdificios(data.edificios);
+
       } catch (err) {
         setFetchError(err instanceof Error ? err.message : 'Error desconocido');
       } finally {
@@ -59,16 +71,34 @@ export function ActivoForm(): React.JSX.Element {
     void fetchEdificios();
   }, [userContext]);
 
+  const ITEM_HEIGHT = 35;
+
   return (
     <Grid container spacing={2}>
       <Grid size={{ xs: 12 }}>
-        <FormControl fullWidth required>
+        <TextField
+          label="Nombre del Activo"
+          fullWidth
+          required
+          {...register('datosEspecificos.nombre' as const, { 
+            required: 'El nombre es obligatorio' // <-- Validación RHF
+          })}
+          error={Boolean(formErrors?.nombre)}
+          helperText={formErrors?.nombre?.message ?? ''}
+          InputLabelProps={{ shrink: true }}
+        />
+      </Grid>
+
+      <Grid size={{ xs: 12 }}>
+        <FormControl fullWidth required error={Boolean(formErrors?.tipoActivo)}>
           <InputLabel id="tipo-activo-label">Tipo de Activo</InputLabel>
           <Select
             labelId="tipo-activo-label"
             label="Tipo de Activo"
             defaultValue=""
-            {...register('datosEspecificos.tipoActivo' as const)}
+            {...register('datosEspecificos.tipoActivo' as const, {
+              required: 'Debe seleccionar un tipo'
+            })}
           >
             {TIPOS_ACTIVO.map((tipo) => (
               <MenuItem key={tipo} value={tipo}>
@@ -87,22 +117,40 @@ export function ActivoForm(): React.JSX.Element {
             labelId="edificio-id-label"
             label="Edificio Asociado"
             defaultValue=""
-            {...register('datosEspecificos.edificioId' as const, { valueAsNumber: true })}
-            disabled={
-              isLoading || Boolean(fetchError) || edificios.length === 0
-            }
+            {...register('datosEspecificos.edificioId' as const, { 
+              required: 'Debe seleccionar un edificio',
+              valueAsNumber: true 
+            })}
+            disabled={isLoading || Boolean(fetchError) || edificios.length === 0}
+            MenuProps={{
+              slotProps: {
+                paper: {
+                  sx: {
+                    maxHeight: ITEM_HEIGHT * 4.5,
+                  },
+                },
+              },
+            }}
           >
-            {Boolean(isLoading) && (
+            {/* --- 4. RENDERIZADO CONDICIONAL MEJORADO --- */}
+            {isLoading && (
               <MenuItem disabled value="">
+                <CircularProgress size={20} sx={{ mr: 1, verticalAlign: 'middle' }} />
                 <em>Cargando edificios...</em>
               </MenuItem>
             )}
-            {Boolean(fetchError) && (
+            {fetchError && (
               <MenuItem disabled value="">
-                <em>Error al cargar</em>
+                <em>Error al cargar edificios</em>
               </MenuItem>
             )}
-            {!isLoading && edificios.map((edificio) => (
+            {!isLoading && !fetchError && edificios.length === 0 && (
+              <MenuItem disabled value="">
+                <em>No hay edificios disponibles</em>
+              </MenuItem>
+            )}
+            {/* Ahora esto mapeará correctamente el array */}
+            {!isLoading && !fetchError && edificios.map((edificio) => (
               <MenuItem key={edificio.id} value={edificio.id}>
                 {edificio.nombre}
               </MenuItem>
@@ -112,12 +160,14 @@ export function ActivoForm(): React.JSX.Element {
         </FormControl>
       </Grid>
 
-      <Grid size={{ xs: 12 }}>
+      <Grid  size={{ xs: 12 }}>
         <TextField
           label="Ubicación (Ej: Piso 5, Sala de máquinas)"
           fullWidth
           required
-          {...register('datosEspecificos.ubicacion' as const)}
+          {...register('datosEspecificos.ubicacion' as const, {
+            required: 'La ubicación es obligatoria' // <-- Validación RHF
+          })}
           error={Boolean(formErrors?.ubicacion)}
           helperText={formErrors?.ubicacion?.message ?? ''}
         />
@@ -132,7 +182,7 @@ export function ActivoForm(): React.JSX.Element {
           {...register('datosEspecificos.descripcion' as const)}
         />
       </Grid>
-
+      {/*
       <Grid size={{ xs: 12 }}>
         <TextField
           label="Imagen"
@@ -148,6 +198,7 @@ export function ActivoForm(): React.JSX.Element {
           helperText={formErrors?.imagen?.message ?? 'Sube una imagen del activo (opcional)'}
         />
       </Grid>
+      */}
     </Grid>
   );
 }

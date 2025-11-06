@@ -18,9 +18,10 @@ import { useUserToken } from '@/hooks/use-usertoken';
 
 const ESPECIALIDADES: EspecialidadTecnico[] = ['Climatización', 'Eléctrico', 'Mecánico'];
 
-interface ActivoSimple {
+interface ActivoResumen {
   id: number;
   nombre: string;
+  tipoActivo?: string;
 }
 
 export function TecnicoForm(): React.JSX.Element {
@@ -34,7 +35,7 @@ export function TecnicoForm(): React.JSX.Element {
     | undefined;
 
   const { user: userContext } = useUserToken();
-  const [activos, setActivos] = React.useState<ActivoSimple[]>([]);
+  const [activos, setActivos] = React.useState<ActivoResumen[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [fetchError, setFetchError] = React.useState<string | null>(null);
 
@@ -44,13 +45,13 @@ export function TecnicoForm(): React.JSX.Element {
       setIsLoading(true);
       setFetchError(null);
       try {
-        //Aqui lo mismo que con activo form
-        const response = await fetch('/api/activos/del-usuario', {
-          headers: { 'Authorization': `Bearer ${userContext.token}` },
+        const response = await fetch('/api/obtener-todos-activos?sensores=true', {
+          headers: { Authorization: `Bearer ${userContext.token}` },
         });
+
         if (!response.ok) throw new Error('No se pudieron cargar los activos');
-        const data = (await response.json()) as ActivoSimple[];
-        setActivos(data);
+        const data = (await response.json()) as { activos?: ActivoResumen[] };
+        setActivos(data.activos ?? []);
       } catch (err) {
         setFetchError(err instanceof Error ? err.message : 'Error desconocido');
       } finally {
@@ -59,6 +60,8 @@ export function TecnicoForm(): React.JSX.Element {
     };
     void fetchActivos();
   }, [userContext]);
+
+  const ITEM_HEIGHT = 35;
 
   return (
     <Grid container spacing={2}>
@@ -134,6 +137,15 @@ export function TecnicoForm(): React.JSX.Element {
                 })}
               </Box>
             )}
+            MenuProps={{
+              slotProps: {
+                paper: {
+                  sx: {
+                    maxHeight: ITEM_HEIGHT * 4.5, // 48 * 4.5 = 216px
+                  },
+                },
+              },
+            }}
           >
             {Boolean(isLoading) && (
               <MenuItem disabled value="">

@@ -9,14 +9,14 @@ import { Container, Paper, Typography, Box, Tabs, Tab, Alert } from '@mui/materi
 // (Los crearemos en el paso 3)
 import { EdificiosDataGrid } from '@/components/dashboard/edicion-datos/edificios-datagrid';
 import { ActivosDataGrid } from '@/components/dashboard/edicion-datos/activos-datagrid';
-import { SensoresDataGrid } from '@/components/dashboard/edicion-datos/sensores-datagrid';
+//import { SensoresDataGrid } from '@/components/dashboard/edicion-datos/sensores-datagrid';
 import { TecnicosDataGrid } from '@/components/dashboard/edicion-datos/tecnicos-datagrid';
 
 type TabValue = 'edificios' | 'activos' | 'sensores' | 'tecnicos';
 const TABS: { value: TabValue; label: string }[] = [
   { value: 'edificios', label: 'Edificios' },
   { value: 'activos', label: 'Activos' },
-  { value: 'sensores', label: 'Sensores' },
+  //{ value: 'sensores', label: 'Sensores' },
   { value: 'tecnicos', label: 'Técnicos' },
 ];
 
@@ -61,7 +61,7 @@ export default function PaginaGestionDatos() {
         <Box>
           {activeTab === 'edificios' && <EdificiosDataGrid />}
           {activeTab === 'activos' && <ActivosDataGrid />}
-          {activeTab === 'sensores' && <SensoresDataGrid />}
+          {/*activeTab === 'sensores' && <SensoresDataGrid />*/}
           {activeTab === 'tecnicos' && <TecnicosDataGrid />}
         </Box>
       </Paper>

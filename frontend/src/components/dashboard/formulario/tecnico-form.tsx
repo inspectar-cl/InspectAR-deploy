@@ -46,7 +46,7 @@ export function TecnicoForm(): React.JSX.Element {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch('/api/activos/usuario', {
+        const res = await fetch('/api/obtener-todos-activos?sensores=true', {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         if (!res.ok) throw new Error('Error al obtener los activos del usuario.');

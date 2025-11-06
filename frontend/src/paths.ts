@@ -9,6 +9,7 @@ export const paths = {
     account: '/dashboard/account',
     alertas: '/dashboard/alertas',
     activos: '/dashboard/activos',
+    agregardatos: '/dashboard/agregar-datos',
     reporteFallas: '/dashboard/reporte-fallas',
     sensores: '/dashboard/sensores',
     reportesTecnicos: '/dashboard/reportes-tecnicos',
@@ -18,7 +19,7 @@ export const paths = {
     ml: '/dashboard/prediccion',
     settings: '/dashboard/settings',
     activoDetail: (id: string) => `/dashboard/activos/${id}`,
-    agregarDatos: (tipo: string) => `/dashboard/agregar-datos/${tipo}`,
+    //agregarDatos: (tipo: string) => `/dashboard/agregar-datos/${tipo}`,
   },
   errors: { notFound: '/errors/not-found' },
 } as const;

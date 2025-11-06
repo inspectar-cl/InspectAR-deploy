@@ -66,7 +66,7 @@ export function ActivoForm(): React.JSX.Element {
           {...register('datosEspecificos.descripcion' as const)}
         />
       </Grid>
-
+      {/*
       <Grid size={{xs:12}}>
         <TextField
           type="file"
@@ -77,6 +77,7 @@ export function ActivoForm(): React.JSX.Element {
           helperText={activoErrors?.imagen?.message ?? ''}
         />
       </Grid>
+      */}
     </Grid>
   );
 }

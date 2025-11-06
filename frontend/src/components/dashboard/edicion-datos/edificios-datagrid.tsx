@@ -7,14 +7,34 @@ import { useRouter } from 'next/navigation';
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { paths } from '@/paths';
 import { useUserToken } from '@/hooks/use-usertoken';
+import { useForm, FormProvider } from 'react-hook-form';
+import type { SolicitudFormData, EdificioData } from '@/types/formulario';
+import { EdificioDataForm } from '@/components/dashboard/agregar-datos/edificio-datos-form';
 
 // Asumo un tipo de dato simple
 interface EdificioAPI {
   id: number;
   nombre: string;
   direccion: string;
-  latitud: number;
-  longitud: number;
+  creado_en: string;
+  latitud?: number;
+  longitud?: number;
+}
+
+function transformarApiAForm(edificio: EdificioAPI): SolicitudFormData {
+  return {
+    tipoSolicitud: 'Edificio',
+    asunto: '',
+    detalles: '',
+    datosEspecificos: {
+      nombre: edificio.nombre,
+      direccion: edificio.direccion,
+      // Si la API no envía latitud, el formulario recibirá 0.
+      // Si la API SÍ la envía, el formulario recibirá el valor real.
+      latitud: edificio.latitud ?? 0,
+      longitud: edificio.longitud ?? 0,
+    },
+  } as unknown as SolicitudFormData;
 }
 
 export function EdificiosDataGrid() {
@@ -28,35 +48,105 @@ export function EdificiosDataGrid() {
   const [openDeleteDialog, setOpenDeleteDialog] = React.useState(false);
   const [selectedId, setSelectedId] = React.useState<GridRowId | null>(null);
 
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [editingId, setEditingId] = React.useState<number | null>(null);
+  const modalFormMethods = useForm<SolicitudFormData>();
+
+  
   // --- 1. Carga de Datos ---
   React.useEffect(() => {
-    if (!user?.token) return; // Esperar token
-    
+    if (!user?.token) return;
+
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        // !!! Reemplaza con tu endpoint de API real !!!
-        const response = await fetch('/api/edificios/listar', {
-            headers: { 'Authorization': `Bearer ${user.token}` }
+        const response = await fetch('/api/gestion/edificios', {
+          headers: { Authorization: `Bearer ${user.token}` },
         });
         if (!response.ok) throw new Error('Error al cargar los edificios');
-        const data = await response.json();
-        setRows(data);
+        
+        const data: { edificios: EdificioAPI[] } = await response.json();
+        
+        if (!data.edificios) {
+           throw new Error("El formato de respuesta de la API es incorrecto.");
+        }
+
+        console.log("Datos recibidos:", data.edificios);
+        setRows(data.edificios);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error desconocido');
       } finally {
         setIsLoading(false);
       }
     };
-    fetchData();
+    void fetchData();
   }, [user?.token]);
 
   const handleEdit = (id: GridRowId) => {
-    // Aqui se redirige a pag de formulario existente (cambiar si no es bueno)
-    // pasándole un 'id' para que sepa que está en modo "Editar".
-    const url = `${paths.dashboard.agregarDatos('edificio')}?id=${id}`;
-    router.push(url);
+    const idNum = Number(id);
+    const itemToEdit = rows.find((row) => row.id === idNum);
+    if (!itemToEdit) return;
+
+    // Transforma los datos de la API al formato del formulario
+    const datosFormulario = transformarApiAForm(itemToEdit);
+
+    // Guarda el ID y pre-llena el formulario del modal
+    setEditingId(idNum);
+    modalFormMethods.reset(datosFormulario);
+    // Abre el modal
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingId(null);
+    modalFormMethods.reset(); // Limpia el formulario
+  };
+
+  // Función de submit para el formulario del modal
+  const onModalSubmit = async (data: SolicitudFormData) => {
+    if (!editingId || !user?.token) return;
+
+    const datosParaApi = data.datosEspecificos as EdificioData;
+    console.log('Enviando actualización para ID:', editingId, datosParaApi);
+
+    modalFormMethods.clearErrors();
+
+    try {
+      const response = await fetch(`/api/actualizar-edificio/${editingId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${user.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(datosParaApi),
+      });
+
+      if (!response.ok) {
+         const errorData = await response.json().catch(() => null);
+         throw new Error(errorData?.error || `Error del servidor: ${response.status}`);
+      }
+
+      // Éxito: actualiza la fila en la tabla localmente
+      setRows((prevRows) =>
+        prevRows.map((row) =>
+          row.id === editingId
+            ? { ...row, ...datosParaApi } // Combina datos antiguos y nuevos
+            : row
+        )
+      );
+      handleCloseModal(); // Cierra el modal
+      alert('Edificio actualizado con éxito.');
+
+    } catch (err) {
+      console.error('Error al actualizar:', err);
+      // Muestra el error dentro del modal
+      modalFormMethods.setError('root', { 
+        type: 'manual', 
+        message: err instanceof Error ? err.message : 'Error al guardar' 
+      });
+    }
   };
 
   const handleDelete = (id: GridRowId) => {
@@ -66,16 +156,27 @@ export function EdificiosDataGrid() {
 
   const confirmDelete = async () => {
     if (!selectedId || !user?.token) return;
+    setError(null);
+
     try {
-      // Api para borrar edificio por ID
-      // await fetch(`/api/edificios/${selectedId}`, { 
-      //    method: 'DELETE', 
-      //    headers: { 'Authorization': `Bearer ${user.token}` }
-      // });
-      console.log(`Simulando borrado de ID: ${selectedId}`);
+      const response = await fetch(`/api/eliminar-edificio/${selectedId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${user.token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || `Error del servidor: ${response.status}`);
+      }
+
       setRows((prevRows) => prevRows.filter((row) => row.id !== selectedId));
+      alert('Edificio eliminado con éxito.');
+
     } catch (err) {
-      setError('No se pudo eliminar el elemento.');
+      console.error('Error al eliminar:', err);
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar el elemento.');
     } finally {
       setOpenDeleteDialog(false);
       setSelectedId(null);
@@ -99,7 +200,7 @@ export function EdificiosDataGrid() {
           <GridActionsCellItem
             icon={<EditIcon />}
             label="Editar"
-            onClick={() => handleEdit(id)}
+            onClick={() => {handleEdit(id)}}
             color="primary"
           />
         </Tooltip>,
@@ -107,7 +208,7 @@ export function EdificiosDataGrid() {
           <GridActionsCellItem
             icon={<DeleteIcon />}
             label="Eliminar"
-            onClick={() => handleDelete(id)}
+            onClick={() => {handleDelete(id)}}
             color="inherit"
           />
         </Tooltip>,
@@ -136,6 +237,24 @@ export function EdificiosDataGrid() {
         }}
         disableRowSelectionOnClick
       />
+
+      <Dialog open={isModalOpen} onClose={handleCloseModal} maxWidth="sm" fullWidth>
+        <DialogTitle>Editar Edificio (ID: {editingId})</DialogTitle>
+        <FormProvider {...modalFormMethods}>
+          <form onSubmit={modalFormMethods.handleSubmit(onModalSubmit)}>
+            <DialogContent>
+              {/* Aquí se renderiza tu formulario de edificio existente */}
+              <EdificioDataForm />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseModal}>Cancelar</Button>
+              <Button type="submit" variant="contained">
+                Guardar Cambios
+              </Button>
+            </DialogActions>
+          </form>
+        </FormProvider>
+      </Dialog>
 
       {/* --- Diálogo de Confirmación de Borrado --- */}
       <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>

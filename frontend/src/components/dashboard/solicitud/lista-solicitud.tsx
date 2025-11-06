@@ -21,7 +21,7 @@ import { SolicitudCard } from './solicitud-card';
 import { MOCK_SOLICITUDES } from '@/mocks/solicitudes';
 import { useUserToken } from '@/hooks/use-usertoken';
 
-const TIPOS_FILTRO: (TipoSolicitud | 'Todas')[] = ['Todas', 'Edificio', 'Activo', 'Sensor', 'Técnico'];
+const TIPOS_FILTRO: (TipoSolicitud | 'Todas')[] = ['Todas', 'Edificio', 'Activo', 'Técnico'];
 type EstadoSolicitud = 'Pendiente' | 'EnProgreso' | 'Resuelta';
 const TIPOS_ESTADO: ('Todos' | EstadoSolicitud)[] = ['Todos', 'Pendiente', 'EnProgreso', 'Resuelta'];
 

@@ -1,6 +1,6 @@
 //Este archivo type es un test de como se OBTENDRIAN los campos del backend, considerar igual para guiarse "formulario.ts", este ultimo como principal para el guardado de datos en backend
 
-export type TipoSolicitud = 'Edificio' | 'Activo' | 'Sensor' | 'Técnico';
+export type TipoSolicitud = 'Edificio' | 'Activo' | 'Técnico';
 export type TipoActivo = 'Ascensor' | 'BombaDeAgua' | 'PanelElectrico';
 export type EspecialidadTecnico = 'Climatización' | 'Eléctrico' | 'Mecánico';
 export type TipoSensor = 'Temperatura' | 'Presión' | 'Vibración';

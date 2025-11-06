@@ -25,7 +25,9 @@ export function EdificioDataForm(): React.JSX.Element {
           label="Nombre del Edificio"
           fullWidth
           required
-          {...register('datosEspecificos.nombre' as const)}
+          {...register('datosEspecificos.nombre' as const, {
+            required: 'El nombre es obligatorio',
+          })}
           error={Boolean(formErrors?.nombre)}
           helperText={formErrors?.nombre?.message ?? ''}
         />
@@ -35,7 +37,10 @@ export function EdificioDataForm(): React.JSX.Element {
           label="Dirección"
           fullWidth
           required
-          {...register('datosEspecificos.direccion' as const)}
+          // --- AÑADIDA VALIDACIÓN DE RHF ---
+          {...register('datosEspecificos.direccion' as const, {
+            required: 'La dirección es obligatoria',
+          })}
           error={Boolean(formErrors?.direccion)}
           helperText={formErrors?.direccion?.message ?? ''}
         />
@@ -47,14 +52,13 @@ export function EdificioDataForm(): React.JSX.Element {
           fullWidth
           required
           slotProps={{
-            htmlInput: {
-              step: "any",
-            },
-            inputLabel: {
-              shrink: true,
-            }
+            htmlInput: { step: 'any' },
+            inputLabel: { shrink: true },
           }}
-          {...register('datosEspecificos.latitud' as const, { valueAsNumber: true })}
+          {...register('datosEspecificos.latitud' as const, {
+            required: 'La latitud es obligatoria',
+            valueAsNumber: true,
+          })}
           error={Boolean(formErrors?.latitud)}
           helperText={formErrors?.latitud?.message ?? ''}
         />
@@ -66,14 +70,13 @@ export function EdificioDataForm(): React.JSX.Element {
           fullWidth
           required
           slotProps={{
-            htmlInput: {
-              step: "any",
-            },
-            inputLabel: {
-              shrink: true,
-            }
+            htmlInput: { step: 'any' },
+            inputLabel: { shrink: true },
           }}
-          {...register('datosEspecificos.longitud' as const, { valueAsNumber: true })}
+          {...register('datosEspecificos.longitud' as const, {
+            required: 'La longitud es obligatoria',
+            valueAsNumber: true,
+          })}
           error={Boolean(formErrors?.longitud)}
           helperText={formErrors?.longitud?.message ?? ''}
         />

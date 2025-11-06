@@ -32,15 +32,21 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isUserLoading || !user) return;
+    console.log('🔍 useEffect ejecutado', { activoId, isUserLoading, user: !!user });
+    
+    if (isUserLoading || !user) {
+      console.log('⏸️ Esperando usuario o cargando...', { isUserLoading, hasUser: !!user });
+      return;
+    }
 
     const fetchAnomalias = async () => {
       try {
+        console.log('🚀 Iniciando llamada a API para activo:', activoId);
         setIsLoading(true);
         
         interface AnomaliasPaginadas {
           activo_id?: number;
-          anomalies?: Array<{
+          data?: Array<{
             id?: number;
             activo_id?: number;
             timestamp?: string;
@@ -53,19 +59,25 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
             most_influential_variable?: string;
             contribution_magnitude?: number;
           }>;
-          total?: number;
-          page?: number;
+          count?: number;
+          message?: string;
           limit?: number;
-          has_more?: boolean;
+          offset?: number;
         }
 
         // Ajusta la ruta según tu API
+        const url = `/anomalia-activo/${activoId}`;
+        console.log('📡 URL de API:', url);
+        console.log('🔑 Token presente:', !!user.token);
+        
         const response = await gs.authorizedGet(
-          `/anomalia-activo/${activoId}`, 
+          url, 
           user.token
         ) as AnomaliasPaginadas;
 
-        const prediccionesTransformadas: Prediccion[] = (response.anomalies ?? []).map((p) => ({
+        console.log('✅ Respuesta de API recibida:', response);
+
+        const prediccionesTransformadas: Prediccion[] = (response.data ?? []).map((p) => ({
           id: p.id ?? 0,
           activoId: p.activo_id ?? activoId,
           timestamp: p.timestamp ?? new Date().toISOString(),
@@ -79,6 +91,8 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
           contribution_magnitude: p.contribution_magnitude ?? 0,
         }));
 
+        console.log('📊 Predicciones transformadas:', prediccionesTransformadas.length);
+
         // Ordenar por timestamp descendente
         prediccionesTransformadas.sort((a, b) => 
           new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
@@ -87,7 +101,7 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
         setPredicciones(prediccionesTransformadas);
         setError(null);
       } catch (err) {
-        console.error('Error al obtener anomalías:', err);
+        console.error('❌ Error al obtener anomalías:', err);
         setError('Error al cargar anomalías del activo');
       } finally {
         setIsLoading(false);
@@ -95,15 +109,20 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
     };
 
     // Llamado inicial inmediato
+    console.log('🎬 Ejecutando fetch inicial...');
     void fetchAnomalias();
 
     // Actualización periódica cada 30 segundos
     const interval = setInterval(() => {
+      console.log('🔄 Ejecutando fetch periódico...');
       void fetchAnomalias();
     }, 30000);
 
     // Limpieza del intervalo al desmontar componente
-    return () => { clearInterval(interval); };
+    return () => { 
+      console.log('🧹 Limpiando intervalo');
+      clearInterval(interval); 
+    };
   }, [activoId, isUserLoading, user]);
 
   if (isUserLoading || isLoading) {
@@ -142,6 +161,7 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
 
   const ultimaPrediccion = predicciones[0];
   const totalAnomalias = predicciones.filter(p => p.is_anomaly).length;
+  const anomaliasDetectadas = predicciones.filter(p => p.is_anomaly);
 
   return (
     <Box>
@@ -224,7 +244,22 @@ export default function AnomaliasDashboard({ activoId, activoNombre }: Anomalias
           <Typography variant="h6" mb={2}>
             Últimas 10 Anomalías Detectadas
           </Typography>
-          <PrediccionCards predicciones={predicciones.slice(0, 10)} />
+          {anomaliasDetectadas.length > 0 ? (
+            <PrediccionCards predicciones={anomaliasDetectadas.slice(0, 10)} />
+          ) : (
+            <Box 
+              sx={{ 
+                p: 3, 
+                textAlign: 'center', 
+                backgroundColor: '#f5f5f5', 
+                borderRadius: 2 
+              }}
+            >
+              <Typography variant="body1" color="text.secondary">
+                No hay anomalías detectadas para este activo.
+              </Typography>
+            </Box>
+          )}
         </Grid>
       </Grid>
     </Box>

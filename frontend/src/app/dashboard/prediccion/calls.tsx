@@ -86,32 +86,41 @@ export default function PrediccionClient() {
       try {
         setIsLoading(true);
         
-        interface PrediccionResponse {
-          id?: number;
+        interface AnomaliasPaginadas {
           activo_id?: number;
-          timestamp?: string;
-          anomaly_score?: number;
-          anomaly_likelihood?: number;
-          severidad?: "Baja" | "Media" | "Alta";
-          descripcion?: string;
-          threshold?: number;
-          is_anomaly?: boolean;
-          most_influential_variable?: string;
-          contribution_magnitude?: number;
+          data?: Array<{
+            id?: number;
+            activo_id?: number;
+            timestamp?: string;
+            anomaly_score?: number;
+            anomaly_likelihood?: number;
+            severidad?: "Baja" | "Media" | "Alta";
+            descripcion?: string;
+            threshold?: number;
+            is_anomaly?: number | boolean;
+            most_influential_variable?: string;
+            contribution_magnitude?: number;
+          }>;
+          count?: number;
+          message?: string;
+          limit?: number;
+          offset?: number;
         }
 
-        const response = await gs.authorizedGet('/anomalia-activo/2', user.token) as { predicciones?: PrediccionResponse[] };
+        const response = await gs.authorizedGet('/anomalia-activo/2', user.token) as AnomaliasPaginadas;
         
-        const prediccionesTransformadas: Prediccion[] = (response.predicciones ?? []).map((p) => ({
+        const prediccionesTransformadas: Prediccion[] = (response.data ?? []).map((p) => ({
           id: p.id ?? 0,
           activoId: p.activo_id ?? 0,
           timestamp: p.timestamp ?? new Date().toISOString(),
-          anomalyScore: p.anomaly_score ?? 0,
-          anomalyLikelihood: p.anomaly_likelihood ?? 0,
+          anomalyScore: Math.round(p.anomaly_score ?? 0),
+          anomalyLikelihood: Math.round(p.anomaly_likelihood ?? 0),
           severidad: p.severidad ?? "Baja",
           descripcion: p.descripcion ?? "Sin descripción",
-          threshold: p.threshold ?? 50,
-          is_anomaly: p.is_anomaly ?? false,
+          threshold: Math.round(p.threshold ?? 50),
+          is_anomaly: p.is_anomaly === 1 || p.is_anomaly === true,
+          most_influential_variable: p.most_influential_variable ?? "N/A",
+          contribution_magnitude: p.contribution_magnitude ?? 0,
         }));
 
         // Ordenar por timestamp descendente
@@ -299,9 +308,24 @@ export default function PrediccionClient() {
               {/* Tarjetas de predicciones */}
               <Grid key={`cards-${activo.id}`} size={{ xs: 12 }} id="tour-ultimas-anomalias">
                 <Typography variant="h6" mb={2}>
-                  Últimas 10 Anomalías
+                  Últimas 10 Anomalías Detectadas
                 </Typography>
-                <PrediccionCards predicciones={predActivo.slice(0, 10)} />
+                {predActivo.filter(p => p.is_anomaly).length > 0 ? (
+                  <PrediccionCards predicciones={predActivo.filter(p => p.is_anomaly).slice(0, 10)} />
+                ) : (
+                  <Box 
+                    sx={{ 
+                      p: 3, 
+                      textAlign: 'center', 
+                      backgroundColor: '#f5f5f5', 
+                      borderRadius: 2 
+                    }}
+                  >
+                    <Typography variant="body1" color="text.secondary">
+                      No hay anomalías detectadas (is_anomaly = true) para este activo.
+                    </Typography>
+                  </Box>
+                )}
               </Grid>
             </Grid>
           </Box>

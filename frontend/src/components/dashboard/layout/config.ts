@@ -19,4 +19,6 @@ export const navItems = [
   { key: 'account', title: 'Account', href: paths.dashboard.account, icon: 'user' },
   { key: 'error', title: 'Error', href: paths.errors.notFound, icon: 'x-square' },
   { key: 'ml', title: 'Predicción', href: paths.dashboard.ml, icon: 'brain' },
+  { key: 'tendencias', title: 'Tendencias', href: paths.dashboard.tendencias, icon: 'trend-up' },
+
 ] satisfies NavItemConfig[];

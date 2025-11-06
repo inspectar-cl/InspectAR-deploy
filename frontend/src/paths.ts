@@ -16,6 +16,7 @@ export const paths = {
     contactos: '/dashboard/contactos',
     graficos: '/dashboard/graficos',
     ml: '/dashboard/prediccion',
+    tendencias: '/dashboard/tendencias',
     settings: '/dashboard/settings',
     activoDetail: (id: string) => `/dashboard/activos/${id}`,
     //agregarDatos: (tipo: string) => `/dashboard/agregar-datos/${tipo}`,

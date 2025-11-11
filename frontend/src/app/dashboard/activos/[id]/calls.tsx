@@ -11,24 +11,7 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
 import Alert from '@mui/material/Alert';
-import Select from '@mui/material/Select'
-import MenuItem from '@mui/material/MenuItem'
-import FormControl from '@mui/material/FormControl'
-import InputLabel from '@mui/material/InputLabel'
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-} from 'recharts';
 import dayjs from 'dayjs';
 import { type Activo, type Prediccion } from '@/types/';
 import { DownloadSimple } from '@phosphor-icons/react';
@@ -48,8 +31,9 @@ import { Cpu } from 'lucide-react';
 import type { TourKey } from "@/components/tutorial/tour-config";
 import { TourButton } from "@/components/tutorial/tour-button";
 import { useDriverTour } from "@/components/tutorial/use-driver-tour";
+import { SensorChartDialog } from '@/components/dashboard/overview/grafica-sensor-activo';
+import { SensorChartCarousel } from '@/components/dashboard/overview/sensor-carousel';
 
-// Constantes globales
 const ESTADOS = ['OK', 'Medio', 'Crítico', 'NN'] as const;
 type Estado = (typeof ESTADOS)[number];
 type Trend = 'up' | 'down';
@@ -70,25 +54,6 @@ export default function ActivoDetailClient({ id }: { id: number}) {
   const [alertas, setAlertas] = useState<Prediccion[]>([]);
   const tourKey: TourKey = 'activo';
   const { startTour } = useDriverTour(tourKey);
-
-  const filteredData = React.useMemo(() => {
-    if (!selectedSensor?.history24h) return [];
-
-    if (rangoMinutos === 0) {
-      return selectedSensor.history24h.map((d) => ({
-        time: dayjs(d.ts).format('DD/MM HH:mm'),
-        value: d.value,
-      }));
-    }
-
-    const limite = dayjs().subtract(rangoMinutos, 'minute');
-    return selectedSensor.history24h
-      .filter((d) => dayjs(d.ts).isAfter(limite))
-      .map((d) => ({
-        time: dayjs(d.ts).format('HH:mm:ss'),
-        value: d.value,
-      }));
-  }, [selectedSensor, rangoMinutos]);
 
   interface SensorDato {
     valor: number;
@@ -255,6 +220,15 @@ export default function ActivoDetailClient({ id }: { id: number}) {
     }
   }
 
+  const currentAssetSensors = React.useMemo(() => {
+    if (!activos || !activo) return [];
+    // Filtramos para encontrar el activo 'act' que corresponde a esta página
+    const currentAct = activos.find(a => a.id === activo.id);
+    // Retornamos sus sensores. 
+    // Asumimos que `useActivosWithSensors` ya incluye el `history24h` en cada sensor.
+    return currentAct?.sensores ?? [];
+  }, [activos, activo]);
+
   const presionInfo = getDiffInfo('pres1')
   const caudalInfo = getDiffInfo('caud1')
   if (!activo) {
@@ -351,7 +325,10 @@ export default function ActivoDetailClient({ id }: { id: number}) {
       <Grid container spacing={2} sx={{ mt: 2 }}>
         {/* Scatter: 83.33% (10/12) */}
         <Grid size={{md:10, xs:12}} id="tour-grafico-tiempo-real">
-          <ScatterWithArgs sx={{ height: 500 }} dataCaudal={sensorCaud} dataPresion={sensorPres} dataTemp={sensorTemp} />
+          <SensorChartCarousel
+            sensors={currentAssetSensors}
+            sx={{ height: 500 }}
+          />
         </Grid>
         {/* Temperatura: 16.67% (2/12) */}
         <Grid size={{md:2, xs:12}} id="tour-temperature-progress">
@@ -493,78 +470,13 @@ export default function ActivoDetailClient({ id }: { id: number}) {
             </Box>
           ))}
 
-          <Dialog
-            fullWidth
-            maxWidth="md"
+          <SensorChartDialog
             open={openChart}
-            onClose={() => { setOpenChart(false); }}
-          >
-            <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              {selectedSensor
-                ? `Histórico de ${selectedSensor.name}`
-                : 'Cargando...'}
-
-              {/* Selector de rango de tiempo */}
-              <FormControl size="small" sx={{ minWidth: 200 }}>
-                <InputLabel id="rango-label">Rango de tiempo</InputLabel>
-                <Select
-                  labelId="rango-label"
-                  value={rangoMinutos}
-                  label="Rango de tiempo"
-                  onChange={(e) => {
-                  setRangoMinutos(Number(e.target.value));
-                }}
-                >
-                  <MenuItem value={0}>Todo</MenuItem>
-                  <MenuItem value={3}>Últimos 3 minutos</MenuItem>
-                  <MenuItem value={30}>Últimos 30 minutos</MenuItem>
-                  <MenuItem value={60}>Última hora</MenuItem>
-                  <MenuItem value={240}>Últimas 4 horas</MenuItem>
-                  <MenuItem value={720}>Últimas 12 horas</MenuItem>
-                </Select>
-              </FormControl>
-            </DialogTitle>
-
-            <DialogContent dividers>
-              {filteredData.length > 0 ? (
-                <Box sx={{ width: '100%', height: 400 }}>
-                  <ResponsiveContainer>
-                    <LineChart
-                      data={filteredData}
-                      margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="time" />
-                      <YAxis
-                        label={{
-                          value: selectedSensor?.unit ?? 'Unidad',
-                          angle: -90,
-                          position: 'insideLeft',
-                        }}
-                      />
-                      <Tooltip />
-                      <Line
-                        type="monotone"
-                        dataKey="value"
-                        stroke="#1976d2"
-                        dot={false}
-                        strokeWidth={2}
-                        isAnimationActive={false}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </Box>
-              ) : (
-                <Alert severity="info">
-                  No hay datos en el rango seleccionado.
-                </Alert>
-              )}
-            </DialogContent>
-
-            <DialogActions>
-              <Button onClick={() => { setOpenChart(false); }}>Cerrar</Button>
-            </DialogActions>
-          </Dialog>
+            onClose={() => {
+              setOpenChart(false);
+            }}
+            sensor={selectedSensor}
+          />
     </Box>
   );
 }

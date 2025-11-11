@@ -66,11 +66,9 @@ export function SensorChartDialog({
       }));
   }, [sensor, rangoMinutos]);
 
-  // Reseteamos el rango de tiempo a 30 min cada vez que se cierra el diálogo
-  // para que la próxima vez que se abra, tenga el valor por defecto.
   const handleClose = () => {
     onClose();
-    // Opcional: resetear el estado al cerrar
+    //resetear el estado al cerrar
     // setRangoMinutos(30); 
   };
 

@@ -29,26 +29,21 @@ import type { SensorRow } from '@/hooks/use-activos-with-sensors'; // Asegúrate
 import { ArrowBackIosNew, ArrowForwardIos } from '@mui/icons-material';
 import type { SxProps } from '@mui/material/styles';
 
-// --- Props que recibirá el componente ---
 interface SensorChartCarouselProps {
   sensors: SensorRow[];
-  sx?: SxProps; // Para pasar estilos como height, etc.
+  sx?: SxProps;
 }
 
-// --- Tipo para los datos del gráfico ---
 interface ChartData {
   time: string;
   value: number;
 }
 
 export function SensorChartCarousel({ sensors, sx }: SensorChartCarouselProps) {
-  // --- Estado para el carrusel ---
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // --- Estado para el rango de tiempo (igual que en el Dialog) ---
   const [rangoMinutos, setRangoMinutos] = useState(30);
 
-  // --- Lógica de navegación ---
   const handlePrev = () => {
     setCurrentIndex((prev) => (prev - 1 + sensors.length) % sensors.length);
   };
@@ -57,10 +52,8 @@ export function SensorChartCarousel({ sensors, sx }: SensorChartCarouselProps) {
     setCurrentIndex((prev) => (prev + 1) % sensors.length);
   };
 
-  // --- Sensor actual basado en el índice ---
   const currentSensor = sensors.length > 0 ? sensors[currentIndex] : null;
 
-  // --- Memo para los datos (igual que en el Dialog) ---
   const filteredData: ChartData[] = useMemo(() => {
     if (!currentSensor?.history24h) return [];
 
@@ -78,10 +71,9 @@ export function SensorChartCarousel({ sensors, sx }: SensorChartCarouselProps) {
         time: dayjs(d.ts).format('HH:mm:ss'),
         value: d.value,
       }));
-  }, [currentSensor, rangoMinutos]); // Se recalcula si cambia el sensor o el rango
+  }, [currentSensor, rangoMinutos]);
 
-  // --- Renderizado ---
-  // Caso 1: No hay sensores que mostrar
+  //No hay sensores que mostrar
   if (!currentSensor || sensors.length === 0) {
     return (
       <Card sx={{ ...sx, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -92,7 +84,6 @@ export function SensorChartCarousel({ sensors, sx }: SensorChartCarouselProps) {
     );
   }
 
-  // Caso 2: Hay sensores, mostramos el carrusel
   return (
     <Card sx={{ ...sx, display: 'flex', flexDirection: 'column' }}>
       {/* --- Cabecera con Navegación y Selector de Rango --- */}

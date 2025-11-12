@@ -22,7 +22,6 @@ import { Presion } from '@/components/dashboard/overview/presion';
 import { TemperatureProgress } from '@/components/dashboard/overview/temperature';
 import { LatestAlerts } from '@/components/dashboard/overview/latest-alerts';
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr/Warning';
-import { ScatterWithArgs } from '@/components/dashboard/overview/MedicionTiempoReal';
 import { ChatBotCard } from '@/components/dashboard/overview/chatbot';
 import { useActivosWithSensors } from '@/hooks/use-activos-with-sensors';
 import Services from '@/modules/Services';
@@ -45,7 +44,6 @@ function normalizeTrend(t: unknown): Trend {
 const gs = new Services()
 
 export default function ActivoDetailClient({ id }: { id: number}) {
-  const [rangoMinutos, setRangoMinutos] = useState(30); 
   const { activos} = useActivosWithSensors();
   const { user, isLoading} = useUserToken();
   const [activo, setActivo] = React.useState<Activo | null>(null)

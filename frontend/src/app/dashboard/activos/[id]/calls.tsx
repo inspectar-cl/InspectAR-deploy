@@ -86,6 +86,7 @@ export default function ActivoDetailClient({ id }: { id: number}) {
           id_edificio?: string;
           id_ficha_tecnica?: number;
           sensores?: Sensor[];
+          descripcion?: string;
         }
         // falta solucion parche pal user
         const response = await gs.authorizedGet(`/obtener-activo-id/${id}`, user.token) as ActivoResponse;
@@ -99,7 +100,7 @@ export default function ActivoDetailClient({ id }: { id: number}) {
           id: response.activo_id ?? 0,
           tipoActivo: response.nombre ?? 'NN',
           estado,
-          descripcion: 'Descripción personalizada :)',
+          descripcion: response.descripcion ?? 'Descripción personalizada :)',
           ubicacion: response.ubicacion ?? 'NN',
           img: 'https://www.sondagua.cl/blog/wp-content/uploads/2021/10/bomba-para-extraccion-de-agua.jpg',
           id_edificio: response.id_edificio ?? 'NN',

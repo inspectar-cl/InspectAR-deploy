@@ -1062,6 +1062,20 @@ func ObtenerActivoPorID(c *gin.Context) {
             }
             mu.Unlock()
         }
+        if descripcion, exists := data["descripcion"]; exists {
+            mu.Lock()
+            if activo != nil {
+                activo["descripcion"] = descripcion
+            }
+            mu.Unlock()
+        }
+        if codigo_activo, exists := data["codigo_activo"]; exists {
+            mu.Lock()
+            if activo != nil {
+                activo["codigo_activo"] = codigo_activo
+            }
+            mu.Unlock()
+        }
     }()
 
     wg.Wait()

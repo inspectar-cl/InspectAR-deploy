@@ -101,10 +101,8 @@ db.activos.insertMany([
 
 print('🔧 Insertando sensores...');
 db.sensores.insertMany([
-  // Sensores para BombaDeAgua1 según especificación
+  // Sensores para BombaDeAgua1 - solo temp1
   {sensor_id: 'temp1', activo_id: 1, tipo: 'Temperatura', unidad: '°C', _legacy_activo_id: 1},
-  {sensor_id: 'pres1', activo_id: 1, tipo: 'Presión', unidad: 'Pa', _legacy_activo_id: 1},
-  {sensor_id: 'caud1', activo_id: 1, tipo: 'Caudal', unidad: 'm^3/s', _legacy_activo_id: 1},
   // Sensores para Activo 2 (Bomba Centrífuga A) - 7 sensores según especificación
   {sensor_id: 'A_ACR_Mot.PV', activo_id: 2, tipo: 'Motor PV', unidad: 'PV'},
   {sensor_id: 'A_ACR_Mot.SV', activo_id: 2, tipo: 'Motor SV', unidad: 'SV'},
@@ -134,10 +132,8 @@ db.sensores.insertMany([
 print('📊 Insertando estados de sensores...');
 var now = new Date();
 db.sensor_status.insertMany([
-  // Estados para sensores de BombaDeAgua1
+  // Estados para sensores de BombaDeAgua1 - solo temp1
   {sensor_id: 'temp1', activo_id: 1, estado: 'conectado', ultima_lectura: now, valor_actual: 65.5, _legacy_activo_id: 1},
-  {sensor_id: 'pres1', activo_id: 1, estado: 'conectado', ultima_lectura: now, valor_actual: 6200.0, _legacy_activo_id: 1}, // Convertido a Pa
-  {sensor_id: 'caud1', activo_id: 1, estado: 'conectado', ultima_lectura: now, valor_actual: 0.425, _legacy_activo_id: 1}, // Convertido a m³/s
   // Estados para Activo 2 (Bomba Centrífuga A) - 7 sensores
   {sensor_id: 'A_ACR_Mot.PV', activo_id: 2, estado: 'conectado', ultima_lectura: now, valor_actual: 45.2},
   {sensor_id: 'A_ACR_Mot.SV', activo_id: 2, estado: 'conectado', ultima_lectura: now, valor_actual: 50.0},

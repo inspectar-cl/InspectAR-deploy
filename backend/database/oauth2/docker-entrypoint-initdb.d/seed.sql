@@ -24,7 +24,7 @@ VALUES ('root.system', 'root@inspectAR.com', '$2a$10$AVOlu9c1j6204IpKPjaqcelWG.E
 
 -- Insertar configuración
 
-INSERT INTO config (key_access, key_refresh, lifetime_access, lifetime_refresh) VALUES ('test_password', 'refresh_test_password', 15, 10080);
+INSERT INTO config (key_access, key_refresh, lifetime_access, lifetime_refresh) VALUES ('test_password', 'refresh_test_password', 10080, 10080);
 
 -- Reiniciar la secuencia de IDs para que PostgreSQL continúe desde el siguiente valor correcto
 SELECT setval('users_id_seq', (SELECT MAX(id) FROM users));

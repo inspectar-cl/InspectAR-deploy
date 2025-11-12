@@ -49,7 +49,8 @@ stop-b-ag:
 	cd backend && docker compose rm -f -s apigateway || true
 
 # NGROK_URL := interbanded-kole-sneeringly.ngrok-free.app
-NGROK_URL := anita-submicroscopic-overgently.ngrok-free.app
+# NGROK_URL := anita-submicroscopic-overgently.ngrok-free.app
+NGROK_URL := miya-nonalgebraical-unsymbolically.ngrok-free.dev
 
 run-b-ngrok:
 	cd backend && docker compose up --build -d && ngrok http --domain=$(NGROK_URL) 3500
@@ -62,3 +63,21 @@ err-f:
 
 ml:
 	cd backend/scripts/ML && python3 main.py
+
+ngrok-1:
+	ngrok start --config=backend/ngrok1.yml web
+
+ngrok-2:
+	ngrok start --config=backend/ngrok2.yml mqtt
+
+ngrok:
+	tmux new-session -d -s ngrok1 'ngrok start --config=backend/ngrok1.yml web' \; \
+	split-window -h 'ngrok start --config=backend/ngrok2.yml mqtt' \; \
+	attach-session -d
+
+ngrok-simple:
+	ngrok start --config=backend/ngrok1.yml web & ngrok start --config=backend/ngrok2.yml mqtt
+
+ngrok-windows:
+	gnome-terminal -- bash -c 'ngrok start --config=backend/ngrok1.yml web; exec bash' & \
+	gnome-terminal -- bash -c 'ngrok start --config=backend/ngrok2.yml mqtt; exec bash'

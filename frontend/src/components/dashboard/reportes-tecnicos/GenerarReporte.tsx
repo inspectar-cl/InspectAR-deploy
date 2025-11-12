@@ -232,11 +232,20 @@ function GenerarReporte() {
     if (!isNaN(numId)) {
       // Es una firma del backend
       const firma = firmasBackend.find((f) => f.id === numId);
-      if (firma) {
-        // Obtener la imagen de la firma
-        const imageUrl = `${BASE_URL}/gestion/firmas/${firma.id}/imagen`;
-        setSelectedSignatureDataUrl(imageUrl);
-        setFirmaId(firma.id);
+      if (firma && user?.token) {
+        // Obtener la imagen de la firma usando Services con token
+        const fetchFirmaImagen = async () => {
+          try {
+            const blob = await gs.authorizedGetBlob(`/gestion/firmas/${firma.id}/imagen`, user.token);
+            const imageUrl = URL.createObjectURL(blob);
+            setSelectedSignatureDataUrl(imageUrl);
+            setFirmaId(firma.id);
+          } catch (error) {
+            setSelectedSignatureDataUrl(null);
+            setMensaje('Error al cargar la imagen de la firma');
+          }
+        };
+        void fetchFirmaImagen();
         return;
       }
     }
@@ -244,7 +253,7 @@ function GenerarReporte() {
     // Es una firma local guardada en localStorage
     const found = signatures.find((s) => s.id === selectedSignatureId);
     setSelectedSignatureDataUrl(found?.dataUrl ?? null);
-  }, [selectedSignatureId, signatures, firmasBackend]);
+  }, [selectedSignatureId, signatures, firmasBackend, user?.token]);
 
   // limpiar firma al cambiar de activo
   useEffect(() => {

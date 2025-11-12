@@ -26,6 +26,7 @@ func userTypes(roles ...string) []string {
     scopes := make([]string, 0, len(roles)+1)
     scopes = append(scopes, "user-type:Root")
     scopes = append(scopes, "user-type:Administrador") // Temporal xd -Vixo 06-11-2025
+    scopes = append(scopes, "user-type:Analista") // Temporal xd -Vixo 12-11-2025
     
     // Agregar los demás roles especificados
     for _, role := range roles {
@@ -179,6 +180,14 @@ func getProtectedProxyRoutes() []struct {
             TargetEnvVar:       "GESTION_URL",
             PrependPath:        "",
             RequiredScopes:     rootOnly(),
+            RequiredValidation: "",
+        },
+        {
+            Method:             "GET",
+            Pattern:            "/api/gestion/firmas/:firma_id/imagen",
+            TargetEnvVar:       "GESTION_URL",
+            PrependPath:        "",
+            RequiredScopes:     userTypes("Tecnico", "Analista", "Admin"),
             RequiredValidation: "",
         },
         // Rutas Notificaciones protegidas Sprint 3
@@ -343,14 +352,14 @@ func getSpecialHandlers() []SpecialHandler {
             Pattern: "/api/obtener-firmas-usuario",
             Handler: ObtenerFirmasUsuarioHandler,
             Protected: true,
-            RequiredScopes: userTypes("Tecnico", "Admin"),
+            RequiredScopes: userTypes("Tecnico", "Analista", "Admin"),
         },
         { 
             Method:  "POST",
             Pattern: "/api/subir-firma-usuario",
             Handler: SubirFirmaUsuarioHandler,
             Protected: true,
-            RequiredScopes: userTypes("Tecnico", "Admin"),
+            RequiredScopes: userTypes("Tecnico", "Analista", "Admin"),
         },
         { 
             Method:  "DELETE",

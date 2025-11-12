@@ -39,6 +39,22 @@ export default class Services {
         }))
     }
 
+    async authorizedGetBlob(uri, accessToken) {
+        // Configuración para recibir respuestas blob (archivos binarios como imágenes, PDFs, etc.)
+        const config = {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            },
+            responseType: 'blob' // Indicar que esperamos una respuesta blob
+        };
+
+        return await apiClient.get(uri, config)
+            .then(res => res.data) // Devuelve directamente el blob
+            .catch(error => {
+                throw new Error(error.response?.statusText || "Error al obtener archivo");
+            })
+    }
+
     async authorizedPost(uri, data, accessToken) {
     // Configuración de headers, incluyendo la autorización
         const config = {

@@ -16,7 +16,8 @@ import { useUserToken } from '@/hooks/use-usertoken';
 import { useAuthUser } from '@/contexts/user-context';
 
 const gs = new Services();
-const BASE_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL || '/api';interface ActivoReporte {
+
+interface ActivoReporte {
   id: string;
   nombre: string;
 }

@@ -43,7 +43,7 @@ function normalizeTrend(t: unknown): Trend {
 }
 const gs = new Services()
 
-export default function ActivoDetailClient({ id }: { id: number}) {
+export default function ActivoDetailClient({ id }: { id: number}): React.JSX.Element {
   const { activos} = useActivosWithSensors();
   const { user, isLoading} = useUserToken();
   const [activo, setActivo] = React.useState<Activo | null>(null)
@@ -75,7 +75,7 @@ export default function ActivoDetailClient({ id }: { id: number}) {
     //quitar el if y volver a colocarlo si no funca
     if (isLoading || !user) {return;}
     
-    const fetchData = async () => {
+    const fetchData = async (): Promise<void> => {
       try {
         interface ActivoResponse {
           activo_id?: number;
@@ -115,17 +115,18 @@ export default function ActivoDetailClient({ id }: { id: number}) {
     };
     
     // Nueva función para obtener datos de sensores
-    const fetchDatos = async () => {
+    const fetchDatos = async (): Promise<void> => {
       try {
         const datos = await gs.authorizedGet(`/parser/lectura/${id}/datos`, user.token) as { sensores?: Sensor[] };
         setSensores(datos.sensores ?? []);
       } catch (err) {
+        // eslint-disable-next-line no-console -- Development debugging
         console.error('Error al obtener los datos de sensores:', err);
         setSensores([]); // Asegurar que se setee un array vacío en caso de error
       } 
     };
 
-    const fetchAlertas = async () => {
+    const fetchAlertas = async (): Promise<void> => {
       try {
         
         interface AnomaliasPaginadas {
@@ -179,7 +180,7 @@ export default function ActivoDetailClient({ id }: { id: number}) {
       }
     };
 
-    const fetchAll = async () => {
+    const fetchAll = async (): Promise<void> => {
       await fetchData();
       await fetchDatos();
       await fetchAlertas();
@@ -200,13 +201,11 @@ export default function ActivoDetailClient({ id }: { id: number}) {
   // Estos nombres tendrían que ser dinámicos, de momento quedarán así.
   // Extracción de los valores de cada sensor:
   const sensorTemp = sensores.find(s => s.sensor_id === 'temp1')
-  const sensorPres = sensores.find(s => s.sensor_id === 'pres1')
-  const sensorCaud = sensores.find(s => s.sensor_id === 'caud1')
 
   // Obtención de valores actuales
   const temperatura = sensorTemp?.datos?.at(-1)?.valor ?? 0
 
-  const getDiffInfo = (sensorId: string) => {
+  const getDiffInfo = (sensorId: string): { valor: number; diff: number; trend: Trend } => {
     const datos = sensores.find(s => s.sensor_id === sensorId)?.datos ?? []
     const ultimo = datos.at(-1)?.valor ?? 0
     const penultimo = datos.at(-2)?.valor ?? 0

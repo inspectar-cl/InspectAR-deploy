@@ -61,7 +61,11 @@ run-ngrok:
 err-f:
 	cd frontend && npx eslint . --ext .js,.ts,.tsx
 
+err-f-e:
+	cd frontend && npx eslint . --ext .js,.ts,.tsx 2>&1 | grep "error"
+
 ml:
+	cd backend/scripts/ML && python3 main.py
 	cd backend/scripts/ML && python3 main.py
 
 ngrok-1:

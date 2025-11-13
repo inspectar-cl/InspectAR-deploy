@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/explicit-function-return-type -- Complex data operations require flexibility */
+
 'use client';
 
 import * as React from 'react';
@@ -117,10 +117,11 @@ export default function ActivoDetailClient({ id }: { id: number}) {
     // Nueva función para obtener datos de sensores
     const fetchDatos = async () => {
       try {
-        const datos = await gs.get('/parser/lectura/1/datos') as { sensores?: Sensor[] };
+        const datos = await gs.authorizedGet(`/parser/lectura/${id}/datos`, user.token) as { sensores?: Sensor[] };
         setSensores(datos.sensores ?? []);
       } catch (err) {
-        //console.error('Error al obtener los datos de sensores', err);
+        console.error('Error al obtener los datos de sensores:', err);
+        setSensores([]); // Asegurar que se setee un array vacío en caso de error
       } 
     };
 
@@ -230,12 +231,14 @@ export default function ActivoDetailClient({ id }: { id: number}) {
 
   const presionInfo = getDiffInfo('pres1')
   const caudalInfo = getDiffInfo('caud1')
+  
   if (!activo) {
     return <div style={{ padding: '1rem' }}>No se encontró el activo con ID: {`${id}`}</div>;
   }
-  if (!sensorCaud || !sensorPres || !sensorTemp) {
-    return <div>Loading...</div>; // o skeleton / placeholder
-}
+
+  // Validación más flexible: mostrar la página aunque no estén todos los sensores
+  // Si faltan sensores, los componentes mostrarán valores por defecto (0)
+  
   return (
     
     <Box sx={{ p: 2 }}>
